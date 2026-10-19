@@ -1,6 +1,7 @@
+import { Component, inject, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideStore, LucideSettings, LucideEye } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
-
 @Component({
   selector: 'app-catalogo',
   standalone: true,
