@@ -7,7 +7,7 @@ The workflow `.github/workflows/admin-vercel-deploy.yml` is deliberately **manua
 Open the Vercel project that is meant to host **StarKies Admin** → **Settings → Build and Deployment** and set:
 
 - Root Directory: `.` (repository root)
-- Install Command: `npm install --legacy-peer-deps`
+- Install Command: `npm ci`
 - Build Command: `npx ng build admin --configuration production`
 - Output Directory: `dist/admin/browser`
 
