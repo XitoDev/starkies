@@ -37,15 +37,24 @@ export class Recetas {
     this.selectedCategory.set(cat);
   }
 
-  // Mapeo temporal de imágenes: convierte '/api/recipe-image?id=...' a una ruta local
-  getImageUrl(imagePath: string | undefined, recipeId: string): string {
-    if (!imagePath) return 'assets/placeholder.jpg';
+  /**
+   * Las imágenes del respaldo son referencias al endpoint del GPT Site original,
+   * no archivos locales. Conservamos temporalmente esa referencia absoluta para
+   * que las fotos sigan visibles mientras las migramos a Firebase Storage.
+   */
+  getImageUrl(imagePath: string | undefined): string {
+    if (!imagePath?.trim()) return '/images/recipe-placeholder.svg';
 
-    // Si viene del JSON con el formato viejo de API, mapeamos al ID
-    if (imagePath.includes('/api/recipe-image')) {
-      // Como las tienes en public/images/, apuntamos allá
-      return `images/recipe-${recipeId}.jpg`;
+    if (imagePath.startsWith('/api/recipe-image')) {
+      return `https://starkies-admin.milkyflame1.chatgpt.site${imagePath}`;
     }
+
     return imagePath;
+  }
+
+  onImageError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (image.src.endsWith('/images/recipe-placeholder.svg')) return;
+    image.src = '/images/recipe-placeholder.svg';
   }
 }
