@@ -10,7 +10,7 @@ import { DataService } from '../../services/data.service';
 })
 export class Catalogo {
   private dataService = inject(DataService);
-  readonly icons = { LucideStore, LucideSettings, LucideEye };
+  readonly icons = { Store: LucideStore, Settings: LucideSettings, Eye: LucideEye };
 
   // Leemos las recetas directamente del servicio
   recipes = this.dataService.recipes;
