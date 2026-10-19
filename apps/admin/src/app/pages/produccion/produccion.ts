@@ -1,16 +1,14 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Factory, Plus, Calendar, CheckCircle } from 'lucide-angular';
+import { LucideDynamicIcon, LucideFactory, LucidePlus, LucideCalendar, LucideCircleCheck } from '@lucide/angular';
 
 @Component({
   selector: 'app-produccion',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './produccion.html',
   styleUrls: ['./produccion.css']
 })
 export class Produccion {
-  readonly icons = { Factory, Plus, Calendar, CheckCircle };
+  readonly icons = { LucideFactory, LucidePlus, LucideCalendar, LucideCircleCheck };
 
   // Como la producción se calcula al vuelo o se guarda en un historial,
   // aquí simulamos una lista vacía temporalmente para la UI.
