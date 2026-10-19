@@ -1,28 +1,17 @@
-import { Component, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  LucideAngularModule,
-  Search,
-  ShoppingBag,
-  Users,
-  Eye,
-  CheckCircle,
-  XCircle,
-  Clock
-} from 'lucide-angular';
+import { LucideDynamicIcon, LucideSearch, LucideShoppingBag, LucideUsers, LucideEye, LucideCircleCheck, LucideCircleX, LucideClock } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-pedidos',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './pedidos.html',
   styleUrls: ['./pedidos.css']
 })
 export class Pedidos {
   private dataService = inject(DataService);
 
-  readonly icons = { ShoppingBag, Users, Search, Eye, CheckCircle, XCircle, Clock };
+  readonly icons = { LucideShoppingBag, LucideUsers, LucideSearch, LucideEye, LucideCircleCheck, LucideCircleX, LucideClock };
 
   orders = this.dataService.orders;
   customers = this.dataService.customers;
