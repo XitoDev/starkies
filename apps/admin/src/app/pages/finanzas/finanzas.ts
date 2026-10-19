@@ -1,23 +1,14 @@
-import { Component, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  LucideAngularModule,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  Package
-} from 'lucide-angular';
+import { LucideDynamicIcon, LucideDollarSign, LucideTrendingUp, LucideTrendingDown, LucideWallet, LucidePackage } from '@lucide/angular';
 
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })
 export class Finanzas {
-  readonly icons = { DollarSign, TrendingUp, TrendingDown, Wallet, Package };
+  readonly icons = { LucideDollarSign, LucideTrendingUp, LucideTrendingDown, LucideWallet, LucidePackage };
 
   activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
 
