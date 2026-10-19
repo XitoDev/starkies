@@ -5,7 +5,7 @@
       <p class="page-subtitle">Control de inventario, costos y alertas de stock.</p>
     </div>
     <button class="btn-primary">
-      <lucide-icon [img]="icons.Plus" class="btn-icon"></lucide-icon>
+      <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
       Nuevo Insumo
     </button>
   </div>
@@ -13,7 +13,7 @@
   <div class="table-card">
     <div class="table-toolbar">
       <div class="search-box">
-        <lucide-icon [img]="icons.Search" class="search-icon"></lucide-icon>
+        <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
         <input
           type="text"
           placeholder="Buscar ingrediente o empaque..."
@@ -49,7 +49,7 @@
           <td>
             @if (isLowStock(ing.stock, ing.minStock)) {
             <span class="badge badge-danger">
-                    <lucide-icon [img]="icons.AlertTriangle" class="badge-icon"></lucide-icon>
+                    <svg [lucideIcon]="icons.AlertTriangle" class="badge-icon"></svg>
                     Stock Bajo
                   </span>
             } @else {
@@ -59,7 +59,7 @@
 
           <td class="actions-cell">
             <button class="btn-icon-only" title="Editar insumo">
-              <lucide-icon [img]="icons.Edit2"></lucide-icon>
+              <svg [lucideIcon]="icons.Edit2"></svg>
             </button>
           </td>
         </tr>
