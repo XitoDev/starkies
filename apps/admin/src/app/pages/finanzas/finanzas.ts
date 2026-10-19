@@ -8,7 +8,7 @@ import { LucideDynamicIcon, LucideDollarSign, LucideTrendingUp, LucideTrendingDo
   styleUrls: ['./finanzas.css']
 })
 export class Finanzas {
-  readonly icons = { LucideDollarSign, LucideTrendingUp, LucideTrendingDown, LucideWallet, LucidePackage };
+  readonly icons = { DollarSign: LucideDollarSign, TrendingUp: LucideTrendingUp, TrendingDown: LucideTrendingDown, Wallet: LucideWallet, Package: LucidePackage };
 
   activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
 
