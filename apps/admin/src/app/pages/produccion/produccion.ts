@@ -8,7 +8,7 @@ import { LucideDynamicIcon, LucideFactory, LucidePlus, LucideCalendar, LucideCir
   styleUrls: ['./produccion.css']
 })
 export class Produccion {
-  readonly icons = { LucideFactory, LucidePlus, LucideCalendar, LucideCircleCheck };
+  readonly icons = { Factory: LucideFactory, Plus: LucidePlus, Calendar: LucideCalendar, CheckCircle: LucideCircleCheck };
 
   // Como la producción se calcula al vuelo o se guarda en un historial,
   // aquí simulamos una lista vacía temporalmente para la UI.
