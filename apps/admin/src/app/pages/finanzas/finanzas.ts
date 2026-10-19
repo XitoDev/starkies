@@ -1,5 +1,6 @@
+import { Component, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideDollarSign, LucideTrendingUp, LucideTrendingDown, LucideWallet, LucidePackage } from '@lucide/angular';
-
 @Component({
   selector: 'app-finanzas',
   standalone: true,
