@@ -1,19 +1,17 @@
-import { Component, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Search, Tag, PieChart, DollarSign } from 'lucide-angular';
+import { LucideDynamicIcon, LucideSearch, LucideTag, LucideChartPie, LucideDollarSign } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
 export class Recetas {
   private dataService = inject(DataService);
 
-  readonly icons = { Search, Tag, PieChart, DollarSign };
+  readonly icons = { LucideSearch, LucideTag, LucideChartPie, LucideDollarSign };
 
   // Leemos las recetas desde el servicio
   recipes = this.dataService.recipes;
