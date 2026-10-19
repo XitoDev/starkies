@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
+import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-login',
@@ -87,6 +88,7 @@ export class Login {
 
   constructor(
     readonly firebase: FirebaseClientService,
+    private readonly dataService: DataService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
   ) {
@@ -113,6 +115,10 @@ export class Login {
         this.message.set('La cuenta inició sesión, pero todavía no tiene permisos de administrador.');
         return;
       }
+
+      // Load Firestore only after the user's admin allow-list entry has been verified.
+      // If no migration exists yet, the route guard will send them to /migracion.
+      await this.dataService.loadFromCloud();
 
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
       await this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/recetas');
