@@ -11,7 +11,7 @@ import { DataService } from '../../services/data.service';
 export class Recetas {
   private dataService = inject(DataService);
 
-  readonly icons = { LucideSearch, LucideTag, LucideChartPie, LucideDollarSign };
+  readonly icons = { Search: LucideSearch, Tag: LucideTag, PieChart: LucideChartPie, DollarSign: LucideDollarSign };
 
   // Leemos las recetas desde el servicio
   recipes = this.dataService.recipes;
