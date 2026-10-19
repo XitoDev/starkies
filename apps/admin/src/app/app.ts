@@ -9,7 +9,7 @@ import { Topbar } from './components/topbar/topbar';
   standalone: true,
   imports: [RouterOutlet, Sidebar, Topbar],
   template: `
-    @if (isLoginRoute()) {
+    @if (isBareRoute()) {
       <router-outlet></router-outlet>
     } @else {
       <div class="app-layout">
@@ -48,12 +48,12 @@ import { Topbar } from './components/topbar/topbar';
   `]
 })
 export class App {
-  readonly isLoginRoute = signal(false);
+  readonly isBareRoute = signal(false);
 
-  constructor(router: Router) {
-    this.isLoginRoute.set(router.url.startsWith('/login'));
+  private isBarePath(url: string): boolean {\n    return url.startsWith('/login') || url.startsWith('/migracion');\n  }\n\n  constructor(router: Router) {
+    this.isBareRoute.set(this.isBarePath(router.url));
     router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => this.isLoginRoute.set(event.urlAfterRedirects.startsWith('/login')));
+      .subscribe((event) => this.isBareRoute.set(this.isBarePath(event.urlAfterRedirects)));
   }
 }
