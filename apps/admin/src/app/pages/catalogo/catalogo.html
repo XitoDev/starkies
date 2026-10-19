@@ -1,0 +1,45 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Catálogo Público</h1>
+      <p class="page-subtitle">Visualiza y configura cómo ven tus clientes los productos en tu tienda web.</p>
+    </div>
+    <button class="btn-outline">
+      <lucide-icon [img]="icons.Settings" class="btn-icon"></lucide-icon>
+      Configuración
+    </button>
+  </div>
+
+  <div class="recipes-grid">
+    @for (item of catalogItems(); track item.id) {
+    <div class="recipe-card">
+      <div class="card-image-wrapper">
+        <!-- Mapeo de imágenes idéntico al de Recetas -->
+        <img
+          [src]="item.image?.includes('/api/') ? 'images/recipe-' + item.id + '.jpg' : (item.image || 'images/placeholder.jpg')"
+          [alt]="item.name"
+          class="recipe-img"
+          onerror="this.src='images/placeholder.jpg'"
+        />
+        <span class="category-badge">{{ item.category }}</span>
+      </div>
+
+      <div class="card-content">
+        <h3 class="recipe-name">{{ item.name }}</h3>
+        <div class="recipe-stats">
+          <span class="price-stat">{{ item.price | currency:'USD' }}</span>
+          <button class="btn-icon-only" title="Ver como cliente">
+            <lucide-icon [img]="icons.Eye"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (catalogItems().length === 0) {
+    <div class="empty-state">
+      <p>No hay productos configurados para el catálogo.</p>
+    </div>
+    }
+  </div>
+</div>

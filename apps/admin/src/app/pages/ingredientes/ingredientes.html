@@ -1,0 +1,77 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Ingredientes e Insumos</h1>
+      <p class="page-subtitle">Control de inventario, costos y alertas de stock.</p>
+    </div>
+    <button class="btn-primary">
+      <lucide-icon [img]="icons.Plus" class="btn-icon"></lucide-icon>
+      Nuevo Insumo
+    </button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <lucide-icon [img]="icons.Search" class="search-icon"></lucide-icon>
+        <input
+          type="text"
+          placeholder="Buscar ingrediente o empaque..."
+          (input)="onSearch($event)"
+        >
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Ingrediente</th>
+          <th>Unidad</th>
+          <th>Costo / Unid.</th>
+          <th>Stock Actual</th>
+          <th>Estado</th>
+          <th class="actions-cell">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (ing of filteredIngredients(); track ing.id) {
+        <tr>
+          <td class="font-medium">{{ ing.name }}</td>
+          <td class="text-gray">{{ ing.unit }}</td>
+          <td>{{ ing.costPerUnit | currency:'USD' }}</td>
+
+          <!-- Se resalta en rojo si el stock es bajo -->
+          <td [class.text-danger]="isLowStock(ing.stock, ing.minStock)">
+            <strong>{{ ing.stock }}</strong>
+          </td>
+
+          <td>
+            @if (isLowStock(ing.stock, ing.minStock)) {
+            <span class="badge badge-danger">
+                    <lucide-icon [img]="icons.AlertTriangle" class="badge-icon"></lucide-icon>
+                    Stock Bajo
+                  </span>
+            } @else {
+            <span class="badge badge-success">Suficiente</span>
+            }
+          </td>
+
+          <td class="actions-cell">
+            <button class="btn-icon-only" title="Editar insumo">
+              <lucide-icon [img]="icons.Edit2"></lucide-icon>
+            </button>
+          </td>
+        </tr>
+        }
+
+        @if (filteredIngredients().length === 0) {
+        <tr>
+          <td colspan="6" class="empty-state">No se encontraron insumos.</td>
+        </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

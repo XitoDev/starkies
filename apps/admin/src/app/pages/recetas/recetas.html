@@ -1,0 +1,61 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Recetas</h1>
+      <p class="page-subtitle">Gestiona tu catálogo de galletas y sus fórmulas.</p>
+    </div>
+    <button class="btn-primary">Nueva Receta</button>
+  </div>
+
+  <!-- Filtros por Categoría -->
+  <div class="filters-container">
+    @for (cat of categories(); track cat) {
+    <button
+      class="filter-btn"
+      [class.active]="selectedCategory() === cat"
+      (click)="setCategory(cat)"
+    >
+      {{ cat }}
+    </button>
+    }
+  </div>
+
+  <!-- Grid de Tarjetas -->
+  <div class="recipes-grid">
+    @for (recipe of filteredRecipes(); track recipe.id) {
+    <div class="recipe-card">
+      <div class="card-image-wrapper">
+        <!-- Manejo de fallback si la imagen no existe -->
+        <img
+          [src]="getImageUrl(recipe.image, recipe.id)"
+          [alt]="recipe.name"
+          class="recipe-img"
+          onerror="this.src='images/placeholder.jpg'"
+        />
+        <span class="category-badge">{{ recipe.category }}</span>
+      </div>
+
+      <div class="card-content">
+        <h3 class="recipe-name">{{ recipe.name }}</h3>
+
+        <div class="recipe-stats">
+          <div class="stat">
+            <lucide-icon [img]="icons.PieChart" class="stat-icon"></lucide-icon>
+            <span>Rinde: {{ recipe.yield }} uds</span>
+          </div>
+          <div class="stat price-stat">
+            <lucide-icon [img]="icons.DollarSign" class="stat-icon"></lucide-icon>
+            <span>{{ recipe.price | currency:'USD' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+
+    @if (filteredRecipes().length === 0) {
+    <div class="empty-state">
+      <p>No se encontraron recetas en esta categoría.</p>
+    </div>
+    }
+  </div>
+</div>

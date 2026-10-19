@@ -1,0 +1,97 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Finanzas</h1>
+      <p class="page-subtitle">Monitorea tus ingresos, gastos fijos y fondos de caja.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline">Registrar Gasto</button>
+      <button class="btn-primary">Registrar Compra</button>
+    </div>
+  </div>
+
+  <!-- Tarjetas de Resumen (Widgets) -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-icon-box bg-blue">
+        <lucide-icon [img]="icons.Wallet"></lucide-icon>
+      </div>
+      <div class="summary-info">
+        <p class="summary-label">Caja Disponible</p>
+        <h3 class="summary-value">$0.00</h3>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon-box bg-green">
+        <lucide-icon [img]="icons.DollarSign"></lucide-icon>
+      </div>
+      <div class="summary-info">
+        <p class="summary-label">Fondo de Insumos</p>
+        <h3 class="summary-value">$0.00</h3>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-icon-box bg-purple">
+        <lucide-icon [img]="icons.Package"></lucide-icon>
+      </div>
+      <div class="summary-info">
+        <p class="summary-label">Fondo de Empaques</p>
+        <h3 class="summary-value">$0.00</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestañas -->
+  <div class="tabs-container">
+    <button class="tab-btn" [class.active]="activeTab() === 'movimientos'" (click)="setTab('movimientos')">
+      Historial de Movimientos
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'compras'" (click)="setTab('compras')">
+      Compras de Insumos
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">
+      Gastos Fijos
+    </button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-card">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Tipo</th>
+          <th>Monto</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (mov of cashMovements(); track mov.id) {
+        <tr>
+          <td>{{ mov.date | date:'shortDate' }}</td>
+          <td class="font-medium">{{ mov.description }}</td>
+          <td>
+                <span class="badge" [ngClass]="mov.type === 'IN' ? 'badge-success' : 'badge-danger'">
+                  <lucide-icon [img]="mov.type === 'IN' ? icons.TrendingUp : icons.TrendingDown" class="badge-icon"></lucide-icon>
+                  {{ mov.type === 'IN' ? 'Ingreso' : 'Egreso' }}
+                </span>
+          </td>
+          <td class="font-bold" [ngClass]="mov.type === 'IN' ? 'text-green' : 'text-danger'">
+            {{ mov.type === 'IN' ? '+' : '-' }}{{ mov.amount | currency:'USD' }}
+          </td>
+        </tr>
+        }
+
+        @if (cashMovements().length === 0) {
+        <tr>
+          <td colspan="4" class="empty-state">No hay registros financieros en esta pestaña.</td>
+        </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

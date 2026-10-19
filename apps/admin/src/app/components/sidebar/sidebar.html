@@ -1,0 +1,28 @@
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-box">
+      <span class="logo-text">STØOKIES</span>
+      <span class="logo-subtext">Panel Admin</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    @for (item of navItems; track item.path) {
+    <a
+      [routerLink]="item.path"
+      routerLinkActive="active"
+      class="nav-item"
+    >
+      <lucide-icon [img]="item.icon" class="nav-icon"></lucide-icon>
+      <span class="nav-label">{{ item.label }}</span>
+    </a>
+    }
+  </nav>
+
+  <div class="sidebar-footer">
+    <button (click)="exportBackup()" class="btn-backup">
+      <lucide-icon [img]="icons.Download" class="btn-icon"></lucide-icon>
+      <span>Descargar Respaldo</span>
+    </button>
+  </div>
+</aside>

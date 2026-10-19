@@ -1,0 +1,73 @@
+/* Reutilizamos variables del layout base */
+.page-container { display: flex; flex-direction: column; gap: 2rem; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; }
+.page-title { font-size: 1.875rem; font-weight: 800; color: #111827; margin: 0 0 0.25rem 0; }
+.page-subtitle { color: #6b7280; margin: 0; font-size: 0.95rem; }
+.btn-primary { background-color: #2563eb; color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; }
+.btn-primary:hover { background-color: #1d4ed8; }
+
+/* Navegación por Pestañas (Tabs) */
+.tabs-container {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0px;
+  margin-bottom: -1rem; /* Acercar la tabla a los tabs */
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { color: #111827; }
+
+.tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.tab-icon { width: 1.1rem; height: 1.1rem; }
+
+/* Tabla y utilidades (Mismos de Ingredientes) */
+.table-card { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+.table-toolbar { padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; background-color: #f9fafb; }
+.search-box { position: relative; max-width: 300px; }
+.search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #9ca3af; width: 1.1rem; height: 1.1rem; }
+.search-box input { width: 100%; padding: 0.6rem 1rem 0.6rem 2.5rem; border: 1px solid #d1d5db; border-radius: 0.5rem; outline: none; font-size: 0.9rem; }
+.search-box input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+.table-responsive { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; text-align: left; }
+.data-table th { background-color: #ffffff; color: #6b7280; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; }
+.data-table td { padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; color: #374151; font-size: 0.9rem; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background-color: #f9fafb; }
+
+.font-medium { font-weight: 500; color: #111827; }
+.font-bold { font-weight: 700; color: #111827; }
+.text-gray { color: #6b7280; }
+
+/* Badges de Estado */
+.badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+.badge-success { background-color: #d1fae5; color: #065f46; }
+.badge-danger { background-color: #fee2e2; color: #991b1b; }
+.badge-warning { background-color: #fef3c7; color: #b45309; }
+.badge-icon { width: 0.85rem; height: 0.85rem; }
+
+/* Acciones */
+.actions-cell { text-align: right; width: 80px; }
+.btn-icon-only { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 0.4rem; border-radius: 0.375rem; transition: all 0.2s; }
+.btn-icon-only:hover { background-color: #f3f4f6; color: #111827; }
+.btn-icon-only lucide-icon { width: 1.1rem; height: 1.1rem; }
+.empty-state { text-align: center; padding: 3rem !important; color: #6b7280; font-style: italic; }

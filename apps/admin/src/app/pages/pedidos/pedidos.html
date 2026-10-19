@@ -1,0 +1,124 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Pedidos y Clientes</h1>
+      <p class="page-subtitle">Gestiona las órdenes de compra y la base de datos de tus clientes.</p>
+    </div>
+    <button class="btn-primary">Nuevo Pedido</button>
+  </div>
+
+  <!-- Pestañas (Tabs) -->
+  <div class="tabs-container">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'pedidos'"
+      (click)="setTab('pedidos')"
+    >
+      <lucide-icon [img]="icons.ShoppingBag" class="tab-icon"></lucide-icon>
+      Pedidos Recientes
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'clientes'"
+      (click)="setTab('clientes')"
+    >
+      <lucide-icon [img]="icons.Users" class="tab-icon"></lucide-icon>
+      Directorio de Clientes
+    </button>
+  </div>
+
+  <!-- Contenedor Principal (Tabla) -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <lucide-icon [img]="icons.Search" class="search-icon"></lucide-icon>
+        <input
+          type="text"
+          [placeholder]="activeTab() === 'pedidos' ? 'Buscar por ID o cliente...' : 'Buscar cliente...'"
+          (input)="onSearch($event)"
+          [value]="searchTerm()"
+        >
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <!-- VISTA: PEDIDOS -->
+      @if (activeTab() === 'pedidos') {
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>ID Pedido</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th class="actions-cell">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (order of filteredOrders(); track order.id) {
+        <tr>
+          <td class="font-medium text-gray">#{{ order.id }}</td>
+          <td class="font-medium">{{ getCustomerName(order.customerId) }}</td>
+          <td>{{ order.createdAt | date:'shortDate' }}</td>
+          <td class="font-bold">{{ order.total | currency:'USD' }}</td>
+          <td>
+            @if (order.status === 'PENDING') {
+            <span class="badge badge-warning"><lucide-icon [img]="icons.Clock" class="badge-icon"></lucide-icon> Pendiente</span>
+            } @else if (order.status === 'DELIVERED') {
+            <span class="badge badge-success"><lucide-icon [img]="icons.CheckCircle" class="badge-icon"></lucide-icon> Entregado</span>
+            } @else {
+            <span class="badge badge-danger"><lucide-icon [img]="icons.XCircle" class="badge-icon"></lucide-icon> Cancelado</span>
+            }
+          </td>
+          <td class="actions-cell">
+            <button class="btn-icon-only" title="Ver detalle">
+              <lucide-icon [img]="icons.Eye"></lucide-icon>
+            </button>
+          </td>
+        </tr>
+        }
+        @if (filteredOrders().length === 0) {
+        <tr>
+          <td colspan="6" class="empty-state">No hay pedidos para mostrar.</td>
+        </tr>
+        }
+        </tbody>
+      </table>
+      }
+
+      <!-- VISTA: CLIENTES -->
+      @if (activeTab() === 'clientes') {
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Nombre del Cliente</th>
+          <th>Teléfono</th>
+          <th>Dirección Principal</th>
+          <th class="actions-cell">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (customer of filteredCustomers(); track customer.id) {
+        <tr>
+          <td class="font-medium">{{ customer.name }}</td>
+          <td>{{ customer.phone || 'No registrado' }}</td>
+          <td class="text-gray">{{ customer.address || 'Sin dirección' }}</td>
+          <td class="actions-cell">
+            <button class="btn-icon-only" title="Ver perfil">
+              <lucide-icon [img]="icons.Eye"></lucide-icon>
+            </button>
+          </td>
+        </tr>
+        }
+        @if (filteredCustomers().length === 0) {
+        <tr>
+          <td colspan="4" class="empty-state">No hay clientes registrados.</td>
+        </tr>
+        }
+        </tbody>
+      </table>
+      }
+    </div>
+  </div>
+</div>

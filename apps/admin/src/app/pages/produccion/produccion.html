@@ -1,0 +1,65 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Producción</h1>
+      <p class="page-subtitle">Registra lotes horneados para descontar insumos y actualizar el stock de catálogo.</p>
+    </div>
+    <button class="btn-primary">
+      <lucide-icon [img]="icons.Plus" class="btn-icon"></lucide-icon>
+      Nuevo Lote
+    </button>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="search-box">
+        <lucide-icon [img]="icons.Calendar" class="search-icon"></lucide-icon>
+        <input
+          type="text"
+          placeholder="Buscar por fecha o receta..."
+          (input)="onSearch($event)"
+        >
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Receta</th>
+          <th>Cantidad (Lotes)</th>
+          <th>Rendimiento Total</th>
+          <th>Costo Calculado</th>
+          <th>Estado</th>
+        </tr>
+        </thead>
+        <tbody>
+        @for (prod of productionHistory(); track prod.id) {
+        <tr>
+          <td>{{ prod.date | date:'short' }}</td>
+          <td class="font-medium">{{ prod.recipeName }}</td>
+          <td>{{ prod.batches }}</td>
+          <td class="font-bold">{{ prod.totalYield }} uds</td>
+          <td class="text-gray">{{ prod.calculatedCost | currency:'USD' }}</td>
+          <td>
+                <span class="badge badge-success">
+                  <lucide-icon [img]="icons.CheckCircle" class="badge-icon"></lucide-icon>
+                  Completado
+                </span>
+          </td>
+        </tr>
+        }
+
+        @if (productionHistory().length === 0) {
+        <tr>
+          <td colspan="6" class="empty-state">
+            Aún no hay registros de producción. ¡Hornea tu primer lote!
+          </td>
+        </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
