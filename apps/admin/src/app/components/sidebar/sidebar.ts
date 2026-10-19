@@ -13,22 +13,14 @@ import { DataService } from '../../services/data.service';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideAngularModule],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideDynamicIcon],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })
 export class Sidebar {
   private dataService = inject(DataService);
 
-  readonly icons = {
-    LucideUtensils,
-    LucidePackage,
-    LucideFactory,
-    LucideStore,
-    LucideShoppingBag,
-    LucideDollarSign,
-    LucideDownload
-  };
+  readonly icons = { Utensils: LucideUtensils, Package: LucidePackage, Factory: LucideFactory, Store: LucideStore, ShoppingBag: LucideShoppingBag, DollarSign: LucideDollarSign, Download: LucideDownload };
 
   navItems = [
     { label: 'Recetas', path: '/recetas', icon: LucideUtensils },
