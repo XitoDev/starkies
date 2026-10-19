@@ -13,7 +13,7 @@
       routerLinkActive="active"
       class="nav-item"
     >
-      <lucide-icon [img]="item.icon" class="nav-icon"></lucide-icon>
+      <svg [lucideIcon]="item.icon" class="nav-icon"></svg>
       <span class="nav-label">{{ item.label }}</span>
     </a>
     }
@@ -21,7 +21,7 @@
 
   <div class="sidebar-footer">
     <button (click)="exportBackup()" class="btn-backup">
-      <lucide-icon [img]="icons.Download" class="btn-icon"></lucide-icon>
+      <svg [lucideIcon]="icons.Download" class="btn-icon"></svg>
       <span>Descargar Respaldo</span>
     </button>
   </div>
