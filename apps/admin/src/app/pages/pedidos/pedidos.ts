@@ -11,7 +11,7 @@ import { DataService } from '../../services/data.service';
 export class Pedidos {
   private dataService = inject(DataService);
 
-  readonly icons = { LucideShoppingBag, LucideUsers, LucideSearch, LucideEye, LucideCircleCheck, LucideCircleX, LucideClock };
+  readonly icons = { ShoppingBag: LucideShoppingBag, Users: LucideUsers, Search: LucideSearch, Eye: LucideEye, CheckCircle: LucideCircleCheck, XCircle: LucideCircleX, Clock: LucideClock };
 
   orders = this.dataService.orders;
   customers = this.dataService.customers;
