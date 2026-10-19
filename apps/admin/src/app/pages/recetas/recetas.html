@@ -27,10 +27,10 @@
       <div class="card-image-wrapper">
         <!-- Manejo de fallback si la imagen no existe -->
         <img
-          [src]="getImageUrl(recipe.image, recipe.id)"
+          [src]="getImageUrl(recipe.image)"
           [alt]="recipe.name"
           class="recipe-img"
-          onerror="this.src='images/placeholder.jpg'"
+          (error)="onImageError($event)"
         />
         <span class="category-badge">{{ recipe.category }}</span>
       </div>
