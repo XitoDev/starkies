@@ -1,6 +1,7 @@
+import { Component, inject, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideSearch, LucideTag, LucideChartPie, LucideDollarSign } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
-
 @Component({
   selector: 'app-recetas',
   standalone: true,
