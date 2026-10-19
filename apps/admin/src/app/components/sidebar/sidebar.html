@@ -1,28 +1,42 @@
 <aside class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo-box">
-      <span class="logo-text">STØOKIES</span>
-      <span class="logo-subtext">Panel Admin</span>
+  <div class="sidebar-brand">
+    <div class="brand-mark" aria-hidden="true">★</div>
+    <div class="brand-name"><span>Star</span><strong>Kies</strong><sup>®</sup></div>
+  </div>
+
+  <div class="business-card">
+    <div class="business-mark">S</div>
+    <div class="business-copy">
+      <strong>Mi emprendimiento</strong>
+      <span>Panel de administración</span>
     </div>
   </div>
 
-  <nav class="sidebar-nav">
+  <p class="nav-caption">Tu negocio</p>
+  <nav class="sidebar-nav" aria-label="Navegación principal">
     @for (item of navItems; track item.path) {
-    <a
-      [routerLink]="item.path"
-      routerLinkActive="active"
-      class="nav-item"
-    >
-      <svg [lucideIcon]="item.icon" class="nav-icon"></svg>
-      <span class="nav-label">{{ item.label }}</span>
-    </a>
+      <a [routerLink]="item.path" routerLinkActive="active" class="nav-item">
+        <svg [lucideIcon]="item.icon" class="nav-icon"></svg>
+        <span class="nav-label">{{ item.label }}</span>
+        @if (item.label === 'Pedidos') {
+          <span class="nav-badge">1</span>
+        }
+      </a>
     }
   </nav>
 
-  <div class="sidebar-footer">
+  <div class="sidebar-bottom">
     <button (click)="exportBackup()" class="btn-backup">
       <svg [lucideIcon]="icons.Download" class="btn-icon"></svg>
-      <span>Descargar Respaldo</span>
+      <span>Descargar respaldo</span>
     </button>
+    <div class="sidebar-profile">
+      <div class="profile-mark">S</div>
+      <div class="profile-copy">
+        <strong>StarKies</strong>
+        <span>Acceso privado</span>
+      </div>
+      <span class="online-indicator" aria-label="Sesión activa"></span>
+    </div>
   </div>
 </aside>
