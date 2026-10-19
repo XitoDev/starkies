@@ -27,23 +27,27 @@ import { Topbar } from './components/topbar/topbar';
     .app-layout {
       display: flex;
       min-height: 100vh;
-      background-color: #f9fafb;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--sk-page, #f9f7fa);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
+
     .main-wrapper {
       flex: 1;
-      margin-left: 250px;
+      min-width: 0;
+      margin-left: 270px;
       display: flex;
       flex-direction: column;
-      min-width: 0;
     }
+
     .content-area {
-      padding: 2rem;
       flex: 1;
+      min-width: 0;
+      padding: 42px;
     }
-    @media (max-width: 720px) {
-      .main-wrapper { margin-left: 0; }
-      .content-area { padding: 1rem; }
+
+    @media (max-width: 760px) {
+      .main-wrapper { margin-left: 72px; }
+      .content-area { padding: 26px 18px; }
     }
   `]
 })
