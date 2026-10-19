@@ -1,18 +1,8 @@
-/**
- * Firebase Web SDK configuration.
- *
- * Fill these values from Firebase Console → Project settings → General
- * → Your apps → SDK setup and configuration.
- *
- * These web-app values are not server credentials. Never put service-account
- * JSON, private keys, or Admin SDK credentials in this file.
- */
 export const firebaseWebConfig = {
-  apiKey: 'REPLACE_WITH_FIREBASE_WEB_API_KEY',
-  authDomain: 'REPLACE_WITH_FIREBASE_AUTH_DOMAIN',
+  apiKey: 'AIzaSyBpQg1f6sECu55oOtEalZap9daF3_8KjRQ',
+  authDomain: 'starkies.firebaseapp.com',
   projectId: 'starkies',
-  appId: 'REPLACE_WITH_FIREBASE_WEB_APP_ID',
-  // Optional; fill from the same Firebase web-app configuration if Storage is enabled.
-  storageBucket: '',
-  messagingSenderId: '',
+  appId: '1:551066791435:web:bc20b7e5cb602d0daaa10e',
+  storageBucket: 'starkies.firebasestorage.app',
+  messagingSenderId: '551066791435',
 };
