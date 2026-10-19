@@ -120,6 +120,10 @@ export class DataService {
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
         image: this.asOptionalString(item['image']),
+        archived: item['archived'] === true,
+        archivedAt: this.asOptionalString(item['archivedAt']),
+        baseId: this.asOptionalString(item['baseId']),
+        baseGramsPerCookie: this.asOptionalNumber(item['baseGramsPerCookie']),
         sections,
       };
     }));
@@ -181,6 +185,10 @@ export class DataService {
 
   private asString(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value : value == null ? fallback : String(value);
+  }
+
+  private asOptionalNumber(value: unknown): number | undefined {
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
   }
 
   private asOptionalString(value: unknown): string | undefined {
