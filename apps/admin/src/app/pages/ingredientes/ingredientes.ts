@@ -1,19 +1,17 @@
-import { Component, inject, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Search, AlertTriangle, Plus, Edit2 } from 'lucide-angular';
+import { LucideDynamicIcon, LucideSearch, LucideTriangleAlert, LucidePlus, LucideSquarePen } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './ingredientes.html',
   styleUrls: ['./ingredientes.css']
 })
 export class Ingredientes {
   private dataService = inject(DataService);
 
-  readonly icons = { Search, AlertTriangle, Plus, Edit2 };
+  readonly icons = { LucideSearch, LucideTriangleAlert, LucidePlus, LucideSquarePen };
 
   ingredients = this.dataService.ingredients;
   searchTerm = signal<string>('');
