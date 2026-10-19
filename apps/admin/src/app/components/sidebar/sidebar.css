@@ -1,106 +1,260 @@
+:host {
+  display: block;
+  flex: 0 0 270px;
+  width: 270px;
+}
+
 .sidebar {
-  width: 250px;
-  height: 100vh;
-  background-color: #111827;
-  color: #f3f4f6;
+  width: 270px;
+  height: 100dvh;
+  padding: 27px 23px 18px;
+  background: #fff;
+  color: #30263a;
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
-  border-right: 1px solid #1f2937;
+  border-right: 1px solid #eee8f2;
   z-index: 100;
 }
 
-.sidebar-header {
-  padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid #1f2937;
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 52px;
+  margin-bottom: 27px;
 }
 
-.logo-box {
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 41px;
+  height: 41px;
+  border-radius: 12px;
+  background: #eee4f7;
+  color: #8056ad;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.brand-name {
+  display: flex;
+  align-items: baseline;
+  font-size: 29px;
+  letter-spacing: -1.3px;
+  font-weight: 800;
+  line-height: 1;
+  color: #2b2433;
+}
+
+.brand-name strong {
+  color: #8056ad;
+  font-weight: 800;
+}
+
+.brand-name sup {
+  font-size: 10px;
+  margin-left: 2px;
+  top: -1em;
+  position: relative;
+  letter-spacing: 0;
+}
+
+.business-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 72px;
+  padding: 13px 11px;
+  border: 1px solid #eee7f2;
+  border-radius: 13px;
+  margin-bottom: 28px;
+}
+
+.business-mark,
+.profile-mark {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #f4eee3;
+  color: #997548;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.business-copy,
+.profile-copy {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  gap: 6px;
 }
 
-.logo-text {
-  font-size: 1.25rem;
+.business-copy strong,
+.profile-copy strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #33283c;
+}
+
+.business-copy span,
+.profile-copy span {
+  color: #93879d;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.nav-caption {
+  margin: 0 0 12px 14px;
+  color: #a69bad;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  color: #ffffff;
-}
-
-.logo-subtext {
-  font-size: 0.75rem;
-  color: #9ca3af;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0.75rem;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 5px;
   overflow-y: auto;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: #9ca3af;
+  gap: 13px;
+  min-height: 46px;
+  padding: 0 15px;
+  color: #8d8295;
   text-decoration: none;
-  border-radius: 0.5rem;
-  font-size: 0.925rem;
+  border-radius: 11px;
+  font-size: 13px;
   font-weight: 500;
-  transition: all 0.15s ease-in-out;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .nav-item:hover {
-  background-color: #1f2937;
-  color: #ffffff;
+  background: #faf7fc;
+  color: #7951a5;
 }
 
 .nav-item.active {
-  background-color: #2563eb;
-  color: #ffffff;
+  background: #f0e7f7;
+  color: #8054ac;
+  font-weight: 700;
 }
 
 .nav-icon {
-  width: 1.25rem;
-  height: 1.25rem;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
 }
 
-.sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid #1f2937;
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 19px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #e6d5f3;
+  color: #7951a5;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sidebar-bottom {
+  margin-top: 20px;
 }
 
 .btn-backup {
   width: 100%;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem;
-  background-color: #1f2937;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  gap: 10px;
+  padding: 0 10px;
+  background: transparent;
+  color: #8f8497;
+  border: 0;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
   cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+  text-align: left;
 }
 
 .btn-backup:hover {
-  background-color: #374151;
-  color: #ffffff;
+  background: #faf7fc;
+  color: #7951a5;
 }
 
 .btn-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 17px;
+  height: 17px;
+}
+
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-top: 18px;
+  margin-top: 10px;
+  border-top: 1px solid #eee8f2;
+}
+
+.profile-mark {
+  background: #eee4f7;
+  color: #8056ad;
+}
+
+.profile-copy {
+  flex: 1;
+}
+
+.online-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #80a77b;
+  margin-right: 1px;
+}
+
+@media (max-width: 760px) {
+  :host {
+    width: 72px;
+    flex-basis: 72px;
+  }
+
+  .sidebar {
+    width: 72px;
+    padding: 18px 8px;
+    align-items: center;
+  }
+
+  .sidebar-brand { margin-bottom: 25px; }
+  .brand-name,
+  .business-card,
+  .nav-caption,
+  .nav-label,
+  .nav-badge,
+  .business-copy,
+  .sidebar-profile,
+  .btn-backup span { display: none; }
+
+  .sidebar-nav { width: 100%; }
+  .nav-item { justify-content: center; padding: 0; }
+  .nav-icon { flex-basis: 22px; width: 22px; height: 22px; }
+  .sidebar-bottom { width: 100%; }
+  .btn-backup { justify-content: center; padding: 0; }
 }
