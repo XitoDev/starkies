@@ -1,5 +1,6 @@
+import { Component, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideFactory, LucidePlus, LucideCalendar, LucideCircleCheck } from '@lucide/angular';
-
 @Component({
   selector: 'app-produccion',
   standalone: true,
