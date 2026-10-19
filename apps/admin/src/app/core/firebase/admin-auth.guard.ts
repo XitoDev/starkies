@@ -7,7 +7,8 @@ import { FirebaseClientService } from './firebase-client.service';
 function waitForInitialUser(firebase: FirebaseClientService): Promise<import('firebase/auth').User | null> {
   return new Promise((resolve, reject) => {
     try {
-      const unsubscribe = onAuthStateChanged(
+      let unsubscribe: () => void = () => undefined;
+      unsubscribe = onAuthStateChanged(
         firebase.auth,
         (user) => {
           unsubscribe();
