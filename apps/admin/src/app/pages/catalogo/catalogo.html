@@ -5,7 +5,7 @@
       <p class="page-subtitle">Visualiza y configura cómo ven tus clientes los productos en tu tienda web.</p>
     </div>
     <button class="btn-outline">
-      <lucide-icon [img]="icons.Settings" class="btn-icon"></lucide-icon>
+      <svg [lucideIcon]="icons.Settings" class="btn-icon"></svg>
       Configuración
     </button>
   </div>
@@ -29,7 +29,7 @@
         <div class="recipe-stats">
           <span class="price-stat">{{ item.price | currency:'USD' }}</span>
           <button class="btn-icon-only" title="Ver como cliente">
-            <lucide-icon [img]="icons.Eye"></lucide-icon>
+            <svg [lucideIcon]="icons.Eye"></svg>
           </button>
         </div>
       </div>
