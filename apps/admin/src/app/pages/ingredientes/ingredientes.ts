@@ -1,6 +1,7 @@
+import { Component, inject, computed, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideSearch, LucideTriangleAlert, LucidePlus, LucideSquarePen } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
-
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
