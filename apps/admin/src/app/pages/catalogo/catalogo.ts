@@ -1,18 +1,16 @@
-import { Component, inject, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Store, Settings, Eye } from 'lucide-angular';
+import { LucideDynamicIcon, LucideStore, LucideSettings, LucideEye } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
 export class Catalogo {
   private dataService = inject(DataService);
-  readonly icons = { Store, Settings, Eye };
+  readonly icons = { LucideStore, LucideSettings, LucideEye };
 
   // Leemos las recetas directamente del servicio
   recipes = this.dataService.recipes;
