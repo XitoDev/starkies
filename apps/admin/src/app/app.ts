@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { Sidebar } from './components/sidebar/sidebar';
 import { Topbar } from './components/topbar/topbar';
 
@@ -8,15 +9,19 @@ import { Topbar } from './components/topbar/topbar';
   standalone: true,
   imports: [RouterOutlet, Sidebar, Topbar],
   template: `
-    <div class="app-layout">
-      <app-sidebar></app-sidebar>
-      <div class="main-wrapper">
-        <app-topbar></app-topbar>
-        <main class="content-area">
-          <router-outlet></router-outlet>
-        </main>
+    @if (isLoginRoute()) {
+      <router-outlet></router-outlet>
+    } @else {
+      <div class="app-layout">
+        <app-sidebar></app-sidebar>
+        <div class="main-wrapper">
+          <app-topbar></app-topbar>
+          <main class="content-area">
+            <router-outlet></router-outlet>
+          </main>
+        </div>
       </div>
-    </div>
+    }
   `,
   styles: [`
     .app-layout {
@@ -36,6 +41,19 @@ import { Topbar } from './components/topbar/topbar';
       padding: 2rem;
       flex: 1;
     }
+    @media (max-width: 720px) {
+      .main-wrapper { margin-left: 0; }
+      .content-area { padding: 1rem; }
+    }
   `]
 })
-export class App {}
+export class App {
+  readonly isLoginRoute = signal(false);
+
+  constructor(router: Router) {
+    this.isLoginRoute.set(router.url.startsWith('/login'));
+    router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => this.isLoginRoute.set(event.urlAfterRedirects.startsWith('/login')));
+  }
+}
