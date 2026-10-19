@@ -44,7 +44,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build admin
         run: npx ng build admin --configuration production
