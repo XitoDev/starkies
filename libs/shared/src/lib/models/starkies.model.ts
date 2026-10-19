@@ -22,6 +22,10 @@ export interface Recipe {
   yield: number; // Cantidad por tanda
   price: number;
   image?: string;
+  archived?: boolean;
+  archivedAt?: string;
+  baseId?: string;
+  baseGramsPerCookie?: number;
   sections: RecipeSection[];
 }
 
