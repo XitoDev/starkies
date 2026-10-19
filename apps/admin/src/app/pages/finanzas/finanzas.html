@@ -14,7 +14,7 @@
   <div class="summary-grid">
     <div class="summary-card">
       <div class="summary-icon-box bg-blue">
-        <lucide-icon [img]="icons.Wallet"></lucide-icon>
+        <svg [lucideIcon]="icons.Wallet"></svg>
       </div>
       <div class="summary-info">
         <p class="summary-label">Caja Disponible</p>
@@ -24,7 +24,7 @@
 
     <div class="summary-card">
       <div class="summary-icon-box bg-green">
-        <lucide-icon [img]="icons.DollarSign"></lucide-icon>
+        <svg [lucideIcon]="icons.DollarSign"></svg>
       </div>
       <div class="summary-info">
         <p class="summary-label">Fondo de Insumos</p>
@@ -34,7 +34,7 @@
 
     <div class="summary-card">
       <div class="summary-icon-box bg-purple">
-        <lucide-icon [img]="icons.Package"></lucide-icon>
+        <svg [lucideIcon]="icons.Package"></svg>
       </div>
       <div class="summary-info">
         <p class="summary-label">Fondo de Empaques</p>
@@ -75,7 +75,7 @@
           <td class="font-medium">{{ mov.description }}</td>
           <td>
                 <span class="badge" [ngClass]="mov.type === 'IN' ? 'badge-success' : 'badge-danger'">
-                  <lucide-icon [img]="mov.type === 'IN' ? icons.TrendingUp : icons.TrendingDown" class="badge-icon"></lucide-icon>
+                  <svg [lucideIcon]="mov.type === 'IN' ? icons.TrendingUp : icons.TrendingDown" class="badge-icon"></svg>
                   {{ mov.type === 'IN' ? 'Ingreso' : 'Egreso' }}
                 </span>
           </td>
