@@ -14,7 +14,7 @@
       [class.active]="activeTab() === 'pedidos'"
       (click)="setTab('pedidos')"
     >
-      <lucide-icon [img]="icons.ShoppingBag" class="tab-icon"></lucide-icon>
+      <svg [lucideIcon]="icons.ShoppingBag" class="tab-icon"></svg>
       Pedidos Recientes
     </button>
     <button
@@ -22,7 +22,7 @@
       [class.active]="activeTab() === 'clientes'"
       (click)="setTab('clientes')"
     >
-      <lucide-icon [img]="icons.Users" class="tab-icon"></lucide-icon>
+      <svg [lucideIcon]="icons.Users" class="tab-icon"></svg>
       Directorio de Clientes
     </button>
   </div>
@@ -31,7 +31,7 @@
   <div class="table-card">
     <div class="table-toolbar">
       <div class="search-box">
-        <lucide-icon [img]="icons.Search" class="search-icon"></lucide-icon>
+        <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
         <input
           type="text"
           [placeholder]="activeTab() === 'pedidos' ? 'Buscar por ID o cliente...' : 'Buscar cliente...'"
@@ -64,16 +64,16 @@
           <td class="font-bold">{{ order.total | currency:'USD' }}</td>
           <td>
             @if (order.status === 'PENDING') {
-            <span class="badge badge-warning"><lucide-icon [img]="icons.Clock" class="badge-icon"></lucide-icon> Pendiente</span>
+            <span class="badge badge-warning"><svg [lucideIcon]="icons.Clock" class="badge-icon"></svg> Pendiente</span>
             } @else if (order.status === 'DELIVERED') {
-            <span class="badge badge-success"><lucide-icon [img]="icons.CheckCircle" class="badge-icon"></lucide-icon> Entregado</span>
+            <span class="badge badge-success"><svg [lucideIcon]="icons.CheckCircle" class="badge-icon"></svg> Entregado</span>
             } @else {
-            <span class="badge badge-danger"><lucide-icon [img]="icons.XCircle" class="badge-icon"></lucide-icon> Cancelado</span>
+            <span class="badge badge-danger"><svg [lucideIcon]="icons.XCircle" class="badge-icon"></svg> Cancelado</span>
             }
           </td>
           <td class="actions-cell">
             <button class="btn-icon-only" title="Ver detalle">
-              <lucide-icon [img]="icons.Eye"></lucide-icon>
+              <svg [lucideIcon]="icons.Eye"></svg>
             </button>
           </td>
         </tr>
@@ -106,7 +106,7 @@
           <td class="text-gray">{{ customer.address || 'Sin dirección' }}</td>
           <td class="actions-cell">
             <button class="btn-icon-only" title="Ver perfil">
-              <lucide-icon [img]="icons.Eye"></lucide-icon>
+              <svg [lucideIcon]="icons.Eye"></svg>
             </button>
           </td>
         </tr>
