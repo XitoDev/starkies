@@ -1,6 +1,7 @@
+import { Component, inject, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideSearch, LucideShoppingBag, LucideUsers, LucideEye, LucideCircleCheck, LucideCircleX, LucideClock } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
-
 @Component({
   selector: 'app-pedidos',
   standalone: true,
