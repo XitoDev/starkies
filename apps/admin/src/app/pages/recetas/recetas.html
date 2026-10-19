@@ -40,11 +40,11 @@
 
         <div class="recipe-stats">
           <div class="stat">
-            <lucide-icon [img]="icons.PieChart" class="stat-icon"></lucide-icon>
+            <svg [lucideIcon]="icons.PieChart" class="stat-icon"></svg>
             <span>Rinde: {{ recipe.yield }} uds</span>
           </div>
           <div class="stat price-stat">
-            <lucide-icon [img]="icons.DollarSign" class="stat-icon"></lucide-icon>
+            <svg [lucideIcon]="icons.DollarSign" class="stat-icon"></svg>
             <span>{{ recipe.price | currency:'USD' }}</span>
           </div>
         </div>
