@@ -140,9 +140,9 @@ export class DataService {
       }
 
       const rawLines = this.asArray(item['lines']);
-      const lines = rawLines.length
+      const lines: RawRecord[] = rawLines.length
         ? rawLines
-        : this.asArray(item['boxOrders']).flatMap((box) => this.asArray(box['lines']).map((line) => ({
+        : this.asArray(item['boxOrders']).flatMap((box): RawRecord[] => this.asArray(box['lines']).map((line): RawRecord => ({
             id: line['id'],
             qty: line['qty'],
             price: line['price'] ?? 0,
