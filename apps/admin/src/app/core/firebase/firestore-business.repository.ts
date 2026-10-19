@@ -1,0 +1,227 @@
+import { Injectable } from '@angular/core';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  runTransaction,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import { FirebaseClientService } from './firebase-client.service';
+import { FirestoreBackupArchiveService } from './firestore-backup-archive.service';
+
+export interface StarKiesBackupFile {
+  business?: string;
+  exportedAt?: string;
+  state: Record<string, unknown>;
+}
+
+interface StateMetadata {
+  status?: 'in-progress' | 'complete';
+  stateKeys?: string[];
+  arrayKeys?: string[];
+  settingKeys?: string[];
+  sourceBackupId?: string;
+  sourceExportedAt?: string;
+  [key: string]: unknown;
+}
+
+@Injectable({ providedIn: 'root' })
+export class FirestoreBusinessRepository {
+  private readonly stateMetaRef = () =>
+    doc(this.firebase.firestore, 'businesses', 'starkies', 'system', 'stateMeta');
+
+  constructor(
+    private readonly firebase: FirebaseClientService,
+    private readonly archiveService: FirestoreBackupArchiveService,
+  ) {}
+
+  async hasCompletedMigration(): Promise<boolean> {
+    if (!this.firebase.isConfigured) return false;
+    const snapshot = await getDoc(this.stateMetaRef());
+    return snapshot.exists() && snapshot.data()['status'] === 'complete';
+  }
+
+  async loadState(): Promise<Record<string, unknown> | null> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    const metadataSnapshot = await getDoc(this.stateMetaRef());
+    if (!metadataSnapshot.exists()) return null;
+
+    const metadata = metadataSnapshot.data() as StateMetadata;
+    if (metadata.status !== 'complete') return null;
+
+    const arrayKeys = metadata.arrayKeys ?? [];
+    const settingKeys = metadata.settingKeys ?? [];
+    const state: Record<string, unknown> = {};
+
+    await Promise.all(arrayKeys.map(async (key) => {
+      const recordsRef = collection(
+        this.firebase.firestore,
+        'businesses', 'starkies', 'collections', key, 'records',
+      );
+      const recordsSnapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
+      state[key] = recordsSnapshot.docs.map((record) => record.data()['value']);
+    }));
+
+    await Promise.all(settingKeys.map(async (key) => {
+      const settingSnapshot = await getDoc(
+        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
+      );
+      if (settingSnapshot.exists()) state[key] = settingSnapshot.data()['value'];
+    }));
+
+    return state;
+  }
+
+  async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+    if (!this.isRecord(backup) || !this.isRecord(backup.state)) {
+      throw new Error('El archivo no tiene el formato de respaldo StarKies esperado. No se ha importado nada.');
+    }
+
+    const stateEntries = Object.entries(backup.state);
+    if (stateEntries.length === 0) {
+      throw new Error('El respaldo no contiene datos de negocio. No se ha importado nada.');
+    }
+
+    const stateKeys = stateEntries.map(([key]) => key);
+    const arrayKeys = stateEntries.filter(([, value]) => Array.isArray(value)).map(([key]) => key);
+    const settingKeys = stateEntries.filter(([, value]) => !Array.isArray(value)).map(([key]) => key);
+    const sourceExportedAt = backup.exportedAt ?? 'unknown-date';
+    const archiveId = `original-${sourceExportedAt.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    const metaRef = this.stateMetaRef();
+
+    const before = await getDoc(metaRef);
+    let isResume = false;
+
+    if (before.exists()) {
+      const metadata = before.data() as StateMetadata;
+      if (metadata.status === 'complete') {
+        throw new Error('StarKies ya tiene una migración completa en Firebase. Se rechazó la importación para proteger los datos existentes.');
+      }
+      if (metadata.status !== 'in-progress' || metadata.sourceExportedAt !== sourceExportedAt) {
+        throw new Error('Existe una migración incompleta de otro respaldo. No se sobrescribió ningún dato; revisa el estado de migración antes de continuar.');
+      }
+      isResume = true;
+    } else {
+      await this.assertDestinationIsEmpty(arrayKeys, settingKeys);
+    }
+
+    await runTransaction(this.firebase.firestore, async (transaction) => {
+      const current = await transaction.get(metaRef);
+      if (current.exists()) {
+        const metadata = current.data() as StateMetadata;
+        if (metadata.status === 'complete') {
+          throw new Error('StarKies ya tiene una migración completa en Firebase. Se rechazó la importación.');
+        }
+        if (metadata.status !== 'in-progress' || metadata.sourceExportedAt !== sourceExportedAt) {
+          throw new Error('Cambió el estado de migración mientras se preparaba la importación. No se escribieron nuevos registros.');
+        }
+      } else {
+        transaction.set(metaRef, {
+          status: 'in-progress',
+          schemaVersion: 1,
+          stateKeys,
+          arrayKeys,
+          settingKeys,
+          sourceBackupId: archiveId,
+          sourceExportedAt,
+          startedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    const archiveRef = doc(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'migrationArchives', archiveId,
+    );
+    const archiveSnapshot = await getDoc(archiveRef);
+    if (!archiveSnapshot.exists()) {
+      await this.archiveService.archiveOriginalBackup(backup, archiveId);
+    } else if (!isResume) {
+      throw new Error('Ya existe un archivo con ese identificador y no hay una migración en curso. No se sobrescribió.');
+    }
+
+    let batch = writeBatch(this.firebase.firestore);
+    let operations = 0;
+    const flushIfFull = async () => {
+      if (operations >= 400) {
+        await batch.commit();
+        batch = writeBatch(this.firebase.firestore);
+        operations = 0;
+      }
+    };
+
+    for (const [key, value] of stateEntries) {
+      if (Array.isArray(value)) {
+        value.forEach((record, index) => {
+          const recordId = String(index).padStart(6, '0');
+          const recordRef = doc(
+            this.firebase.firestore,
+            'businesses', 'starkies', 'collections', key, 'records', recordId,
+          );
+          batch.set(recordRef, { index, value: record });
+          operations += 1;
+        });
+        await flushIfFull();
+      } else {
+        const settingRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key);
+        batch.set(settingRef, { value });
+        operations += 1;
+        await flushIfFull();
+      }
+    }
+
+    if (operations > 0) await batch.commit();
+
+    await setDoc(metaRef, {
+      status: 'complete',
+      schemaVersion: 1,
+      stateKeys,
+      arrayKeys,
+      settingKeys,
+      sourceBackupId: archiveId,
+      sourceExportedAt,
+      importedAt: new Date().toISOString(),
+      recordCounts: Object.fromEntries(
+        stateEntries
+          .filter(([, value]) => Array.isArray(value))
+          .map(([key, value]) => [key, (value as unknown[]).length]),
+      ),
+    }, { merge: true });
+  }
+
+  private async assertDestinationIsEmpty(arrayKeys: string[], settingKeys: string[]): Promise<void> {
+    const existingArrays = await Promise.all(arrayKeys.map(async (key) => {
+      const snapshot = await getDocs(collection(
+        this.firebase.firestore,
+        'businesses', 'starkies', 'collections', key, 'records',
+      ));
+      return snapshot.empty ? null : key;
+    }));
+
+    const existingSettings = await Promise.all(settingKeys.map(async (key) => {
+      const snapshot = await getDoc(
+        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
+      );
+      return snapshot.exists() ? key : null;
+    }));
+
+    const conflicts = [...existingArrays, ...existingSettings].filter((key): key is string => Boolean(key));
+    if (conflicts.length) {
+      throw new Error(`Ya hay datos en Firebase (${conflicts.slice(0, 5).join(', ')}). Se canceló la importación para no sobrescribirlos.`);
+    }
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+}
