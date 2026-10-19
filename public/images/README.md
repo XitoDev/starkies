@@ -15,9 +15,19 @@ Esta galería permite identificar cada archivo antes de asociarlo con una receta
 | `recipe-image%20(5).png` | ![recipe-image (5).png](https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/recipe-image%20%285%29.png) |
 | `recipe-image%20(6).png` | ![recipe-image (6).png](https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/recipe-image%20%286%29.png) |
 
-## Asociaciones confirmadas hasta ahora
+## Mapeo que usa el administrador
 
-- Brownie Classic → `recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg`
-- Avena Classic → `recipe-image.jpg`
+El administrador conserva los IDs de imagen originales y resuelve los archivos mediante un mapa en `apps/admin/src/app/pages/recetas/recetas.ts`. Las dos primeras asociaciones se verificaron visualmente; las otras se asignaron según la secuencia de las descargas y deben revisarse en la Preview:
 
-Las demás asociaciones deben verificarse visualmente antes de cambiar los datos de recetas, para no mostrar una fotografía equivocada.
+- Brownie Classic → `recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg` (verificada)
+- Avena Classic → `recipe-image.jpg` (verificada)
+- Sunny Carrot → `recipe-image.png`
+- Chips Stars → `recipe-image (1).png`
+- Velvet Kiss → `recipe-image (2).png`
+- Cinna Moon → `recipe-image (3).png`
+- Nuti Dream → `recipe-image (4).png`
+- Lemon Glow → `recipe-image (5).png`
+- Brownie Bliss → `recipe-image (6).png`
+- Canela Classic → `recipe-image (1).jpg`
+
+Los archivos se sirven desde `https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/`. Si alguna foto aparece asociada a la receta equivocada, basta con corregir el mapa; no hace falta modificar los documentos de Firestore ni renombrar los archivos.
