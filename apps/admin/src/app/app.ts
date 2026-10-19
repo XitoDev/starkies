@@ -50,7 +50,11 @@ import { Topbar } from './components/topbar/topbar';
 export class App {
   readonly isBareRoute = signal(false);
 
-  private isBarePath(url: string): boolean {\n    return url.startsWith('/login') || url.startsWith('/migracion');\n  }\n\n  constructor(router: Router) {
+  private isBarePath(url: string): boolean {
+    return url.startsWith('/login') || url.startsWith('/migracion');
+  }
+
+  constructor(router: Router) {
     this.isBareRoute.set(this.isBarePath(router.url));
     router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
