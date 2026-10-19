@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: admin-ci-${{ github.ref }}
@@ -43,8 +43,24 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: Regenerate npm lockfile with strict peer dependency resolution
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Install dependencies from lockfile
         run: npm ci
 
       - name: Build admin
         run: npx ng build admin --configuration production
+
+      - name: Commit refreshed lockfile on feature branches
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): refresh npm lockfile"
+            git push
+          else
+            echo "package-lock.json is already current."
+          fi
