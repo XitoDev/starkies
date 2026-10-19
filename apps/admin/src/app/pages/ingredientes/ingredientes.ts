@@ -11,7 +11,7 @@ import { DataService } from '../../services/data.service';
 export class Ingredientes {
   private dataService = inject(DataService);
 
-  readonly icons = { LucideSearch, LucideTriangleAlert, LucidePlus, LucideSquarePen };
+  readonly icons = { Search: LucideSearch, AlertTriangle: LucideTriangleAlert, Plus: LucidePlus, Edit2: LucideSquarePen };
 
   ingredients = this.dataService.ingredients;
   searchTerm = signal<string>('');
