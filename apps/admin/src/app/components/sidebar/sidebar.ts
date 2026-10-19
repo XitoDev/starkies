@@ -1,3 +1,6 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideDynamicIcon,
   LucideUtensils,
@@ -9,7 +12,6 @@ import {
   LucideDownload,
 } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
-
 @Component({
   selector: 'app-sidebar',
   standalone: true,
