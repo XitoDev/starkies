@@ -10,7 +10,7 @@
   @if(notice()){<p class="notice" role="status">{{notice()}}</p>} @if(error()){<p class="error" role="alert">{{error()}}</p>}
   <section class="category-section"><h2>Productos por categoría</h2><div class="category-tabs">
     <button type="button" [class.active]="categoryFilter()==='Todos'" (click)="categoryFilter.set('Todos')">Todos</button>
-    <button type="button" (click)="showHidden.set(!showHidden())"><svg [lucideIcon]="showHidden()?icons.Eye:icons.EyeOff"></svg>{{showHidden()?'Mostrar solo visibles':'Ocultar ocultos'}} <span>{{showHidden()?'Activado':'Desactivado'}}</span></button>
+    <button type="button" (click)="showHidden.set(!showHidden())"><svg [lucideIcon]="showHidden()?icons.Eye:icons.EyeOff"></svg>{{showHidden()?'Ocultar ocultos':'Mostrar ocultos'}} <span>{{showHidden()?'Activado':'Desactivado'}}</span></button>
     @for(category of categories();track category){<button type="button" [class.active]="categoryFilter()===category" (click)="categoryFilter.set(category)">{{category}} <span>{{categoryCount(category)}}</span></button>}
   </div></section>
   @for(category of categories();track category){
@@ -33,7 +33,7 @@
 </div>
 @if(settingsOpen()){
   <div class="backdrop" (click)="settingsOpen.set(false)"><section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-settings-title" (click)="$event.stopPropagation()">
-    <header><h2 id="delivery-settings-title">♧ Opciones y tarifas de entrega</h2><button type="button" class="close" aria-label="Cerrar" (click)="settingsOpen.set(false)">×</button></header>
+    <header><h2 id="delivery-settings-title">🚚 Opciones y tarifas de entrega</h2><button type="button" class="close" aria-label="Cerrar" (click)="settingsOpen.set(false)">×</button></header>
     <div class="settings-toolbar"><p>Organiza las zonas y define cuánto cuesta entregar cada pedido.</p><button class="btn-outline" type="button" (click)="addZone()">＋ Añadir</button></div>
     <div class="zone-header"><span>Zona o punto</span><span>Tarifa (USD)</span><span>Acciones</span></div>
     @for(zone of zones();track zone.id;let i=$index){<div class="zone-row"><span class="order-actions"><button type="button" [disabled]="i===0" (click)="moveZone(i,-1)" aria-label="Subir zona">⠿</button><button type="button" [disabled]="i===zones().length-1" (click)="moveZone(i,1)" aria-label="Bajar zona">↓</button></span><input aria-label="Nombre de zona" [(ngModel)]="zone.name" maxlength="100"><input aria-label="Tarifa de entrega" type="number" min="0" step="0.01" [(ngModel)]="zone.fee"><button class="remove" type="button" (click)="removeZone(i)" aria-label="Eliminar zona">⌫</button></div>}
