@@ -84,6 +84,7 @@ jobs:
         run: |
           rm -rf /tmp/starkies-catalog-esm
           npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts api/orders.ts
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
           node --input-type=module -e "await import('/tmp/starkies-catalog-esm/api/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
 
       - name: Pull Vercel settings
