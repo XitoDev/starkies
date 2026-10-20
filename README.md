@@ -4,13 +4,23 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Development server
 
-To start a local development server, run:
+The public catalog uses Vercel serverless functions for order creation, customer lookup, and order PDFs. Angular's development server alone does not serve the `/api/*` endpoints, so start both services together:
 
-```bash
-ng serve
-```
+1. Link this repository to the correct Vercel project if it is not linked already.
+2. Pull the Development environment variables locally (the service account configuration is required to persist orders):
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+   ```bash
+   npx vercel env pull .env.local --environment=development
+   ```
+
+   Keep `.env.local` private; never commit it or share its contents.
+3. Start the local catalog and API together:
+
+   ```bash
+   npm start
+   ```
+
+Open `http://localhost:4200/`. The catalog runs through Angular, while `/api/*` requests are proxied to Vercel Dev on port 3000. If the required Firebase environment variables are missing, order creation will return a configuration error rather than saving an order.
 
 ## Code scaffolding
 
