@@ -1,4 +1,4 @@
-import { BoxPresentation, DeliveryZone } from './catalog.models';
+import type { BoxPresentation, DeliveryZone } from './catalog.models.js';
 
 export const BOX_PRESENTATIONS: BoxPresentation[] = [
   { id: 'clasicas', name: 'Caja solo clásicas', desc: '10 clásicas', price: 6, reqClasicas: 10, reqNY: 0 },
