@@ -101,16 +101,16 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const order = asRecord(orderDocument.data()['value']);
     if (stringValue(order['status']).toUpperCase() !== 'DELIVERED') continue;
     const lines = Array.isArray(order['lines']) ? order['lines'] : [];
-    if (lines.length) {
-      for (const rawLine of lines) {
-        const line = asRecord(rawLine);
-        const id = stringValue(line['id'] ?? line['productId']);
-        const quantity = numberValue(line['qty'] ?? line['quantity'], 0);
-        if (id && id !== 'shipping' && quantity > 0) salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
-      }
+    const validLines = lines.map(raw => asRecord(raw)).map(line => ({
+      id: stringValue(line['id'] ?? line['productId']),
+      quantity: numberValue(line['qty'] ?? line['quantity'], 0),
+    })).filter(line => line.id && line.id !== 'shipping' && line.quantity > 0);
+    if (validLines.length) {
+      for (const line of validLines) salesCounts.set(line.id, (salesCounts.get(line.id) ?? 0) + line.quantity);
       continue;
     }
     const boxes = Array.isArray(order['boxes']) ? order['boxes'] : [];
+    let countedBoxItems = false;
     for (const rawBox of boxes) {
       const box = asRecord(rawBox);
       const items = Array.isArray(box['items']) ? box['items'] : [];
@@ -118,7 +118,20 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
         const item = asRecord(rawItem);
         const id = stringValue(item['id'] ?? item['productId']);
         const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
-        if (id && id !== 'shipping' && quantity > 0) salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
+        if (id && id !== 'shipping' && quantity > 0) {
+          salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
+          countedBoxItems = true;
+        }
+      }
+    }
+    if (countedBoxItems) continue;
+    const legacyItems = Array.isArray(order['items']) ? order['items'] : [];
+    for (const rawItem of legacyItems) {
+      const item = asRecord(rawItem);
+      const id = stringValue(item['recipeId'] ?? item['id'] ?? item['productId']);
+      const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
+      if (id && id !== 'shipping' && quantity > 0) {
+        salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
       }
     }
   }
