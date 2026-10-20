@@ -129,12 +129,12 @@ export async function syncPublicCatalogProjection(db: Firestore, catalog: Public
   const batch = db.batch();
 
   for (const document of current.docs) {
-    if (document.id !== '__settings__' && !wantedIds.has(document.id)) batch.delete(document.ref);
+    if (document.id !== 'catalog-settings' && !wantedIds.has(document.id)) batch.delete(document.ref);
   }
   catalog.products.forEach((product, index) => {
     batch.set(collectionRef.doc(product.id), { index, value: product });
   });
-  batch.set(collectionRef.doc('__settings__'), {
+  batch.set(collectionRef.doc('catalog-settings'), {
     index: catalog.products.length,
     value: { zones: catalog.zones, presentations: catalog.presentations },
   });
