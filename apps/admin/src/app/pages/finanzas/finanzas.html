@@ -1,78 +1,88 @@
-<div class="page-container">
+<div class="page-container finance-dashboard">
   <div class="page-heading">
     <div>
-      <p class="eyebrow">Mi negocio / Control financiero</p>
+      <p class="eyebrow">Mi negocio / Finanzas</p>
       <h1 class="page-title">Finanzas</h1>
-      <p class="page-subtitle">Registra compras y gastos, consulta los movimientos y controla el valor del inventario.</p>
-    </div>
-    <div class="header-actions">
-      <button class="btn-outline" type="button" (click)="openExpenseForm()">
-        <svg [lucideIcon]="icons.Receipt" class="btn-icon"></svg>
-        Registrar gasto
-      </button>
-      <button class="btn-primary" type="button" (click)="openPurchaseForm()">
-        <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
-        Registrar compra
-      </button>
+      <p class="page-subtitle">Tu capital, ventas y ganancias en un mismo lugar.</p>
     </div>
   </div>
 
-  @if (notice()) {
-    <div class="notice" role="status">{{ notice() }}</div>
-  }
+  @if (ledgerNotice()) { <div class="notice" role="status">{{ ledgerNotice() }}</div> }
+  @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
 
-  <section class="summary-grid" aria-label="Resumen financiero">
-    <article class="summary-card"><div class="summary-icon"><svg [lucideIcon]="icons.Wallet"></svg></div><div><p class="summary-label">Caja estimada</p><p class="summary-value">{{ availableCash() | currency:'USD' }}</p><p class="summary-note">Ingresos menos egresos registrados</p></div></article>
-    <article class="summary-card"><div class="summary-icon summary-icon-positive"><svg [lucideIcon]="icons.TrendingUp"></svg></div><div><p class="summary-label">Ingresos registrados</p><p class="summary-value">{{ incomeTotal() | currency:'USD' }}</p><p class="summary-note">Según los movimientos guardados</p></div></article>
-    <article class="summary-card"><div class="summary-icon summary-icon-warning"><svg [lucideIcon]="icons.Package"></svg></div><div><p class="summary-label">Valor estimado del inventario</p><p class="summary-value">{{ inventoryValue() | currency:'USD' }}</p><p class="summary-note">Stock de insumos por costo unitario</p></div></article>
+  <div class="finance-tabs">
+    <button class="finance-tab" [class.active]="financeTab() === 'resumen'" type="button" [attr.aria-pressed]="financeTab() === 'resumen'" (click)="financeTab.set('resumen')">Resumen financiero</button>
+    <button class="finance-tab" [class.active]="financeTab() === 'productos'" type="button" [attr.aria-pressed]="financeTab() === 'productos'" (click)="financeTab.set('productos')">Productos y Precios</button>
+    <button class="pending-button" type="button" (click)="pendingPanelOpen.set(true)">
+      TRANSACCIONES POR REALIZAR <span>{{ pendingCount() }}</span>
+    </button>
+  </div>
+
+  @if (financeTab() === 'resumen') {
+  <section class="bank-section" aria-labelledby="bank-title">
+    <h2 id="bank-title" class="section-title"><svg [lucideIcon]="icons.Wallet"></svg> Cuentas bancarias</h2>
+    <div class="bank-grid">
+      @for (account of bankCards(); track account.key) {
+        <article class="bank-card" [class]="'bank-card bank-' + account.tone">
+          <p class="card-label">{{ account.title }}</p>
+          <p class="bank-amount">{{ account.balance | currency:'USD' }}</p>
+          <p class="card-note">{{ account.note }}</p>
+          <button class="card-transfer" type="button" (click)="openLedgerAction('transfer', account.key)">Transferir dinero</button>
+        </article>
+      }
+      <article class="bank-card bank-total">
+        <p class="card-label">Total de capital</p>
+        <p class="bank-amount">{{ totalCapital() | currency:'USD' }}</p>
+        <p class="card-note">Suma de los tres saldos bancarios confirmados</p>
+      </article>
+    </div>
   </section>
 
-  <div class="tabs-container" role="tablist" aria-label="Tipo de movimiento">
-    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'movimientos'" [class.active]="activeTab() === 'movimientos'" (click)="setTab('movimientos')">Historial de movimientos</button>
-    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'compras'" [class.active]="activeTab() === 'compras'" (click)="setTab('compras')">Compras de insumos</button>
-    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'gastos'" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">Gastos</button>
-  </div>
-
-  <section class="table-card">
-    <div class="table-toolbar">
-      <div>
-        <strong class="table-title">{{ activeTab() === 'movimientos' ? 'Todos los movimientos' : activeTab() === 'compras' ? 'Compras registradas' : 'Gastos registrados' }}</strong>
-        <p class="table-subtitle">{{ visibleMovements().length }} movimientos</p>
+  <section class="fund-section" aria-labelledby="funds-title">
+    <h2 id="funds-title" class="section-title">Fondos informativos</h2>
+    <div class="fund-grid">
+      @for (fund of fundCards(); track fund.key) {
+        <article class="fund-card" [class]="'fund-card fund-' + fund.key">
+          <p class="card-label">{{ fund.title }}</p>
+          <p class="fund-amount">{{ fund.balance | currency:'USD' }}</p>
+          <div class="fund-variation">
+            <span>Saldo anterior</span><strong>{{ fund.previous | currency:'USD' }}</strong>
+            <span>Variación neta</span><strong>{{ fund.variation | currency:'USD' }}</strong>
+          </div>
+          <p class="fund-note">{{ fund.note }}</p>
+          <div class="fund-actions">
+            @if (fund.key === 'ingredients') {
+              <button type="button" (click)="openPurchaseForm()">Comprar ingredientes</button>
+            } @else if (fund.key === 'expenses') {
+              <button type="button" (click)="openExpenseForm()">Registrar pago</button>
+            } @else if (fund.key === 'boxes') {
+              <button type="button" (click)="openLedgerAction('boxesPurchase')">Comprar cajas</button>
+              <button type="button" (click)="openLedgerAction('boxesPayment')">Registrar pago de cajas</button>
+            }
+            @if (fund.key === 'ingredients' || fund.key === 'expenses' || fund.key === 'boxes' || fund.key === 'profit' || fund.key === 'extraProfit') {
+              <button class="text-action" type="button" (click)="openLedgerAction('transfer', transferSourceForFund(fund.key))">Transferir dinero</button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+  } @else {
+    <section class="price-section" aria-labelledby="prices-title">
+      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>Compara el costo unitario de elaboración con el precio actual y el precio sugerido (costo × 3).</p></div></div>
+      <div class="price-table-wrap">
+        <table class="price-table">
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Costo unitario</th><th>Precio actual</th><th>Precio sugerido</th><th>Diferencia</th></tr></thead>
+          <tbody>
+            @for (product of priceRows(); track product.id) {
+              <tr><td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.unitCost | currency:'USD' }}</td><td>{{ product.currentPrice | currency:'USD' }}</td><td>{{ product.suggestedPrice | currency:'USD' }}</td><td [class.amount-out]="product.extraProfit < 0">{{ product.extraProfit | currency:'USD' }}</td></tr>
+            }
+            @if (priceRows().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>No hay productos para calcular</strong><p>Registra recetas e ingredientes con sus costos para ver los precios sugeridos.</p></div></td></tr> }
+          </tbody>
+        </table>
       </div>
-      <span class="summary-expense">Egresos: {{ expenseTotal() | currency:'USD' }}</span>
-    </div>
-
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Tipo</th><th class="amount-cell">Monto</th></tr></thead>
-        <tbody>
-          @for (movement of visibleMovements(); track movement.id) {
-            <tr>
-              <td>{{ movement.date ? (movement.date | date:'mediumDate') : '—' }}</td>
-              <td>
-                <strong class="primary-cell">{{ movement.description }}</strong>
-                @if (movement.quantity !== undefined && movement.unitCost !== undefined) {
-                  <small class="movement-detail">{{ movement.quantity }} {{ movement.ingredientUnit || 'unidades' }} × {{ movement.unitCost | currency:'USD' }} por unidad</small>
-                }
-              </td>
-              <td>{{ movement.subcategory || (movement.category === 'compra_insumo' ? 'Compra de insumos' : movement.category === 'gasto' ? 'Gasto' : movement.category || '—') }}</td>
-              <td>
-                @if (movement.type === 'IN') {
-                  <span class="status-pill status-ok"><svg [lucideIcon]="icons.TrendingUp"></svg> Ingreso</span>
-                } @else {
-                  <span class="status-pill status-danger"><svg [lucideIcon]="icons.TrendingDown"></svg> Egreso</span>
-                }
-              </td>
-              <td class="amount-cell" [class.amount-out]="movement.type === 'OUT'">{{ movement.type === 'IN' ? '+' : '−' }}{{ movement.amount | currency:'USD' }}</td>
-            </tr>
-          }
-          @if (visibleMovements().length === 0) {
-            <tr><td colspan="5"><div class="empty-state"><strong>{{ activeTab() === 'movimientos' ? 'Todavía no hay movimientos financieros' : activeTab() === 'compras' ? 'Todavía no hay compras registradas' : 'Todavía no hay gastos registrados' }}</strong><p>{{ activeTab() === 'movimientos' ? 'Las compras y los gastos que registres aparecerán aquí.' : activeTab() === 'compras' ? 'Registra una compra para guardar el egreso y actualizar el stock del insumo.' : 'Registra un gasto para llevar el control de los egresos del negocio.' }}</p></div></td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+    </section>
+  }
 </div>
 
 @if (formOpen()) {
@@ -164,6 +174,68 @@
             </button>
           </div>
         </form>
+      }
+    </section>
+  </div>
+}@if (ledgerActionOpen()) {
+  <div class="modal-backdrop" (click)="ledgerActionOpen.set(null)">
+    <section class="finance-modal" role="dialog" aria-modal="true" aria-labelledby="ledger-modal-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Control financiero</p>
+          <h2 id="ledger-modal-title">{{ ledgerActionOpen() === 'boxesPurchase' ? 'Registrar compra de cajas' : ledgerActionOpen() === 'boxesPayment' ? 'Registrar pago de cajas' : 'Transferir dinero' }}</h2>
+          <p>{{ ledgerActionOpen() === 'boxesPurchase' ? 'La compra se guardará como una transacción pendiente de pago.' : ledgerActionOpen() === 'boxesPayment' ? 'Selecciona una compra pendiente para registrar su pago.' : 'Mueve saldo entre cuentas o registra un ingreso de capital.' }}</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">×</button>
+      </div>
+      <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
+        @if (ledgerActionOpen() === 'boxesPayment') {
+          <label class="form-field form-field-wide"><span>Compra pendiente *</span>
+            <select required [value]="ledgerActionForm().pendingId" (change)="selectPendingBoxPurchase($any($event.target).value)">
+              <option value="" disabled>Selecciona una compra</option>
+              @for (item of pendingTransactions(); track item.id) {
+                <option [value]="item.id">{{ item.description }} — {{ item.amount | currency:'USD' }}</option>
+              }
+            </select>
+          </label>
+        } @else if (ledgerActionOpen() === 'boxesPurchase') {
+          <label class="form-field form-field-wide"><span>Descripción *</span><input required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
+        } @else {
+          <label class="form-field"><span>Desde *</span>
+            <select [value]="ledgerActionForm().from" (change)="updateLedgerForm('from', $any($event.target).value)">
+              <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option><option value="external">Ingreso / capital externo</option>
+            </select>
+          </label>
+          <label class="form-field"><span>Hacia *</span>
+            <select [value]="ledgerActionForm().to" (change)="updateLedgerForm('to', $any($event.target).value)">
+              <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option>
+            </select>
+          </label>
+        }
+        <label class="form-field"><span>Monto (USD) *</span><input type="number" min="0.01" step="0.01" required [value]="ledgerActionForm().amount" (input)="updateLedgerForm('amount', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Fecha *</span><input type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
+        @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
+        <div class="modal-actions form-field-wide">
+          <button class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
+          <button class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (pendingPanelOpen()) {
+  <div class="modal-backdrop" (click)="pendingPanelOpen.set(false)">
+    <section class="finance-modal pending-modal" role="dialog" aria-modal="true" aria-labelledby="pending-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)">×</button></div>
+      @if (pendingTransactions().length) {
+        <div class="pending-list">
+          @for (item of pendingTransactions(); track item.id) {
+            <article class="pending-row"><div><strong>{{ item.description }}</strong><p>{{ item.date | date:'mediumDate' }}</p></div><strong>{{ item.amount | currency:'USD' }}</strong><button class="btn-outline" type="button" (click)="openLedgerAction('boxesPayment'); selectPendingBoxPurchase(item.id); pendingPanelOpen.set(false)">Registrar pago</button></article>
+          }
+        </div>
+      } @else {
+        <div class="empty-state"><strong>No hay transacciones pendientes</strong><p>Las compras de cajas que registres aparecerán aquí hasta que se paguen.</p></div>
       }
     </section>
   </div>

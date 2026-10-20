@@ -63,7 +63,7 @@ export class Catalogo {
   onImageError(event: Event): void { const image = event.target as HTMLImageElement; if (!image.src.endsWith('/images/recipe-placeholder.svg')) image.src = '/images/recipe-placeholder.svg'; }
   async toggleVisibility(item: Recipe): Promise<void> {
     this.openMenuId.set(null); this.error.set(''); this.notice.set('');
-    try { await this.dataService.saveRecipe({...item,catalogVisible:item.catalogVisible===false} as Recipe); this.notice.set(item.catalogVisible===false ? 'Producto visible en el catálogo.' : 'Producto oculto del catálogo.'); }
+    try { await this.dataService.setRecipeCatalogVisibility(item.id, item.catalogVisible===false); this.notice.set(item.catalogVisible===false ? 'Producto visible en el catálogo.' : 'Producto oculto del catálogo.'); }
     catch(error) { this.error.set(error instanceof Error?error.message:'No se pudo cambiar la visibilidad.'); }
   }
   addZone(): void { this.zones.update(zones => [...zones,{id:crypto.randomUUID(),name:'Nueva zona',fee:0}]); }

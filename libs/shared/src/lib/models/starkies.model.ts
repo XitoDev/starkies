@@ -5,6 +5,9 @@ export interface Ingredient {
   stock: number;
   costPerUnit: number;
   minStock?: number;
+  supplyGroup?: string;
+  foodGroup?: string;
+  ingredientGroup?: string;
 }
 
 export interface RecipeSection {

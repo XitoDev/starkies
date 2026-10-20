@@ -31,7 +31,7 @@ export class Sidebar {
   readonly icons = { Utensils: LucideUtensils, Package: LucidePackage, Factory: LucideFactory, Store: LucideStore, ShoppingBag: LucideShoppingBag, DollarSign: LucideDollarSign, Download: LucideDownload };
 
   navItems = [
-    { label: 'Recetas', path: '/recetas', icon: LucideUtensils },
+    { label: 'Productos', path: '/recetas', icon: LucideUtensils },
     { label: 'Ingredientes', path: '/ingredientes', icon: LucidePackage },
     { label: 'Producción', path: '/produccion', icon: LucideFactory },
     { label: 'Catálogo', path: '/catalogo', icon: LucideStore },

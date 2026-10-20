@@ -274,6 +274,20 @@ export class Recetas {
     } catch (error) { this.formError.set(error instanceof Error ? error.message : 'No se pudo guardar la receta.'); }
     finally { this.saving.set(false); }
   }
+  async deleteRecipe(recipe: Recipe): Promise<void> {
+    this.openMenuId.set(null);
+    const confirmed = window.confirm(`¿Eliminar el producto \"${recipe.name}\"? Esta acción no se puede deshacer.`);
+    if (!confirmed) return;
+    this.notice.set('');
+    try {
+      await this.dataService.deleteRecipe(recipe.id);
+      this.notice.set('Producto eliminado correctamente.');
+      if (this.editingId() === recipe.id) this.closeEditor();
+    } catch (error) {
+      this.notice.set(error instanceof Error ? error.message : 'No se pudo eliminar el producto.');
+    }
+  }
+
   async archiveRecipe(recipe: Recipe): Promise<void> {
     this.openMenuId.set(null);
     const archived = !recipe.archived;

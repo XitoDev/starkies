@@ -11,12 +11,18 @@ import {
 import { DataService } from '../../services/data.service';
 import { Ingredient } from 'shared';
 
+const SUPPLY_GROUPS = ['Secos', 'Húmedos', 'Rellenos', 'Decoraciones', 'Cajas y complementos'] as const;
+const FOOD_GROUPS = ['No aplica', 'Cereales y harinas', 'Azúcares y endulzantes', 'Lácteos', 'Huevos', 'Grasas y aceites', 'Frutas', 'Chocolate y cacao', 'Frutos secos', 'Otros'] as const;
+
 type IngredientForm = {
   name: string;
   unit: string;
   costPerUnit: number;
   stock: number;
   minStock: number;
+  supplyGroup: string;
+  foodGroup: string;
+  ingredientGroup: string;
 };
 
 @Component({
@@ -38,6 +44,16 @@ export class Ingredientes {
   };
 
   readonly ingredients = this.dataService.ingredients;
+  readonly supplyGroups = SUPPLY_GROUPS;
+  readonly foodGroups = FOOD_GROUPS;
+  readonly selectedGroup = signal<string>('Todos');
+  readonly openMenuId = signal<string | null>(null);
+  readonly purchaseOpen = signal(false);
+  readonly purchaseIngredientId = signal<string | null>(null);
+  readonly purchaseQuantity = signal(0);
+  readonly purchaseUnitCost = signal(0);
+  readonly purchaseSaving = signal(false);
+  readonly purchaseError = signal('');
   readonly searchTerm = signal('');
   readonly lowStockOnly = signal(false);
   readonly formOpen = signal(false);
@@ -54,11 +70,18 @@ export class Ingredientes {
         const matchesTerm = !term
           || ingredient.name.toLocaleLowerCase('es').includes(term)
           || ingredient.unit.toLocaleLowerCase('es').includes(term);
+        const matchesGroup = this.selectedGroup() === 'Todos' || (ingredient.supplyGroup ?? 'Secos') === this.selectedGroup();
         const matchesStock = !this.lowStockOnly()
           || this.isLowStock(ingredient.stock, ingredient.minStock);
-        return matchesTerm && matchesStock;
+        return matchesTerm && matchesStock && matchesGroup;
       })
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  });
+
+  readonly groupedIngredients = computed(() => {
+    const items = this.filteredIngredients();
+    const groups = this.selectedGroup() === 'Todos' ? [...this.supplyGroups] : [this.selectedGroup()];
+    return groups.map(group => ({ group, ingredients: items.filter(item => (item.supplyGroup ?? 'Secos') === group) })).filter(group => group.ingredients.length > 0);
   });
 
   readonly lowStockCount = computed(
@@ -70,6 +93,11 @@ export class Ingredientes {
   );
 
   readonly ingredientCount = computed(() => this.ingredients().length);
+
+  countByGroup(group: string): number { return this.ingredients().filter(item => (item.supplyGroup ?? 'Secos') === group).length; }
+  selectedPurchaseIngredientName(): string { return this.ingredients().find(item => item.id === this.purchaseIngredientId())?.name ?? ''; }
+  onPurchaseQuantityChange(value: string): void { const parsed = Number(value); this.purchaseQuantity.set(Number.isFinite(parsed) ? Math.max(0, parsed) : 0); }
+  onPurchaseUnitCostChange(value: string): void { const parsed = Number(value); this.purchaseUnitCost.set(Number.isFinite(parsed) ? Math.max(0, parsed) : 0); }
 
   isLowStock(stock: number, minStock?: number): boolean {
     return minStock !== undefined && minStock !== null && stock <= minStock;
@@ -95,6 +123,9 @@ export class Ingredientes {
       costPerUnit: ingredient.costPerUnit,
       stock: ingredient.stock,
       minStock: ingredient.minStock ?? 0,
+      supplyGroup: ingredient.supplyGroup ?? 'Secos',
+      foodGroup: ingredient.foodGroup ?? 'No aplica',
+      ingredientGroup: ingredient.ingredientGroup ?? '',
     });
     this.formError.set('');
     this.notice.set('');
@@ -107,7 +138,7 @@ export class Ingredientes {
     this.formError.set('');
   }
 
-  updateTextField(field: 'name' | 'unit', value: string): void {
+  updateTextField(field: 'name' | 'unit' | 'supplyGroup' | 'foodGroup' | 'ingredientGroup', value: string): void {
     this.form.update((current) => ({ ...current, [field]: value }));
   }
 
@@ -149,6 +180,9 @@ export class Ingredientes {
         costPerUnit: values.costPerUnit,
         stock: values.stock,
         minStock: values.minStock,
+        supplyGroup: values.supplyGroup,
+        foodGroup: values.foodGroup,
+        ingredientGroup: values.ingredientGroup.trim(),
       };
       await this.dataService.saveIngredient(ingredient);
       this.formOpen.set(false);
@@ -159,6 +193,40 @@ export class Ingredientes {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  openPurchase(ingredient: Ingredient): void {
+    this.openMenuId.set(null);
+    this.purchaseIngredientId.set(ingredient.id);
+    this.purchaseQuantity.set(0);
+    this.purchaseUnitCost.set(ingredient.costPerUnit);
+    this.purchaseError.set('');
+    this.purchaseOpen.set(true);
+  }
+
+  async savePurchase(): Promise<void> {
+    const ingredient = this.ingredients().find(item => item.id === this.purchaseIngredientId());
+    const quantity = this.purchaseQuantity();
+    const unitCost = this.purchaseUnitCost();
+    if (!ingredient) { this.purchaseError.set('No se encontró el ingrediente. Actualiza la pantalla e inténtalo de nuevo.'); return; }
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost <= 0) { this.purchaseError.set('Ingresa una cantidad y un costo por unidad mayores que cero.'); return; }
+    this.purchaseSaving.set(true);
+    this.purchaseError.set('');
+    const amount = Math.round(quantity * unitCost * 100) / 100;
+    try {
+      // The repository transaction updates stock, weighted-average cost and cash movement atomically.
+      await this.dataService.recordIngredientPurchase({
+        id: crypto.randomUUID(), date: new Date().toISOString().slice(0, 10),
+        description: `Compra de ${ingredient.name}`, type: 'OUT', amount,
+        category: 'Compra de ingredientes', subcategory: ingredient.supplyGroup ?? 'Secos',
+        ingredientId: ingredient.id, ingredientName: ingredient.name, ingredientUnit: ingredient.unit,
+        quantity, unitCost,
+      });
+      this.purchaseOpen.set(false);
+      this.notice.set(`Compra registrada: ${quantity} ${ingredient.unit} de ${ingredient.name}.`);
+    } catch (error) {
+      this.purchaseError.set(error instanceof Error ? error.message : 'No se pudo registrar la compra. Revisa el inventario y los movimientos financieros antes de volver a intentarlo.');
+    } finally { this.purchaseSaving.set(false); }
   }
 
   async removeIngredient(ingredient: Ingredient): Promise<void> {
@@ -176,6 +244,6 @@ export class Ingredientes {
   }
 
   private emptyForm(): IngredientForm {
-    return { name: '', unit: 'g', costPerUnit: 0, stock: 0, minStock: 0 };
+    return { name: '', unit: 'g', costPerUnit: 0, stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
   }
 }

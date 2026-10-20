@@ -15,6 +15,7 @@ describe('Finanzas', () => {
     ingredients: WritableSignal<Ingredient[]>;
     recordCashMovement: typeof recordCashMovement;
     recordIngredientPurchase: typeof recordIngredientPurchase;
+    saveBusinessSetting: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -27,6 +28,7 @@ describe('Finanzas', () => {
       ]),
       recordCashMovement,
       recordIngredientPurchase,
+      saveBusinessSetting: vi.fn().mockResolvedValue(undefined),
     };
 
     await TestBed.configureTestingModule({

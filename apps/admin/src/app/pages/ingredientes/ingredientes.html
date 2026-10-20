@@ -39,96 +39,59 @@
     </article>
   </section>
 
-  <section class="table-card">
-    <div class="table-toolbar">
+  <section class="ingredients-browser">
+    <div class="ingredients-toolbar">
       <label class="search-box">
         <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
-        <input
-          type="search"
-          placeholder="Buscar por insumo o unidad..."
-          [value]="searchTerm()"
-          (input)="onSearch($event)"
-        />
+        <input type="search" placeholder="Buscar ingrediente..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
-      <button
-        class="filter-button"
-        type="button"
-        [class.active]="lowStockOnly()"
-        [attr.aria-pressed]="lowStockOnly()"
-        (click)="lowStockOnly.update(value => !value)"
-      >
-        <svg [lucideIcon]="icons.AlertTriangle" class="filter-icon"></svg>
-        Solo stock bajo
+      <button class="filter-button" type="button" [class.active]="lowStockOnly()" [attr.aria-pressed]="lowStockOnly()" (click)="lowStockOnly.update(value => !value)">
+        <svg [lucideIcon]="icons.AlertTriangle" class="filter-icon"></svg> Solo stock bajo
       </button>
-      <span class="result-count">{{ filteredIngredients().length }} resultados</span>
+      <span class="result-count">{{ filteredIngredients().length }} ingredientes</span>
     </div>
-
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Ingrediente</th>
-            <th>Unidad</th>
-            <th>Costo / unidad</th>
-            <th>Stock actual</th>
-            <th>Stock mínimo</th>
-            <th>Estado</th>
-            <th class="actions-cell">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (ingredient of filteredIngredients(); track ingredient.id) {
-            <tr>
-              <td>
-                <div class="ingredient-name">
-                  <span class="ingredient-dot"></span>
-                  <strong>{{ ingredient.name }}</strong>
-                </div>
-              </td>
-              <td class="muted-cell">{{ ingredient.unit }}</td>
-              <td>{{ ingredient.costPerUnit | currency:'USD' }}</td>
-              <td [class.low-stock-value]="isLowStock(ingredient.stock, ingredient.minStock)">
-                <strong>{{ ingredient.stock | number:'1.0-3' }}</strong>
-              </td>
-              <td class="muted-cell">{{ ingredient.minStock ?? '—' }}</td>
-              <td>
-                @if (isLowStock(ingredient.stock, ingredient.minStock)) {
-                  <span class="status-pill status-warning">
-                    <svg [lucideIcon]="icons.AlertTriangle" class="status-icon"></svg>
-                    Stock bajo
-                  </span>
-                } @else {
-                  <span class="status-pill status-ok">Suficiente</span>
+    <div class="ingredient-category-tabs" role="group" aria-label="Categorías de ingredientes">
+      <button type="button" [class.active]="selectedGroup() === 'Todos'" (click)="selectedGroup.set('Todos')">Todos <span>{{ ingredients().length }}</span></button>
+      @for (group of supplyGroups; track group) {
+        <button type="button" [class.active]="selectedGroup() === group" (click)="selectedGroup.set(group)">{{ group }} <span>{{ countByGroup(group) }}</span></button>
+      }
+    </div>
+    @if (groupedIngredients().length === 0) {
+      <div class="empty-state"><span class="empty-mark">◎</span><strong>{{ ingredients().length === 0 ? 'Todavía no hay ingredientes' : 'No encontramos ingredientes' }}</strong><p>{{ ingredients().length === 0 ? 'Registra el primer ingrediente para comenzar a controlar tu inventario.' : 'Prueba con otro nombre o cambia la categoría seleccionada.' }}</p><button class="btn-primary" type="button" (click)="openNewIngredient()">Nuevo ingrediente</button></div>
+    }
+    @for (group of groupedIngredients(); track group.group) {
+      <section class="ingredient-group-section">
+        @if (selectedGroup() === 'Todos') { <h2 class="ingredient-group-title">{{ group.group }} <span>{{ group.ingredients.length }}</span></h2> }
+        <div class="ingredients-grid">
+          @for (ingredient of group.ingredients; track ingredient.id) {
+            <article class="ingredient-card">
+              <div class="ingredient-card-top">
+                <div class="ingredient-avatar"><svg [lucideIcon]="icons.Package"></svg></div>
+                <button class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)">⋮</button>
+                @if (openMenuId() === ingredient.id) {
+                  <div class="ingredient-menu">
+                    <button type="button" (click)="openPurchase(ingredient)">＋ Comprar</button>
+                    <button type="button" (click)="openMenuId.set(null); openEditIngredient(ingredient)">✎ Editar</button>
+                    <button class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)">⌫ Eliminar</button>
+                  </div>
                 }
-              </td>
-              <td class="actions-cell">
-                <div class="row-actions">
-                  <button class="icon-button" type="button" title="Editar insumo" aria-label="Editar insumo" (click)="openEditIngredient(ingredient)">
-                    <svg [lucideIcon]="icons.Edit"></svg>
-                  </button>
-                  <button class="text-action" type="button" (click)="removeIngredient(ingredient)">Eliminar</button>
-                </div>
-              </td>
-            </tr>
+              </div>
+              <div class="ingredient-card-copy">
+                <p class="ingredient-card-group">{{ ingredient.supplyGroup ?? 'Secos' }}</p>
+                <h3>{{ ingredient.name }}</h3>
+                @if (ingredient.ingredientGroup) { <p class="ingredient-subgroup">{{ ingredient.ingredientGroup }}</p> }
+              </div>
+              <div class="ingredient-stock-line"><span>Stock disponible</span><strong [class.low-stock-value]="isLowStock(ingredient.stock, ingredient.minStock)">{{ ingredient.stock | number:'1.0-3' }} {{ ingredient.unit }}</strong></div>
+              <div class="ingredient-card-meta"><span>Costo por {{ ingredient.unit }}</span><strong>{{ ingredient.costPerUnit | currency:'USD' }}</strong></div>
+              <div class="ingredient-card-bottom">
+                @if (isLowStock(ingredient.stock, ingredient.minStock)) { <span class="status-pill status-warning">Stock bajo</span> } @else { <span class="status-pill status-ok">Suficiente</span> }
+                <button class="buy-ingredient-button" type="button" (click)="openPurchase(ingredient)">Comprar</button>
+              </div>
+            </article>
           }
-
-          @if (filteredIngredients().length === 0) {
-            <tr>
-              <td colspan="7">
-                <div class="empty-state">
-                  <span class="empty-mark">◎</span>
-                  <strong>{{ ingredients().length === 0 ? 'Todavía no hay insumos' : 'No encontramos resultados' }}</strong>
-                  <p>{{ ingredients().length === 0 ? 'Registra el primer ingrediente para comenzar a controlar tu inventario.' : 'Prueba con otro nombre o desactiva el filtro de stock bajo.' }}</p>
-                  @if (ingredients().length === 0) {
-                    <button class="btn-secondary" type="button" (click)="openNewIngredient()">Registrar primer insumo</button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </section>
+    }
   </section>
 </div>
 
@@ -148,6 +111,23 @@
         <label class="form-field form-field-wide">
           <span>Nombre del insumo *</span>
           <input required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" />
+        </label>
+
+        <label class="form-field">
+          <span>Grupo de insumos *</span>
+          <select required [value]="form().supplyGroup" (change)="updateTextField('supplyGroup', $any($event.target).value)">
+            @for (group of supplyGroups; track group) { <option [value]="group">{{ group }}</option> }
+          </select>
+        </label>
+        <label class="form-field">
+          <span>Grupo de alimentos *</span>
+          <select required [value]="form().foodGroup" (change)="updateTextField('foodGroup', $any($event.target).value)">
+            @for (group of foodGroups; track group) { <option [value]="group">{{ group }}</option> }
+          </select>
+        </label>
+        <label class="form-field form-field-wide">
+          <span>Grupo de ingredientes</span>
+          <input maxlength="100" [value]="form().ingredientGroup" (input)="updateTextField('ingredientGroup', $any($event.target).value)" placeholder="Ej. Harinas sin gluten, chocolate oscuro..." />
         </label>
 
         <label class="form-field">
@@ -182,11 +162,30 @@
         }
 
         <div class="modal-actions">
-          <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+          <button class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
           <button class="btn-primary" type="submit" [disabled]="saving()">
             {{ saving() ? 'Guardando…' : (editingId() ? 'Guardar cambios' : 'Crear insumo') }}
           </button>
         </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (purchaseOpen()) {
+  <div class="modal-backdrop" (click)="purchaseOpen.set(false)">
+    <section class="ingredient-modal" role="dialog" aria-modal="true" aria-labelledby="purchase-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div><p class="eyebrow">Inventario / Compras</p><h2 id="purchase-title">Registrar compra</h2><p>El stock y el costo promedio se actualizarán al guardar.</p></div>
+        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">×</button>
+      </div>
+      <form class="ingredient-form" (submit)="$event.preventDefault(); savePurchase()">
+        <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="selectedPurchaseIngredientName()" /></label>
+        <label class="form-field"><span>Cantidad comprada *</span><input required type="number" min="0.001" step="any" [value]="purchaseQuantity()" (input)="onPurchaseQuantityChange($any($event.target).value)" /></label>
+        <label class="form-field"><span>Costo por unidad (USD) *</span><input required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
+        <p class="purchase-total form-field-wide">Total de la compra <strong>{{ purchaseQuantity() * purchaseUnitCost() | currency:'USD' }}</strong></p>
+        @if (purchaseError()) { <p class="form-error form-field-wide" role="alert">{{ purchaseError() }}</p> }
+        <div class="modal-actions form-field-wide"><button class="btn-primary cancel-button" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
       </form>
     </section>
   </div>
