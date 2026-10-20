@@ -34,6 +34,7 @@ export class Pedidos {
   setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.searchTerm.set('');this.orderMenuId.set(null);this.customerMenuId.set(null);}
   getCustomerName(id:string):string{return this.customers().find(customer=>customer.id===id)?.name??'Cliente desconocido';}
   getCustomerOrderCount(id:string):number{return this.orders().filter(order=>order.customerId===id).length;}
+  getCookieCount(order:Order):number{return order.items.reduce((sum,item)=>sum+item.quantity,0);}
   getCustomerTotal(id:string):number{return this.orders().filter(order=>order.customerId===id&&order.status!=='CANCELLED').reduce((sum,order)=>sum+order.total,0);}
   getCustomerOutstanding(id:string):number{return this.orders().filter(order=>order.customerId===id&&order.status==='PENDING').reduce((sum,order)=>sum+order.total,0);}
   getInitials(name:string):string{return name.trim().split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toLocaleUpperCase('es');}
