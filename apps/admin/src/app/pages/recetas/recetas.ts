@@ -118,10 +118,19 @@ export class Recetas {
   });
   readonly currentRecipeCost = (recipe: Recipe): number => {
     const yieldCount = Math.max(1, recipe.yield);
-    const total = recipe.sections.reduce((sum, section) => sum + section.ingredients.reduce((sectionSum, row) => {
+    let total = recipe.sections.reduce((sum, section) => sum + section.ingredients.reduce((sectionSum, row) => {
       const ingredient = this.ingredients().find(item => item.id === row.ingredientId);
       return sectionSum + (ingredient ? ingredient.costPerUnit * row.quantity : 0);
     }, 0), 0);
+    if (recipe.baseId) {
+      const base = this.doughBases().find(item => item.id === recipe.baseId);
+      const rows = base?.ingredients ?? base?.items ?? [];
+      total += rows.reduce((sum, row) => {
+        const id = String(row.ingredientId ?? row.id ?? '');
+        const ingredient = this.ingredients().find(item => item.id === id || item.name === row.name);
+        return sum + (ingredient ? ingredient.costPerUnit * Number(row.quantity ?? row.qty ?? 0) : 0);
+      }, 0);
+    }
     return total / yieldCount;
   };
 
@@ -147,13 +156,13 @@ export class Recetas {
   }
   openEditRecipe(recipe: Recipe): void {
     this.editingId.set(recipe.id);
-    const section = (name: string) => recipe.sections.find(item => item.name === name)?.ingredients.map(item => ({ ingredientId: item.ingredientId, quantity: item.quantity })) ?? [];
+    const section = (...names: string[]) => recipe.sections.filter(item => names.some(name => item.name.toLocaleLowerCase('es') === name.toLocaleLowerCase('es'))).flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
     this.form.set({
       name: recipe.name, category: recipe.category, gramsPerCookie: recipe.baseGramsPerCookie ?? null,
       price: recipe.price, kind: recipe.baseId ? 'base' : 'own', baseId: recipe.baseId ?? '',
       image: recipe.image ?? '', notes: String((recipe as Recipe & { notes?: string }).notes ?? ''),
-      dough: section('masa'), additions: section('añadidos') .concat(section('Añadidos a la masa')),
-      filling: section('relleno').concat(section('decoración')),
+      dough: section('masa'), additions: section('añadidos', 'añadidos a la masa'),
+      filling: section('relleno', 'decoración'),
     });
     this.imagePreview.set(recipe.image ? this.getImageUrl(recipe.image) : '');
     this.selectedFile.set(null); this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
