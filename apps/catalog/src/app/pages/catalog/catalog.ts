@@ -27,6 +27,7 @@ export class Catalog {
   readonly editingBoxIndex = signal<number | null>(null);
   readonly wantsCookieName = signal(false);
   readonly selectedDeliveryZone = signal<DeliveryZone | null>(null);
+  readonly fulfillmentMode = signal<'delivery' | 'pickup'>('delivery');
   orderForm = this.emptyOrderForm();
   readonly categories = computed(() => {
     const presentation = this.selectedPresentation();
@@ -100,6 +101,7 @@ export class Catalog {
       if (!products.length || !zones.length) throw new Error('Todavía no hay productos o tarifas publicables en el negocio.');
       this.products.set(products);
       this.zones = zones;
+      if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
     } catch (error) {
       this.catalogLoadError.set(error instanceof Error ? error.message : 'No pudimos cargar el catálogo.');
     } finally {
@@ -111,6 +113,24 @@ export class Catalog {
   setDeliveryZone(zone: DeliveryZone | null): void {
     this.orderForm.zone = zone;
     this.selectedDeliveryZone.set(zone);
+    if (zone && this.isPickupZone(zone)) this.fulfillmentMode.set('pickup');
+    else if (zone) this.fulfillmentMode.set('delivery');
+  }
+  setFulfillmentMode(mode: 'delivery' | 'pickup'): void {
+    this.fulfillmentMode.set(mode);
+    if (mode === 'pickup') {
+      const pickupZone = this.zones.find(zone => this.isPickupZone(zone)) ?? null;
+      this.setDeliveryZone(pickupZone);
+      this.orderForm.address = '';
+      return;
+    }
+    const deliveryZone = this.orderForm.zone && !this.isPickupZone(this.orderForm.zone)
+      ? this.orderForm.zone
+      : null;
+    this.setDeliveryZone(deliveryZone);
+  }
+  isPickupZone(zone: DeliveryZone | null | undefined): boolean {
+    return (zone?.name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').includes('retiro');
   }
   getQuantity(productId: string): number { return this.currentBoxItems()[productId] || 0; }
   changeQuantity(productId: string, delta: number): void {
@@ -204,7 +224,8 @@ export class Catalog {
   async submitOrder(): Promise<void> {
     if (this.savingOrder()) return;
     if (!this.completedBoxes().length) { this.orderError.set('Agrega al menos una caja antes de confirmar tu pedido.'); return; }
-    if (!this.orderForm.zone) { this.orderError.set('Selecciona el sector de entrega o retiro en tienda.'); return; }
+    if (!this.orderForm.zone) { this.orderError.set(this.fulfillmentMode() === 'pickup' ? 'No encontramos la opción de retiro en local. Intenta más tarde o contáctanos por WhatsApp.' : 'Selecciona tu sector de entrega.'); return; }
+    if (this.fulfillmentMode() === 'delivery' && !this.orderForm.address.trim()) { this.orderError.set('Escribe tu dirección exacta para la entrega.'); return; }
     const whatsappPopup = window.open('about:blank', '_blank');
     if (whatsappPopup) whatsappPopup.opener = null;
     this.savingOrder.set(true); this.orderError.set('');
@@ -249,6 +270,7 @@ export class Catalog {
     this.wantsCookieName.set(false);
     this.customerLookupMessage.set('');
     this.selectedDeliveryZone.set(null);
+    this.fulfillmentMode.set('delivery');
     return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
   }
   private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
