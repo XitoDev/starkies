@@ -78,8 +78,8 @@
 </div>
 
 @if (editorOpen()) {
-  <div class="recipe-modal-backdrop" (click)="closeEditor()">
-    <section class="recipe-modal" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title" (click)="$event.stopPropagation()">
+  <div class="recipe-modal-backdrop" [class.route-editor]="routeEditor()" (click)="closeEditor()">
+    <section class="recipe-modal" [class.route-editor]="routeEditor()" [attr.role]="routeEditor() ? null : 'dialog'" [attr.aria-modal]="routeEditor() ? null : 'true'" aria-labelledby="recipe-modal-title" (click)="$event.stopPropagation()">
       <header class="recipe-modal-header">
         <div><p class="eyebrow">Starkies / Mi negocio</p><h2 id="recipe-modal-title">{{ editingId() ? 'Editar receta' : 'Nueva receta' }}</h2></div>
         <button class="recipe-modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeEditor()">×</button>
