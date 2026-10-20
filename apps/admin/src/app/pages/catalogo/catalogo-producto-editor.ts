@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,23 +11,23 @@ import { RecipeImageService } from '../../services/recipe-image.service';
 @Component({
   selector: 'app-catalogo-producto-editor',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink],
+  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
   template: `
     @if (recipe(); as item) {
       <section class="editor">
         <p class="eyebrow">Mi negocio / Catálogo / Producto</p>
-        <header><div><h1>{{ item.name }}</h1><p>Personaliza cómo se presenta esta galleta en el catálogo público.</p></div><a routerLink="/catalogo" class="close" aria-label="Volver al catálogo">×</a></header>
+        <header><div><h1>{{ item.name }}</h1><p>Personaliza cómo se presenta esta galleta en el catálogo público.</p></div><a routerLink="/catalogo" class="close" aria-label="Volver al catálogo"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_back</mat-icon></a></header>
         <div class="actions"><a class="secondary" [routerLink]="['/recetas', item.id, 'editar']">Editar receta y foto ↗</a></div>
         <form (ngSubmit)="save()">
           <label class="visibility"><input type="checkbox" [(ngModel)]="visible" name="visible"> Visible en el catálogo</label>
           <label>Etiqueta · opcional<select [(ngModel)]="label" name="label"><option value="">Sin etiqueta</option>@for(tag of labels;track tag){<option [value]="tag">{{ tag }}</option>}</select></label>
-          <button class="text-action" type="button" (click)="newLabelOpen.set(!newLabelOpen())">＋ Nueva etiqueta</button>
-          @if(newLabelOpen()){<div class="new-label"><input aria-label="Nombre de nueva etiqueta" maxlength="40" [(ngModel)]="newLabelName" name="newLabelName" placeholder="Nombre de la etiqueta"><button type="button" (click)="addLabel()">Agregar</button><button type="button" class="cancel-label" (click)="newLabelOpen.set(false)">Cancelar</button></div>}
-          <fieldset><legend>Color de la etiqueta</legend><div class="colors">@for(color of colors;track color.name){<button type="button" [class.selected]="labelColor===color.name" [style.background]="color.background" [style.color]="color.foreground" (click)="labelColor=color.name">{{ color.name }}</button>}</div></fieldset>
+          <button matButton="text" class="text-action" type="button" (click)="newLabelOpen.set(!newLabelOpen())"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Nueva etiqueta</button>
+          @if(newLabelOpen()){<div class="new-label"><input aria-label="Nombre de nueva etiqueta" maxlength="40" [(ngModel)]="newLabelName" name="newLabelName" placeholder="Nombre de la etiqueta"><button matButton="text" type="button" (click)="addLabel()">Agregar</button><button matButton="text" type="button" class="cancel-label" (click)="newLabelOpen.set(false)">Cancelar</button></div>}
+          <fieldset><legend>Color de la etiqueta</legend><div class="colors">@for(color of colors;track color.name){<button matButton="text" type="button" [class.selected]="labelColor===color.name" [style.background]="color.background" [style.color]="color.foreground" (click)="labelColor=color.name">{{ color.name }}</button>}</div></fieldset>
           <label>Descripción para clientes<textarea rows="4" maxlength="500" [(ngModel)]="description" name="description" placeholder="Describe la galleta para tus clientes"></textarea></label>
           <div class="price"><span>Precio de venta sincronizado con Finanzas</span><strong>{{ item.price | currency:'USD' }}</strong><small>Se actualiza automáticamente desde Productos y precios.</small></div>
           @if(error()){<p class="error" role="alert">{{ error() }}</p>}
-          <footer><a class="secondary" routerLink="/catalogo">Cancelar</a><button type="submit" [disabled]="saving()">{{ saving()?'Guardando…':'Listo' }}</button></footer>
+          <footer><a class="secondary" routerLink="/catalogo">Cancelar</a><button matButton="text" type="submit" [disabled]="saving()">{{ saving()?'Guardando…':'Listo' }}</button></footer>
         </form>
       </section>
     } @else {

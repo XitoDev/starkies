@@ -1,9 +1,10 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import { LucideDynamicIcon, LucideChartPie, LucideDollarSign } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 import { Recipe, RecipeSection, Ingredient } from 'shared';
 import { RecipeImageService } from '../../services/recipe-image.service';
@@ -24,7 +25,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, LucideDynamicIcon, MasasBaseList],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, MasasBaseList, MatButtonModule, MatIconModule],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
@@ -35,7 +36,6 @@ export class Recetas {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  readonly icons = { PieChart: LucideChartPie, DollarSign: LucideDollarSign };
   readonly recipes = this.dataService.recipes;
   readonly ingredients = this.dataService.ingredients;
   readonly view = signal<'recipes' | 'bases'>('recipes');

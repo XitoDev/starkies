@@ -1,16 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  LucideDynamicIcon,
-  LucideDollarSign,
-  LucideTrendingUp,
-  LucideTrendingDown,
-  LucideWallet,
-  LucidePackage,
-  LucidePlus,
-  LucideReceipt,
-  LucideX,
-} from '@lucide/angular';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { CashMovement } from 'shared';
 import { DataService } from '../../services/data.service';
 
@@ -44,7 +35,7 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })
@@ -61,17 +52,6 @@ export class Finanzas {
     const unitCost = batchCost / Math.max(1, recipe.yield);
     return { id: recipe.id, name: recipe.name, category: recipe.category, unitCost, currentPrice: recipe.price, suggestedPrice: unitCost * 3, extraProfit: recipe.price - unitCost * 3 };
   }));
-
-  readonly icons = {
-    DollarSign: LucideDollarSign,
-    TrendingUp: LucideTrendingUp,
-    TrendingDown: LucideTrendingDown,
-    Wallet: LucideWallet,
-    Package: LucidePackage,
-    Plus: LucidePlus,
-    Receipt: LucideReceipt,
-    X: LucideX,
-  };
 
   readonly activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
   readonly formOpen = signal<'purchase' | 'expense' | null>(null);

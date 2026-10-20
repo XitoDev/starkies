@@ -1,23 +1,15 @@
+import { MatButtonModule } from '@angular/material/button';
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import {
-  LucideDynamicIcon,
-  LucideUtensils,
-  LucidePackage,
-  LucideFactory,
-  LucideStore,
-  LucideShoppingBag,
-  LucideDollarSign,
-  LucideDownload,
-} from '@lucide/angular';
+import { MatIconModule } from '@angular/material/icon';
 import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
 import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideDynamicIcon],
+  imports: [CommonModule, RouterLink, RouterLinkActive, MatIconModule, MatButtonModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })
@@ -28,15 +20,13 @@ export class Sidebar {
 
   readonly loggingOut = signal(false);
   readonly logoutMessage = signal('');
-  readonly icons = { Utensils: LucideUtensils, Package: LucidePackage, Factory: LucideFactory, Store: LucideStore, ShoppingBag: LucideShoppingBag, DollarSign: LucideDollarSign, Download: LucideDownload };
-
   navItems = [
-    { label: 'Productos', path: '/recetas', icon: LucideUtensils },
-    { label: 'Ingredientes', path: '/ingredientes', icon: LucidePackage },
-    { label: 'Producción', path: '/produccion', icon: LucideFactory },
-    { label: 'Catálogo', path: '/catalogo', icon: LucideStore },
-    { label: 'Pedidos', path: '/pedidos', icon: LucideShoppingBag },
-    { label: 'Finanzas', path: '/finanzas', icon: LucideDollarSign }
+    { label: 'Productos', path: '/recetas', icon: 'cookie' },
+    { label: 'Ingredientes', path: '/ingredientes', icon: 'inventory_2' },
+    { label: 'Producción', path: '/produccion', icon: 'precision_manufacturing' },
+    { label: 'Catálogo', path: '/catalogo', icon: 'storefront' },
+    { label: 'Pedidos', path: '/pedidos', icon: 'shopping_bag' },
+    { label: 'Finanzas', path: '/finanzas', icon: 'payments' }
   ];
 
   exportBackup(): void {

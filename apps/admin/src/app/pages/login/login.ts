@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,7 +9,7 @@ import { DataService } from '../../services/data.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatButtonModule, MatIconModule],
   template: `
     <main class="login-page">
       <section class="login-card">
@@ -60,7 +62,7 @@ import { DataService } from '../../services/data.service';
             <span>Recordar este dispositivo</span>
           </label>
 
-          <button type="submit" [disabled]="loading() || !loginForm.valid || !firebase.isConfigured">
+          <button matButton="text" type="submit" [disabled]="loading() || !loginForm.valid || !firebase.isConfigured">
             {{ loading() ? 'Ingresando…' : 'Iniciar sesión' }}
           </button>
         </form>

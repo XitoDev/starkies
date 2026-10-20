@@ -25,6 +25,7 @@
               }
             ],
             "styles": [
+              "node_modules/@angular/material/prebuilt-themes/azure-blue.css",
               "apps/admin/src/styles.css"
             ]
           },
@@ -114,6 +115,7 @@
               }
             ],
             "styles": [
+              "node_modules/@angular/material/prebuilt-themes/azure-blue.css",
               "apps/catalog/src/styles.css"
             ],
             "server": "apps/catalog/src/main.server.ts",

@@ -1,10 +1,10 @@
-<a class="skip-link" href="#sabores">Saltar al catálogo</a>
+<a matButton="text" class="skip-link" href="#sabores">Saltar al catálogo</a>
 <header id="inicio">
-  <a href="#inicio" class="brand" aria-label="StarKies, inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
+  <a matButton="text" href="#inicio" class="brand" aria-label="StarKies, inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
 </header>
 <main>
   @if (orderSuccess(); as confirmation) {
-    <section class="order-success" role="status" aria-live="polite"><div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div><button type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)">×</button></section>
+    <section class="order-success" role="status" aria-live="polite"><div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a matButton="elevated" class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div><button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></section>
   }
   <section class="hero" id="inicio-contenido" aria-labelledby="hero-title">
     <div class="hero-copy"><h1 id="hero-title">La estrella<br><em>eres tú.</em></h1><p>Elige tus sabores favoritos y crea una caja muy tuya.</p></div>
@@ -18,8 +18,8 @@
     @if (catalogLoadError()) { <p role="alert" class="catalog-instruction">{{ catalogLoadError() }}</p> }
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id) {
-        <button type="button" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-          <span class="presentation-top"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22v-9"></path><path d="M15.17 2.21a1.67 1.67 0 0 1 1.63 0L21 4.57a1.93 1.93 0 0 1 0 3.36L8.82 14.79a1.655 1.655 0 0 1-1.64 0L3 12.43a1.93 1.93 0 0 1 0-3.36z"></path><path d="M20 13v3.87a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13"></path></svg><span class="presentation-check" aria-hidden="true">★</span></span>
+        <button matButton="text" type="button" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
+          <span class="presentation-top"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon><mat-icon class="presentation-check" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon></span>
           <strong>{{ p.name }}</strong><span class="presentation-description">{{ p.desc }}</span><b class="box-price">{{ p.price | currency:'USD' }}</b>
         </button>
       }
@@ -37,9 +37,9 @@
                 @if (product.tag && product.stock) { <span class="product-tag">{{ product.tag }}</span> }
                 @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
               </div><div class="product-body"><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
-                @if (!product.stock) { <button type="button" disabled>Agotado</button> }
-                @else if (getQuantity(product.id) === 0) { <button type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><span class="add-icon" aria-hidden="true">+</span></button> }
-                @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)">−</button><b>{{ getQuantity(product.id) }}</b><button type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)">+</button></div> }
+                @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
+                @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
+                @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
               </div></div></article>
             }
           }
@@ -48,24 +48,24 @@
     </div>
   </section>
 </main>
-<footer class="site-footer"><span class="footer-star" aria-hidden="true">★</span><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
+<footer class="site-footer"><mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
 <aside class="cart-dock" aria-label="Resumen de tu caja"><div class="dock-card"><div class="dock-progress">
   <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
   <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
   <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
 </div>
-@if (isBoxComplete()) { <button type="button" class="dock-continue" (click)="finishBox()">{{ completedBoxes().length > 0 ? 'Añadir caja' : 'Continuar' }}</button> }
-@else if (completedBoxes().length > 0) { <button type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
-@else { <button type="button" class="dock-continue" disabled>Continuar</button> }
+@if (isBoxComplete()) { <button matButton="elevated" type="button" class="dock-continue" (click)="finishBox()">{{ completedBoxes().length > 0 ? 'Añadir caja' : 'Continuar' }}</button> }
+@else if (completedBoxes().length > 0) { <button matButton="elevated" type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
+@else { <button matButton="elevated" type="button" class="dock-continue" disabled>Continuar</button> }
 </div></aside>
-@if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }
+@if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button matButton="elevated" type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button matButton="outlined" type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }
 @if (showOrderSheetModal()) {
 <div class="modal-backdrop order-backdrop" [class.closing]="isOrderSheetClosing()" (click)="onOrderBackdropClick($event)">
   <section class="order-sheet" [class.closing]="isOrderSheetClosing()" role="dialog" aria-modal="true" aria-labelledby="order-sheet-title" (click)="$event.stopPropagation()">
     <div class="sheet-panel">
       <div class="sheet-heading">
         <h2 id="order-sheet-title">Tu pedido</h2>
-        <button type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()">✕</button>
+        <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form (ngSubmit)="submitOrder()">
         <div class="sheet-body">
@@ -75,10 +75,10 @@
           <fieldset class="fulfillment-picker">
             <legend>¿Cómo quieres recibir tu pedido?</legend>
             <div class="fulfillment-options" role="group" aria-label="Modalidad del pedido">
-              <button type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'delivery'" [attr.aria-pressed]="fulfillmentMode() === 'delivery'" (click)="setFulfillmentMode('delivery')">
+              <button matButton="outlined" type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'delivery'" [attr.aria-pressed]="fulfillmentMode() === 'delivery'" (click)="setFulfillmentMode('delivery')">
                 <span class="fulfillment-icon" aria-hidden="true">⌂</span><span><strong>Entrega a domicilio</strong><small>Te lo llevamos a tu sector</small></span>
               </button>
-              <button type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'pickup'" [attr.aria-pressed]="fulfillmentMode() === 'pickup'" (click)="setFulfillmentMode('pickup')">
+              <button matButton="outlined" type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'pickup'" [attr.aria-pressed]="fulfillmentMode() === 'pickup'" (click)="setFulfillmentMode('pickup')">
                 <span class="fulfillment-icon" aria-hidden="true">↗</span><span><strong>Retiro en local</strong><small>Lo recoges personalmente</small></span>
               </button>
             </div>
@@ -98,17 +98,17 @@
             @for (box of completedBoxes(); track $index) { <div class="packed-box">
               <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
               <ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ getProductName(key) }}</li> }</ul>
-              <div class="box-actions"><button type="button" (click)="editBox($index)">Editar sabores</button><button type="button" class="remove-box-action" (click)="removeBox($index)"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 10v6M14 10v6"></path></svg> Quitar caja</button></div>
+              <div class="box-actions"><button matButton="text" type="button" (click)="editBox($index)">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="removeBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Quitar caja</button></div>
             </div> }
-            <button class="add-box-button" type="button" (click)="closeOrderSheet(); showBoxChoiceModal.set(false)">Añadir otra caja</button>
+            <button matButton="elevated" class="add-box-button" type="button" (click)="closeOrderSheet(); showBoxChoiceModal.set(false)">Añadir otra caja</button>
             <div class="cart-row"><span>Valor de las cajas</span><strong>{{ boxesTotalSum() | currency:'USD' }}</strong></div>
             <div class="cart-row"><span>Envío</span><strong>{{ orderForm.zone ? (shippingFee() | currency:'USD') : 'Por confirmar' }}</strong></div>
           </div>
-          @if (orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ orderError() }}</p><a class="button whatsapp-fallback" [href]="getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
+          @if (orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ orderError() }}</p><a matButton="elevated" class="button whatsapp-fallback" [href]="getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
         </div>
         <div class="sheet-footer">
           <div class="sheet-total"><span>{{ orderForm.zone ? 'Total estimado' : 'Subtotal sin envío' }}</span><strong>{{ grandTotal() | currency:'USD' }}</strong></div>
-          <button type="submit" class="button full" [disabled]="savingOrder() || hasUnavailableBox()">{{ savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
+          <button matButton="elevated" type="submit" class="button full" [disabled]="savingOrder() || hasUnavailableBox()">{{ savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
         </div>
       </form>
     </div>

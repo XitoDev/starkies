@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +12,7 @@ type BaseRow = { ingredientId: string; quantity: number | null };
 @Component({
   selector: 'app-masa-base-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, RouterLink],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule],
   template: `
     <section class="editor-page">
       <p class="breadcrumb"><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Mi negocio</a><span>›</span><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Recetas</a><span>›</span><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Masas base</a><span>›</span><strong>{{ editing() ? 'Editar masa base' : 'Nueva masa base' }}</strong></p>
@@ -46,21 +48,21 @@ type BaseRow = { ingredientId: string; quantity: number | null };
           <h2>Masa</h2>
           @for (row of rows(); track $index) {
             <div class="ingredient-row">
-              <span class="drag" aria-hidden="true">⠿</span>
+              <mat-icon class="drag" fontSet="material-symbols-rounded" aria-hidden="true">drag_indicator</mat-icon>
               <select [name]="'ingredient-' + $index" [ngModel]="row.ingredientId" (ngModelChange)="updateRow($index, 'ingredientId', $event)" aria-label="Ingrediente">
                 <option value="">Selecciona ingrediente</option>
                 @for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }
               </select>
               <input [name]="'quantity-' + $index" type="number" min="0.001" step="any" [ngModel]="row.quantity ?? ''" (ngModelChange)="updateRow($index, 'quantity', $event)" aria-label="Cantidad" placeholder="Cantidad">
-              <button class="remove" type="button" aria-label="Quitar ingrediente" [disabled]="rows().length === 1" (click)="removeRow($index)">×</button>
+              <button matIconButton class="remove" type="button" aria-label="Quitar ingrediente" [disabled]="rows().length === 1" (click)="removeRow($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
             </div>
           }
-          <button class="add" type="button" (click)="addRow()">＋ Agregar ingrediente</button>
+          <button matButton="text" class="add" type="button" (click)="addRow()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Agregar ingrediente</button>
         </section>
         <label class="field">Notas de la base
           <textarea rows="3" maxlength="1500" name="notes" [(ngModel)]="notes"></textarea>
         </label>
-        <footer><button class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button><a class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cerrar</a></footer>
+        <footer><button matButton="elevated" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button><a class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cerrar</a></footer>
       </form>
     </section>
   `,

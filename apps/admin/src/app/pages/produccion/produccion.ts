@@ -1,15 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  LucideDynamicIcon,
-  LucideFactory,
-  LucidePlus,
-  LucideCalendar,
-  LucideCircleCheck,
-  LucideSearch,
-  LucidePackage,
-  LucideTriangleAlert,
-} from '@lucide/angular';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { DataService } from '../../services/data.service';
 import { Ingredient, Recipe } from 'shared';
 
@@ -33,22 +25,12 @@ type IngredientRequirement = {
 @Component({
   selector: 'app-produccion',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   templateUrl: './produccion.html',
   styleUrls: ['./produccion.css'],
 })
 export class Produccion {
   private readonly dataService = inject(DataService);
-
-  readonly icons = {
-    Factory: LucideFactory,
-    Plus: LucidePlus,
-    Calendar: LucideCalendar,
-    CheckCircle: LucideCircleCheck,
-    Search: LucideSearch,
-    Package: LucidePackage,
-    AlertTriangle: LucideTriangleAlert,
-  };
 
   readonly recipes = this.dataService.recipes;
   readonly ingredients = this.dataService.ingredients;

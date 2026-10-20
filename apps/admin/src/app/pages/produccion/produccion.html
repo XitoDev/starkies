@@ -5,8 +5,8 @@
       <h1 class="page-title">Producción</h1>
       <p class="page-subtitle">Registra lotes horneados, calcula su rendimiento y descuenta automáticamente los insumos de la fórmula.</p>
     </div>
-    <button class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
-      <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
+    <button matButton="elevated" class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="btn-icon">add</mat-icon>
       Nuevo lote
     </button>
   </div>
@@ -17,11 +17,11 @@
 
   <section class="summary-grid" aria-label="Resumen de producción">
     <article class="summary-card">
-      <div class="summary-icon"><svg [lucideIcon]="icons.Factory"></svg></div>
+      <div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">precision_manufacturing</mat-icon></div>
       <div><p class="summary-label">Lotes registrados</p><p class="summary-value">{{ totalBatches() }}</p></div>
     </article>
     <article class="summary-card">
-      <div class="summary-icon"><svg [lucideIcon]="icons.Package"></svg></div>
+      <div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
       <div><p class="summary-label">Unidades producidas</p><p class="summary-value">{{ totalUnits() | number:'1.0-0' }}</p></div>
     </article>
     <article class="summary-card">
@@ -33,7 +33,7 @@
   <section class="table-card">
     <div class="table-toolbar">
       <label class="search-box">
-        <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
         <input type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
       <span class="result-count">{{ filteredHistory().length }} registros</span>
@@ -59,7 +59,7 @@
               <td>{{ production.batches }}</td>
               <td>{{ production.totalYield | number:'1.0-0' }} uds</td>
               <td>{{ production.calculatedCost | currency:'USD' }}</td>
-              <td><span class="status-pill"><svg [lucideIcon]="icons.CheckCircle"></svg> Registrado</span></td>
+              <td><span class="status-pill"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">check_circle</mat-icon> Registrado</span></td>
             </tr>
           }
 
@@ -67,11 +67,11 @@
             <tr>
               <td colspan="6">
                 <div class="empty-state">
-                  <span class="empty-mark"><svg [lucideIcon]="icons.Factory"></svg></span>
+                  <span class="empty-mark"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">precision_manufacturing</mat-icon></span>
                   <strong>{{ productionHistory().length === 0 ? 'Aún no hay lotes de producción' : 'No encontramos resultados' }}</strong>
                   <p>{{ productionHistory().length === 0 ? 'Cuando registres el primer lote, aquí quedarán su rendimiento, costo y fecha.' : 'Prueba con otra fecha o nombre de receta.' }}</p>
                   @if (productionHistory().length === 0 && activeRecipes().length > 0) {
-                    <button class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
+                    <button matButton="outlined" class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
                   }
                 </div>
               </td>
@@ -92,7 +92,7 @@
           <h2 id="production-modal-title">Preparar un lote</h2>
           <p>Al confirmar, se registrará el lote y se descontarán sus ingredientes del inventario.</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
 
       <div class="production-form">
@@ -133,7 +133,7 @@
             </div>
           }
           @if (stockShortages().length > 0) {
-            <p class="stock-warning"><svg [lucideIcon]="icons.AlertTriangle"></svg> Hay ingredientes faltantes o con stock insuficiente.</p>
+            <p class="stock-warning"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">warning</mat-icon> Hay ingredientes faltantes o con stock insuficiente.</p>
           }
         </div>
 
@@ -142,8 +142,8 @@
         }
 
         <div class="modal-actions">
-          <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
+          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
             {{ saving() ? 'Registrando…' : 'Registrar producción' }}
           </button>
         </div>
