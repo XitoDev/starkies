@@ -39,18 +39,16 @@
         <h2 class="group-title">{{ group.category }}</h2>
         <div class="recipes-grid">
           @for (recipe of group.recipes; track recipe.id) {
-            <article class="recipe-card">
+            <article class="recipe-card" role="button" tabindex="0" [attr.aria-label]="'Editar ' + recipe.name" (click)="openEditRecipe(recipe)" (keydown.enter)="openEditRecipe(recipe)" (keydown.space)="$event.preventDefault(); openEditRecipe(recipe)">
               <div class="card-image-wrapper">
                 <img [src]="getImageUrl(recipe.image)" [alt]="recipe.name" class="recipe-img" loading="lazy" (error)="onImageError($event)" />
                 <span class="yield-badge">{{ recipe.yield }} por lote</span>
-                <button matIconButton class="card-menu-button" type="button" [attr.aria-label]="'Opciones de ' + recipe.name" [attr.aria-expanded]="openMenuId() === recipe.id" (click)="openMenuId.set(openMenuId() === recipe.id ? null : recipe.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
-                @if (openMenuId() === recipe.id) {
-                  <div class="card-menu-popover">
-                    <button matButton="text" type="button" (click)="duplicateRecipe(recipe)"><span>▢</span> Duplicar receta</button>
-                    <button matButton="text" type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</button>
-                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Eliminar producto</button>
-                  </div>
-                }
+                <button matIconButton class="card-menu-button" type="button" [matMenuTriggerFor]="recipeMenu" [attr.aria-label]="'Opciones de ' + recipe.name" (click)="$event.stopPropagation()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
+                <mat-menu #recipeMenu="matMenu">
+                  <button mat-menu-item type="button" (click)="duplicateRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">content_copy</mat-icon><span>Duplicar receta</span></button>
+                  <button mat-menu-item type="button" (click)="archiveRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ recipe.archived ? 'unarchive' : 'inventory_2' }}</mat-icon><span>{{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</span></button>
+                  <button mat-menu-item type="button" class="delete-menu-action" (click)="deleteRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon><span>Eliminar producto</span></button>
+                </mat-menu>
               </div>
               <div class="card-content">
                 <h3 class="recipe-name">{{ recipe.name }}</h3>
@@ -62,7 +60,6 @@
                 </div>
                 <div class="profit-line"><span>Ganancia / unidad</span><strong [class.negative]="recipe.price < currentRecipeCost(recipe)">{{ (recipe.price - currentRecipeCost(recipe)) | currency:'USD' }}</strong></div>
                 <p class="margin-line">Margen sobre venta: {{ recipe.price > 0 ? (((recipe.price - currentRecipeCost(recipe)) / recipe.price) * 100 | number:'1.0-1') : '0' }} %</p>
-                <button matButton="elevated" class="view-edit-button" type="button" (click)="openEditRecipe(recipe)">Ver y editar <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_outward</mat-icon></button>
               </div>
             </article>
           }
