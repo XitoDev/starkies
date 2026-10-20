@@ -274,6 +274,12 @@ export class Finanzas {
     }
   }
 
+  transferSourceForFund(key: FundKey): BankKey {
+    if (key === 'boxes') return 'expenses';
+    if (key === 'extraProfit') return 'profit';
+    return key;
+  }
+
   private bankName(key: BankKey): string {
     return ({ ingredients: 'Ingredientes', expenses: 'Gastos', profit: 'Ganancia' } as const)[key];
   }
