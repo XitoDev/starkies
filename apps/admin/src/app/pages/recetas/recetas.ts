@@ -1,52 +1,124 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Search, Tag, PieChart, DollarSign } from 'lucide-angular';
+import { LucideDynamicIcon, LucideChartPie, LucideDollarSign } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
+import { RecipeImageService } from '../../services/recipe-image.service';
+import { Recipe } from 'shared';
+
+type RecipeSort = 'nameAsc' | 'nameDesc' | 'yieldDesc' | 'priceDesc';
+type DoughBase = {
+  id?: string;
+  name?: string;
+  weight?: number;
+  notes?: string;
+  items?: unknown[];
+};
 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
 export class Recetas {
-  private dataService = inject(DataService);
+  private readonly dataService = inject(DataService);
+  private readonly recipeImageService = inject(RecipeImageService);
 
-  readonly icons = { Search, Tag, PieChart, DollarSign };
+  readonly icons = { PieChart: LucideChartPie, DollarSign: LucideDollarSign };
+  readonly recipes = this.dataService.recipes;
+  readonly view = signal<'recipes' | 'bases'>('recipes');
+  readonly showArchived = signal(false);
+  readonly searchTerm = signal('');
+  readonly sortBy = signal<RecipeSort>('nameAsc');
+  readonly selectedCategories = signal<string[]>([]);
 
-  // Leemos las recetas desde el servicio
-  recipes = this.dataService.recipes;
+  readonly categories = computed(() =>
+    Array.from(new Set(this.recipes().map(recipe => recipe.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'es'))
+  );
 
-  // Extraemos las categorías únicas para los filtros
-  categories = computed(() => {
-    const cats = new Set(this.recipes().map(r => r.category));
-    return ['Todas', ...Array.from(cats)];
+  readonly activeCount = computed(() => this.recipes().filter(recipe => !recipe.archived).length);
+  readonly archivedCount = computed(() => this.recipes().filter(recipe => recipe.archived).length);
+
+  readonly doughBases = computed<DoughBase[]>(() => {
+    const value = this.dataService.rawState()?.['doughBases'];
+    return Array.isArray(value) ? value as DoughBase[] : [];
   });
 
-  selectedCategory = signal<string>('Todas');
+  readonly filteredRecipes = computed(() => {
+    const query = this.searchTerm().trim().toLocaleLowerCase('es');
+    const selected = this.selectedCategories();
+    const recipes = this.recipes().filter(recipe => {
+      const archivedMatch = Boolean(recipe.archived) === this.showArchived();
+      const category = recipe.category.trim();
+      const categoryMatch = selected.length === 0 || selected.includes(category);
+      const queryMatch = !query || recipe.name.toLocaleLowerCase('es').includes(query) || category.toLocaleLowerCase('es').includes(query);
+      return archivedMatch && categoryMatch && queryMatch;
+    });
 
-  // Recetas filtradas según la categoría seleccionada
-  filteredRecipes = computed(() => {
-    const cat = this.selectedCategory();
-    const all = this.recipes();
-    if (cat === 'Todas') return all;
-    return all.filter(r => r.category === cat);
+    return [...recipes].sort((a, b) => {
+      switch (this.sortBy()) {
+        case 'nameDesc': return b.name.localeCompare(a.name, 'es');
+        case 'yieldDesc': return b.yield - a.yield;
+        case 'priceDesc': return b.price - a.price;
+        default: return a.name.localeCompare(b.name, 'es');
+      }
+    });
   });
 
-  setCategory(cat: string): void {
-    this.selectedCategory.set(cat);
+  readonly groupedRecipes = computed(() => {
+    const groups = new Map<string, Recipe[]>();
+    for (const recipe of this.filteredRecipes()) {
+      const category = recipe.category.trim() || 'Sin categoría';
+      const current = groups.get(category) ?? [];
+      current.push(recipe);
+      groups.set(category, current);
+    }
+    return Array.from(groups.entries()).map(([category, recipes]) => ({ category, recipes }));
+  });
+
+  setView(view: 'recipes' | 'bases'): void {
+    this.view.set(view);
   }
 
-  // Mapeo temporal de imágenes: convierte '/api/recipe-image?id=...' a una ruta local
-  getImageUrl(imagePath: string | undefined, recipeId: string): string {
-    if (!imagePath) return 'assets/placeholder.jpg';
+  setArchiveState(archived: boolean): void {
+    this.showArchived.set(archived);
+    this.selectedCategories.set([]);
+  }
 
-    // Si viene del JSON con el formato viejo de API, mapeamos al ID
-    if (imagePath.includes('/api/recipe-image')) {
-      // Como las tienes en public/images/, apuntamos allá
-      return `images/recipe-${recipeId}.jpg`;
+  setSort(value: string): void {
+    if (value === 'nameDesc' || value === 'yieldDesc' || value === 'priceDesc' || value === 'nameAsc') {
+      this.sortBy.set(value);
     }
-    return imagePath;
+  }
+
+  isCategorySelected(category: string): boolean {
+    return this.selectedCategories().length === 0 || this.selectedCategories().includes(category);
+  }
+
+  toggleCategory(category: string, checked: boolean): void {
+    const all = this.categories();
+    const current = this.selectedCategories();
+
+    if (current.length === 0) {
+      if (!checked) this.selectedCategories.set(all.filter(item => item !== category));
+      return;
+    }
+
+    const next = checked
+      ? Array.from(new Set([...current, category]))
+      : current.filter(item => item !== category);
+
+    this.selectedCategories.set(next.length === all.length ? [] : next);
+  }
+
+  getImageUrl(imagePath: string | undefined): string {
+    return this.recipeImageService.getImageUrl(imagePath);
+  }
+
+  onImageError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (image.src.endsWith('/images/recipe-placeholder.svg')) return;
+    image.src = '/images/recipe-placeholder.svg';
   }
 }

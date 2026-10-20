@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Admin users must be allow-listed manually in Firebase Console.
+    // Create adminUsers/{AUTH_UID} for each approved business user.
+    function isApprovedAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid));
+    }
+
+    match /adminUsers/{userId} {
+      allow read: if isApprovedAdmin() && request.auth.uid == userId;
+      // Never allow clients to grant themselves admin access.
+      allow create, update, delete: if false;
+    }
+
+    match /businesses/starkies/{document=**} {
+      allow read, write: if isApprovedAdmin();
+    }
+
+    // Future public catalog: visitors may read published catalog documents,
+    // but only approved admins can change them.
+    match /publicCatalog/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isApprovedAdmin();
+    }
+
+    // Deny anything not explicitly covered above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

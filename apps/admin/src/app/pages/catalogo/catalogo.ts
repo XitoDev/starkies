@@ -1,22 +1,31 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Store, Settings, Eye } from 'lucide-angular';
+import { LucideDynamicIcon, LucideStore, LucideSettings } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
+import { RecipeImageService } from '../../services/recipe-image.service';
 
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
 export class Catalogo {
-  private dataService = inject(DataService);
-  readonly icons = { Store, Settings, Eye };
+  private readonly dataService = inject(DataService);
+  private readonly recipeImageService = inject(RecipeImageService);
 
-  // Leemos las recetas directamente del servicio
-  recipes = this.dataService.recipes;
+  readonly icons = { Store: LucideStore, Settings: LucideSettings };
+  readonly recipes = this.dataService.recipes;
+  readonly catalogItems = computed(() => this.recipes().filter(recipe => !recipe.archived));
 
-  // Lista de productos que se mostrarán en el catálogo público
-  catalogItems = computed(() => this.recipes());
+  getImageUrl(imagePath: string | undefined): string {
+    return this.recipeImageService.getImageUrl(imagePath);
+  }
+
+  onImageError(event: Event): void {
+    const image = event.target as HTMLImageElement;
+    if (image.src.endsWith('/images/recipe-placeholder.svg')) return;
+    image.src = '/images/recipe-placeholder.svg';
+  }
 }

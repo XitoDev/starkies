@@ -1,0 +1,66 @@
+name: Admin CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/admin/**"
+      - "libs/shared/**"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/admin-ci.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "apps/admin/**"
+      - "libs/shared/**"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/admin-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: admin-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-admin:
+    name: Build Angular admin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate npm lockfile with strict peer dependency resolution
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Build admin
+        run: npx ng build admin --configuration production
+
+      - name: Commit refreshed lockfile on feature branches
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): refresh npm lockfile"
+            git push
+          else
+            echo "package-lock.json is already current."
+          fi

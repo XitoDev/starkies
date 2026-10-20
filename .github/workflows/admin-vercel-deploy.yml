@@ -1,6 +1,17 @@
 name: Deploy Admin Preview to Vercel
 
 on:
+  push:
+    branches:
+      - feat/admin-angular-firebase-foundation
+    paths:
+      - "apps/admin/**"
+      - "libs/shared/**"
+      - "public/images/**"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/admin-vercel-deploy.yml"
   workflow_dispatch:
 
 permissions:

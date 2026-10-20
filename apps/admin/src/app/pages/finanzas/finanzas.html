@@ -1,97 +1,60 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-heading">
     <div>
+      <p class="eyebrow">Mi negocio / Control financiero</p>
       <h1 class="page-title">Finanzas</h1>
-      <p class="page-subtitle">Monitorea tus ingresos, gastos fijos y fondos de caja.</p>
+      <p class="page-subtitle">Consulta los movimientos registrados y el valor de inventario calculado a partir de tus datos.</p>
     </div>
     <div class="header-actions">
-      <button class="btn-outline">Registrar Gasto</button>
-      <button class="btn-primary">Registrar Compra</button>
+      <button class="btn-outline" type="button" disabled title="El registro de gastos se habilitará con el esquema contable">Registrar gasto</button>
+      <button class="btn-primary" type="button" disabled title="El registro de compras se habilitará con el esquema contable">Registrar compra</button>
     </div>
   </div>
 
-  <!-- Tarjetas de Resumen (Widgets) -->
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-icon-box bg-blue">
-        <lucide-icon [img]="icons.Wallet"></lucide-icon>
-      </div>
-      <div class="summary-info">
-        <p class="summary-label">Caja Disponible</p>
-        <h3 class="summary-value">$0.00</h3>
-      </div>
-    </div>
+  <section class="summary-grid" aria-label="Resumen financiero">
+    <article class="summary-card"><div class="summary-icon"><svg [lucideIcon]="icons.Wallet"></svg></div><div><p class="summary-label">Caja estimada</p><p class="summary-value">{{ availableCash() | currency:'USD' }}</p><p class="summary-note">Ingresos menos egresos registrados</p></div></article>
+    <article class="summary-card"><div class="summary-icon summary-icon-positive"><svg [lucideIcon]="icons.TrendingUp"></svg></div><div><p class="summary-label">Ingresos registrados</p><p class="summary-value">{{ incomeTotal() | currency:'USD' }}</p><p class="summary-note">Según los movimientos guardados</p></div></article>
+    <article class="summary-card"><div class="summary-icon summary-icon-warning"><svg [lucideIcon]="icons.Package"></svg></div><div><p class="summary-label">Valor estimado del inventario</p><p class="summary-value">{{ inventoryValue() | currency:'USD' }}</p><p class="summary-note">Stock de insumos por costo unitario</p></div></article>
+  </section>
 
-    <div class="summary-card">
-      <div class="summary-icon-box bg-green">
-        <lucide-icon [img]="icons.DollarSign"></lucide-icon>
-      </div>
-      <div class="summary-info">
-        <p class="summary-label">Fondo de Insumos</p>
-        <h3 class="summary-value">$0.00</h3>
-      </div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-icon-box bg-purple">
-        <lucide-icon [img]="icons.Package"></lucide-icon>
-      </div>
-      <div class="summary-info">
-        <p class="summary-label">Fondo de Empaques</p>
-        <h3 class="summary-value">$0.00</h3>
-      </div>
-    </div>
+  <div class="tabs-container" role="tablist" aria-label="Tipo de movimiento">
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'movimientos'" [class.active]="activeTab() === 'movimientos'" (click)="setTab('movimientos')">Historial de movimientos</button>
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'compras'" [class.active]="activeTab() === 'compras'" (click)="setTab('compras')">Compras de insumos</button>
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'gastos'" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">Gastos fijos</button>
   </div>
 
-  <!-- Pestañas -->
-  <div class="tabs-container">
-    <button class="tab-btn" [class.active]="activeTab() === 'movimientos'" (click)="setTab('movimientos')">
-      Historial de Movimientos
-    </button>
-    <button class="tab-btn" [class.active]="activeTab() === 'compras'" (click)="setTab('compras')">
-      Compras de Insumos
-    </button>
-    <button class="tab-btn" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">
-      Gastos Fijos
-    </button>
-  </div>
+  <section class="table-card">
+    <div class="table-toolbar">
+      <div>
+        <strong class="table-title">{{ activeTab() === 'movimientos' ? 'Todos los movimientos' : activeTab() === 'compras' ? 'Compras registradas' : 'Gastos registrados' }}</strong>
+        <p class="table-subtitle">{{ visibleMovements().length }} movimientos</p>
+      </div>
+      <span class="summary-expense">Egresos: {{ expenseTotal() | currency:'USD' }}</span>
+    </div>
 
-  <!-- Tabla -->
-  <div class="table-card">
     <div class="table-responsive">
       <table class="data-table">
-        <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Descripción</th>
-          <th>Tipo</th>
-          <th>Monto</th>
-        </tr>
-        </thead>
+        <thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th class="amount-cell">Monto</th></tr></thead>
         <tbody>
-        @for (mov of cashMovements(); track mov.id) {
-        <tr>
-          <td>{{ mov.date | date:'shortDate' }}</td>
-          <td class="font-medium">{{ mov.description }}</td>
-          <td>
-                <span class="badge" [ngClass]="mov.type === 'IN' ? 'badge-success' : 'badge-danger'">
-                  <lucide-icon [img]="mov.type === 'IN' ? icons.TrendingUp : icons.TrendingDown" class="badge-icon"></lucide-icon>
-                  {{ mov.type === 'IN' ? 'Ingreso' : 'Egreso' }}
-                </span>
-          </td>
-          <td class="font-bold" [ngClass]="mov.type === 'IN' ? 'text-green' : 'text-danger'">
-            {{ mov.type === 'IN' ? '+' : '-' }}{{ mov.amount | currency:'USD' }}
-          </td>
-        </tr>
-        }
-
-        @if (cashMovements().length === 0) {
-        <tr>
-          <td colspan="4" class="empty-state">No hay registros financieros en esta pestaña.</td>
-        </tr>
-        }
+          @for (movement of visibleMovements(); track movement.id) {
+            <tr>
+              <td>{{ movement.date ? (movement.date | date:'mediumDate') : '—' }}</td>
+              <td><strong class="primary-cell">{{ movement.description }}</strong></td>
+              <td>
+                @if (movement.type === 'IN') {
+                  <span class="status-pill status-ok"><svg [lucideIcon]="icons.TrendingUp"></svg> Ingreso</span>
+                } @else {
+                  <span class="status-pill status-danger"><svg [lucideIcon]="icons.TrendingDown"></svg> Egreso</span>
+                }
+              </td>
+              <td class="amount-cell" [class.amount-out]="movement.type === 'OUT'">{{ movement.type === 'IN' ? '+' : '−' }}{{ movement.amount | currency:'USD' }}</td>
+            </tr>
+          }
+          @if (visibleMovements().length === 0) {
+            <tr><td colspan="4"><div class="empty-state"><strong>{{ activeTab() === 'movimientos' ? 'Todavía no hay movimientos financieros' : 'No hay movimientos en esta categoría' }}</strong><p>Los importes se mostrarán cuando existan registros contables compatibles en Firebase.</p></div></td></tr>
+          }
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 </div>

@@ -1,60 +1,305 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Ingredient, Recipe, Order, Customer, StarkiesBackup } from 'shared';
+import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
+import { FirebaseClientService } from '../core/firebase/firebase-client.service';
 
-const STORAGE_KEY = 'starkies_db_v1';
+type RawRecord = Record<string, unknown>;
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class DataService {
-  ingredients = signal<Ingredient[]>([]);
-  recipes = signal<Recipe[]>([]);
-  customers = signal<Customer[]>([]);
-  orders = signal<Order[]>([]);
+  readonly ingredients = signal<Ingredient[]>([]);
+  readonly recipes = signal<Recipe[]>([]);
+  readonly customers = signal<Customer[]>([]);
+  readonly orders = signal<Order[]>([]);
+  readonly loading = signal(false);
+  readonly migrationRequired = signal(false);
+  readonly error = signal('');
+  readonly rawState = signal<RawRecord | null>(null);
 
-  constructor(private http: HttpClient) {
-    this.initData();
+  constructor(
+    private readonly repository: FirestoreBusinessRepository,
+    private readonly firebase: FirebaseClientService,
+  ) {
+    // Existing pages receive a cloud-backed snapshot; no seed is silently
+    // imported and no localStorage value is overwritten.
+    void this.loadFromCloud();
   }
 
-  private initData(): void {
-    const localData = localStorage.getItem(STORAGE_KEY);
-    if (localData) {
-      const db: StarkiesBackup = JSON.parse(localData);
-      this.loadState(db);
-    } else {
-      // Cargar seed inicial del JSON de respaldo
-      this.http.get<StarkiesBackup>('assets/seed.json').subscribe({
-        next: (seed) => {
-          this.saveToStorage(seed);
-          this.loadState(seed);
-        },
-        error: (err) => console.error('Error al cargar seed.json:', err)
-      });
+  async loadFromCloud(): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      this.error.set(this.firebase.configurationMessage);
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set('');
+    try {
+      const state = await this.repository.loadState();
+      if (!state) {
+        this.migrationRequired.set(true);
+        return;
+      }
+
+      this.rawState.set(state);
+      this.migrationRequired.set(false);
+      this.loadViewModels(state);
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los datos de Firebase.');
+    } finally {
+      this.loading.set(false);
     }
   }
 
-  private loadState(data: StarkiesBackup): void {
-    this.ingredients.set(data.ingredients || []);
-    this.recipes.set(data.recipes || []);
-    this.customers.set(data.customers || []);
-    this.orders.set(data.orders || []);
+  async saveIngredient(ingredient: Ingredient): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const currentIngredients = this.asArray(state['ingredients']);
+    const existingIndex = currentIngredients.findIndex(
+      (item) => this.asString(item['id']) === ingredient.id,
+    );
+    const existing = existingIndex >= 0 ? currentIngredients[existingIndex] : {};
+    const savedRecord: RawRecord = { ...existing, ...ingredient };
+
+    await this.repository.upsertCollectionRecord('ingredients', ingredient.id, savedRecord);
+
+    const nextIngredients = [...currentIngredients];
+    if (existingIndex >= 0) {
+      nextIngredients[existingIndex] = savedRecord;
+    } else {
+      nextIngredients.push(savedRecord);
+    }
+
+    const nextState = { ...state, ingredients: nextIngredients };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
   }
 
-  private saveToStorage(data: StarkiesBackup): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  async deleteIngredient(ingredientId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const rawRecipes = this.asArray(state['recipes']);
+    const isUsedByRecipe = rawRecipes.some((recipe) => {
+      const items = this.asArray(recipe['items']);
+      const sections = this.asArray(recipe['sections']);
+      const usedInItems = items.some(
+        (item) => this.asString(item['id'] ?? item['ingredientId']) === ingredientId,
+      );
+      const usedInSections = sections.some((section) =>
+        this.asArray(section['ingredients']).some(
+          (item) => this.asString(item['ingredientId'] ?? item['id']) === ingredientId,
+        ),
+      );
+      return usedInItems || usedInSections;
+    });
+
+    if (isUsedByRecipe) {
+      throw new Error('Este insumo está utilizado en una receta. No se puede eliminar mientras exista esa relación.');
+    }
+
+    await this.repository.deleteCollectionRecord('ingredients', ingredientId);
+    const nextIngredients = this.asArray(state['ingredients']).filter(
+      (item) => this.asString(item['id']) !== ingredientId,
+    );
+    const nextState = { ...state, ingredients: nextIngredients };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const rawOrders = this.asArray(state['orders']);
+    const orderIndex = rawOrders.findIndex(
+      (item) => this.asString(item['id'] ?? item['code']) === orderId,
+    );
+    if (orderIndex < 0) {
+      throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const currentOrder = rawOrders[orderIndex];
+    const currentStatus = this.normalizeOrderStatus(this.asString(currentOrder['status']));
+    if (currentStatus === status) return;
+    if (currentStatus !== 'PENDING') {
+      throw new Error('Solo se pueden actualizar pedidos que todavía están pendientes.');
+    }
+
+    const updatedOrder: RawRecord = { ...currentOrder, status };
+    await this.repository.upsertCollectionRecord('orders', orderId, updatedOrder);
+
+    const nextOrders = [...rawOrders];
+    nextOrders[orderIndex] = updatedOrder;
+    const nextState = { ...state, orders: nextOrders };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async recordProduction(
+    record: Record<string, unknown>,
+    deductions: { ingredientId: string; quantity: number }[],
+  ): Promise<void> {
+    await this.repository.recordProduction(record, deductions);
+    await this.loadFromCloud();
+    if (this.error()) {
+      throw new Error(this.error());
+    }
   }
 
   exportBackup(): void {
-    const currentData = localStorage.getItem(STORAGE_KEY);
-    if (!currentData) return;
+    const state = this.rawState();
+    if (!state) {
+      this.error.set('Todavía no hay datos de StarKies cargados para exportar.');
+      return;
+    }
 
-    const blob = new Blob([currentData], { type: 'application/json' });
+    const backup: StarkiesBackup & { business: string; exportedAt: string; state: RawRecord } = {
+      business: 'StarKies',
+      exportedAt: new Date().toISOString(),
+      state,
+      ingredients: this.ingredients(),
+      recipes: this.recipes(),
+      customers: this.customers(),
+      orders: this.orders(),
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `StarKies-respaldo-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `StarKies-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  private loadViewModels(state: RawRecord): void {
+    const rawIngredients = this.asArray(state['ingredients']);
+    const rawRecipes = this.asArray(state['recipes']);
+    const rawOrders = this.asArray(state['orders']);
+
+    this.ingredients.set(rawIngredients.map((item) => ({
+      id: this.asString(item['id']),
+      name: this.asString(item['name'], 'Insumo sin nombre'),
+      unit: this.asString(item['unit']),
+      stock: this.asNumber(item['stock']),
+      costPerUnit: this.asNumber(item['costPerUnit'] ?? item['cost']),
+      minStock: this.asNumber(item['minStock'] ?? item['min']),
+    })));
+
+    this.recipes.set(rawRecipes.map((item) => {
+      const items = this.asArray(item['items']);
+      const grouped = new Map<string, { ingredientId: string; quantity: number }[]>();
+      for (const recipeItem of items) {
+        const section = this.asString(recipeItem['section'], 'masa');
+        const entries = grouped.get(section) ?? [];
+        entries.push({
+          ingredientId: this.asString(recipeItem['id'] ?? recipeItem['ingredientId']),
+          quantity: this.asNumber(recipeItem['qty'] ?? recipeItem['quantity']),
+        });
+        grouped.set(section, entries);
+      }
+
+      const rawSections = this.asArray(item['sections']);
+      const sections = rawSections.length
+        ? rawSections.map((section) => ({
+            name: this.asString(section['name'], 'masa'),
+            ingredients: this.asArray(section['ingredients']).map((ingredient) => ({
+              ingredientId: this.asString(ingredient['ingredientId']),
+              quantity: this.asNumber(ingredient['quantity']),
+            })),
+          }))
+        : Array.from(grouped.entries()).map(([name, ingredients]) => ({ name, ingredients }));
+
+      return {
+        id: this.asString(item['id']),
+        name: this.asString(item['name'], 'Receta sin nombre'),
+        category: this.asString(item['category'], 'Sin categoría'),
+        yield: this.asNumber(item['yield']),
+        price: this.asNumber(item['price']),
+        image: this.asOptionalString(item['image']),
+        archived: item['archived'] === true,
+        archivedAt: this.asOptionalString(item['archivedAt']),
+        baseId: this.asOptionalString(item['baseId']),
+        baseGramsPerCookie: this.asOptionalNumber(item['baseGramsPerCookie']),
+        sections,
+      };
+    }));
+
+    const customerMap = new Map<string, Customer>();
+    const normalizedOrders = rawOrders.map((item) => {
+      const name = this.asString(item['customer'], 'Cliente sin nombre');
+      const phone = this.asOptionalString(item['phone']);
+      const address = this.asOptionalString(item['address']);
+      const customerKey = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
+      if (!customerMap.has(customerKey)) {
+        customerMap.set(customerKey, {
+          id: customerKey,
+          name,
+          phone,
+          address,
+        });
+      }
+
+      const rawLines = this.asArray(item['lines']);
+      const lines: RawRecord[] = rawLines.length
+        ? rawLines
+        : this.asArray(item['boxOrders']).flatMap((box): RawRecord[] => this.asArray(box['lines']).map((line): RawRecord => ({
+            id: line['id'],
+            qty: line['qty'],
+            price: line['price'] ?? 0,
+          })));
+
+      return {
+        id: this.asString(item['id'] ?? item['code']),
+        customerId: customerKey,
+        items: lines.map((line) => ({
+          recipeId: this.asString(line['id'] ?? line['recipeId']),
+          quantity: this.asNumber(line['qty'] ?? line['quantity']),
+          unitPrice: this.asNumber(line['price'] ?? line['unitPrice']),
+        })),
+        total: this.asNumber(item['total']),
+        status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
+        createdAt: this.asString(item['created'] ?? item['date']),
+      };
+    });
+
+    this.customers.set(Array.from(customerMap.values()));
+    this.orders.set(normalizedOrders);
+  }
+
+  private normalizeOrderStatus(value: string): Order['status'] {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (normalized.includes('entreg') || normalized === 'delivered') return 'DELIVERED';
+    if (normalized.includes('cancel') || normalized === 'cancelled' || normalized === 'canceled') return 'CANCELLED';
+    return 'PENDING';
+  }
+
+  private asArray(value: unknown): RawRecord[] {
+    return Array.isArray(value)
+      ? value.filter((item): item is RawRecord => typeof item === 'object' && item !== null && !Array.isArray(item))
+      : [];
+  }
+
+  private asString(value: unknown, fallback = ''): string {
+    return typeof value === 'string' ? value : value == null ? fallback : String(value);
+  }
+
+  private asOptionalNumber(value: unknown): number | undefined {
+    return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  }
+
+  private asOptionalString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  }
+
+  private asNumber(value: unknown): number {
+    const result = typeof value === 'number' ? value : Number(value ?? 0);
+    return Number.isFinite(result) ? result : 0;
   }
 }

@@ -1,61 +1,126 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-heading">
     <div>
-      <h1 class="page-title">Recetas</h1>
-      <p class="page-subtitle">Gestiona tu catálogo de galletas y sus fórmulas.</p>
+      <p class="eyebrow">Mi negocio / Recetas</p>
+      <h1 class="page-title">{{ view() === 'recipes' ? 'Recetas' : 'Masas base' }}</h1>
+      <p class="page-subtitle">{{ view() === 'recipes' ? 'Tus sabores, ingredientes, preparación y notas.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
     </div>
-    <button class="btn-primary">Nueva Receta</button>
-  </div>
-
-  <!-- Filtros por Categoría -->
-  <div class="filters-container">
-    @for (cat of categories(); track cat) {
-    <button
-      class="filter-btn"
-      [class.active]="selectedCategory() === cat"
-      (click)="setCategory(cat)"
-    >
-      {{ cat }}
-    </button>
+    @if (view() === 'recipes') {
+      <button class="btn-primary" type="button" title="La creación de recetas se habilitará en la siguiente etapa">
+        <span class="plus-sign" aria-hidden="true">＋</span>
+        Nueva receta
+      </button>
     }
   </div>
 
-  <!-- Grid de Tarjetas -->
-  <div class="recipes-grid">
-    @for (recipe of filteredRecipes(); track recipe.id) {
-    <div class="recipe-card">
-      <div class="card-image-wrapper">
-        <!-- Manejo de fallback si la imagen no existe -->
-        <img
-          [src]="getImageUrl(recipe.image, recipe.id)"
-          [alt]="recipe.name"
-          class="recipe-img"
-          onerror="this.src='images/placeholder.jpg'"
+  <div class="view-and-status-row">
+    <div class="view-tabs" role="tablist" aria-label="Tipo de receta">
+      <button type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Recetario</button>
+      <button type="button" role="tab" [attr.aria-selected]="view() === 'bases'" [class.active]="view() === 'bases'" (click)="setView('bases')">Masas base</button>
+    </div>
+
+    @if (view() === 'recipes') {
+      <div class="archive-tabs" role="group" aria-label="Estado de las recetas">
+        <button type="button" [class.active]="!showArchived()" (click)="setArchiveState(false)">Activas ({{ activeCount() }})</button>
+        <button type="button" [class.active]="showArchived()" (click)="setArchiveState(true)">
+          <span aria-hidden="true">▱</span> Archivadas ({{ archivedCount() }})
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (view() === 'recipes') {
+    <div class="recipe-toolbar">
+      <label class="search-field">
+        <span>Buscar receta</span>
+        <input
+          type="search"
+          [value]="searchTerm()"
+          (input)="searchTerm.set($any($event.target).value)"
+          placeholder="Nombre o categoría"
         />
-        <span class="category-badge">{{ recipe.category }}</span>
-      </div>
+      </label>
 
-      <div class="card-content">
-        <h3 class="recipe-name">{{ recipe.name }}</h3>
-
-        <div class="recipe-stats">
-          <div class="stat">
-            <lucide-icon [img]="icons.PieChart" class="stat-icon"></lucide-icon>
-            <span>Rinde: {{ recipe.yield }} uds</span>
-          </div>
-          <div class="stat price-stat">
-            <lucide-icon [img]="icons.DollarSign" class="stat-icon"></lucide-icon>
-            <span>{{ recipe.price | currency:'USD' }}</span>
-          </div>
+      <details class="category-picker">
+        <summary><span class="category-caret">▸</span> Categorías · {{ selectedCategories().length === 0 ? categories().length : selectedCategories().length }} seleccionadas</summary>
+        <div class="category-menu">
+          @for (category of categories(); track category) {
+            <label>
+              <input type="checkbox" [checked]="isCategorySelected(category)" (change)="toggleCategory(category, $any($event.target).checked)" />
+              <span>{{ category }}</span>
+            </label>
+          }
         </div>
-      </div>
+      </details>
+
+      <label class="sort-field">
+        <span>Ordenar por</span>
+        <select [value]="sortBy()" (change)="setSort($any($event.target).value)">
+          <option value="nameAsc">Nombre: A a Z</option>
+          <option value="nameDesc">Nombre: Z a A</option>
+          <option value="yieldDesc">Rendimiento: mayor a menor</option>
+          <option value="priceDesc">Precio: mayor a menor</option>
+        </select>
+      </label>
+
+      <span class="result-count">{{ filteredRecipes().length }} recetas</span>
     </div>
+
+    @if (groupedRecipes().length === 0) {
+      <div class="empty-state">No se encontraron recetas con estos filtros.</div>
     }
 
-    @if (filteredRecipes().length === 0) {
-    <div class="empty-state">
-      <p>No se encontraron recetas en esta categoría.</p>
-    </div>
+    @for (group of groupedRecipes(); track group.category) {
+      <section class="recipe-group">
+        <h2 class="group-title">{{ group.category }}</h2>
+        <div class="recipes-grid">
+          @for (recipe of group.recipes; track recipe.id) {
+            <article class="recipe-card">
+              <div class="card-image-wrapper">
+                <img
+                  [src]="getImageUrl(recipe.image)"
+                  [alt]="recipe.name"
+                  class="recipe-img"
+                  loading="lazy"
+                  (error)="onImageError($event)"
+                />
+                <span class="yield-badge">{{ recipe.yield }} por lote</span>
+                <span class="card-menu" aria-hidden="true">⋮</span>
+              </div>
+              <div class="card-content">
+                <h3 class="recipe-name">{{ recipe.name }}</h3>
+                <div class="recipe-stats">
+                  <div class="stat">
+                    <svg [lucideIcon]="icons.PieChart" class="stat-icon"></svg>
+                    <span>Rinde: {{ recipe.yield }} uds</span>
+                  </div>
+                  <div class="stat price-stat">
+                    <svg [lucideIcon]="icons.DollarSign" class="stat-icon"></svg>
+                    <span>{{ recipe.price | currency:'USD' }}</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
     }
-  </div>
+  } @else {
+    <div class="bases-grid">
+      @for (base of doughBases(); track base.id ?? base.name) {
+        <article class="base-card">
+          <div class="base-card-mark" aria-hidden="true">✳</div>
+          <div class="base-card-copy">
+            <h2>{{ base.name || 'Masa base sin nombre' }}</h2>
+            <p>Rendimiento de la fórmula</p>
+            <strong>{{ base.weight ?? 0 }} g</strong>
+          </div>
+          <span class="base-items">{{ base.items?.length ?? 0 }} ingredientes</span>
+        </article>
+      }
+      @if (doughBases().length === 0) {
+        <div class="empty-state">No hay masas base registradas en Firebase.</div>
+      }
+    </div>
+  }
 </div>

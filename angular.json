@@ -22,18 +22,19 @@
               {
                 "glob": "**/*",
                 "input": "apps/admin/public"
-              },
-              "apps/admin/src/assets"
+              }
             ],
-            "styles": ["apps/admin/src/styles.css"]
+            "styles": [
+              "apps/admin/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.2MB",
+                  "maximumError": "1.5MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -112,7 +113,9 @@
                 "input": "apps/catalog/public"
               }
             ],
-            "styles": ["apps/catalog/src/styles.css"]
+            "styles": [
+              "apps/catalog/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {

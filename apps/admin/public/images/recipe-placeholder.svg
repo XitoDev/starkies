@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" role="img" aria-labelledby="title desc">
+  <title id="title">Imagen de receta no disponible</title>
+  <desc id="desc">Ilustración cálida de una galleta con chispas sobre un fondo crema.</desc>
+  <rect width="800" height="480" fill="#f7f0e6"/>
+  <circle cx="400" cy="230" r="132" fill="#ead7bc"/>
+  <path d="M400 116c23 1 42 11 58 25 19-7 41 1 50 20 21 4 36 23 34 44 17 14 22 39 10 59 5 23-9 46-30 54-8 22-31 34-54 29-17 17-43 20-63 7-22 9-47 1-58-19-23-3-40-22-39-45-14-18-13-44 2-61-2-23 15-43 37-47 11-21 34-31 56-24 1-14-1-27-3-42z" fill="#b97843"/>
+  <g fill="#6c3f2b">
+    <ellipse cx="351" cy="178" rx="10" ry="14" transform="rotate(-25 351 178)"/>
+    <ellipse cx="416" cy="165" rx="10" ry="14" transform="rotate(22 416 165)"/>
+    <ellipse cx="466" cy="206" rx="10" ry="14" transform="rotate(-12 466 206)"/>
+    <ellipse cx="375" cy="235" rx="10" ry="14" transform="rotate(18 375 235)"/>
+    <ellipse cx="435" cy="258" rx="10" ry="14" transform="rotate(-30 435 258)"/>
+    <ellipse cx="330" cy="274" rx="10" ry="14" transform="rotate(28 330 274)"/>
+    <ellipse cx="479" cy="274" rx="10" ry="14" transform="rotate(14 479 274)"/>
+    <ellipse cx="399" cy="302" rx="10" ry="14" transform="rotate(-8 399 302)"/>
+  </g>
+  <text x="400" y="414" text-anchor="middle" fill="#806b58" font-family="Arial, sans-serif" font-size="22" letter-spacing="3">STARKIES · RECETA</text>
+</svg>
