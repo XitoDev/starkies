@@ -48,7 +48,7 @@
     </div>
   </section>
 </main>
-<footer class="site-footer"><span class="footer-star" aria-hidden="true">★</span><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
+<footer class="site-footer"><mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
 <aside class="cart-dock" aria-label="Resumen de tu caja"><div class="dock-card"><div class="dock-progress">
   <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
   <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
