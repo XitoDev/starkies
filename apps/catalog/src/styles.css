@@ -1,12 +1,28 @@
+@import url('../../../libs/shared/src/lib/ds/ds.css');
+
 :root {
   color-scheme: light;
-  --cream: #f4eaf2;
-  --ink: #4b3153;
-  --purple: #75457c;
-  --pink: #e4d2e6;
+  /* Public catalog palette: warm lilac tones remain distinct from admin. */
+  --ds-color-primary: #75457c;
+  --ds-color-on-primary: #ffffff;
+  --ds-color-primary-container: #e4d2e6;
+  --ds-color-on-primary-container: #4b3153;
+  --ds-color-secondary: #795e7f;
+  --ds-color-surface: #fffafc;
+  --ds-color-surface-container: #f4eaf2;
+  --ds-color-surface-container-high: #eadce8;
+  --ds-color-page: #f4eaf2;
+  --ds-color-text: #4b3153;
+  --ds-color-text-muted: #795e7f;
+  --ds-color-outline: #9b76a2;
+  --ds-color-outline-variant: #e4d2e6;
+  --cream: var(--ds-color-page);
+  --ink: var(--ds-color-text);
+  --purple: var(--ds-color-primary);
+  --pink: var(--ds-color-primary-container);
 }
-html { scroll-behavior: smooth; background: #f4eaf2; }
-body { min-width: 320px; margin: 0; background: #f4eaf2; color: var(--ink); font: 16px 'DM Sans', sans-serif; }
+html { scroll-behavior: smooth; background: var(--ds-color-page); }
+body { min-width: 320px; margin: 0; background: var(--ds-color-page); color: var(--ink); font: 16px 'DM Sans', sans-serif; }
 button, input, textarea, select { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #9b76b4; outline-offset: 3px; }
 
