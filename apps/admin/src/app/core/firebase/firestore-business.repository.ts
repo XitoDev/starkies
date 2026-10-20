@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   collection,
   deleteDoc,
+  DocumentSnapshot,
   doc,
   getDoc,
   getDocs,
@@ -206,7 +207,7 @@ export class FirestoreBusinessRepository {
         throw new Error('La migración de StarKies ya no está disponible. No se registró el lote.');
       }
 
-      const currentIngredientSnapshots = [];
+      const currentIngredientSnapshots: DocumentSnapshot[] = [];
       for (const ingredientDoc of ingredientDocs) {
         currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref.ref));
       }
