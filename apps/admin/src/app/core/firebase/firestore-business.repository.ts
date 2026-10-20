@@ -181,7 +181,7 @@ export class FirestoreBusinessRepository {
       'businesses', 'starkies', 'collections', 'ingredients', 'records',
     );
     const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
-    const ingredientDocs: { ingredientId: string; quantity: number; ref: typeof ingredientSnapshot.docs[number] extends never ? never : (typeof ingredientSnapshot.docs)[number] }[] = [];
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: (typeof ingredientSnapshot.docs)[number] }[] = [];
 
     for (const [ingredientId, quantity] of totals.entries()) {
       const matching = ingredientSnapshot.docs.find((snapshot) => {
@@ -215,7 +215,7 @@ export class FirestoreBusinessRepository {
         throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
       }
 
-      const updates: { ref: typeof ingredientDocs[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
+      const updates: { ref: (typeof ingredientDocs)[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
         const snapshot = currentIngredientSnapshots[index];
         if (!snapshot.exists()) {
