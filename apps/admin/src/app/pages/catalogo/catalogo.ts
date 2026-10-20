@@ -1,5 +1,6 @@
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +14,7 @@ interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
+  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatInputModule],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
