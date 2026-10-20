@@ -51,6 +51,16 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 export class Finanzas {
   private readonly dataService = inject(DataService);
   readonly ingredients = this.dataService.ingredients;
+  readonly recipes = this.dataService.recipes;
+  readonly financeTab = signal<'resumen' | 'productos'>('resumen');
+  readonly priceRows = computed(() => this.recipes().filter(recipe => !recipe.archived).map(recipe => {
+    const batchCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
+      const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
+      return sectionTotal + (ingredient?.costPerUnit ?? 0) * item.quantity;
+    }, 0), 0);
+    const unitCost = batchCost / Math.max(1, recipe.yield);
+    return { id: recipe.id, name: recipe.name, category: recipe.category, unitCost, currentPrice: recipe.price, suggestedPrice: unitCost * 3, extraProfit: recipe.price - unitCost * 3 };
+  }));
 
   readonly icons = {
     DollarSign: LucideDollarSign,
