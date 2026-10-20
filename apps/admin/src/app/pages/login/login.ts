@@ -50,6 +50,16 @@ import { DataService } from '../../services/data.service';
             required
           />
 
+          <label class="remember-device">
+            <input
+              id="rememberDevice"
+              name="rememberDevice"
+              type="checkbox"
+              [(ngModel)]="rememberDevice"
+            />
+            <span>Recordar este dispositivo</span>
+          </label>
+
           <button type="submit" [disabled]="loading() || !loginForm.valid || !firebase.isConfigured">
             {{ loading() ? 'Ingresando…' : 'Iniciar sesión' }}
           </button>
@@ -71,6 +81,8 @@ import { DataService } from '../../services/data.service';
     label { margin-top: 7px; font-size: 13px; font-weight: 700; }
     input { width: 100%; box-sizing: border-box; border: 1px solid #ddd4cb; border-radius: 11px; padding: 13px 14px; background: #fffdfa; color: inherit; font: inherit; outline: none; }
     input:focus { border-color: #8b5c43; box-shadow: 0 0 0 3px rgba(139, 92, 67, .12); }
+    .remember-device { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #514840; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .remember-device input { width: 16px; height: 16px; margin: 0; accent-color: #6e4433; }
     button { margin-top: 12px; border: 0; border-radius: 11px; padding: 14px; background: #6e4433; color: #fffaf5; font: inherit; font-weight: 700; cursor: pointer; }
     button:disabled { cursor: not-allowed; opacity: .55; }
     .notice { margin: 0 0 18px; padding: 12px; border-radius: 10px; background: #fff1ee; color: #8b3024; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
@@ -83,6 +95,7 @@ import { DataService } from '../../services/data.service';
 export class Login {
   email = '';
   password = '';
+  rememberDevice = true;
   loading = signal(false);
   message = signal('');
 
@@ -107,6 +120,7 @@ export class Login {
     this.message.set('');
 
     try {
+      await this.firebase.setDevicePersistence(this.rememberDevice);
       const credential = await this.firebase.signIn(this.email, this.password);
       const { getDoc, doc } = await import('firebase/firestore');
       const adminDoc = await getDoc(doc(this.firebase.firestore, 'adminUsers', credential.user.uid));
