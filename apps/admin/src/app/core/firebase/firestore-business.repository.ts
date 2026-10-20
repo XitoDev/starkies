@@ -149,6 +149,17 @@ export class FirestoreBusinessRepository {
     await deleteDoc(matching.ref);
   }
 
+  async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error('Firebase no está configurado.');
+    }
+    await setDoc(
+      doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
+      { value },
+      { merge: true },
+    );
+  }
+
   /**
    * Atomically records a production run, deducts its recipe ingredients from
    * inventory, and registers the new productionHistory collection in metadata.
