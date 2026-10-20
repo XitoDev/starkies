@@ -52,3 +52,184 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .sheet-body { padding:10px 20px 20px; }
   .sheet-footer { padding:12px 20px max(16px, env(safe-area-inset-bottom)); }
 }
+
+
+/* Catalog card interactions and quantity controls, tuned to the supplied reference. */
+@media (hover: hover) and (pointer: fine) {
+  app-catalog .product {
+    position: relative;
+    z-index: 0;
+    transform: translateZ(0);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    transform-origin: center;
+  }
+  app-catalog .product:hover {
+    z-index: 3;
+    transform: scale(1.025);
+    border-color: #c5a0ce;
+    box-shadow: 0 12px 28px rgb(72 43 81 / 13%);
+  }
+}
+app-catalog .buy .add-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #d0b2d7;
+  border-radius: 13px;
+  background: #f8edf8;
+  color: #68416f;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+app-catalog .buy .add-button:hover:not(:disabled) {
+  border-color: #a67bb1;
+  background: #f1e2f3;
+}
+app-catalog .add-label { text-align: left; }
+app-catalog .add-icon {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: #e8d5ec;
+  color: #68416f;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+app-catalog .quantity {
+  min-height: 54px;
+  gap: 12px;
+  padding: 4px;
+  border: 2px solid #d9bfe0;
+  border-radius: 20px;
+  background: #ead9eb;
+}
+app-catalog .quantity button {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #68416f;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  transition: background 150ms ease, transform 150ms ease;
+}
+app-catalog .quantity button:hover:not(:disabled) {
+  background: #52315a;
+}
+app-catalog .quantity button:active:not(:disabled) { transform: scale(.95); }
+app-catalog .quantity b {
+  flex: 1;
+  color: #68416f;
+  font-size: 16px;
+  font-weight: 750;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+app-catalog .summary {
+  padding: 20px 24px;
+  border: 1px solid #e1cce2;
+  border-radius: 14px;
+  background: #eadce9;
+  color: #4b3153;
+}
+app-catalog .summary h3 {
+  margin-bottom: 12px;
+  color: #4b3153;
+  font-size: 16px;
+}
+app-catalog .packed-box {
+  padding: 16px 0 18px;
+  border-bottom-color: #d9c3db;
+  font-size: 14px;
+}
+app-catalog .packed-box-heading {
+  align-items: baseline;
+  gap: 14px;
+  color: #43264d;
+  font-size: 15px;
+  line-height: 1.45;
+}
+app-catalog .packed-box-heading strong:last-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+app-catalog .packed-box ul {
+  margin: 10px 0 14px;
+  padding-left: 22px;
+  color: #4b3153;
+  font-size: 14px;
+  line-height: 1.9;
+}
+app-catalog .box-actions {
+  gap: 18px;
+  align-items: center;
+}
+app-catalog .box-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  color: #79518b;
+  font-size: 13px;
+  font-weight: 650;
+}
+app-catalog .box-actions .remove-box-action svg { flex: 0 0 auto; }
+app-catalog .add-box-button {
+  min-height: 48px;
+  margin: 16px 0 18px;
+  border-color: #c49ac9;
+  border-radius: 12px;
+  background: transparent;
+  color: #68416f;
+  font-size: 14px;
+}
+app-catalog .cart-row {
+  min-height: 47px;
+  padding: 12px 0;
+  border-bottom-color: #d9c3db;
+  color: #4b3153;
+  font-size: 15px;
+}
+app-catalog .cart-row strong {
+  color: #43264d;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+app-catalog .sheet-total {
+  color: #4b3153;
+  font-size: 15px;
+}
+app-catalog .sheet-total strong {
+  color: #43264d;
+  font-size: 23px;
+}
+@media (max-width: 680px) {
+  app-catalog .buy .add-button { min-height: 40px; padding: 0 9px; gap: 5px; font-size: 11px; }
+  app-catalog .add-icon { flex-basis: 25px; width: 25px; height: 25px; font-size: 19px; }
+  app-catalog .quantity { min-height: 43px; gap: 4px; padding: 3px; border-radius: 15px; }
+  app-catalog .quantity button { flex-basis: 30px; width: 30px; min-height: 32px; border-radius: 9px; font-size: 18px; }
+  app-catalog .quantity b { font-size: 13px; }
+  app-catalog .summary { padding: 16px 15px; }
+  app-catalog .packed-box-heading { font-size: 12px; }
+  app-catalog .packed-box ul { font-size: 12px; }
+  app-catalog .cart-row { font-size: 13px; }
+  app-catalog .cart-row strong { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  app-catalog .product, app-catalog .buy .add-button, app-catalog .quantity button { transition: none; }
+}

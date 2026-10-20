@@ -8,7 +8,7 @@ export const BOX_PRESENTATIONS: BoxPresentation[] = [
 export const CATALOG_PRODUCTS: Product[] = [
   { id: '1', name: 'Brownie Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de cacao y una textura craquelada, estilo brownie.', tag: 'Más vendido', price: .6, isNy: false, stock: true, image: IMAGE_BASE + 'recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg' },
   { id: '2', name: 'Avena Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g elaborada con avena en hojuelas y un toque de vainilla.', price: .6, isNy: false, stock: true, image: IMAGE_BASE + 'recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg' },
-  { id: '3', name: 'Chispas de Chocolate Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de vainilla y chispas de chocolate.', price: .6, isNy: false, stock: true, image: '/images/chispas-chocolate-classic.webp' },
+  { id: '3', name: 'Chispas de Chocolate Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de vainilla y chispas de chocolate.', price: .6, isNy: false, stock: true },
   { id: '4', name: 'Canela Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de vainilla y un toque de canela.', price: .6, isNy: false, stock: true, image: IMAGE_BASE + 'recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg' },
   { id: '5', name: 'Red Velvet Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa red velvet y trocitos de chocolate blanco.', tag: 'Agotado', price: .6, isNy: false, stock: false },
   { id: '6', name: 'Sunny Carrot', category: 'Galletas NY', description: 'Galleta de 60 g con zanahoria rallada y cobertura de frosting de queso crema.', price: 1.3, isNy: true, stock: true, image: IMAGE_BASE + 'recipe-85e499f3-37c9-4701-bf89-5176007ce546.png' },
@@ -18,7 +18,7 @@ export const CATALOG_PRODUCTS: Product[] = [
   { id: '10', name: 'Nuti Dream', category: 'Galletas NY', description: 'Galleta de 60 g con masa de vainilla y decorada con Nutella.', price: 1.3, isNy: true, stock: true, image: IMAGE_BASE + 'recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png' },
   { id: '11', name: 'Lemon Glow', category: 'Galletas NY', description: 'Galleta de 60 g con sabor a limón, cobertura de frosting blanco y ralladura de limón.', tag: 'Recomendado', price: 1.3, isNy: true, stock: true, image: IMAGE_BASE + 'recipe-0794f338-588b-460d-b002-ee4e614826c9.png' },
   { id: '12', name: 'Brownie Bliss', category: 'Galletas NY', description: 'Galleta de 60 g con masa de brownie de chocolate y decorada con chocolate derretido.', tag: 'Más vendido', price: 1.3, isNy: true, stock: true, image: IMAGE_BASE + 'recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png' },
-  { id: '13', name: 'Choco Meteor', category: 'Galletas NY', description: 'Galleta de 60 g con masa de cacao y chispas de chocolate.', price: 1.3, isNy: true, stock: true, image: '/images/choco-meteor.webp' },
+  { id: '13', name: 'Choco Meteor', category: 'Galletas NY', description: 'Galleta de 60 g con masa de cacao y chispas de chocolate.', price: 1.3, isNy: true, stock: true },
 ];
 export const DELIVERY_ZONES: DeliveryZone[] = [
   { id: '1', name: 'Kennedy', fee: .99 }, { id: '2', name: 'Norte', fee: 3.5 },
