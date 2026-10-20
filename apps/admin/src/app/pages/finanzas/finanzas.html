@@ -113,23 +113,23 @@
           }
           <label class="form-field">
             <span>Cantidad comprada *</span>
-            <input type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
+            <input matInput type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
           </label>
           <label class="form-field">
             <span>Costo por {{ selectedIngredient()?.unit || 'unidad' }} (USD) *</span>
-            <input type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
+            <input matInput type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
           </label>
           <label class="form-field">
             <span>Fecha de compra *</span>
-            <input type="date" required [value]="purchaseForm().date" (input)="updatePurchaseText('date', $any($event.target).value)" />
+            <input matInput type="date" required [value]="purchaseForm().date" (input)="updatePurchaseText('date', $any($event.target).value)" />
           </label>
           <label class="form-field">
             <span>Total estimado</span>
-            <input type="text" readonly [value]="purchaseTotal() | currency:'USD'" />
+            <input matInput type="text" readonly [value]="purchaseTotal() | currency:'USD'" />
           </label>
           <label class="form-field form-field-wide">
             <span>Nota (opcional)</span>
-            <input maxlength="160" [value]="purchaseForm().note" (input)="updatePurchaseText('note', $any($event.target).value)" placeholder="Ej. Compra semanal en proveedor" />
+            <input matInput maxlength="160" [value]="purchaseForm().note" (input)="updatePurchaseText('note', $any($event.target).value)" placeholder="Ej. Compra semanal en proveedor" />
           </label>
           @if (formError()) {
             <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
@@ -145,7 +145,7 @@
         <form class="finance-form" (submit)="submitExpenseForm($event)">
           <label class="form-field form-field-wide">
             <span>Descripción *</span>
-            <input required maxlength="160" [value]="expenseForm().description" (input)="updateExpenseText('description', $any($event.target).value)" placeholder="Ej. Pago de electricidad" />
+            <input matInput required maxlength="160" [value]="expenseForm().description" (input)="updateExpenseText('description', $any($event.target).value)" placeholder="Ej. Pago de electricidad" />
           </label>
           <label class="form-field">
             <span>Categoría *</span>
@@ -158,11 +158,11 @@
           </label>
           <label class="form-field">
             <span>Monto (USD) *</span>
-            <input type="number" min="0.01" step="0.01" required [value]="expenseForm().amount" (input)="updateExpenseNumber($any($event.target).value)" />
+            <input matInput type="number" min="0.01" step="0.01" required [value]="expenseForm().amount" (input)="updateExpenseNumber($any($event.target).value)" />
           </label>
           <label class="form-field form-field-wide">
             <span>Fecha del gasto *</span>
-            <input type="date" required [value]="expenseForm().date" (input)="updateExpenseText('date', $any($event.target).value)" />
+            <input matInput type="date" required [value]="expenseForm().date" (input)="updateExpenseText('date', $any($event.target).value)" />
           </label>
           @if (formError()) {
             <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
@@ -199,7 +199,7 @@
             </select>
           </label>
         } @else if (ledgerActionOpen() === 'boxesPurchase') {
-          <label class="form-field form-field-wide"><span>Descripción *</span><input required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
+          <label class="form-field form-field-wide"><span>Descripción *</span><input matInput required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
         } @else {
           <label class="form-field"><span>Desde *</span>
             <select [value]="ledgerActionForm().from" (change)="updateLedgerForm('from', $any($event.target).value)">
@@ -212,8 +212,8 @@
             </select>
           </label>
         }
-        <label class="form-field"><span>Monto (USD) *</span><input type="number" min="0.01" step="0.01" required [value]="ledgerActionForm().amount" (input)="updateLedgerForm('amount', $any($event.target).value)" /></label>
-        <label class="form-field"><span>Fecha *</span><input type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Monto (USD) *</span><input matInput type="number" min="0.01" step="0.01" required [value]="ledgerActionForm().amount" (input)="updateLedgerForm('amount', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Fecha *</span><input matInput type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
         @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
         <div class="modal-actions form-field-wide">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
