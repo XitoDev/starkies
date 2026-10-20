@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { DataService } from '../../services/data.service';
 import { Ingredient, Recipe } from 'shared';
 
