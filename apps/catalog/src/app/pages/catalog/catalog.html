@@ -69,7 +69,7 @@
 @if (wantsCookieName()) { <label>Nombre en la caja<input type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Si lo dejas vacío, usaremos tu nombre"></label> }
 <label>Notas adicionales<textarea [(ngModel)]="orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></label>
 <div class="summary"><h3>Resumen de tu pedido</h3>
-@if (completedBoxes().some(box => boxHasUnavailableItems(box))) { <p class="summary-warning">Hay un sabor agotado o no disponible. Usa Editar sabores en la caja correspondiente antes de confirmar.</p> }
+@if (hasUnavailableBox()) { <p class="summary-warning">Hay un sabor agotado o no disponible. Usa Editar sabores en la caja correspondiente antes de confirmar.</p> }
 @for (box of completedBoxes(); track $index) { <div class="packed-box">
 <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
 <ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ getProductName(key) }}</li> }</ul>
