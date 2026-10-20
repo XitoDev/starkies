@@ -52,8 +52,9 @@
   <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
   <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
 </div>
-@if (completedBoxes().length > 0) { <button type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
-@else { <button type="button" class="dock-continue" [disabled]="!isBoxComplete()" (click)="finishBox()">Continuar</button> }
+@if (isBoxComplete()) { <button type="button" class="dock-continue" (click)="finishBox()">{{ completedBoxes().length > 0 ? 'Añadir caja' : 'Continuar' }}</button> }
+@else if (completedBoxes().length > 0) { <button type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
+@else { <button type="button" class="dock-continue" disabled>Continuar</button> }
 </div></aside>
 @if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }
 @if (showOrderSheetModal()) {
