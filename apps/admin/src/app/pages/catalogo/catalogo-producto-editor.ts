@@ -21,7 +21,7 @@ import { RecipeImageService } from '../../services/recipe-image.service';
         <form (ngSubmit)="save()">
           <label class="visibility"><input type="checkbox" [(ngModel)]="visible" name="visible"> Visible en el catálogo</label>
           <label>Etiqueta · opcional<select [(ngModel)]="label" name="label"><option value="">Sin etiqueta</option>@for(tag of labels;track tag){<option [value]="tag">{{ tag }}</option>}</select></label>
-          <button matButton="text" class="text-action" type="button" (click)="newLabelOpen.set(!newLabelOpen())">＋ Nueva etiqueta</button>
+          <button matButton="text" class="text-action" type="button" (click)="newLabelOpen.set(!newLabelOpen())"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Nueva etiqueta</button>
           @if(newLabelOpen()){<div class="new-label"><input aria-label="Nombre de nueva etiqueta" maxlength="40" [(ngModel)]="newLabelName" name="newLabelName" placeholder="Nombre de la etiqueta"><button matButton="text" type="button" (click)="addLabel()">Agregar</button><button matButton="text" type="button" class="cancel-label" (click)="newLabelOpen.set(false)">Cancelar</button></div>}
           <fieldset><legend>Color de la etiqueta</legend><div class="colors">@for(color of colors;track color.name){<button matButton="text" type="button" [class.selected]="labelColor===color.name" [style.background]="color.background" [style.color]="color.foreground" (click)="labelColor=color.name">{{ color.name }}</button>}</div></fieldset>
           <label>Descripción para clientes<textarea rows="4" maxlength="500" [(ngModel)]="description" name="description" placeholder="Describe la galleta para tus clientes"></textarea></label>
