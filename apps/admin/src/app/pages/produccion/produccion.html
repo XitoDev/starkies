@@ -5,7 +5,7 @@
       <h1 class="page-title">Producción</h1>
       <p class="page-subtitle">Registra lotes horneados, calcula su rendimiento y descuenta automáticamente los insumos de la fórmula.</p>
     </div>
-    <button class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
+    <button matButton="elevated" class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
       <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
       Nuevo lote
     </button>
@@ -71,7 +71,7 @@
                   <strong>{{ productionHistory().length === 0 ? 'Aún no hay lotes de producción' : 'No encontramos resultados' }}</strong>
                   <p>{{ productionHistory().length === 0 ? 'Cuando registres el primer lote, aquí quedarán su rendimiento, costo y fecha.' : 'Prueba con otra fecha o nombre de receta.' }}</p>
                   @if (productionHistory().length === 0 && activeRecipes().length > 0) {
-                    <button class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
+                    <button matButton="outlined" class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
                   }
                 </div>
               </td>
@@ -92,7 +92,7 @@
           <h2 id="production-modal-title">Preparar un lote</h2>
           <p>Al confirmar, se registrará el lote y se descontarán sus ingredientes del inventario.</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
       </div>
 
       <div class="production-form">
@@ -142,8 +142,8 @@
         }
 
         <div class="modal-actions">
-          <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
+          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
             {{ saving() ? 'Registrando…' : 'Registrar producción' }}
           </button>
         </div>
