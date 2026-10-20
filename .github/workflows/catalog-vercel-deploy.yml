@@ -1,0 +1,101 @@
+name: Deploy Public Catalog Preview to Vercel
+
+on:
+  push:
+    branches:
+      - "feat/**"
+    paths:
+      - "apps/catalog/**"
+      - "api/orders.ts"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - "docs/public-catalog-seo-and-domain.md"
+      - ".github/workflows/catalog-vercel-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Feature branch to deploy as a Preview"
+        required: true
+        default: "feat/public-catalog-orders-seo"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-catalog-preview-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-catalog-preview:
+    name: Build and deploy public catalog Preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Vercel project settings
+        id: vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Public catalog Preview not deployed"
+              echo ""
+              echo "Configure VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_CATALOG_PROJECT_ID in GitHub Actions secrets to enable the isolated Vercel project."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::Preview skipped because the public catalog Vercel secrets are not all configured."
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout selected branch
+        if: steps.vercel.outputs.ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+
+      - name: Set up Node.js
+        if: steps.vercel.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pull Vercel Preview settings
+        if: steps.vercel.outputs.ready == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: npx vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build Preview artifacts
+        if: steps.vercel.outputs.ready == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: npx vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy Preview
+        if: steps.vercel.outputs.ready == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          set -o pipefail
+          npx vercel deploy --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tee vercel-deploy.log
+          DEPLOYMENT_URL="$(grep -Eo 'https://[^[:space:]]+\.vercel\.app' vercel-deploy.log | tail -n 1 || true)"
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "::error::Vercel did not return a Preview URL."
+            exit 1
+          fi
+          {
+            echo "## Public catalog Preview"
+            echo ""
+            echo "Preview URL: $DEPLOYMENT_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
