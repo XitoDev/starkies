@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   LucideDynamicIcon,
   LucideDollarSign,
@@ -22,7 +23,18 @@ type PurchaseForm = {
   note: string;
 };
 
-type ExpenseForm = {
+type BankKey = 'ingredients' | 'expenses' | 'profit';
+type FundKey = 'ingredients' | 'expenses' | 'boxes' | 'profit' | 'extraProfit';
+type LedgerAction = 'boxesPurchase' | 'boxesPayment' | 'transfer';
+interface FinanceLedger {
+  bankBalances: Record<BankKey, number>;
+  funds: Record<FundKey, { balance: number; previousBalance: number }>;
+  pendingTransactions: { id: string; kind: 'boxes'; description: string; amount: number; date: string; status: 'pending' | 'paid' }[];
+  history: { id: string; description: string; amount: number; date: string; status: string }[];
+}
+type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
+
+ type ExpenseForm = {
   description: string;
   amount: number;
   date: string;
@@ -32,7 +44,7 @@ type ExpenseForm = {
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, RouterLink, LucideDynamicIcon],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })
@@ -112,6 +124,175 @@ export class Finanzas {
   readonly selectedIngredient = computed(() =>
     this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
   );
+
+  readonly bankCards = computed(() => {
+    const ledger = this.ledger();
+    return [
+      { key: 'ingredients' as const, title: 'Ingredientes', balance: ledger.bankBalances.ingredients, note: 'Reposición de ingredientes', tone: 'ingredients' },
+      { key: 'expenses' as const, title: 'Gastos', balance: ledger.bankBalances.expenses, note: 'Gastos + cajas', tone: 'expenses' },
+      { key: 'profit' as const, title: 'Ganancia', balance: ledger.bankBalances.profit, note: 'Ganancia + ganancia extra', tone: 'profit' },
+    ];
+  });
+  readonly totalCapital = computed(() => this.bankCards().reduce((sum, item) => sum + item.balance, 0));
+  readonly pendingTransactions = computed(() => this.ledger().pendingTransactions.filter(item => item.status === 'pending'));
+  readonly pendingCount = computed(() => this.pendingTransactions().length);
+  readonly fundCards = computed(() => {
+    const funds = this.ledger().funds;
+    return [
+      { key: 'ingredients' as const, title: 'Ingredientes', balance: funds.ingredients.balance, previous: funds.ingredients.previousBalance, note: 'La primera parte del costo × 3 recupera ingredientes y elaboración.', action: 'Comprar ingredientes' },
+      { key: 'expenses' as const, title: 'Gastos', balance: funds.expenses.balance, previous: funds.expenses.previousBalance, note: 'La segunda parte del costo, descontando la reserva para cajas.' , action: 'Registrar pago' },
+      { key: 'boxes' as const, title: 'Cajas', balance: funds.boxes.balance, previous: funds.boxes.previousBalance, note: 'El saldo de cajas conservado más las nuevas reservas, menos sus compras.', action: 'Comprar cajas' },
+      { key: 'profit' as const, title: 'Ganancia', balance: funds.profit.balance, previous: funds.profit.previousBalance, note: 'La tercera parte del costo × 3. Se mantiene separada.', action: '' },
+      { key: 'extraProfit' as const, title: 'Ganancia extra', balance: funds.extraProfit.balance, previous: funds.extraProfit.previousBalance, note: 'Lo cobrado por encima del costo de elaboración × 3.', action: '' },
+    ].map(item => ({ ...item, variation: item.balance - item.previous }));
+  });
+  readonly ledgerActionOpen = signal<LedgerAction | null>(null);
+  readonly ledgerActionForm = signal<LedgerActionForm>(this.emptyLedgerActionForm());
+  readonly ledgerSaving = signal(false);
+  readonly ledgerError = signal('');
+  readonly ledgerNotice = signal('');
+  readonly pendingPanelOpen = signal(false);
+
+  private ledger(): FinanceLedger {
+    const raw = this.dataService.rawState()?.['financeLedger'];
+    const value = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+    const rawBanks = value['bankBalances'] && typeof value['bankBalances'] === 'object' ? value['bankBalances'] as Record<string, unknown> : {};
+    const rawFunds = value['funds'] && typeof value['funds'] === 'object' ? value['funds'] as Record<string, unknown> : {};
+    const fundKeys: FundKey[] = ['ingredients', 'expenses', 'boxes', 'profit', 'extraProfit'];
+    const funds = Object.fromEntries(fundKeys.map(key => {
+      const entry = rawFunds[key] && typeof rawFunds[key] === 'object' ? rawFunds[key] as Record<string, unknown> : {};
+      return [key, { balance: this.money(entry['balance']), previousBalance: this.money(entry['previousBalance']) }];
+    })) as FinanceLedger['funds'];
+    const bankBalances = {
+      ingredients: this.money(rawBanks['ingredients']),
+      expenses: this.money(rawBanks['expenses']),
+      profit: this.money(rawBanks['profit']),
+    };
+    const pendingTransactions = Array.isArray(value['pendingTransactions'])
+      ? value['pendingTransactions'].filter((item): item is FinanceLedger['pendingTransactions'][number] => {
+          if (!item || typeof item !== 'object') return false;
+          const entry = item as Record<string, unknown>;
+          return typeof entry['id'] === 'string' && entry['kind'] === 'boxes' && typeof entry['amount'] === 'number' && (entry['status'] === 'pending' || entry['status'] === 'paid');
+        })
+      : [];
+    const history = Array.isArray(value['history'])
+      ? value['history'].filter((item): item is FinanceLedger['history'][number] => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>)['id'] === 'string'))
+      : [];
+    return { bankBalances, funds, pendingTransactions, history };
+  }
+
+  private money(value: unknown): number {
+    const parsed = typeof value === 'number' ? value : Number(value ?? 0);
+    return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+  }
+
+  private emptyLedgerActionForm(): LedgerActionForm {
+    return { amount: 0, description: '', date: this.today(), from: 'ingredients', to: 'expenses', pendingId: '' };
+  }
+
+  openLedgerAction(action: LedgerAction, from: BankKey = 'ingredients'): void {
+    const firstPending = this.pendingTransactions()[0];
+    this.ledgerActionForm.set({
+      ...this.emptyLedgerActionForm(),
+      from,
+      to: from === 'ingredients' ? 'expenses' : 'ingredients',
+      pendingId: action === 'boxesPayment' ? firstPending?.id ?? '' : '',
+      amount: action === 'boxesPayment' ? firstPending?.amount ?? 0 : 0,
+      description: action === 'boxesPayment' ? firstPending?.description ?? 'Pago de cajas' : '',
+    });
+    this.ledgerError.set('');
+    this.ledgerNotice.set('');
+    this.ledgerActionOpen.set(action);
+  }
+
+  updateLedgerForm(field: keyof LedgerActionForm, value: string): void {
+    this.ledgerActionForm.update(current => {
+      if (field === 'amount') {
+        const amount = value.trim() ? Number(value) : 0;
+        return { ...current, amount: Number.isFinite(amount) ? Math.max(0, amount) : 0 };
+      }
+      if (field === 'from' && ['ingredients', 'expenses', 'profit', 'external'].includes(value)) {
+        return { ...current, from: value as LedgerActionForm['from'] };
+      }
+      if (field === 'to' && ['ingredients', 'expenses', 'profit'].includes(value)) return { ...current, to: value as BankKey };
+      return { ...current, [field]: value };
+    });
+  }
+
+  selectPendingBoxPurchase(id: string): void {
+    const pending = this.pendingTransactions().find(item => item.id === id);
+    this.ledgerActionForm.update(current => ({ ...current, pendingId: id, amount: pending?.amount ?? 0, description: pending?.description ?? '' }));
+  }
+
+  async saveLedgerAction(): Promise<void> {
+    const action = this.ledgerActionOpen();
+    const form = this.ledgerActionForm();
+    if (!action || this.ledgerSaving()) return;
+    const amount = Math.round(form.amount * 100) / 100;
+    if (!Number.isFinite(amount) || amount <= 0) { this.ledgerError.set('El monto debe ser mayor que cero.'); return; }
+    if (!this.normalizeDate(form.date)) { this.ledgerError.set('Selecciona una fecha válida.'); return; }
+
+    const current = this.ledger();
+    const next: FinanceLedger = {
+      bankBalances: { ...current.bankBalances },
+      funds: Object.fromEntries(Object.entries(current.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'],
+      pendingTransactions: current.pendingTransactions.map(item => ({ ...item })),
+      history: [...current.history],
+    };
+    const description = form.description.trim();
+    if (action === 'boxesPurchase') {
+      if (!description) { this.ledgerError.set('Describe la compra de cajas.'); return; }
+      next.pendingTransactions.push({ id: crypto.randomUUID(), kind: 'boxes', description, amount, date: this.normalizeDate(form.date)!, status: 'pending' });
+      next.history.unshift({ id: crypto.randomUUID(), description: `Compra pendiente: ${description}`, amount, date: this.normalizeDate(form.date)!, status: 'Pendiente de pago' });
+    } else if (action === 'boxesPayment') {
+      const pending = next.pendingTransactions.find(item => item.id === form.pendingId && item.status === 'pending');
+      if (!pending) { this.ledgerError.set('Selecciona una compra de cajas pendiente de pago.'); return; }
+      if (amount > pending.amount) { this.ledgerError.set('El pago no puede superar el monto pendiente de esa compra.'); return; }
+      if (amount < pending.amount) { this.ledgerError.set('Para cerrar esta transacción, registra el monto pendiente completo.'); return; }
+      next.bankBalances.expenses -= amount;
+      next.funds.boxes.balance -= amount;
+      pending.status = 'paid';
+      next.history.unshift({ id: crypto.randomUUID(), description: `Pago de cajas: ${pending.description}`, amount, date: this.normalizeDate(form.date)!, status: 'Pagado' });
+    } else {
+      if (form.from === form.to) { this.ledgerError.set('El origen y el destino deben ser distintos.'); return; }
+      if (form.from !== 'external' && next.bankBalances[form.from] < amount) { this.ledgerError.set('El saldo de la cuenta de origen es insuficiente.'); return; }
+      if (form.from !== 'external') next.bankBalances[form.from] = this.money(next.bankBalances[form.from] - amount);
+      next.bankBalances[form.to] = this.money(next.bankBalances[form.to] + amount);
+      next.history.unshift({ id: crypto.randomUUID(), description: form.from === 'external' ? `Ingreso de capital a ${this.bankName(form.to)}` : `Transferencia de ${this.bankName(form.from)} a ${this.bankName(form.to)}`, amount, date: this.normalizeDate(form.date)!, status: 'Confirmado' });
+    }
+
+    this.ledgerSaving.set(true);
+    this.ledgerError.set('');
+    try {
+      await this.dataService.saveBusinessSetting('financeLedger', next);
+      this.ledgerActionOpen.set(null);
+      this.ledgerNotice.set(action === 'boxesPurchase' ? 'Compra de cajas registrada; queda pendiente de pago.' : action === 'boxesPayment' ? 'Pago de cajas registrado correctamente.' : 'Transferencia registrada correctamente.');
+    } catch (error) {
+      this.ledgerError.set(error instanceof Error ? error.message : 'No se pudo guardar la operación financiera.');
+    } finally {
+      this.ledgerSaving.set(false);
+    }
+  }
+
+  private bankName(key: BankKey): string {
+    return ({ ingredients: 'Ingredientes', expenses: 'Gastos', profit: 'Ganancia' } as const)[key];
+  }
+
+  async applyFundPayment(kind: 'ingredients' | 'expenses', amount: number, description: string, date: string): Promise<void> {
+    const current = this.ledger();
+    const next: FinanceLedger = {
+      bankBalances: { ...current.bankBalances },
+      funds: Object.fromEntries(Object.entries(current.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'],
+      pendingTransactions: current.pendingTransactions.map(item => ({ ...item })),
+      history: [...current.history],
+    };
+    const bankKey: BankKey = kind;
+    next.bankBalances[bankKey] = this.money(next.bankBalances[bankKey] - amount);
+    next.funds[kind].balance = this.money(next.funds[kind].balance - amount);
+    next.history.unshift({ id: crypto.randomUUID(), description, amount, date, status: 'Confirmado' });
+    await this.dataService.saveBusinessSetting('financeLedger', next);
+  }
+
 
   setTab(tab: 'movimientos' | 'compras' | 'gastos'): void {
     this.activeTab.set(tab);
@@ -231,6 +412,7 @@ export class Finanzas {
     this.notice.set('');
     try {
       await this.dataService.recordIngredientPurchase(movement);
+      await this.applyFundPayment('ingredients', amount, movement.description, date);
       this.formOpen.set(null);
       this.notice.set('Compra registrada y stock actualizado correctamente.');
       this.activeTab.set('compras');
@@ -275,6 +457,7 @@ export class Finanzas {
     this.notice.set('');
     try {
       await this.dataService.recordCashMovement(movement);
+      await this.applyFundPayment('expenses', amount, movement.description, date);
       this.formOpen.set(null);
       this.notice.set('Gasto registrado correctamente.');
       this.activeTab.set('gastos');
