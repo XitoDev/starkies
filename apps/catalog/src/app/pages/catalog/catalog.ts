@@ -50,6 +50,7 @@ export class Catalog {
   readonly boxesTotalSum = computed(() => this.completedBoxes().reduce((total, box) => total + box.presentation.price, 0));
   readonly shippingFee = computed(() => this.orderForm.zone?.fee ?? 0);
   readonly grandTotal = computed(() => this.boxesTotalSum() + this.shippingFee());
+  readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
     const title = inject(Title), meta = inject(Meta);
     title.setTitle('Cajas de galletas artesanales en Guayaquil | StarKies');
