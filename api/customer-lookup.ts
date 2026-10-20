@@ -44,14 +44,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       const value = doc.data()['value'] as CustomerRecord | undefined;
       return value && normalizePhone(String(value.phone ?? '')) === normalized;
     });
-    if (!match) {
+    let value = match?.data()['value'] as CustomerRecord | undefined;
+    if (!value) {
+      const oldOrders = await getDatabase().collection('businesses/starkies/collections/orders/records').get();
+      const previousOrder = oldOrders.docs
+        .map(doc => doc.data()['value'] as CustomerRecord | undefined)
+        .find(order => order && normalizePhone(String(order.phone ?? '')) === normalized);
+      if (previousOrder) {
+        const rawAddress = typeof previousOrder.address === 'string' ? previousOrder.address : '';
+        value = {
+          name: previousOrder.customer,
+          phone: previousOrder.phone,
+          address: rawAddress.includes(' — ') ? rawAddress.split(' — ').slice(1).join(' — ') : rawAddress,
+        };
+      }
+    }
+    if (!value) {
       res.status(200).json({ found: false });
       return;
     }
-    const value = match.data()['value'] as CustomerRecord;
     res.status(200).json({
       found: true,
-      name: typeof value.name === 'string' ? value.name : '',
+      name: typeof value.name === 'string' ? value.name : typeof (value as Record<string, unknown>)['customer'] === 'string' ? String((value as Record<string, unknown>)['customer']) : '',
       address: typeof value.address === 'string' && value.address !== 'Retiro en tienda' ? value.address : '',
     });
   } catch (error) {
