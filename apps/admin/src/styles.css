@@ -1,15 +1,30 @@
+@import url('../../../libs/shared/src/lib/ds/ds.css');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   color-scheme: light;
-  --sk-ink: #30263a;
-  --sk-muted: #91869b;
-  --sk-line: #eee7f2;
-  --sk-purple: #8056ad;
+  /* Admin palette: intentionally distinct from the public catalog. */
+  --ds-color-primary: #8056ad;
+  --ds-color-on-primary: #ffffff;
+  --ds-color-primary-container: #f0e7f7;
+  --ds-color-on-primary-container: #30263a;
+  --ds-color-secondary: #6d5a78;
+  --ds-color-surface: #ffffff;
+  --ds-color-surface-container: #f8f3fb;
+  --ds-color-surface-container-high: #f0e7f7;
+  --ds-color-page: #f9f7fa;
+  --ds-color-text: #30263a;
+  --ds-color-text-muted: #91869b;
+  --ds-color-outline: #91869b;
+  --ds-color-outline-variant: #eee7f2;
+  --sk-ink: var(--ds-color-text);
+  --sk-muted: var(--ds-color-text-muted);
+  --sk-line: var(--ds-color-outline-variant);
+  --sk-purple: var(--ds-color-primary);
   --sk-purple-dark: #704795;
-  --sk-purple-soft: #f0e7f7;
-  --sk-page: #f9f7fa;
-  --sk-card: #ffffff;
+  --sk-purple-soft: var(--ds-color-primary-container);
+  --sk-page: var(--ds-color-page);
+  --sk-card: var(--ds-color-surface);
 }
 
 * {
