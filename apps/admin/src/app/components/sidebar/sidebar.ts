@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideDynamicIcon,
   LucideUtensils,
@@ -11,7 +11,9 @@ import {
   LucideDollarSign,
   LucideDownload,
 } from '@lucide/angular';
+import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
 import { DataService } from '../../services/data.service';
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
@@ -21,7 +23,11 @@ import { DataService } from '../../services/data.service';
 })
 export class Sidebar {
   private dataService = inject(DataService);
+  private router = inject(Router);
+  private firebase = inject(FirebaseClientService);
 
+  readonly loggingOut = signal(false);
+  readonly logoutMessage = signal('');
   readonly icons = { Utensils: LucideUtensils, Package: LucidePackage, Factory: LucideFactory, Store: LucideStore, ShoppingBag: LucideShoppingBag, DollarSign: LucideDollarSign, Download: LucideDownload };
 
   navItems = [
@@ -35,5 +41,20 @@ export class Sidebar {
 
   exportBackup(): void {
     this.dataService.exportBackup();
+  }
+
+  async logout(): Promise<void> {
+    if (this.loggingOut()) return;
+    this.loggingOut.set(true);
+    this.logoutMessage.set('');
+
+    try {
+      await this.firebase.signOut();
+      await this.router.navigateByUrl('/login');
+    } catch {
+      this.logoutMessage.set('No se pudo cerrar la sesión. Comprueba tu conexión e inténtalo otra vez.');
+    } finally {
+      this.loggingOut.set(false);
+    }
   }
 }
