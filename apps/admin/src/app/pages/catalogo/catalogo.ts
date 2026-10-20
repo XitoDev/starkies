@@ -42,12 +42,18 @@ export class Catalogo {
       if (!state || this.initialized()) return;
       const configured = state['deliveryZones'];
       const catalogSettings = state['catalogSettings'] as Record<string, unknown> | undefined;
+      const hasStoredZones = Array.isArray(configured) || Array.isArray(catalogSettings?.['deliveryZones']);
       const zones = Array.isArray(configured) ? configured : Array.isArray(catalogSettings?.['deliveryZones']) ? catalogSettings['deliveryZones'] : this.defaultZones;
       this.zones.set(zones.map((zone, index) => {
         const item = zone as Partial<DeliveryZone>;
         return {id:String(item.id ?? `zone-${index+1}`),name:String(item.name ?? ''),fee:Math.max(0,Number(item.fee ?? 0))};
       }));
       this.initialized.set(true);
+      if (!hasStoredZones) {
+        void this.dataService.saveBusinessSetting('deliveryZones', this.zones()).catch(error => {
+          this.error.set(error instanceof Error ? error.message : 'No se pudieron inicializar las tarifas de entrega.');
+        });
+      }
     });
   }
   categoryCount(category: string): number { return this.recipes().filter(recipe => !recipe.archived && recipe.category === category).length; }
