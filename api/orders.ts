@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { BOX_PRESENTATIONS, CATALOG_PRODUCTS, DELIVERY_ZONES } from '../apps/catalog/src/app/pages/catalog/catalog.data';
+import { readPublicCatalog } from './catalog-data';
 
 type HeaderValue = string | string[] | undefined;
 interface ApiRequest {
@@ -46,9 +46,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
   try {
     assertAllowedOrigin(headerValue(req.headers['origin']));
-    const payload = parsePayload(req.body);
-    const order = validateAndBuildOrder(payload);
     const db = getDatabase();
+    const catalog = await readPublicCatalog(db);
+    const payload = parsePayload(req.body, catalog);
+    const order = validateAndBuildOrder(payload, catalog);
     const now = Date.now();
     const createdAt = new Date(now).toISOString();
     const orderId = 'SK-' + todayInEcuador().replaceAll('-', '') + '-' + randomBytes(3).toString('hex').toUpperCase();
@@ -71,7 +72,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       id: customerId,
       name: order.name,
       phone: order.phone,
-      address: order.zoneId === '6' ? (existingCustomerValue?.['address'] ?? '') : order.address,
+      address: order.zoneName === 'Retiro en tienda' ? (existingCustomerValue?.['address'] ?? '') : order.address,
     };
 
     const orderRecord = {
@@ -80,7 +81,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       customerId: 'phone:' + normalizedPhone,
       customer: order.name,
       phone: order.phone,
-      address: order.zoneId === '6' ? 'Retiro en tienda' : order.zoneName + ' — ' + order.address,
+      address: order.zoneName === 'Retiro en tienda' ? 'Retiro en tienda' : order.zoneName + ' — ' + order.address,
       zone: order.zoneName,
       date: order.deliveryDate,
       deliveryDate: order.deliveryDate,
@@ -92,18 +93,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       total: order.total,
       lines: order.lines,
       boxes: order.boxes.map(box => {
-        const presentation = BOX_PRESENTATIONS.find(item => item.id === box.presentationId)!;
+        const presentation = catalog.presentations.find(item => item.id === box.presentationId)!;
         return {
           presentationId: presentation.id,
           presentationName: presentation.name,
           price: presentation.price,
           items: Object.entries(box.items).map(([productId, quantity]) => {
-            const product = CATALOG_PRODUCTS.find(item => item.id === productId)!;
+            const product = catalog.products.find(item => item.id === productId)!;
             return { id: product.id, name: product.name, quantity };
           }),
         };
       }),
-      deliveryFee: DELIVERY_ZONES.find(item => item.id === order.zoneId)!.fee,
+      deliveryFee: catalog.zones.find(item => item.id === order.zoneId)!.fee,
       orderChannel: 'public-web',
     };
 
@@ -212,7 +213,7 @@ function assertAllowedOrigin(origin: string | undefined): void {
   if (!allowed) throw new HttpError(403, 'Origen no permitido.');
 }
 
-function parsePayload(body: unknown): ValidatedOrder {
+function parsePayload(body: unknown, catalog: Awaited<ReturnType<typeof readPublicCatalog>>): ValidatedOrder {
   let candidate = body;
   if (typeof candidate === 'string') {
     try { candidate = JSON.parse(candidate) as unknown; }
@@ -229,11 +230,11 @@ function parsePayload(body: unknown): ValidatedOrder {
     throw new HttpError(400, 'Ingresa un número de teléfono válido.');
   }
   const zoneId = stringField(candidate, 'zoneId', 1, 20);
-  const zone = DELIVERY_ZONES.find(item => item.id === zoneId);
+  const zone = catalog.zones.find(item => item.id === zoneId);
   if (!zone) throw new HttpError(400, 'Selecciona una zona de entrega válida.');
 
   const address = typeof candidate['address'] === 'string' ? candidate['address'].trim() : '';
-  if (zoneId !== '6' && (address.length < 5 || address.length > 250)) {
+  if (zone.name !== 'Retiro en tienda' && (address.length < 5 || address.length > 250)) {
     throw new HttpError(400, 'Ingresa una dirección de entrega de entre 5 y 250 caracteres.');
   }
 
@@ -258,7 +259,7 @@ function parsePayload(body: unknown): ValidatedOrder {
   const boxes = candidate['boxes'].map(rawBox => {
     if (!isRecord(rawBox)) throw new HttpError(400, 'Una de las cajas no tiene un formato válido.');
     const presentationId = stringField(rawBox, 'presentationId', 1, 40);
-    const presentation = BOX_PRESENTATIONS.find(item => item.id === presentationId);
+    const presentation = catalog.presentations.find(item => item.id === presentationId);
     if (!presentation) throw new HttpError(400, 'Selecciona una presentación de caja válida.');
     if (!isRecord(rawBox['items'])) throw new HttpError(400, 'El detalle de una caja no tiene un formato válido.');
 
@@ -267,7 +268,7 @@ function parsePayload(body: unknown): ValidatedOrder {
     let nyCount = 0;
     let lineTotalCents = 0;
     for (const [productId, rawQuantity] of Object.entries(rawBox['items'])) {
-      const product = CATALOG_PRODUCTS.find(item => item.id === productId);
+      const product = catalog.products.find(item => item.id === productId);
       if (!product || !product.stock) throw new HttpError(400, 'Uno de los sabores ya no está disponible.');
       if (typeof rawQuantity !== 'number' || !Number.isInteger(rawQuantity) || rawQuantity < 1 || rawQuantity > 10) {
         throw new HttpError(400, 'La cantidad de uno de los sabores no es válida.');
@@ -290,16 +291,16 @@ function parsePayload(body: unknown): ValidatedOrder {
   return { name, phone, zoneId, address, deliveryDate, cookieName, notes, boxes };
 }
 
-function validateAndBuildOrder(payload: ValidatedOrder) {
-  const zone = DELIVERY_ZONES.find(item => item.id === payload.zoneId)!;
+function validateAndBuildOrder(payload: ValidatedOrder, catalog: Awaited<ReturnType<typeof readPublicCatalog>>) {
+  const zone = catalog.zones.find(item => item.id === payload.zoneId)!;
   const lineItems = new Map<string, { id: string; name: string; qty: number; price: number }>();
   let boxTotalCents = 0;
 
   for (const box of payload.boxes) {
-    const presentation = BOX_PRESENTATIONS.find(item => item.id === box.presentationId)!;
+    const presentation = catalog.presentations.find(item => item.id === box.presentationId)!;
     boxTotalCents += Math.round(presentation.price * 100);
     for (const [productId, quantity] of Object.entries(box.items)) {
-      const product = CATALOG_PRODUCTS.find(item => item.id === productId)!;
+      const product = catalog.products.find(item => item.id === productId)!;
       const line = lineItems.get(productId) ?? {
         id: product.id,
         name: product.name,
