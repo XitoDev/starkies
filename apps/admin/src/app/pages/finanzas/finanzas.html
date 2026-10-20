@@ -101,7 +101,7 @@
         <form class="finance-form" (submit)="submitPurchaseForm($event)">
           <label class="form-field form-field-wide">
             <span>Insumo *</span>
-            <select required [value]="purchaseForm().ingredientId" (change)="updatePurchaseIngredient($any($event.target).value)">
+            <select matNativeControl required [value]="purchaseForm().ingredientId" (change)="updatePurchaseIngredient($any($event.target).value)">
               <option value="" disabled>Selecciona un insumo</option>
               @for (ingredient of ingredients(); track ingredient.id) {
                 <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option>
@@ -149,7 +149,7 @@
           </label>
           <label class="form-field">
             <span>Categoría *</span>
-            <select required [value]="expenseForm().category" (change)="updateExpenseText('category', $any($event.target).value)">
+            <select matNativeControl required [value]="expenseForm().category" (change)="updateExpenseText('category', $any($event.target).value)">
               <option value="alquiler">Alquiler</option>
               <option value="servicios">Servicios</option>
               <option value="transporte">Transporte</option>
@@ -191,7 +191,7 @@
       <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
         @if (ledgerActionOpen() === 'boxesPayment') {
           <label class="form-field form-field-wide"><span>Compra pendiente *</span>
-            <select required [value]="ledgerActionForm().pendingId" (change)="selectPendingBoxPurchase($any($event.target).value)">
+            <select matNativeControl required [value]="ledgerActionForm().pendingId" (change)="selectPendingBoxPurchase($any($event.target).value)">
               <option value="" disabled>Selecciona una compra</option>
               @for (item of pendingTransactions(); track item.id) {
                 <option [value]="item.id">{{ item.description }} — {{ item.amount | currency:'USD' }}</option>
@@ -202,12 +202,12 @@
           <label class="form-field form-field-wide"><span>Descripción *</span><input matInput required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
         } @else {
           <label class="form-field"><span>Desde *</span>
-            <select [value]="ledgerActionForm().from" (change)="updateLedgerForm('from', $any($event.target).value)">
+            <select matNativeControl [value]="ledgerActionForm().from" (change)="updateLedgerForm('from', $any($event.target).value)">
               <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option><option value="external">Ingreso / capital externo</option>
             </select>
           </label>
           <label class="form-field"><span>Hacia *</span>
-            <select [value]="ledgerActionForm().to" (change)="updateLedgerForm('to', $any($event.target).value)">
+            <select matNativeControl [value]="ledgerActionForm().to" (change)="updateLedgerForm('to', $any($event.target).value)">
               <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option>
             </select>
           </label>
