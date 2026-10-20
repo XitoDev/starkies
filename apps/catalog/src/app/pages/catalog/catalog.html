@@ -1,5 +1,6 @@
-<header>
-  <a href="#" class="brand" aria-label="StarKies, inicio">
+<a class="skip-link" href="#sabores">Saltar al catálogo</a>
+<header id="inicio">
+  <a href="#inicio" class="brand" aria-label="StarKies, inicio">
     <span class="wordmark">
       StarK<span class="logo-i">ı
         <svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3L2.9 9.6l6.3-.9Z"></path></svg>
@@ -10,7 +11,13 @@
 </header>
 
 <main>
-  <section class="hero">
+  @if (orderSuccess(); as confirmation) {
+    <section class="order-success" role="status" aria-live="polite">
+      <div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p></div>
+      <button type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)">×</button>
+    </section>
+  }
+  <section class="hero" id="inicio-contenido">
     <div class="hero-copy">
       <h1>La estrella<br><em>eres tú.</em></h1>
       <p>Elige tus sabores favoritos y crea una caja muy tuya.</p>
@@ -27,7 +34,7 @@
         <h2>Elige tu caja</h2>
         <p class="small">Una presentación para cada antojo. Tú eliges los sabores.</p>
       </div>
-      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" placeholder="Buscar un sabor…">
+      <input type="search" aria-label="Buscar galletas" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Buscar un sabor…">
     </div>
 
     <!-- Selector de Cajas -->
@@ -54,7 +61,7 @@
           @for (product of filteredProducts(); track product.id) {
           @if (product.category === cat) {
           <article class="product" [class.sold-out]="!product.stock">
-            <div class="photo">
+            <div class="photo" [class.photo-ny]="product.isNy" [class.photo-sold-out]="!product.stock" role="img" [attr.aria-label]="'Ilustración decorativa para ' + product.name"><span class="cookie-illustration" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
               <div class="product-badges">
                 @if (product.tag) {
                 <span class="product-tag">{{ product.tag }}</span>
@@ -65,6 +72,7 @@
               <h3>{{ product.name }}</h3>
               <p>{{ product.description }}</p>
               <div class="buy">
+                <strong class="product-price">{{ product.price | currency:'USD' }}</strong>
                 @if (!product.stock) {
                 <button disabled>Agotado</button>
                 } @else if (getQuantity(product.id) === 0) {
@@ -87,6 +95,12 @@
     </div>
   </section>
 </main>
+
+<footer class="site-footer">
+  <p><strong>StarKies</strong> · La estrella eres tú.</p>
+  <p>Galletas artesanales en Guayaquil y sectores cercanos.</p>
+  <a href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer">¿Tienes una consulta? Escríbenos por WhatsApp</a>
+</footer>
 
 <!-- Dock Flotante (Progreso) -->
 <aside class="cart-dock">
@@ -131,20 +145,23 @@
 <!-- Modal Formulario de Pedido -->
 @if (showOrderSheetModal()) {
 <div class="modal-backdrop">
-  <div class="order-sheet">
+  <section class="order-sheet" role="dialog" aria-modal="true" aria-labelledby="order-sheet-title">
     <div class="sheet-panel">
       <div class="sheet-heading">
-        <h2>Tu pedido</h2>
-        <button type="button" class="sheet-close" (click)="showOrderSheetModal.set(false)">✕</button>
+        <h2 id="order-sheet-title">Tu pedido</h2>
+        <button type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()">✕</button>
       </div>
 
-      <form (ngSubmit)="sendToWhatsApp()">
+      <form (ngSubmit)="submitOrder()">
+        <label class="honeypot" aria-hidden="true">No completar este campo
+          <input type="text" [(ngModel)]="orderForm.website" name="website" tabindex="-1" autocomplete="off">
+        </label>
         <label>Número de teléfono
-          <input required type="tel" [(ngModel)]="orderForm.phone" name="phone" placeholder="Ej. 0991234567">
+          <input required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" name="phone" placeholder="Ej. 0991234567">
         </label>
 
         <label>Tu nombre
-          <input required type="text" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre">
+          <input required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre">
         </label>
 
         <label>Sector de entrega
@@ -157,15 +174,19 @@
         </label>
 
         <label>Dirección exacta
-          <textarea required [(ngModel)]="orderForm.address" name="address" rows="2"></textarea>
+          <textarea [required]="orderForm.zone?.id !== '6'" autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea>
         </label>
 
         <label>Fecha de entrega
-          <input type="date" required [(ngModel)]="orderForm.date" name="date">
+          <input type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date">
         </label>
 
         <label>Nombre en la caja
-          <input type="text" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Para etiquetar la caja">
+          <input type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Para etiquetar la caja">
+        </label>
+
+        <label>Notas (opcional)
+          <textarea [(ngModel)]="orderForm.notes" name="notes" rows="2" maxlength="500" placeholder="Indicaciones adicionales para tu pedido"></textarea>
         </label>
 
         <div class="summary">
@@ -186,9 +207,18 @@
           </div>
         </div>
 
-        <button type="submit" class="button full">Confirmar por WhatsApp</button>
+        @if (orderError()) {
+          <div class="order-error" role="alert">
+            <strong>No pudimos registrar tu pedido.</strong>
+            <p>{{ orderError() }}</p>
+            <a class="button whatsapp-fallback" [href]="getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a>
+          </div>
+        }
+        <button type="submit" class="button full" [disabled]="savingOrder()">
+          {{ savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}
+        </button>
       </form>
-    </div>
+    </section>
   </div>
 </div>
 }
