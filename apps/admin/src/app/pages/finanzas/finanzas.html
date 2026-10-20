@@ -94,7 +94,7 @@
           <h2 id="finance-modal-title">{{ formOpen() === 'purchase' ? 'Registrar compra de insumos' : 'Registrar gasto' }}</h2>
           <p>{{ formOpen() === 'purchase' ? 'El egreso y el aumento de stock se guardan juntos.' : 'El gasto quedará registrado como un egreso de caja.' }}</p>
         </div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
 
       @if (formOpen() === 'purchase') {
@@ -186,7 +186,7 @@
           <h2 id="ledger-modal-title">{{ ledgerActionOpen() === 'boxesPurchase' ? 'Registrar compra de cajas' : ledgerActionOpen() === 'boxesPayment' ? 'Registrar pago de cajas' : 'Transferir dinero' }}</h2>
           <p>{{ ledgerActionOpen() === 'boxesPurchase' ? 'La compra se guardará como una transacción pendiente de pago.' : ledgerActionOpen() === 'boxesPayment' ? 'Selecciona una compra pendiente para registrar su pago.' : 'Mueve saldo entre cuentas o registra un ingreso de capital.' }}</p>
         </div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
         @if (ledgerActionOpen() === 'boxesPayment') {
@@ -227,7 +227,7 @@
 @if (pendingPanelOpen()) {
   <div class="modal-backdrop" (click)="pendingPanelOpen.set(false)">
     <section class="finance-modal pending-modal" role="dialog" aria-modal="true" aria-labelledby="pending-title" (click)="$event.stopPropagation()">
-      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button matIconButton class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)">×</button></div>
+      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button matIconButton class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></div>
       @if (pendingTransactions().length) {
         <div class="pending-list">
           @for (item of pendingTransactions(); track item.id) {
