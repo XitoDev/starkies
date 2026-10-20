@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase-admin/firestore';
-import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data';
+import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
 
 export interface PublicProduct {
   id: string;
