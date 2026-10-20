@@ -19,7 +19,7 @@
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id) {
         <button matButton="text" type="button" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-          <span class="presentation-top"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 22v-9"></path><path d="M15.17 2.21a1.67 1.67 0 0 1 1.63 0L21 4.57a1.93 1.93 0 0 1 0 3.36L8.82 14.79a1.655 1.655 0 0 1-1.64 0L3 12.43a1.93 1.93 0 0 1 0-3.36z"></path><path d="M20 13v3.87a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13"></path></svg><span class="presentation-check" aria-hidden="true">★</span></span>
+          <span class="presentation-top"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon><mat-icon class="presentation-check" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon></span>
           <strong>{{ p.name }}</strong><span class="presentation-description">{{ p.desc }}</span><b class="box-price">{{ p.price | currency:'USD' }}</b>
         </button>
       }
@@ -98,7 +98,7 @@
             @for (box of completedBoxes(); track $index) { <div class="packed-box">
               <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
               <ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ getProductName(key) }}</li> }</ul>
-              <div class="box-actions"><button matButton="text" type="button" (click)="editBox($index)">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="removeBox($index)"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 10v6M14 10v6"></path></svg> Quitar caja</button></div>
+              <div class="box-actions"><button matButton="text" type="button" (click)="editBox($index)">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="removeBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Quitar caja</button></div>
             </div> }
             <button matButton="elevated" class="add-box-button" type="button" (click)="closeOrderSheet(); showBoxChoiceModal.set(false)">Añadir otra caja</button>
             <div class="cart-row"><span>Valor de las cajas</span><strong>{{ boxesTotalSum() | currency:'USD' }}</strong></div>
