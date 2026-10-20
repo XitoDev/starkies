@@ -2,15 +2,15 @@
   <div class="page-heading">
     <div><p class="eyebrow">Mi negocio / Catálogo</p><h1 class="page-title">Catálogo</h1><p class="page-subtitle">Productos, promociones y entregas para tus clientes.</p></div>
     <div class="heading-actions">
-      <a matButton="outlined" class="btn-outline" href="https://starkies.lat/" target="_blank" rel="noopener noreferrer"><svg [lucideIcon]="icons.ExternalLink"></svg> Ver catálogo</a>
-      <button matButton="outlined" class="btn-outline" type="button" (click)="settingsOpen.set(true)"><svg [lucideIcon]="icons.Settings"></svg> Tarifas de entrega</button>
-      <button matButton="outlined" class="btn-outline" type="button" (click)="syncCatalog()"><svg [lucideIcon]="icons.Save"></svg> Sincronizar</button>
+      <a matButton="outlined" class="btn-outline" href="https://starkies.lat/" target="_blank" rel="noopener noreferrer"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">open_in_new</mat-icon> Ver catálogo</a>
+      <button matButton="outlined" class="btn-outline" type="button" (click)="settingsOpen.set(true)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">settings</mat-icon> Tarifas de entrega</button>
+      <button matButton="outlined" class="btn-outline" type="button" (click)="syncCatalog()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">sync</mat-icon> Sincronizar</button>
     </div>
   </div>
   @if(notice()){<p class="notice" role="status">{{notice()}}</p>} @if(error()){<p class="error" role="alert">{{error()}}</p>}
   <section class="category-section"><h2>Productos por categoría</h2><div class="category-tabs">
     <button matButton="text" type="button" [class.active]="categoryFilter()==='Todos'" (click)="categoryFilter.set('Todos')">Todos</button>
-    <button matButton="text" type="button" (click)="showHidden.set(!showHidden())"><svg [lucideIcon]="showHidden()?icons.Eye:icons.EyeOff"></svg>{{showHidden()?'Ocultar ocultos':'Mostrar ocultos'}} <span>{{showHidden()?'Activado':'Desactivado'}}</span></button>
+    <button matButton="text" type="button" (click)="showHidden.set(!showHidden())"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">visibility</mat-icon>{{showHidden()?'Ocultar ocultos':'Mostrar ocultos'}} <span>{{showHidden()?'Activado':'Desactivado'}}</span></button>
     @for(category of categories();track category){<button matButton="text" type="button" [class.active]="categoryFilter()===category" (click)="categoryFilter.set(category)">{{category}} <span>{{categoryCount(category)}}</span></button>}
   </div></section>
   @for(category of categories();track category){
@@ -20,8 +20,8 @@
           <article class="product-card">
             <div class="image-wrap"><img [src]="getImageUrl(item.image)" [alt]="item.name" loading="lazy" (error)="onImageError($event)">
               <button matIconButton class="dots" type="button" [attr.aria-label]="'Opciones de '+item.name" (click)="openMenuId.set(openMenuId()===item.id?null:item.id)">⋮</button>
-              <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="toggleVisibility(item)"><svg [lucideIcon]="item.catalogVisible===false?icons.EyeOff:icons.Eye"></svg></button>
-              @if(openMenuId()===item.id){<div class="menu"><a matButton="text" [routerLink]="['/catalogo/productos',item.id]" (click)="openMenuId.set(null)"><svg [lucideIcon]="icons.Pencil"></svg> Editar producto</a></div>}
+              <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="toggleVisibility(item)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ item.catalogVisible === false ? "visibility_off" : "visibility" }}</mat-icon></button>
+              @if(openMenuId()===item.id){<div class="menu"><a matButton="text" [routerLink]="['/catalogo/productos',item.id]" (click)="openMenuId.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar producto</a></div>}
             </div>
             <div class="product-copy"><h3>{{item.name}}</h3>@if(item.catalogLabel){<span class="label-chip" [style.background]="labelBackground(item.catalogLabelColor)" [style.color]="labelForeground(item.catalogLabelColor)">{{item.catalogLabel}}</span>}<strong>{{item.price|currency:'USD'}}</strong></div>
           </article>
