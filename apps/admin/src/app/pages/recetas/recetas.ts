@@ -267,7 +267,7 @@ export class Recetas {
       const recipe: Recipe & { notes?: string } = {
         ...(this.editingRecipe() ?? {} as Recipe),
         id, name, category, yield: this.batchYield(), price: Math.max(0, Number(form.price ?? 0)),
-        image: image || undefined, catalogLabel: isNewRecipe ? 'Nuevo' : this.editingRecipe()?.catalogLabel,
+        image: image || undefined, ...(isNewRecipe ? { catalogLabel: 'Nuevo' } : {}),
         archived: this.editingRecipe()?.archived ?? false,
         baseId: form.kind === 'base' ? form.baseId : undefined,
         baseGramsPerCookie: form.gramsPerCookie ?? undefined, sections, notes: form.notes.trim() || undefined,
