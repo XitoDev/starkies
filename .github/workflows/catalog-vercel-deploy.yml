@@ -80,11 +80,11 @@ jobs:
       - name: Type-check public order API
         run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/customer-lookup.ts
 
-      - name: Smoke-test catalog data imports with native Node ESM
+      - name: Smoke-test public API imports with native Node ESM
         run: |
           rm -rf /tmp/starkies-catalog-esm
-          npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts
-          node --input-type=module -e "import('/tmp/starkies-catalog-esm/api/catalog-data.js').then(m => { if (typeof m.readPublicCatalog !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog data dependencies successfully.'); })"
+          npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts api/orders.ts
+          node --input-type=module -e "await import('/tmp/starkies-catalog-esm/api/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
 
       - name: Pull Vercel settings
         env:

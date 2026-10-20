@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { readPublicCatalog } from './catalog-data';
+import { readPublicCatalog } from './catalog-data.js';
 
 type HeaderValue = string | string[] | undefined;
 interface ApiRequest {
