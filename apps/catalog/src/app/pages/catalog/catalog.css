@@ -56,9 +56,9 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .catalog-instruction { margin:27px 0 32px; color:#7d7180; font-size:12px; line-height:1.6; }
 .category-groups { display:grid; gap:40px; }
 .category-title { margin:0 0 20px; color:#68416f; font:italic 700 26px/1.2 'Playfair Display',Georgia,serif; }
-.products { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-.product { min-width:0; display:flex; flex-direction:column; overflow:hidden; border:1px solid #d8cbd8; border-radius:22px; background:#fff; }
-.photo { position:relative; display:grid; place-items:center; overflow:hidden; aspect-ratio:1/.86; margin:11px 11px 0; background:#faf9f8; }
+.products { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; }
+.product { min-width:0; display:flex; flex-direction:column; overflow:hidden; border:1px solid #cdb7d0; border-radius:24px; background:rgba(230,211,232,.84); box-shadow:0 8px 24px #4b31530a; }
+.photo { position:relative; display:grid; place-items:center; overflow:hidden; aspect-ratio:1/.76; margin:0; background:#eadbd3; }
 .photo img { display:block; width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; }
 .product-tag { position:absolute; top:8px; left:8px; z-index:2; max-width:calc(100% - 16px); padding:5px 9px; color:#786b7c; border-radius:15px; background:#fff; font-size:10px; font-weight:700; }
 .sold-out-tag { color:#7c4b77; background:#f5eaf4; }
@@ -67,7 +67,7 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .cookie-illustration span { position:absolute; display:block; width:13%; aspect-ratio:1; border-radius:50%; background:#4b2c25; box-shadow:inset 1px 1px 1px #261713; }
 .cookie-illustration span:nth-child(1) { left:24%; top:20%; } .cookie-illustration span:nth-child(2) { left:58%; top:26%; } .cookie-illustration span:nth-child(3) { left:42%; top:49%; } .cookie-illustration span:nth-child(4) { left:22%; top:67%; } .cookie-illustration span:nth-child(5) { left:68%; top:63%; }
 .cookie-ny { width:min(64%,190px); border-width:9px; background:radial-gradient(circle at 35% 30%,#b87956,#874d35 68%,#693722); }
-.product-body { display:flex; flex:1; flex-direction:column; padding:17px 17px 16px; }
+.product-body { display:flex; flex:1; flex-direction:column; padding:20px 20px 18px; }
 .product-body h3 { margin:0 0 10px; color:#63406b; font-size:15px; line-height:1.35; }
 .product-body p { min-height:42px; margin:0 0 16px; color:#7b7180; font-size:11px; line-height:1.65; }
 .buy { display:flex; align-items:center; gap:10px; margin-top:auto; }
@@ -97,7 +97,7 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .order-success { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin:10px 0 20px; padding:16px 20px; border:1px solid #cce7d6; border-radius:12px; background:#f0faf3; color:#225c3c; } .order-success p { margin:5px 0 0; font-size:13px; line-height:1.5; }
 .honeypot { position:absolute!important; left:-10000px!important; width:1px!important; height:1px!important; overflow:hidden!important; }
 .order-error { padding:13px; border:1px solid #edc8c8; border-radius:10px; background:#fff3f3; color:#8e2f3a; font-size:13px; } .order-error p { margin:6px 0 12px; line-height:1.5; } .whatsapp-fallback { margin-top:2px; background:#286a4b; color:#fff; }
-@media (min-width:900px) { .products { gap:18px; } .photo { aspect-ratio:1/.82; } .product-body { padding:18px; } }
+@media (min-width:681px) and (max-width:1100px) { .products { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } .product-body { padding:16px; } }
 @media (max-width:680px) {
   header,main { width:min(100% - 32px,1436px); } header { padding:28px 0 28px; }
   .hero { grid-template-columns:1fr; gap:14px; min-height:auto; margin:0 0 39px; padding:28px 25px 22px; border-radius:28px; }
