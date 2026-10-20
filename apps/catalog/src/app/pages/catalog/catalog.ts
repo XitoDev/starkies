@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
 import { BOX_PRESENTATIONS, CATALOG_PRODUCTS, DELIVERY_ZONES } from './catalog.data';
-interface OrderConfirmation { id: string; total: number; }
+interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   readonly presentations = BOX_PRESENTATIONS;
@@ -82,6 +82,8 @@ export class Catalog {
     if (this.savingOrder()) return;
     if (!this.completedBoxes().length) { this.orderError.set('Agrega al menos una caja antes de confirmar tu pedido.'); return; }
     if (!this.orderForm.zone) { this.orderError.set('Selecciona el sector de entrega o retiro en tienda.'); return; }
+    const whatsappPopup = window.open('about:blank', '_blank');
+    if (whatsappPopup) whatsappPopup.opener = null;
     this.savingOrder.set(true); this.orderError.set('');
     const payload = {
       name: this.orderForm.name.trim(), phone: this.orderForm.phone.trim(), zoneId: this.orderForm.zone.id,
@@ -94,8 +96,19 @@ export class Catalog {
       const result: unknown = await response.json().catch(() => null);
       if (!response.ok) { const record = this.asRecord(result); throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.'); }
       const record = this.asRecord(result), orderId = typeof record['orderId'] === 'string' && record['orderId'] ? record['orderId'] : 'recibido';
-      this.orderSuccess.set({ id: orderId, total: this.grandTotal() }); this.showOrderSheetModal.set(false); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
+      const documentToken = typeof record['documentToken'] === 'string' ? record['documentToken'] : '';
+      const documentUrl = documentToken ? new URL('/api/order-document', window.location.origin) : null;
+      if (documentUrl) documentUrl.searchParams.set('token', documentToken);
+      const pdfUrl = documentUrl?.toString() ?? '';
+      const message = 'Hola StarKies, quiero confirmar mi pedido ' + orderId + '.\\n\\n'
+        + (pdfUrl ? 'Mi pedido en PDF:\\n' + pdfUrl + '\\n\\n' : '')
+        + 'Recuerda enviar tu ubicación exacta por WhatsApp para la entrega.';
+      const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
+      this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
+      if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
+      this.showOrderSheetModal.set(false); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
     } catch (error) {
+      if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
     } finally { this.savingOrder.set(false); }
   }
