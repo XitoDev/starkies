@@ -34,7 +34,7 @@
     <div class="table-toolbar">
       <label class="search-box">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
-        <input type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)" />
+        <input matInput type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
       <span class="result-count">{{ filteredHistory().length }} registros</span>
     </div>
@@ -107,7 +107,7 @@
 
         <label class="form-field">
           <span>Cantidad de lotes</span>
-          <input type="number" min="1" max="1000" step="1" [value]="batchCount()" (input)="setBatchCount($any($event.target).value)" />
+          <input matInput type="number" min="1" max="1000" step="1" [value]="batchCount()" (input)="setBatchCount($any($event.target).value)" />
         </label>
 
         <div class="estimate-card">
