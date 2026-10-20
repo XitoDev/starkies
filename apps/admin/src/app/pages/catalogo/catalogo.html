@@ -1,53 +1,43 @@
 <div class="page-container">
   <div class="page-heading">
-    <div>
-      <p class="eyebrow">Mi negocio / Catálogo</p>
-      <h1 class="page-title">Catálogo público</h1>
-      <p class="page-subtitle">Administra la selección de recetas activas que prepararemos para la tienda de tus clientes.</p>
+    <div><p class="eyebrow">Mi negocio / Catálogo</p><h1 class="page-title">Catálogo</h1><p class="page-subtitle">Productos, promociones y entregas para tus clientes.</p></div>
+    <div class="heading-actions">
+      <a class="btn-outline" href="https://starkies.lat/" target="_blank" rel="noopener noreferrer"><svg [lucideIcon]="icons.ExternalLink"></svg> Ver catálogo</a>
+      <button class="btn-outline" type="button" (click)="settingsOpen.set(true)"><svg [lucideIcon]="icons.Settings"></svg> Tarifas de entrega</button>
+      <button class="btn-outline" type="button" (click)="syncCatalog()"><svg [lucideIcon]="icons.Save"></svg> Sincronizar</button>
     </div>
-    <button class="btn-outline" type="button" disabled title="La configuración de publicación se habilitará en una siguiente fase">
-      <svg [lucideIcon]="icons.Settings" class="btn-icon"></svg>
-      Configuración
-    </button>
   </div>
-
-  <div class="catalog-status">
-    <div class="status-mark"><svg [lucideIcon]="icons.Store"></svg></div>
-    <div>
-      <strong>Vista previa interna</strong>
-      <p>El catálogo público todavía no está publicado. Aquí puedes revisar las recetas activas que se prepararán para esa web.</p>
-    </div>
-    <span class="catalog-count">{{ catalogItems().length }} productos</span>
-  </div>
-
-  <div class="recipes-grid">
-    @for (item of catalogItems(); track item.id) {
-      <article class="recipe-card">
-        <div class="card-image-wrapper">
-          <img
-            [src]="getImageUrl(item.image)"
-            [alt]="item.name"
-            class="recipe-img"
-            loading="lazy"
-            (error)="onImageError($event)"
-          />
-          <span class="category-badge">{{ item.category }}</span>
-        </div>
-        <div class="card-content">
-          <p class="card-kicker">{{ item.yield }} unidades por lote</p>
-          <h3 class="recipe-name">{{ item.name }}</h3>
-          <div class="recipe-stats">
-            <span class="price-stat">{{ item.price | currency:'USD' }}</span>
-            <span class="availability-pill"><span></span> Receta activa</span>
-          </div>
-        </div>
-      </article>
+  @if(notice()){<p class="notice" role="status">{{notice()}}</p>} @if(error()){<p class="error" role="alert">{{error()}}</p>}
+  <section class="category-section"><h2>Productos por categoría</h2><div class="category-tabs">
+    <button type="button" [class.active]="categoryFilter()==='Todos'" (click)="categoryFilter.set('Todos')">Todos</button>
+    <button type="button" (click)="showHidden.set(!showHidden())"><svg [lucideIcon]="showHidden()?icons.Eye:icons.EyeOff"></svg>{{showHidden()?'Mostrar solo visibles':'Ocultar ocultos'}} <span>{{showHidden()?'Activado':'Desactivado'}}</span></button>
+    @for(category of categories();track category){<button type="button" [class.active]="categoryFilter()===category" (click)="categoryFilter.set(category)">{{category}} <span>{{recipes().filter(r=>!r.archived&&r.category===category).length}}</span></button>}
+  </div></section>
+  @for(category of categories();track category){
+    @if(categoryFilter()==='Todos'||categoryFilter()===category){
+      <section class="product-group"><h2>{{category}}</h2><div class="products-grid">
+        @for(item of catalogItems();track item.id){@if(item.category===category){
+          <article class="product-card">
+            <div class="image-wrap"><img [src]="getImageUrl(item.image)" [alt]="item.name" loading="lazy" (error)="onImageError($event)">
+              <button class="dots" type="button" [attr.aria-label]="'Opciones de '+item.name" (click)="openMenuId.set(openMenuId()===item.id?null:item.id)">⋮</button>
+              <button class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="toggleVisibility(item)"><svg [lucideIcon]="item.catalogVisible===false?icons.EyeOff:icons.Eye"></svg></button>
+              @if(openMenuId()===item.id){<div class="menu"><a [routerLink]="['/catalogo/productos',item.id]" (click)="openMenuId.set(null)"><svg [lucideIcon]="icons.Pencil"></svg> Editar producto</a></div>}
+            </div>
+            <div class="product-copy"><h3>{{item.name}}</h3>@if(item.catalogLabel){<span class="label-chip" [style.background]="labelBackground(item.catalogLabelColor)" [style.color]="labelForeground(item.catalogLabelColor)">{{item.catalogLabel}}</span>}<strong>{{item.price|currency:'USD'}}</strong></div>
+          </article>
+        }}
+      </div></section>
     }
-
-    @if (catalogItems().length === 0) {
-      <div class="empty-state">
-        <p>No hay recetas activas disponibles para preparar el catálogo.</p>
-      </div>
-    }
-  </div>
+  }
+  @if(catalogItems().length===0){<div class="empty-state">No hay productos para mostrar con estos filtros.</div>}
 </div>
+@if(settingsOpen()){
+  <div class="backdrop" (click)="settingsOpen.set(false)"><section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-settings-title" (click)="$event.stopPropagation()">
+    <header><h2 id="delivery-settings-title">♧ Opciones y tarifas de entrega</h2><button type="button" class="close" aria-label="Cerrar" (click)="settingsOpen.set(false)">×</button></header>
+    <div class="settings-toolbar"><p>Organiza las zonas y define cuánto cuesta entregar cada pedido.</p><button class="btn-outline" type="button" (click)="addZone()">＋ Añadir</button></div>
+    <div class="zone-header"><span>Zona o punto</span><span>Tarifa (USD)</span><span>Acciones</span></div>
+    @for(zone of zones();track zone.id;let i=$index){<div class="zone-row"><span class="order-actions"><button type="button" [disabled]="i===0" (click)="moveZone(i,-1)" aria-label="Subir zona">⠿</button><button type="button" [disabled]="i===zones().length-1" (click)="moveZone(i,1)" aria-label="Bajar zona">↓</button></span><input aria-label="Nombre de zona" [(ngModel)]="zone.name" maxlength="100"><input aria-label="Tarifa de entrega" type="number" min="0" step="0.01" [(ngModel)]="zone.fee"><button class="remove" type="button" (click)="removeZone(i)" aria-label="Eliminar zona">⌫</button></div>}
+    @if(error()){<p class="error">{{error()}}</p>}
+    <footer><button class="btn-outline" type="button" (click)="settingsOpen.set(false)">Cancelar</button><button class="btn-primary" type="button" [disabled]="saving()" (click)="saveZones()">{{saving()?'Guardando…':'Guardar tarifas'}}</button></footer>
+  </section></div>
+}
