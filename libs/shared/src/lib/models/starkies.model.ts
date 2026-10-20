@@ -22,6 +22,10 @@ export interface Recipe {
   yield: number; // Cantidad por tanda
   price: number;
   image?: string;
+  catalogVisible?: boolean;
+  catalogLabel?: string;
+  catalogLabelColor?: string;
+  catalogDescription?: string;
   archived?: boolean;
   archivedAt?: string;
   baseId?: string;
