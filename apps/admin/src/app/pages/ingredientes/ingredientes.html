@@ -43,7 +43,7 @@
     <div class="ingredients-toolbar">
       <label class="search-box">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
-        <input type="search" placeholder="Buscar ingrediente..." [value]="searchTerm()" (input)="onSearch($event)" />
+        <input matInput type="search" placeholder="Buscar ingrediente..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
       <button matButton="elevated" class="filter-button" type="button" [class.active]="lowStockOnly()" [attr.aria-pressed]="lowStockOnly()" (click)="lowStockOnly.update(value => !value)">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="filter-icon">warning</mat-icon> Solo stock bajo
@@ -110,7 +110,7 @@
       <form class="ingredient-form" (submit)="submitForm($event)">
         <label class="form-field form-field-wide">
           <span>Nombre del insumo *</span>
-          <input required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" />
+          <input matInput required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" />
         </label>
 
         <label class="form-field">
@@ -127,7 +127,7 @@
         </label>
         <label class="form-field form-field-wide">
           <span>Grupo de ingredientes</span>
-          <input maxlength="100" [value]="form().ingredientGroup" (input)="updateTextField('ingredientGroup', $any($event.target).value)" placeholder="Ej. Harinas sin gluten, chocolate oscuro..." />
+          <input matInput maxlength="100" [value]="form().ingredientGroup" (input)="updateTextField('ingredientGroup', $any($event.target).value)" placeholder="Ej. Harinas sin gluten, chocolate oscuro..." />
         </label>
 
         <label class="form-field">
@@ -144,17 +144,17 @@
 
         <label class="form-field">
           <span>Costo por unidad (USD)</span>
-          <input type="number" min="0" step="0.0001" [value]="form().costPerUnit" (input)="updateNumberField('costPerUnit', $any($event.target).value)" />
+          <input matInput type="number" min="0" step="0.0001" [value]="form().costPerUnit" (input)="updateNumberField('costPerUnit', $any($event.target).value)" />
         </label>
 
         <label class="form-field">
           <span>Stock actual</span>
-          <input type="number" min="0" step="0.001" [value]="form().stock" (input)="updateNumberField('stock', $any($event.target).value)" />
+          <input matInput type="number" min="0" step="0.001" [value]="form().stock" (input)="updateNumberField('stock', $any($event.target).value)" />
         </label>
 
         <label class="form-field">
           <span>Stock mínimo</span>
-          <input type="number" min="0" step="0.001" [value]="form().minStock" (input)="updateNumberField('minStock', $any($event.target).value)" />
+          <input matInput type="number" min="0" step="0.001" [value]="form().minStock" (input)="updateNumberField('minStock', $any($event.target).value)" />
         </label>
 
         @if (formError()) {
@@ -180,9 +180,9 @@
         <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form class="ingredient-form" (submit)="$event.preventDefault(); savePurchase()">
-        <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="selectedPurchaseIngredientName()" /></label>
-        <label class="form-field"><span>Cantidad comprada *</span><input required type="number" min="0.001" step="any" [value]="purchaseQuantity()" (input)="onPurchaseQuantityChange($any($event.target).value)" /></label>
-        <label class="form-field"><span>Costo por unidad (USD) *</span><input required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
+        <label class="form-field form-field-wide"><span>Ingrediente</span><input matInput readonly [value]="selectedPurchaseIngredientName()" /></label>
+        <label class="form-field"><span>Cantidad comprada *</span><input matInput required type="number" min="0.001" step="any" [value]="purchaseQuantity()" (input)="onPurchaseQuantityChange($any($event.target).value)" /></label>
+        <label class="form-field"><span>Costo por unidad (USD) *</span><input matInput required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
         <p class="purchase-total form-field-wide">Total de la compra <strong>{{ purchaseQuantity() * purchaseUnitCost() | currency:'USD' }}</strong></p>
         @if (purchaseError()) { <p class="form-error form-field-wide" role="alert">{{ purchaseError() }}</p> }
         <div class="modal-actions form-field-wide"><button matButton="outlined" class="btn-primary cancel-button" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
