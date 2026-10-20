@@ -147,3 +147,5 @@ app-recetas .view-edit-button span { font-size: 18px; }
   .recipe-form-footer { flex-direction: row; }
   app-recetas .card-image-wrapper { height: 230px; }
 }
+
+app-recetas .base-weight-note { grid-column: 1 / -1; margin: 0; color: #9b88a6; font-size: 11px; line-height: 1.55; }
