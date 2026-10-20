@@ -82,12 +82,12 @@ describe('Catalog', () => {
 
   it('computes the total with delivery', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
-    component.setDeliveryZone(DELIVERY_ZONES[0]);
+    component.setDeliveryZone(TEST_ZONES[0]);
     expect(component.grandTotal()).toBeCloseTo(6.99, 2);
-    component.setDeliveryZone(DELIVERY_ZONES[3]);
+    component.setDeliveryZone(TEST_ZONES[3]);
     expect(component.shippingFee()).toBe(4.5);
     expect(component.grandTotal()).toBeCloseTo(10.5, 2);
-    component.setDeliveryZone(DELIVERY_ZONES[5]);
+    component.setDeliveryZone(TEST_ZONES[5]);
     expect(component.grandTotal()).toBeCloseTo(6, 2);
   });
 
@@ -100,7 +100,7 @@ describe('Catalog', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
     component.orderForm.name = 'Cliente de prueba';
     component.orderForm.phone = '0991234567';
-    component.setDeliveryZone(DELIVERY_ZONES[0]);
+    component.setDeliveryZone(TEST_ZONES[0]);
     component.orderForm.address = 'Av. de prueba 123';
     component.orderForm.date = component.today();
 
@@ -123,7 +123,7 @@ describe('Catalog', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
     component.orderForm.name = 'Cliente de prueba';
     component.orderForm.phone = '0991234567';
-    component.setDeliveryZone(DELIVERY_ZONES[0]);
+    component.setDeliveryZone(TEST_ZONES[0]);
     component.orderForm.address = 'Av. de prueba 123';
     component.orderForm.date = component.today();
 
