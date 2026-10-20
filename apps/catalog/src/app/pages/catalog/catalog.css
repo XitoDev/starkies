@@ -101,3 +101,6 @@ main { padding-bottom:150px; }
   .dock-card { min-height:78px; gap:12px; padding:12px 14px; border-radius:18px; } .dock-title { align-items:flex-start; flex-direction:column; gap:3px; } .dock-title>span { margin-left:0; } .box-composition { gap:4px 10px; font-size:9px; } .dock-continue { min-width:94px; padding:11px 10px; font-size:10px; } .order-sheet { padding:22px 17px; } .site-footer { margin-top:20px; padding-top:34px; }
 }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } }
+
+.success-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.success-actions .button { margin-top:0; text-decoration:none; }
