@@ -140,3 +140,12 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 }
 
 .site-footer{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:34px;padding:42px 24px 28px;color:var(--muted)}.footer-brand{align-items:center!important;gap:8px}.footer-brand .wordmark{font-size:clamp(32px,4vw,42px)}.footer-brand .brand-tagline{text-align:center!important;padding-left:0!important}.footer-social{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:12px}.footer-social-link{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 16px;border:1px solid var(--line);border-radius:999px;color:var(--purple);font-size:12px;font-weight:700;text-decoration:none}.social-brand-icon{width:18px;height:18px;fill:currentColor}
+
+/* Align the brand lockup and keep controls consistent with the catalog DS. */
+:host header .brand{display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important}
+:host header .brand .brand-tagline{display:block!important;text-align:center!important}
+.box-presentations .presentation-check{display:grid;place-items:center;border:1px solid #d1c0d2;border-radius:50%;width:25px;height:25px;font:700 16px/1 'DM Sans',sans-serif;color:transparent}
+.box-presentations button.active .presentation-check{color:#fff;background:#795381;border-color:#795381}
+.search-field input{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.footer-social-link{border:0!important;border-radius:8px!important;background:transparent!important;min-height:40px;padding:0 12px!important}
+.footer-social-link .social-brand-icon{vertical-align:middle}
