@@ -2,6 +2,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -27,7 +28,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, MasasBaseList, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, MasasBaseList, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
