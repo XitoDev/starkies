@@ -123,3 +123,17 @@ main { padding-bottom:170px; position:relative; z-index:1; }
   .fulfillment-option strong { font-size:12px; }
   .fulfillment-option small { font-size:10px; }
 }
+
+/* Presentation cards: selection stays in the corner without reserving a header row. */
+.box-presentations button { position:relative; text-align:center; }
+.box-presentations button strong,.box-presentations .presentation-description,.box-presentations .box-price { padding-inline:8px; }
+.box-presentations .presentation-check { position:absolute; top:10px; right:12px; width:25px; height:25px; color:#cdbbd0; font-size:23px; }
+.box-presentations button.active .presentation-check { color:#795381; }
+.box-presentations button strong { margin-top:5px; }
+@media (max-width:680px) {
+ .box-presentations button { text-align:left; padding:14px 46px 14px 14px; }
+ .box-presentations button.active { padding:13px 45px 13px 13px; }
+ .box-presentations button strong,.box-presentations .presentation-description,.box-presentations .box-price { padding-inline:0; }
+ .box-presentations button strong { margin-top:0; }
+ .box-presentations .presentation-check { top:12px; right:12px; }
+}
