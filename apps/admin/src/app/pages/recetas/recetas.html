@@ -69,12 +69,7 @@
       </section>
     }
   } @else {
-    <div class="bases-grid">
-      @for (base of doughBases(); track base.id ?? base.name) {
-        <article class="base-card"><div class="base-card-mark">✳</div><div class="base-card-copy"><h2>{{ base.name || 'Masa base sin nombre' }}</h2><p>Rendimiento de la fórmula</p><strong>{{ base.weight ?? 0 }} g</strong></div><span class="base-items">{{ (base.ingredients ?? base.items ?? []).length }} ingredientes</span></article>
-      }
-      @if (doughBases().length === 0) { <div class="empty-state">No hay masas base registradas en Firebase.</div> }
-    </div>
+    <app-masas-base-list />
   }
 </div>
 
