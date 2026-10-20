@@ -1,6 +1,7 @@
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { Order } from 'shared';
 @Component({
   selector: 'app-pedidos',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe, RouterLink, MatButtonModule, MatIconModule, MatInputModule],
+  imports: [CommonModule, CurrencyPipe, DatePipe, RouterLink, MatButtonModule, MatIconModule, MatInputModule, MatMenuModule],
   templateUrl: './pedidos.html',
   styleUrls: ['./pedidos.css']
 })
