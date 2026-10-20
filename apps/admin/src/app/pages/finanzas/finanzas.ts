@@ -415,6 +415,7 @@ export class Finanzas {
       funds: Object.fromEntries(Object.entries(current.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'],
       pendingTransactions: current.pendingTransactions.map(item => ({ ...item })),
       history: [...current.history],
+      processedOrderIds: [...current.processedOrderIds],
     };
     const bankKey: BankKey = kind;
     next.bankBalances[bankKey] = this.money(next.bankBalances[bankKey] - amount);
