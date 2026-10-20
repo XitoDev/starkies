@@ -27,6 +27,19 @@ describe('Catalog', () => {
     expect(component.filteredProducts().map(product => product.name)).toEqual(['Sunny Carrot']);
   });
 
+  it('shows only the cookie category allowed by the selected box', () => {
+    component.selectPresentation(BOX_PRESENTATIONS[0]);
+    expect(component.categories()).toEqual(['Galletas clásicas']);
+    expect(component.filteredProducts().every(product => !product.isNy)).toBe(true);
+
+    component.selectPresentation(BOX_PRESENTATIONS[1]);
+    expect(component.categories()).toEqual(['Galletas NY']);
+    expect(component.filteredProducts().every(product => product.isNy)).toBe(true);
+
+    component.selectPresentation(BOX_PRESENTATIONS[2]);
+    expect(component.categories()).toEqual(['Galletas clásicas', 'Galletas NY']);
+  });
+
   it('prevents adding unavailable cookies', () => {
     component.selectPresentation(BOX_PRESENTATIONS[0]);
     component.changeQuantity('5', 1);
@@ -43,8 +56,13 @@ describe('Catalog', () => {
 
   it('computes the total with delivery', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
-    component.orderForm.zone = DELIVERY_ZONES[0];
+    component.setDeliveryZone(DELIVERY_ZONES[0]);
     expect(component.grandTotal()).toBeCloseTo(6.99, 2);
+    component.setDeliveryZone(DELIVERY_ZONES[3]);
+    expect(component.shippingFee()).toBe(4.5);
+    expect(component.grandTotal()).toBeCloseTo(10.5, 2);
+    component.setDeliveryZone(DELIVERY_ZONES[5]);
+    expect(component.grandTotal()).toBeCloseTo(6, 2);
   });
 
   it('submits an order and clears the cart only after the API confirms it', async () => {
@@ -56,7 +74,7 @@ describe('Catalog', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
     component.orderForm.name = 'Cliente de prueba';
     component.orderForm.phone = '0991234567';
-    component.orderForm.zone = DELIVERY_ZONES[0];
+    component.setDeliveryZone(DELIVERY_ZONES[0]);
     component.orderForm.address = 'Av. de prueba 123';
     component.orderForm.date = component.today();
 
@@ -79,7 +97,7 @@ describe('Catalog', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
     component.orderForm.name = 'Cliente de prueba';
     component.orderForm.phone = '0991234567';
-    component.orderForm.zone = DELIVERY_ZONES[0];
+    component.setDeliveryZone(DELIVERY_ZONES[0]);
     component.orderForm.address = 'Av. de prueba 123';
     component.orderForm.date = component.today();
 
