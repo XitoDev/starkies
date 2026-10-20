@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -28,7 +30,7 @@ type IngredientForm = {
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, LucideDynamicIcon, MatButtonModule, MatIconModule],
   templateUrl: './ingredientes.html',
   styleUrls: ['./ingredientes.css'],
 })
