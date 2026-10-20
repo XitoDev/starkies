@@ -1,4 +1,5 @@
 import type { Firestore } from 'firebase-admin/firestore';
+// Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
 import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
 
 export interface PublicProduct {
