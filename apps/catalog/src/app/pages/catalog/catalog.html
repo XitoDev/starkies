@@ -12,7 +12,7 @@
   </section>
   <section id="sabores" aria-labelledby="box-title">
     <div class="section-title"><div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación para cada antojo. Tú eliges los sabores.</p></div>
-      <label class="search-field"><span class="visually-hidden">Buscar un sabor</span><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Buscar un sabor…"></label>
+      <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic"><mat-label>Buscar un sabor</mat-label><input matInput type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Ej. chocolate"></mat-form-field>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
     @if (catalogLoadError()) { <p role="alert" class="catalog-instruction">{{ catalogLoadError() }}</p> }
@@ -70,29 +70,29 @@
       <form (ngSubmit)="submitOrder()">
         <div class="sheet-body">
           <label class="honeypot" aria-hidden="true">No completar este campo<input type="text" [(ngModel)]="orderForm.website" name="website" tabindex="-1" autocomplete="off"></label>
-          <label>Número de teléfono<input required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" (blur)="lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567">@if (lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (customerLookupMessage()) { <small class="lookup-message">{{ customerLookupMessage() }}</small> }</label>
-          <label>Tu nombre<input required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre"></label>
+          <div class="form-field"><mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Número de teléfono</mat-label><input matInput required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" (blur)="lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567"></mat-form-field>@if (lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (customerLookupMessage()) { <small class="lookup-message">{{ customerLookupMessage() }}</small> }</div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Tu nombre</mat-label><input matInput required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre"></mat-form-field>
           <fieldset class="fulfillment-picker">
             <legend>¿Cómo quieres recibir tu pedido?</legend>
             <div class="fulfillment-options" role="group" aria-label="Modalidad del pedido">
               <button matButton="outlined" type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'delivery'" [attr.aria-pressed]="fulfillmentMode() === 'delivery'" (click)="setFulfillmentMode('delivery')">
-                <span class="fulfillment-icon" aria-hidden="true">⌂</span><span><strong>Entrega a domicilio</strong><small>Te lo llevamos a tu sector</small></span>
+                <mat-icon class="fulfillment-icon" fontSet="material-symbols-rounded" aria-hidden="true">home</mat-icon><span><strong>Entrega a domicilio</strong><small>Te lo llevamos a tu sector</small></span>
               </button>
               <button matButton="outlined" type="button" class="fulfillment-option" [class.active]="fulfillmentMode() === 'pickup'" [attr.aria-pressed]="fulfillmentMode() === 'pickup'" (click)="setFulfillmentMode('pickup')">
-                <span class="fulfillment-icon" aria-hidden="true">↗</span><span><strong>Retiro en local</strong><small>Lo recoges personalmente</small></span>
+                <mat-icon class="fulfillment-icon" fontSet="material-symbols-rounded" aria-hidden="true">north_east</mat-icon><span><strong>Retiro en local</strong><small>Lo recoges personalmente</small></span>
               </button>
             </div>
           </fieldset>
           @if (fulfillmentMode() === 'delivery') {
-            <label>Sector de entrega<select required [ngModel]="orderForm.zone" (ngModelChange)="setDeliveryZone($event)" name="zone"><option [ngValue]="null" disabled>Selecciona tu sector</option>@for (z of zones; track z.id) { @if (!isPickupZone(z)) { <option [ngValue]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</option> } }</select></label>
-            <label>Dirección exacta<textarea required autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></label>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Sector de entrega</mat-label><mat-select required [ngModel]="orderForm.zone" (ngModelChange)="setDeliveryZone($event)" name="zone"><mat-option [value]="null" disabled>Selecciona tu sector</mat-option>@for (z of zones; track z.id) { @if (!isPickupZone(z)) { <mat-option [value]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</mat-option> } }</mat-select></mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Dirección exacta</mat-label><textarea matInput required autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></mat-form-field>
           } @else {
             <div class="pickup-note" role="status"><strong>Retiro en local</strong><p>No se cobrará envío. Coordinaremos contigo los detalles de la recogida por WhatsApp.</p>@if (orderForm.zone) { <span>{{ orderForm.zone.name }} · Sin costo de envío</span> }</div>
           }
-          <label>Fecha de entrega<input type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date"></label>
-          <div class="optional-name-toggle"><label for="wantsCookieName"><input id="wantsCookieName" type="checkbox" [ngModel]="wantsCookieName()" (ngModelChange)="wantsCookieName.set($event)" name="wantsCookieName"> ¿Quieres agregar un nombre a la caja?</label></div>
-          @if (wantsCookieName()) { <label>Nombre en la caja<input type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Si lo dejas vacío, usaremos tu nombre"></label> }
-          <label>Notas adicionales<textarea [(ngModel)]="orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></label>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Fecha de entrega</mat-label><input matInput type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date"></mat-form-field>
+          <div class="optional-name-toggle"><mat-checkbox id="wantsCookieName" [ngModel]="wantsCookieName()" (ngModelChange)="wantsCookieName.set($event)" name="wantsCookieName">¿Quieres agregar un nombre a la caja?</mat-checkbox></div>
+          @if (wantsCookieName()) { <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Nombre en la caja</mat-label><input matInput type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Si lo dejas vacío, usaremos tu nombre"></mat-form-field> }
+          <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Notas adicionales</mat-label><textarea matInput [(ngModel)]="orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></mat-form-field>
           <div class="summary"><h3>Resumen de tu pedido</h3>
             @if (hasUnavailableBox()) { <p class="summary-warning">Hay un sabor agotado o no disponible. Usa Editar sabores en la caja correspondiente antes de confirmar.</p> }
             @for (box of completedBoxes(); track $index) { <div class="packed-box">
