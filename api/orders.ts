@@ -83,7 +83,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         transaction.get(rateLimitRef),
       ]);
 
-      if (!metadataSnapshot.exists() || metadataSnapshot.data()?.['status'] !== 'complete') {
+      if (!metadataSnapshot.exists || metadataSnapshot.data()?.['status'] !== 'complete') {
         throw new HttpError(503, 'Los pedidos en línea se están configurando. Por ahora, puedes terminar tu pedido por WhatsApp.');
       }
       if (existingOrder.exists) {
