@@ -48,7 +48,7 @@ type BaseRow = { ingredientId: string; quantity: number | null };
           <h2>Masa</h2>
           @for (row of rows(); track $index) {
             <div class="ingredient-row">
-              <span class="drag" aria-hidden="true">⠿</span>
+              <mat-icon class="drag" fontSet="material-symbols-rounded" aria-hidden="true">drag_indicator</mat-icon>
               <select [name]="'ingredient-' + $index" [ngModel]="row.ingredientId" (ngModelChange)="updateRow($index, 'ingredientId', $event)" aria-label="Ingrediente">
                 <option value="">Selecciona ingrediente</option>
                 @for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }
