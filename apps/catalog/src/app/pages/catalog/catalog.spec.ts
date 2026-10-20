@@ -80,6 +80,17 @@ describe('Catalog', () => {
     expect(component.isBoxComplete()).toBe(true);
   });
 
+  it('switches between delivery and pickup and only requires an address for delivery', () => {
+    component.setFulfillmentMode('pickup');
+    expect(component.fulfillmentMode()).toBe('pickup');
+    expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
+    expect(component.shippingFee()).toBe(0);
+
+    component.setFulfillmentMode('delivery');
+    expect(component.fulfillmentMode()).toBe('delivery');
+    expect(component.orderForm.zone).toBeNull();
+  });
+
   it('computes the total with delivery', () => {
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
     component.setDeliveryZone(TEST_ZONES[0]);
