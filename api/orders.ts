@@ -53,6 +53,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const now = Date.now();
     const createdAt = new Date(now).toISOString();
     const orderId = 'SK-' + todayInEcuador().replaceAll('-', '') + '-' + randomBytes(3).toString('hex').toUpperCase();
+    const documentExpiresAt = now + 7 * 24 * 60 * 60 * 1000;
+    const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
     const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
@@ -155,8 +157,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }, { merge: true });
     });
 
-    const documentExpiresAt = now + 7 * 24 * 60 * 60 * 1000;
-    const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     res.status(201).json({ ok: true, orderId, total: order.total, documentToken, documentExpiresAt });
   } catch (error) {
     if (error instanceof HttpError) {
