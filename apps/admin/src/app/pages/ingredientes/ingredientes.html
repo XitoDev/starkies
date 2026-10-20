@@ -115,13 +115,13 @@
 
         <label class="form-field">
           <span>Grupo de insumos *</span>
-          <select required [value]="form().supplyGroup" (change)="updateTextField('supplyGroup', $any($event.target).value)">
+          <select matNativeControl required [value]="form().supplyGroup" (change)="updateTextField('supplyGroup', $any($event.target).value)">
             @for (group of supplyGroups; track group) { <option [value]="group">{{ group }}</option> }
           </select>
         </label>
         <label class="form-field">
           <span>Grupo de alimentos *</span>
-          <select required [value]="form().foodGroup" (change)="updateTextField('foodGroup', $any($event.target).value)">
+          <select matNativeControl required [value]="form().foodGroup" (change)="updateTextField('foodGroup', $any($event.target).value)">
             @for (group of foodGroups; track group) { <option [value]="group">{{ group }}</option> }
           </select>
         </label>
@@ -132,7 +132,7 @@
 
         <label class="form-field">
           <span>Unidad de medida *</span>
-          <select required [value]="form().unit" (change)="updateTextField('unit', $any($event.target).value)">
+          <select matNativeControl required [value]="form().unit" (change)="updateTextField('unit', $any($event.target).value)">
             <option value="g">Gramos (g)</option>
             <option value="kg">Kilogramos (kg)</option>
             <option value="ml">Mililitros (ml)</option>
