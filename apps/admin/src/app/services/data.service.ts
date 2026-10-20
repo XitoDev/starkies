@@ -191,7 +191,7 @@ export class DataService {
       const id = this.asString(order['id'] ?? order['code']);
       await this.repository.upsertCollectionRecord('orders', id, {
         ...order,
-        customer: 'Cliente eliminado',
+        customer: `Cliente eliminado · ${id}`,
         phone: '',
         address: '',
       });
@@ -202,7 +202,7 @@ export class DataService {
         const name = this.asString(order['customer'], 'Cliente sin nombre');
         const phone = this.asOptionalString(order['phone']);
         const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
-        return key === customerId ? { ...order, customer: 'Cliente eliminado', phone: '', address: '' } : order;
+        return key === customerId ? { ...order, customer: `Cliente eliminado · ${this.asString(order['id'] ?? order['code'])}`, phone: '', address: '' } : order;
       }),
     };
     this.rawState.set(nextState);
