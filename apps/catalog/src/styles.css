@@ -1,11 +1,11 @@
 :root {
   color-scheme: light;
-  --cream: #ffffff;
-  --ink: #34223d;
-  --purple: #68416f;
-  --pink: #f3d9d1;
+  --cream: #f4eaf2;
+  --ink: #4b3153;
+  --purple: #75457c;
+  --pink: #e4d2e6;
 }
-html { scroll-behavior: smooth; background: #fff; }
-body { min-width: 320px; margin: 0; background: #fff; color: var(--ink); font: 16px 'DM Sans', sans-serif; }
+html { scroll-behavior: smooth; background: #f4eaf2; }
+body { min-width: 320px; margin: 0; background: #f4eaf2; color: var(--ink); font: 16px 'DM Sans', sans-serif; }
 button, input, textarea, select { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #9b76b4; outline-offset: 3px; }
