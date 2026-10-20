@@ -1,0 +1,17 @@
+{
+  "name": "StarKies · Administración",
+  "short_name": "StarKies",
+  "description": "Administración del negocio StarKies",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ead8e8",
+  "theme_color": "#ead8e8",
+  "icons": [
+    {
+      "src": "/starkies-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
