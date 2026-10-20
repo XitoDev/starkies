@@ -71,4 +71,4 @@ jobs:
         run: npx ng test catalog --watch=false
 
       - name: Type-check public order API
-        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts api/order-document.ts
