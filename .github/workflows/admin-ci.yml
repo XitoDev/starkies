@@ -9,10 +9,10 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/admin-ci.yml"
+      - ".github/workflows/admin-vercel-deploy.yml"
   push:
     branches:
       - main
-      - "feat/**"
     paths:
       - "apps/admin/**"
       - "libs/shared/**"
@@ -20,10 +20,11 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/admin-ci.yml"
+      - ".github/workflows/admin-vercel-deploy.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: admin-ci-${{ github.ref }}
@@ -31,7 +32,7 @@ concurrency:
 
 jobs:
   build-admin:
-    name: Build Angular admin
+    name: Build and test Angular admin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -43,27 +44,11 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Regenerate npm lockfile with strict peer dependency resolution
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Install dependencies from lockfile
+      - name: Install dependencies from committed lockfile
         run: npm ci
 
-      - name: Build admin
+      - name: Build admin for production
         run: npx ng build admin --configuration production
 
       - name: Test admin
         run: npx ng test admin --watch=false
-
-      - name: Commit refreshed lockfile on feature branches
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(deps): refresh npm lockfile"
-            git push
-          else
-            echo "package-lock.json is already current."
-          fi
