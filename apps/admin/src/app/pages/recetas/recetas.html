@@ -3,8 +3,8 @@
   <div class="page-heading">
     <div>
       <p class="eyebrow">Starkies / Mi negocio</p>
-      <h1 class="page-title">{{ view() === 'recipes' ? 'Recetas' : 'Masas base' }}</h1>
-      <p class="page-subtitle">{{ view() === 'recipes' ? 'Tus sabores, ingredientes, preparación y notas.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
+      <h1 class="page-title">{{ view() === 'recipes' ? 'Productos' : 'Masas base' }}</h1>
+      <p class="page-subtitle">{{ view() === 'recipes' ? 'Administra tus productos, recetas, costos y precios.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
     </div>
     @if (view() === 'recipes') {
       <button class="btn-primary" type="button" (click)="openNewRecipe()"><span class="plus-sign">＋</span> Nueva receta</button>
@@ -13,7 +13,7 @@
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
   <div class="view-and-status-row">
     <div class="view-tabs" role="tablist" aria-label="Tipo de receta">
-      <button type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Recetario</button>
+      <button type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Productos</button>
       <button type="button" role="tab" [attr.aria-selected]="view() === 'bases'" [class.active]="view() === 'bases'" (click)="setView('bases')">Masas base</button>
     </div>
     @if (view() === 'recipes') {
@@ -47,7 +47,8 @@
                 @if (openMenuId() === recipe.id) {
                   <div class="card-menu-popover">
                     <button type="button" (click)="duplicateRecipe(recipe)"><span>▢</span> Duplicar receta</button>
-                    <button type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar receta' : 'Archivar receta' }}</button>
+                    <button type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</button>
+                    <button class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><span>⌫</span> Eliminar producto</button>
                   </div>
                 }
               </div>
@@ -86,18 +87,17 @@
         <div class="photo-upload-panel">
           <div class="photo-preview">
             @if (imagePreview()) { <img [src]="imagePreview()" alt="Foto de la galleta" /> }
-            @else { <div class="photo-placeholder"><span>▧＋</span><small>Foto de tu galleta</small></div> }
+            @else { <div class="photo-placeholder" aria-label="Sin foto"></div> }
           </div>
           <div class="photo-controls">
             <label class="photo-select-button">{{ selectedFile() ? 'Cambiar foto' : (imagePreview() ? 'Cambiar foto' : 'Agregar foto') }}<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhotoSelected($event)" /></label>
             @if (imagePreview()) { <button type="button" class="remove-photo-button" (click)="removePhoto()">Quitar foto</button> }
-            <small>JPG, PNG o WebP · hasta 5 MB</small>
           </div>
         </div>
         <div class="recipe-form-grid">
           <label class="recipe-field"><span>Nombre del sabor</span><input required maxlength="100" [value]="form().name" (input)="setFormText('name', $any($event.target).value)" placeholder="Ej. Brownie" /></label>
-          <label class="recipe-field"><span>Categoría</span><input required maxlength="80" list="recipe-categories" [value]="form().category" (input)="setFormText('category', $any($event.target).value)" placeholder="Ej. Galletas clásicas" /><datalist id="recipe-categories">@for (category of categories(); track category) { <option [value]="category"></option> }</datalist></label>
-          <p class="form-hint form-field-full">Elige una categoría existente o escribe una nueva. Se mostrará en el catálogo al publicarlo.</p>
+          <label class="recipe-field"><span>Categoría</span><select required [value]="form().category" (change)="setFormText('category', $any($event.target).value)"><option value="" disabled>Selecciona una categoría</option>@for (category of categories(); track category) { <option [value]="category">{{ category }}</option> }</select></label>
+          <p class="form-hint form-field-full">Selecciona una de las categorías existentes del negocio.</p>
           <label class="recipe-field"><span>Peso de venta por galleta (g) · opcional</span><input type="number" min="1" max="1000" step="1" [value]="form().gramsPerCookie ?? ''" (input)="setFormNumber('gramsPerCookie', $any($event.target).value)" placeholder="Ej. 30 o 60" /></label>
           <label class="recipe-field"><span>Tipo de receta</span><select [value]="form().kind" (change)="setRecipeKind($any($event.target).value)"><option value="own">Receta única · masa propia</option><option value="base">Con masa base</option></select></label>
           <label class="recipe-field"><span>Precio de venta por unidad (USD)</span><input type="number" min="0" step="0.01" [value]="form().price" (input)="setFormNumber('price', $any($event.target).value)" /></label>
@@ -130,7 +130,7 @@
         </section>
         <label class="recipe-field notes-field"><span>Notas de la receta · opcional</span><textarea rows="4" maxlength="1500" [value]="form().notes" (input)="setFormText('notes', $any($event.target).value)" placeholder="Ej. Usar solo una parte de las yemas o reservar un poco de masa para la decoración."></textarea></label>
         @if (formError()) { <p class="recipe-form-error" role="alert">{{ formError() }}</p> }
-        <footer class="recipe-form-footer"><button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar ✓' }}</button></footer>
+        <footer class="recipe-form-footer"><button class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar ✓' }}</button></footer>
       </form>
     </section>
   </div>
