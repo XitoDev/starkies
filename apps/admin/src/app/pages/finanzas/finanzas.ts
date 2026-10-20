@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -44,7 +46,7 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, LucideDynamicIcon, MatButtonModule, MatIconModule],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })
