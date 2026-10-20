@@ -150,6 +150,17 @@ export class DataService {
    * Avoids rebuilding the entire view model, which can contain undefined
    * optional fields that Firestore rejects (for example catalogLabel).
    */
+  async deleteRecipe(recipeId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const rawRecipes = this.asArray(state['recipes']);
+    if (!rawRecipes.some(recipe => this.asString(recipe['id']) === recipeId)) throw new Error('No se encontró el producto.');
+    await this.repository.deleteCollectionRecord('recipes', recipeId);
+    const nextState = { ...state, recipes: rawRecipes.filter(recipe => this.asString(recipe['id']) !== recipeId) };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
   async setRecipeCatalogVisibility(recipeId: string, visible: boolean): Promise<void> {
     const state = this.rawState();
     if (!state) {
@@ -375,6 +386,9 @@ export class DataService {
       stock: this.asNumber(item['stock']),
       costPerUnit: this.asNumber(item['costPerUnit'] ?? item['cost']),
       minStock: this.asNumber(item['minStock'] ?? item['min']),
+      supplyGroup: this.asOptionalString(item['supplyGroup'] ?? item['supplyCategory']),
+      foodGroup: this.asOptionalString(item['foodGroup']),
+      ingredientGroup: this.asOptionalString(item['ingredientGroup']),
     })));
 
     this.recipes.set(rawRecipes.map((item) => {
