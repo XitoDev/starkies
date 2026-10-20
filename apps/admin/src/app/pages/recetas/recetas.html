@@ -107,12 +107,7 @@
             <div class="base-settings form-field-full">
               <label class="recipe-field"><span>Masa base</span><select required [value]="form().baseId" (change)="setFormText('baseId', $any($event.target).value)"><option value="">Selecciona masa base</option>@for (base of doughBases(); track base.id ?? base.name) { <option [value]="base.id">{{ base.name }}</option> }</select></label>
               <label class="recipe-field"><span>Gramos de base por galleta</span><input type="number" min="1" max="1000" step="1" [value]="form().gramsPerCookie ?? ''" (input)="setFormNumber('gramsPerCookie', $any($event.target).value)" placeholder="Ej. 30" /></label>
-              @if (selectedBase()) {
-                <div class="base-formula-preview"><strong>{{ selectedBase()?.name }}</strong>
-                  @for (row of selectedBaseIngredients(); track row.name) { <div><span>{{ row.name }}</span><b>{{ row.quantity | number:'1.0-2' }} {{ row.unit }}</b></div> }
-                  <small>Esta masa base se calcula automáticamente para el lote, además de los ingredientes agregados abajo.</small>
-                </div>
-              }
+              @if (selectedBase()) { <p class="base-weight-note">Este lote usa {{ selectedBase()?.weight ?? 0 }} g de base. Los ingredientes de la base se calculan automáticamente, además de lo que agregues abajo.</p> }
             </div>
           }
         </div>
