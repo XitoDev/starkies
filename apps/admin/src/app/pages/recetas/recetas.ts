@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
@@ -30,6 +31,8 @@ export class Recetas {
   private readonly dataService = inject(DataService);
   private readonly recipeImageService = inject(RecipeImageService);
   private readonly firebase = inject(FirebaseClientService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly icons = { PieChart: LucideChartPie, DollarSign: LucideDollarSign };
   readonly recipes = this.dataService.recipes;
@@ -40,6 +43,8 @@ export class Recetas {
   readonly sortBy = signal<RecipeSort>('nameAsc');
   readonly selectedCategories = signal<string[]>([]);
   readonly editorOpen = signal(false);
+  readonly routeRecipeId = signal<string | null>(null);
+  readonly routeEditor = computed(() => this.routeRecipeId() !== null);
   readonly editingId = signal<string | null>(null);
   readonly saving = signal(false);
   readonly uploadingImage = signal(false);
@@ -49,6 +54,20 @@ export class Recetas {
   readonly imagePreview = signal('');
   readonly selectedFile = signal<File | null>(null);
   readonly form = signal<RecipeForm>(this.emptyForm());
+
+  constructor() {
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('recipeId');
+      this.routeRecipeId.set(id);
+      if (!id) this.editorOpen.set(false);
+    });
+    effect(() => {
+      const id = this.routeRecipeId();
+      if (!id) return;
+      const recipe = this.recipes().find(item => item.id === id);
+      if (recipe && this.editingId() !== id) this.openEditRecipe(recipe);
+    });
+  }
 
   readonly categories = computed(() => Array.from(new Set(this.recipes().map(recipe => recipe.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'es')));
   readonly activeCount = computed(() => this.recipes().filter(recipe => !recipe.archived).length);
@@ -176,7 +195,12 @@ export class Recetas {
     this.imagePreview.set(recipe.image ? this.getImageUrl(recipe.image) : '');
     this.selectedFile.set(null); this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
   }
-  closeEditor(): void { if (this.saving()) return; this.editorOpen.set(false); this.formError.set(''); }
+  closeEditor(): void {
+    if (this.saving()) return;
+    this.formError.set('');
+    if (this.routeEditor()) { void this.router.navigate(['/recetas']); return; }
+    this.editorOpen.set(false);
+  }
   setFormText(field: 'name' | 'category' | 'baseId' | 'notes', value: string): void { this.form.update(form => ({ ...form, [field]: value })); }
   setFormNumber(field: 'gramsPerCookie' | 'price', value: string): void {
     const parsed = value.trim() === '' ? null : Number(value);
@@ -242,6 +266,7 @@ export class Recetas {
       await this.dataService.saveRecipe(recipe);
       this.editorOpen.set(false); this.notice.set(this.editingId() ? 'Receta actualizada correctamente.' : 'Receta creada correctamente.');
       this.editingId.set(null); this.selectedFile.set(null);
+      if (this.routeEditor()) { await this.router.navigate(['/catalogo']); }
     } catch (error) { this.formError.set(error instanceof Error ? error.message : 'No se pudo guardar la receta.'); }
     finally { this.saving.set(false); }
   }
