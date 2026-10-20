@@ -54,15 +54,15 @@ type BaseRow = { ingredientId: string; quantity: number | null };
                 @for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }
               </select>
               <input [name]="'quantity-' + $index" type="number" min="0.001" step="any" [ngModel]="row.quantity ?? ''" (ngModelChange)="updateRow($index, 'quantity', $event)" aria-label="Cantidad" placeholder="Cantidad">
-              <button matIconButton class="remove" type="button" aria-label="Quitar ingrediente" [disabled]="rows().length === 1" (click)="removeRow($index)">×</button>
+              <button matIconButton class="remove" type="button" aria-label="Quitar ingrediente" [disabled]="rows().length === 1" (click)="removeRow($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
             </div>
           }
-          <button matButton="text" class="add" type="button" (click)="addRow()">＋ Agregar ingrediente</button>
+          <button matButton="text" class="add" type="button" (click)="addRow()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Agregar ingrediente</button>
         </section>
         <label class="field">Notas de la base
           <textarea rows="3" maxlength="1500" name="notes" [(ngModel)]="notes"></textarea>
         </label>
-        <footer><button matButton="text" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button><a class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cerrar</a></footer>
+        <footer><button matButton="elevated" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button><a class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cerrar</a></footer>
       </form>
     </section>
   `,
