@@ -1,9 +1,6 @@
 name: Deploy Public Catalog to Vercel
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       target_environment:
