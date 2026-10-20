@@ -28,7 +28,7 @@
       <label class="search-field"><span>Buscar receta</span><input matInput type="search" [value]="searchTerm()" (input)="searchTerm.set($any($event.target).value)" placeholder="Nombre o categoría" /></label>
       <details class="category-picker">
         <summary><span class="category-caret">▸</span> Categorías · {{ selectedCategories().length === 0 ? categories().length : selectedCategories().length }} seleccionadas</summary>
-        <div class="category-menu">@for (category of categories(); track category) { <label><input type="checkbox" [checked]="isCategorySelected(category)" (change)="toggleCategory(category, $any($event.target).checked)" /><span>{{ category }}</span></label> }</div>
+        <div class="category-menu">@for (category of categories(); track category) { <mat-checkbox [checked]="isCategorySelected(category)" (change)="toggleCategory(category, $event.checked)">{{ category }}</mat-checkbox> }</div>
       </details>
       <label class="sort-field"><span>Ordenar por</span><select matNativeControl [value]="sortBy()" (change)="setSort($any($event.target).value)"><option value="nameAsc">Nombre: A a Z</option><option value="nameDesc">Nombre: Z a A</option><option value="yieldDesc">Rendimiento: mayor a menor</option><option value="priceDesc">Precio: mayor a menor</option></select></label>
       <span class="result-count">{{ filteredRecipes().length }} recetas</span>
