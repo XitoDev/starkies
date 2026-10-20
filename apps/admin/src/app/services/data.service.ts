@@ -111,6 +111,37 @@ export class DataService {
     this.loadViewModels(nextState);
   }
 
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const rawOrders = this.asArray(state['orders']);
+    const orderIndex = rawOrders.findIndex(
+      (item) => this.asString(item['id'] ?? item['code']) === orderId,
+    );
+    if (orderIndex < 0) {
+      throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const currentOrder = rawOrders[orderIndex];
+    const currentStatus = this.normalizeOrderStatus(this.asString(currentOrder['status']));
+    if (currentStatus === status) return;
+    if (currentStatus !== 'PENDING') {
+      throw new Error('Solo se pueden actualizar pedidos que todavía están pendientes.');
+    }
+
+    const updatedOrder: RawRecord = { ...currentOrder, status };
+    await this.repository.upsertCollectionRecord('orders', orderId, updatedOrder);
+
+    const nextOrders = [...rawOrders];
+    nextOrders[orderIndex] = updatedOrder;
+    const nextState = { ...state, orders: nextOrders };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
   async recordProduction(
     record: Record<string, unknown>,
     deductions: { ingredientId: string; quantity: number }[],
