@@ -5,6 +5,9 @@ import {
   User,
   getAuth,
   onAuthStateChanged,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -57,6 +60,13 @@ export class FirebaseClientService {
 
   get firestore(): Firestore {
     return getFirestore(this.app);
+  }
+
+  setDevicePersistence(rememberDevice: boolean): Promise<void> {
+    return setPersistence(
+      this.auth,
+      rememberDevice ? browserLocalPersistence : browserSessionPersistence,
+    );
   }
 
   signIn(email: string, password: string) {
