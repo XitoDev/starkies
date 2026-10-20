@@ -115,7 +115,10 @@
             ],
             "styles": [
               "apps/catalog/src/styles.css"
-            ]
+            ],
+            "server": "apps/catalog/src/main.server.ts",
+            "prerender": true,
+            "outputMode": "static"
           },
           "configurations": {
             "production": {
