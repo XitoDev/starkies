@@ -1,7 +1,6 @@
 <aside class="sidebar">
   <div class="sidebar-brand">
-    <div class="brand-mark" aria-hidden="true">★</div>
-    <div class="brand-name"><span>Star</span><strong>Kies</strong><sup>®</sup></div>
+    <div class="brand-name"><span>StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></div>
   </div>
 
   <a
@@ -12,14 +11,11 @@
     rel="noopener noreferrer"
     aria-label="Ir a mi tienda (abre en una pestaña nueva)"
   >
-    <span class="business-mark" aria-hidden="true">
-      <mat-icon fontSet="material-symbols-rounded">storefront</mat-icon>
-    </span>
+    <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">open_in_new</mat-icon>
     <span class="business-copy">
       <strong>Ir a mi tienda</strong>
       <span>Ver catálogo público</span>
     </span>
-    <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">open_in_new</mat-icon>
   </a>
 
   <p class="nav-caption">Tu negocio</p>
@@ -36,28 +32,29 @@
   </nav>
 
   <div class="sidebar-bottom">
-    <button matButton="text" (click)="exportBackup()" class="btn-backup">
-      <mat-icon fontSet="material-symbols-rounded" class="btn-icon" aria-hidden="true">download</mat-icon>
-      <span>Descargar respaldo</span>
+    <button
+      type="button"
+      matButton="text"
+      class="settings-trigger"
+      [matMenuTriggerFor]="settingsMenu"
+      aria-label="Abrir configuración"
+    >
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">settings</mat-icon>
+      <span>Configuración</span>
+      <mat-icon class="settings-chevron" fontSet="material-symbols-rounded" aria-hidden="true">expand_less</mat-icon>
     </button>
-    <div class="sidebar-profile">
-      <div class="profile-mark">S</div>
-      <div class="profile-copy">
-        <strong>StarKies</strong>
-        <button
-          type="button"
-          matButton="text"
-          class="profile-logout"
-          [disabled]="loggingOut()"
-          (click)="logout()"
-        >
-          <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">logout</mat-icon>
-          {{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
-        </button>
-        @if (logoutMessage()) {
-          <span class="profile-logout-error" role="status" aria-live="polite">{{ logoutMessage() }}</span>
-        }
-      </div>
-    </div>
+    <mat-menu #settingsMenu="matMenu" xPosition="after" yPosition="above">
+      <button mat-menu-item type="button" (click)="exportBackup()">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">download</mat-icon>
+        <span>Descargar respaldo</span>
+      </button>
+      <button mat-menu-item type="button" [disabled]="loggingOut()" (click)="logout()">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">logout</mat-icon>
+        <span>{{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}</span>
+      </button>
+      @if (logoutMessage()) {
+        <div class="settings-error" role="status" aria-live="polite">{{ logoutMessage() }}</div>
+      }
+    </mat-menu>
   </div>
 </aside>
