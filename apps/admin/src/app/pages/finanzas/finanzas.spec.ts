@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Ingredient } from 'shared';
 import { DataService } from '../../services/data.service';
@@ -8,8 +8,8 @@ describe('Finanzas', () => {
   let component: Finanzas;
   let fixture: ComponentFixture<Finanzas>;
   let dataServiceStub: {
-    rawState: ReturnType<typeof signal<Record<string, unknown> | null>>;
-    ingredients: ReturnType<typeof signal<Ingredient[]>>;
+    rawState: WritableSignal<Record<string, unknown> | null>;
+    ingredients: WritableSignal<Ingredient[]>;
     recordCashMovement: jasmine.Spy;
     recordIngredientPurchase: jasmine.Spy;
   };

@@ -38,6 +38,7 @@ type ExpenseForm = {
 })
 export class Finanzas {
   private readonly dataService = inject(DataService);
+  readonly ingredients = this.dataService.ingredients;
 
   readonly icons = {
     DollarSign: LucideDollarSign,
@@ -108,6 +109,9 @@ export class Finanzas {
   readonly availableCash = computed(() => this.incomeTotal() - this.expenseTotal());
   readonly inventoryValue = computed(() => this.dataService.ingredients().reduce((sum, item) => sum + item.stock * item.costPerUnit, 0));
   readonly purchaseTotal = computed(() => Math.round(this.purchaseForm().quantity * this.purchaseForm().unitCost * 100) / 100);
+  readonly selectedIngredient = computed(() =>
+    this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
+  );
 
   setTab(tab: 'movimientos' | 'compras' | 'gastos'): void {
     this.activeTab.set(tab);
