@@ -159,3 +159,23 @@
 
 /* Material Symbols Rounded font set used by Angular Material MatIcon. */
 .material-symbols-rounded { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 1.25em; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; font-feature-settings: 'liga'; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+
+
+/* Angular Material 3 semantic tokens; app themes override the palette, not component behavior. */
+:root {
+  --mat-sys-primary: var(--ds-color-primary);
+  --mat-sys-on-primary: var(--ds-color-on-primary);
+  --mat-sys-primary-container: var(--ds-color-primary-container);
+  --mat-sys-on-primary-container: var(--ds-color-on-primary-container);
+  --mat-sys-secondary: var(--ds-color-secondary);
+  --mat-sys-surface: var(--ds-color-surface);
+  --mat-sys-on-surface: var(--ds-color-text);
+  --mat-sys-surface-container: var(--ds-color-surface-container);
+  --mat-sys-surface-container-high: var(--ds-color-surface-container-high);
+  --mat-sys-outline: var(--ds-color-outline);
+  --mat-sys-outline-variant: var(--ds-color-outline-variant);
+  --mdc-filled-button-container-color: var(--ds-color-primary);
+  --mdc-filled-button-label-text-color: var(--ds-color-on-primary);
+  --mdc-outlined-button-outline-color: var(--ds-color-outline);
+  --mdc-outlined-button-label-text-color: var(--ds-color-primary);
+}
