@@ -78,6 +78,12 @@ export class Ingredientes {
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
 
+  readonly groupedIngredients = computed(() => {
+    const items = this.filteredIngredients();
+    const groups = this.selectedGroup() === 'Todos' ? [...this.supplyGroups] : [this.selectedGroup()];
+    return groups.map(group => ({ group, ingredients: items.filter(item => (item.supplyGroup ?? 'Secos') === group) })).filter(group => group.ingredients.length > 0);
+  });
+
   readonly lowStockCount = computed(
     () => this.ingredients().filter((ingredient) => this.isLowStock(ingredient.stock, ingredient.minStock)).length,
   );
