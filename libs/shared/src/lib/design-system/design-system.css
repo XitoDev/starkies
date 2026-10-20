@@ -179,3 +179,21 @@
   --mdc-outlined-button-outline-color: var(--ds-color-outline);
   --mdc-outlined-button-label-text-color: var(--ds-color-primary);
 }
+
+
+/* Material form-control baseline shared by the admin and public catalog. */
+.mat-mdc-input-element {
+  box-sizing: border-box;
+  min-width: 0;
+  font-family: var(--ds-font-family);
+  color: var(--ds-color-text);
+}
+.mat-mdc-form-field { min-width: 0; }
+.mat-mdc-form-field .mat-mdc-text-field-wrapper { box-sizing: border-box; }
+.mat-mdc-form-field .mat-mdc-form-field-subscript-wrapper { line-height: 1.35; }
+.mat-mdc-unelevated-button,
+button[matButton="elevated"],
+a[matButton="elevated"] {
+  --mdc-filled-button-container-color: var(--ds-color-primary);
+  --mdc-filled-button-label-text-color: var(--ds-color-on-primary);
+}
