@@ -5,7 +5,7 @@
 La web pública usa `https://starkies.lat/` como URL canónica. El dominio continúa administrado en GoDaddy hasta que la nueva versión haya sido validada. **No cambiar los DNS ni retirar la web actual antes de aprobar la Preview.**
 
 1. Crear o seleccionar un proyecto Vercel dedicado al catálogo público, con el repositorio `XitoDev/starkies` y raíz del proyecto en el repositorio.
-2. Configurar el build como `npx ng build catalog --configuration production`, el directorio de salida como `dist/apps/catalog/browser` y la instalación como `npm ci`.
+2. Configurar el build como `npx ng build catalog --configuration production`, el directorio de salida como `dist/catalog` y la instalación como `npm ci`.
 3. Configurar los secretos de GitHub `VERCEL_TOKEN`, `VERCEL_ORG_ID` y `VERCEL_CATALOG_PROJECT_ID` para que el workflow pueda desplegar Previews.
 4. Configurar en el proyecto Vercel la variable de entorno `FIREBASE_SERVICE_ACCOUNT_JSON` para Preview y Production con el JSON de una cuenta de servicio del proyecto Firebase `starkies`. La cuenta solo se usa en la función de servidor; nunca se incluye en el bundle público. Otorgar solo el acceso necesario a Firestore.
 5. Revisar la Preview y validar creación de pedidos de extremo a extremo antes de asignar el dominio.
