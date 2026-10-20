@@ -38,6 +38,7 @@ export interface Customer {
 
 export interface OrderItem {
   recipeId: string;
+  name?: string;
   quantity: number;
   unitPrice: number;
 }
@@ -49,6 +50,10 @@ export interface Order {
   total: number;
   status: 'PENDING' | 'DELIVERED' | 'CANCELLED';
   createdAt: string;
+  deliveryDate?: string;
+  zone?: string;
+  notes?: string;
+  cookieName?: string;
 }
 
 export interface CashMovement {
