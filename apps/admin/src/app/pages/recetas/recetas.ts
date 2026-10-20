@@ -8,6 +8,7 @@ import { DataService } from '../../services/data.service';
 import { Recipe, RecipeSection, Ingredient } from 'shared';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
+import { MasasBaseList } from './masas-base-list';
 
 type RecipeSort = 'nameAsc' | 'nameDesc' | 'yieldDesc' | 'priceDesc';
 type RecipeKind = 'own' | 'base';
@@ -23,7 +24,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, LucideDynamicIcon],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, LucideDynamicIcon, MasasBaseList],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
@@ -56,6 +57,9 @@ export class Recetas {
   readonly form = signal<RecipeForm>(this.emptyForm());
 
   constructor() {
+    this.route.queryParamMap.subscribe(params => {
+      if (params.get('vista') === 'masas-base') this.view.set('bases');
+    });
     this.route.paramMap.subscribe(params => {
       const id = params.get('recipeId');
       this.routeRecipeId.set(id);
