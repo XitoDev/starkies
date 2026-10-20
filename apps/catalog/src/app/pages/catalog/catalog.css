@@ -88,3 +88,35 @@ h3 { margin: 0 0 10px; font-size: 21px; }
 .quantity button { background: #70476a; border-radius: 9px; min-width: 36px; padding: 9px 13px; }
 
 footer { border-top: 1px solid #30233b20; text-align: center; justify-content: center; padding: 35px 32px; display: flex; gap: 10px; align-items: center; }
+
+
+/* Public order flow, accessible states and lightweight product illustrations. */
+.skip-link { position: absolute; left: 12px; top: -100px; z-index: 1000; padding: 12px 16px; border-radius: 8px; background: #30233b; color: #fff; }
+.skip-link:focus { top: 12px; }
+.photo { background: radial-gradient(circle at 50% 44%, #f5e9db 0, #eaded5 66%, #e4d3c9 100%); }
+.photo-ny { background: radial-gradient(circle at 50% 44%, #f5e2dc 0, #ead6d1 66%, #e0c8c4 100%); }
+.cookie-illustration { position: relative; display: block; width: min(57%, 170px); aspect-ratio: 1; border: 7px solid #bd875d; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #dca779, #bd7d4e 68%, #a8673e); box-shadow: inset 0 3px 7px #70452d55, 0 9px 16px #5b392c20; transform: rotate(-9deg); }
+.cookie-illustration span { position: absolute; display: block; width: 13%; aspect-ratio: 1; border-radius: 50%; background: #4b2c25; box-shadow: inset 1px 1px 1px #261713; }
+.cookie-illustration span:nth-child(1) { left: 24%; top: 20%; }
+.cookie-illustration span:nth-child(2) { left: 58%; top: 26%; }
+.cookie-illustration span:nth-child(3) { left: 42%; top: 49%; }
+.cookie-illustration span:nth-child(4) { left: 22%; top: 67%; }
+.cookie-illustration span:nth-child(5) { left: 68%; top: 63%; }
+.photo-ny .cookie-illustration { width: min(64%, 190px); border-width: 9px; background: radial-gradient(circle at 35% 30%, #b87956, #874d35 68%, #693722); }
+.photo-sold-out .cookie-illustration { filter: grayscale(.7); opacity: .6; }
+.product-price { color: #6e4d82; font-size: 17px; white-space: nowrap; }
+.buy { align-items: center; }
+.order-success { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 20px 0 0; padding: 16px 20px; border: 1px solid #cce7d6; border-radius: 12px; background: #f0faf3; color: #225c3c; }
+.order-success strong { font-size: 15px; }
+.order-success p { margin: 5px 0 0; font-size: 13px; line-height: 1.5; }
+.success-close { padding: 3px 10px; background: transparent; color: #225c3c; font-size: 24px; }
+.honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+.order-error { padding: 13px; border: 1px solid #edc8c8; border-radius: 10px; background: #fff3f3; color: #8e2f3a; font-size: 13px; }
+.order-error p { margin: 6px 0 12px; line-height: 1.5; }
+.whatsapp-fallback { display: inline-flex; margin-top: 2px; background: #286a4b; color: #fff; }
+.button.full:disabled { opacity: .6; cursor: progress; }
+.site-footer { max-width: 1200px; margin: 24px auto 0; padding: 28px 32px 42px; border-top: 1px solid #30233b20; color: #776e79; text-align: center; font-size: 13px; line-height: 1.7; }
+.site-footer p { margin: 4px 0; }
+.site-footer strong { color: #30233b; }
+.site-footer a { color: #6e4d82; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 760px) { .cookie-illustration { width: 52%; } .product-price { font-size: 15px; } .site-footer { padding: 25px 18px 34px; } }
