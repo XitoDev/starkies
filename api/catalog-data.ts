@@ -1,6 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 // Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
-import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
+import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
 
 export interface PublicProduct {
   id: string;
@@ -96,18 +96,24 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   });
 
   const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['value']);
-  const zonesValue = zonesSnapshot.data()?.['value']
-    ?? catalogSettings['deliveryZones']
-    ?? legacyZonesSnapshot.docs.map(document => document.data()['value']);
-  if (!Array.isArray(zonesValue)) throw new Error('No hay tarifas de entrega configuradas en el negocio.');
-  const zones = zonesValue.flatMap((raw, index) => {
+  // An empty settings array must not mask valid legacy/catalog settings.
+  const zoneCandidates: unknown[] = [
+    zonesSnapshot.data()?.['value'],
+    catalogSettings['deliveryZones'],
+    legacyZonesSnapshot.docs.map(document => document.data()['value']),
+  ];
+  const zonesValue = zoneCandidates.find(value => Array.isArray(value) && value.length > 0);
+  const zones = (Array.isArray(zonesValue) ? zonesValue : []).flatMap((raw, index) => {
     const zone = asRecord(raw);
-    const id = stringValue(zone['id']);
+    const id = stringValue(zone['id'], `zone-${index + 1}`);
     const name = stringValue(zone['name']);
     const fee = numberValue(zone['fee'], Number.NaN);
     return id && name && Number.isFinite(fee) && fee >= 0 ? [{ id, name, fee }] : [];
   });
-  if (!zones.length) throw new Error('No hay zonas de entrega válidas configuradas en el negocio.');
+  if (!zones.length) {
+    console.warn('No valid delivery zones were found in business settings; using the same shared defaults as admin.');
+    zones.push(...DEFAULT_DELIVERY_ZONES);
+  }
 
   return { products, zones, presentations: BOX_PRESENTATIONS };
 }

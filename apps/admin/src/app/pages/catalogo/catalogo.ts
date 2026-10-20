@@ -6,6 +6,7 @@ import { LucideDynamicIcon, LucideStore, LucideSettings, LucideExternalLink, Luc
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
+import { DEFAULT_DELIVERY_ZONES } from '../../../../../catalog/src/app/pages/catalog/catalog.data';
 
 interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
@@ -32,10 +33,6 @@ export class Catalogo {
   readonly categories = computed(() => Array.from(new Set(this.recipes().filter(item => !item.archived).map(item => item.category.trim() || 'Sin categoría'))).sort((a,b) => a.localeCompare(b,'es')));
   readonly catalogItems = computed(() => this.recipes().filter(item => !item.archived && (this.showHidden() || item.catalogVisible !== false) && (this.categoryFilter() === 'Todos' || item.category === this.categoryFilter())));
   readonly visibleCount = computed(() => this.recipes().filter(item => !item.archived && item.catalogVisible !== false).length);
-  private readonly defaultZones: DeliveryZone[] = [
-    {id:'kennedy',name:'Kennedy',fee:0.99},{id:'norte',name:'Norte',fee:3.50},{id:'centro',name:'Centro',fee:3.99},
-    {id:'sur',name:'Sur',fee:4.50},{id:'daule-samborondon',name:'Daule/Samborondón',fee:5.99},{id:'retiro',name:'Retiro en tienda',fee:0},
-  ];
   constructor() {
     effect(() => {
       const state = this.dataService.rawState();
@@ -46,7 +43,7 @@ export class Catalogo {
       const catalogZonesValue = catalogSettings?.['deliveryZones'];
       const catalogZones = Array.isArray(catalogZonesValue) && catalogZonesValue.length ? catalogZonesValue : null;
       const hasStoredZones = configuredZones !== null || catalogZones !== null;
-      const zones = configuredZones ?? catalogZones ?? this.defaultZones;
+      const zones = configuredZones ?? catalogZones ?? DEFAULT_DELIVERY_ZONES;
       this.zones.set(zones.map((zone, index) => {
         const item = zone as Partial<DeliveryZone>;
         return {id:String(item.id ?? `zone-${index+1}`),name:String(item.name ?? ''),fee:Math.max(0,Number(item.fee ?? 0))};
