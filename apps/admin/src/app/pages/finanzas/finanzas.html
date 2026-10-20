@@ -11,9 +11,9 @@
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
 
   <div class="finance-tabs">
-    <button class="finance-tab" [class.active]="financeTab() === 'resumen'" type="button" [attr.aria-pressed]="financeTab() === 'resumen'" (click)="financeTab.set('resumen')">Resumen financiero</button>
-    <button class="finance-tab" [class.active]="financeTab() === 'productos'" type="button" [attr.aria-pressed]="financeTab() === 'productos'" (click)="financeTab.set('productos')">Productos y Precios</button>
-    <button class="pending-button" type="button" (click)="pendingPanelOpen.set(true)">
+    <button matButton="text" class="finance-tab" [class.active]="financeTab() === 'resumen'" type="button" [attr.aria-pressed]="financeTab() === 'resumen'" (click)="financeTab.set('resumen')">Resumen financiero</button>
+    <button matButton="text" class="finance-tab" [class.active]="financeTab() === 'productos'" type="button" [attr.aria-pressed]="financeTab() === 'productos'" (click)="financeTab.set('productos')">Productos y Precios</button>
+    <button matButton="elevated" class="pending-button" type="button" (click)="pendingPanelOpen.set(true)">
       TRANSACCIONES POR REALIZAR <span>{{ pendingCount() }}</span>
     </button>
   </div>
@@ -27,7 +27,7 @@
           <p class="card-label">{{ account.title }}</p>
           <p class="bank-amount">{{ account.balance | currency:'USD' }}</p>
           <p class="card-note">{{ account.note }}</p>
-          <button class="card-transfer" type="button" (click)="openLedgerAction('transfer', account.key)">Transferir dinero</button>
+          <button matButton="text" class="card-transfer" type="button" (click)="openLedgerAction('transfer', account.key)">Transferir dinero</button>
         </article>
       }
       <article class="bank-card bank-total">
@@ -52,15 +52,15 @@
           <p class="fund-note">{{ fund.note }}</p>
           <div class="fund-actions">
             @if (fund.key === 'ingredients') {
-              <button type="button" (click)="openPurchaseForm()">Comprar ingredientes</button>
+              <button matButton="text" type="button" (click)="openPurchaseForm()">Comprar ingredientes</button>
             } @else if (fund.key === 'expenses') {
-              <button type="button" (click)="openExpenseForm()">Registrar pago</button>
+              <button matButton="text" type="button" (click)="openExpenseForm()">Registrar pago</button>
             } @else if (fund.key === 'boxes') {
-              <button type="button" (click)="openLedgerAction('boxesPurchase')">Comprar cajas</button>
-              <button type="button" (click)="openLedgerAction('boxesPayment')">Registrar pago de cajas</button>
+              <button matButton="text" type="button" (click)="openLedgerAction('boxesPurchase')">Comprar cajas</button>
+              <button matButton="text" type="button" (click)="openLedgerAction('boxesPayment')">Registrar pago de cajas</button>
             }
             @if (fund.key === 'ingredients' || fund.key === 'expenses' || fund.key === 'boxes' || fund.key === 'profit' || fund.key === 'extraProfit') {
-              <button class="text-action" type="button" (click)="openLedgerAction('transfer', transferSourceForFund(fund.key))">Transferir dinero</button>
+              <button matButton="text" class="text-action" type="button" (click)="openLedgerAction('transfer', transferSourceForFund(fund.key))">Transferir dinero</button>
             }
           </div>
         </article>
@@ -94,7 +94,7 @@
           <h2 id="finance-modal-title">{{ formOpen() === 'purchase' ? 'Registrar compra de insumos' : 'Registrar gasto' }}</h2>
           <p>{{ formOpen() === 'purchase' ? 'El egreso y el aumento de stock se guardan juntos.' : 'El gasto quedará registrado como un egreso de caja.' }}</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()">×</button>
       </div>
 
       @if (formOpen() === 'purchase') {
@@ -135,8 +135,8 @@
             <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
           }
           <div class="modal-actions form-field-wide">
-            <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
+            <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
               {{ saving() ? 'Guardando…' : 'Guardar compra' }}
             </button>
           </div>
@@ -168,8 +168,8 @@
             <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
           }
           <div class="modal-actions form-field-wide">
-            <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button class="btn-primary" type="submit" [disabled]="saving()">
+            <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
               {{ saving() ? 'Guardando…' : 'Guardar gasto' }}
             </button>
           </div>
@@ -186,7 +186,7 @@
           <h2 id="ledger-modal-title">{{ ledgerActionOpen() === 'boxesPurchase' ? 'Registrar compra de cajas' : ledgerActionOpen() === 'boxesPayment' ? 'Registrar pago de cajas' : 'Transferir dinero' }}</h2>
           <p>{{ ledgerActionOpen() === 'boxesPurchase' ? 'La compra se guardará como una transacción pendiente de pago.' : ledgerActionOpen() === 'boxesPayment' ? 'Selecciona una compra pendiente para registrar su pago.' : 'Mueve saldo entre cuentas o registra un ingreso de capital.' }}</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">×</button>
       </div>
       <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
         @if (ledgerActionOpen() === 'boxesPayment') {
@@ -216,8 +216,8 @@
         <label class="form-field"><span>Fecha *</span><input type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
         @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
         <div class="modal-actions form-field-wide">
-          <button class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
-          <button class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
+          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
         </div>
       </form>
     </section>
@@ -227,11 +227,11 @@
 @if (pendingPanelOpen()) {
   <div class="modal-backdrop" (click)="pendingPanelOpen.set(false)">
     <section class="finance-modal pending-modal" role="dialog" aria-modal="true" aria-labelledby="pending-title" (click)="$event.stopPropagation()">
-      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)">×</button></div>
+      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button matIconButton class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)">×</button></div>
       @if (pendingTransactions().length) {
         <div class="pending-list">
           @for (item of pendingTransactions(); track item.id) {
-            <article class="pending-row"><div><strong>{{ item.description }}</strong><p>{{ item.date | date:'mediumDate' }}</p></div><strong>{{ item.amount | currency:'USD' }}</strong><button class="btn-outline" type="button" (click)="openLedgerAction('boxesPayment'); selectPendingBoxPurchase(item.id); pendingPanelOpen.set(false)">Registrar pago</button></article>
+            <article class="pending-row"><div><strong>{{ item.description }}</strong><p>{{ item.date | date:'mediumDate' }}</p></div><strong>{{ item.amount | currency:'USD' }}</strong><button matButton="outlined" class="btn-outline" type="button" (click)="openLedgerAction('boxesPayment'); selectPendingBoxPurchase(item.id); pendingPanelOpen.set(false)">Registrar pago</button></article>
           }
         </div>
       } @else {
