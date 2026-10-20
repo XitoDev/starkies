@@ -6,7 +6,7 @@
       <p class="page-subtitle">Controla existencias, costos unitarios y niveles mínimos de inventario.</p>
     </div>
     <button matButton="elevated" class="btn-primary" type="button" (click)="openNewIngredient()">
-      <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="btn-icon">add</mat-icon>
       Nuevo insumo
     </button>
   </div>
@@ -17,7 +17,7 @@
 
   <section class="summary-grid" aria-label="Resumen de inventario">
     <article class="summary-card">
-      <div class="summary-icon"><svg [lucideIcon]="icons.Package"></svg></div>
+      <div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
       <div>
         <p class="summary-label">Insumos registrados</p>
         <p class="summary-value">{{ ingredientCount() }}</p>
@@ -31,7 +31,7 @@
       </div>
     </article>
     <article class="summary-card" [class.summary-card-warning]="lowStockCount() > 0">
-      <div class="summary-icon summary-icon-warning"><svg [lucideIcon]="icons.AlertTriangle"></svg></div>
+      <div class="summary-icon summary-icon-warning"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">warning</mat-icon></div>
       <div>
         <p class="summary-label">Insumos bajo mínimo</p>
         <p class="summary-value">{{ lowStockCount() }}</p>
@@ -42,11 +42,11 @@
   <section class="ingredients-browser">
     <div class="ingredients-toolbar">
       <label class="search-box">
-        <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
         <input type="search" placeholder="Buscar ingrediente..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
       <button matButton="elevated" class="filter-button" type="button" [class.active]="lowStockOnly()" [attr.aria-pressed]="lowStockOnly()" (click)="lowStockOnly.update(value => !value)">
-        <svg [lucideIcon]="icons.AlertTriangle" class="filter-icon"></svg> Solo stock bajo
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="filter-icon">warning</mat-icon> Solo stock bajo
       </button>
       <span class="result-count">{{ filteredIngredients().length }} ingredientes</span>
     </div>
@@ -66,7 +66,7 @@
           @for (ingredient of group.ingredients; track ingredient.id) {
             <article class="ingredient-card">
               <div class="ingredient-card-top">
-                <div class="ingredient-avatar"><svg [lucideIcon]="icons.Package"></svg></div>
+                <div class="ingredient-avatar"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
                 <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)">⋮</button>
                 @if (openMenuId() === ingredient.id) {
                   <div class="ingredient-menu">
