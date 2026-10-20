@@ -26,7 +26,7 @@
   </nav>
 
   <div class="sidebar-bottom">
-    <button (click)="exportBackup()" class="btn-backup">
+    <button matButton="text" (click)="exportBackup()" class="btn-backup">
       <mat-icon fontSet="material-symbols-rounded" class="btn-icon" aria-hidden="true">download</mat-icon>
       <span>Descargar respaldo</span>
     </button>
@@ -36,6 +36,7 @@
         <strong>StarKies</strong>
         <button
           type="button"
+          matButton="text"
           class="profile-logout"
           [disabled]="loggingOut()"
           (click)="logout()"
