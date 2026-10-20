@@ -49,18 +49,16 @@
   </section>
 </main>
 <footer class="site-footer" aria-label="Información y redes sociales de StarKies">
-  <mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon>
-  <strong class="footer-wordmark">StarKies.</strong>
-  <p class="footer-tagline">La estrella eres tú.</p>
+  <a matButton="text" href="#inicio" class="brand footer-brand" aria-label="StarKies, volver al inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
   <nav class="footer-social" aria-label="Redes sociales y contacto">
     <a matButton="outlined" class="footer-social-link" href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp">
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">chat</mat-icon><span>WhatsApp</span>
+      <svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>WhatsApp</span>
     </a>
     <a matButton="outlined" class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en Instagram">
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">photo_camera</mat-icon><span>Instagram</span>
+      <svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>Instagram</span>
     </a>
     <a matButton="outlined" class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en TikTok">
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">music_note</mat-icon><span>TikTok</span>
+      <svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>TikTok</span>
     </a>
   </nav>
   <small class="footer-copyright">© {{ currentYear }} StarKies. Todos los derechos reservados.</small>
