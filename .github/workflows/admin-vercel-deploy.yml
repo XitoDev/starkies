@@ -1,31 +1,51 @@
-name: Deploy Admin Preview to Vercel
+name: Deploy Admin to Vercel
 
 on:
-  push:
-    branches:
-      - "feat/**"
-    paths:
-      - "apps/admin/**"
-      - "libs/shared/**"
-      - "public/images/**"
-      - "angular.json"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/admin-vercel-deploy.yml"
   workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Deployment target"
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+      confirm_production:
+        description: 'For production only, enter exactly "DEPLOY"'
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
 concurrency:
-  group: vercel-admin-preview-${{ github.ref }}
-  cancel-in-progress: true
+  group: vercel-admin-${{ inputs.target_environment }}
+  cancel-in-progress: false
 
 jobs:
-  deploy-admin-preview:
-    name: Build and deploy Admin preview
+  validate-and-deploy:
+    name: Validate Admin, then deploy
     runs-on: ubuntu-latest
     steps:
+      - name: Guard production deployment
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          if [ "$TARGET_ENVIRONMENT" = "production" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Production deployments can only run from main."
+              exit 1
+            fi
+            if [ "$CONFIRM_PRODUCTION" != "DEPLOY" ]; then
+              echo "::error::Type DEPLOY in confirm_production to authorize a production deployment."
+              exit 1
+            fi
+          fi
+
       - name: Check Vercel secrets
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -33,11 +53,11 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "::error::Missing one or more repository secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_ADMIN_PROJECT_ID."
+            echo "::error::Missing VERCEL_TOKEN, VERCEL_ORG_ID or VERCEL_ADMIN_PROJECT_ID."
             exit 1
           fi
 
-      - name: Checkout selected branch
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -46,35 +66,51 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Pull Vercel preview settings
+      - name: Install dependencies from committed lockfile
+        run: npm ci
+
+      - name: Build admin for production
+        run: npx ng build admin --configuration production
+
+      - name: Test admin
+        run: npx ng test admin --watch=false
+
+      - name: Pull Vercel settings
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: npx vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+        run: npx vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
-      - name: Build preview artifacts
+      - name: Build Vercel production artifacts
+        if: inputs.target_environment == 'production'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+        run: npx vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel preview artifacts
+        if: inputs.target_environment == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
         run: npx vercel build --token="$VERCEL_TOKEN"
 
-      - name: Deploy preview
-        id: deploy
+      - name: Deploy to Vercel production
+        if: inputs.target_environment == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: |
-          set -o pipefail
-          npx vercel deploy --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tee vercel-deploy.log
-          DEPLOYMENT_URL="$(grep -Eo 'https://[^[:space:]]+\.vercel\.app' vercel-deploy.log | tail -n 1 || true)"
-          if [ -n "$DEPLOYMENT_URL" ]; then
-            echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
-            {
-              echo "## StarKies Admin preview"
-              echo ""
-              echo "Preview URL: $DEPLOYMENT_URL"
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy Vercel preview
+        if: inputs.target_environment == 'preview'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
