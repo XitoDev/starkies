@@ -311,3 +311,7 @@ app-catalog .box-choice button[matButton="outlined"] { min-height: 50px; border-
   app-catalog .sheet-body { padding: 8px 20px 20px; }
   app-catalog .sheet-footer { padding-inline: 20px; }
 }
+
+app-catalog .search-field input.mat-mdc-input-element { height:auto; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+app-catalog .search-field .mdc-notched-outline__leading { border-radius:var(--ds-radius-full) 0 0 var(--ds-radius-full); }
+app-catalog .search-field .mdc-notched-outline__trailing { border-radius:0 var(--ds-radius-full) var(--ds-radius-full) 0; }
