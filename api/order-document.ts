@@ -48,7 +48,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const token = url.searchParams.get('token') ?? '';
     const verified = verifyToken(token, getSigningKey());
     if (!verified) {
-      res.status(403).setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.status(403);
       res.send('Este enlace del pedido no es válido o ha caducado. Solicita a StarKies un nuevo enlace.');
       return;
     }
@@ -56,7 +57,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const orderRef = getDatabase().doc(['businesses', 'starkies', 'collections', 'orders', 'records', verified.orderId].join('/'));
     const snapshot = await orderRef.get();
     if (!snapshot.exists) {
-      res.status(404).setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.status(404);
       res.send('No encontramos este pedido.');
       return;
     }
@@ -76,7 +78,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     res.status(200).send(pdf);
   } catch (error) {
     console.error('Order document generation failed:', error);
-    res.status(500).setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.status(500);
     res.send('No pudimos generar el PDF de este pedido en este momento.');
   }
 }
