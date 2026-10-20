@@ -40,3 +40,15 @@ The admin and public catalog share foundational design tokens and iconography, b
 3. Adopt primitive classes incrementally component-by-component. Avoid a blanket class replacement that could alter layout, interaction, routing, or responsive behavior.
 4. Preserve semantic HTML, keyboard navigation, visible focus, accessible names, disabled states, and error/destructive states.
 5. Angular Material and CDK are dependencies of the workspace. The admin sidebar now uses the real `MatIcon` component with Material Symbols Rounded for its navigation and account actions. Both apps load the Angular Material theme and map Material system color tokens to their own palette. This is the first component migration, not a claim that every individual page/component has already been migrated. This audit is based on the shared/global styles, root layouts, admin sidebar/topbar, and public order-sheet styles inspected for this change.
+
+
+## Material component migration phase
+
+The follow-up migration in PR #29 now uses official Angular Material directives/components across the main admin pages and public catalog:
+- Primary actions use elevated buttons.
+- Secondary actions use outlined buttons; tertiary/navigation actions use text buttons.
+- Icon-only actions use Material icon buttons with Material Symbols Rounded.
+- Replaced Lucide icon bindings in inventory, production, finance, and catalog administration with `MatIcon` ligatures.
+- Migrated action buttons in products/recipes, ingredients, production, finance, catalog administration, orders, production/recipe editors, login/migration views, and the public catalog order flow.
+
+This migration retains the existing CSS classes where they control layout or app-specific branding. The Angular Material build and visual regression checks must pass before merging; this session did not run the workspace builds.
