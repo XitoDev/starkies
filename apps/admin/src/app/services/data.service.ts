@@ -144,6 +144,104 @@ export class DataService {
     this.loadViewModels(nextState);
   }
 
+  async saveCustomer(customer: Customer): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const rawOrders = this.asArray(state['orders']);
+    const related = rawOrders.filter((item) => {
+      const name = this.asString(item['customer'], 'Cliente sin nombre');
+      const phone = this.asOptionalString(item['phone']);
+      const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
+      return key === customer.id;
+    });
+    if (!related.length) throw new Error('No se encontraron pedidos vinculados a este cliente.');
+    for (const order of related) {
+      const id = this.asString(order['id'] ?? order['code']);
+      await this.repository.upsertCollectionRecord('orders', id, {
+        ...order,
+        customer: customer.name.trim(),
+        phone: customer.phone?.trim() ?? '',
+        address: customer.address?.trim() ?? '',
+      });
+    }
+    const nextState = {
+      ...state,
+      orders: rawOrders.map((order) => {
+        const name = this.asString(order['customer'], 'Cliente sin nombre');
+        const phone = this.asOptionalString(order['phone']);
+        const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
+        return key === customer.id ? { ...order, customer: customer.name.trim(), phone: customer.phone?.trim() ?? '', address: customer.address?.trim() ?? '' } : order;
+      }),
+    };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async deleteCustomer(customerId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const rawOrders = this.asArray(state['orders']);
+    const related = rawOrders.filter((order) => {
+      const name = this.asString(order['customer'], 'Cliente sin nombre');
+      const phone = this.asOptionalString(order['phone']);
+      return (phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`) === customerId;
+    });
+    if (!related.length) throw new Error('No se encontraron pedidos vinculados a este cliente.');
+    for (const order of related) {
+      const id = this.asString(order['id'] ?? order['code']);
+      await this.repository.upsertCollectionRecord('orders', id, {
+        ...order,
+        customer: 'Cliente eliminado',
+        phone: '',
+        address: '',
+      });
+    }
+    const nextState = {
+      ...state,
+      orders: rawOrders.map((order) => {
+        const name = this.asString(order['customer'], 'Cliente sin nombre');
+        const phone = this.asOptionalString(order['phone']);
+        const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
+        return key === customerId ? { ...order, customer: 'Cliente eliminado', phone: '', address: '' } : order;
+      }),
+    };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async deleteOrder(orderId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    await this.repository.deleteCollectionRecord('orders', orderId);
+    const nextState = { ...state, orders: this.asArray(state['orders']).filter((order) => this.asString(order['id'] ?? order['code']) !== orderId) };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async saveOrderDetails(orderId: string, changes: { deliveryDate?: string; zone?: string; notes?: string }): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const rawOrders = this.asArray(state['orders']);
+    const index = rawOrders.findIndex((order) => this.asString(order['id'] ?? order['code']) === orderId);
+    if (index < 0) throw new Error('No se encontró el pedido.');
+    const current = rawOrders[index];
+    const updated = { ...current, ...changes, date: changes.deliveryDate ?? current['date'] };
+    await this.repository.upsertCollectionRecord('orders', orderId, updated);
+    const nextOrders = [...rawOrders];
+    nextOrders[index] = updated;
+    const nextState = { ...state, orders: nextOrders };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async saveBusinessSetting(key: string, value: unknown): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    await this.repository.upsertBusinessSetting(key, value);
+    const nextState = { ...state, [key]: value };
+    this.rawState.set(nextState);
+  }
+
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const state = this.rawState();
     if (!state) {
