@@ -71,3 +71,13 @@
 @media (max-width: 1150px) { .fund-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .fund-card { min-height: 350px; } }
 @media (max-width: 900px) { .bank-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fund-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fund-card { min-height: 340px; } }
 @media (max-width: 600px) { .bank-grid, .fund-grid { grid-template-columns: 1fr; } .fund-card { min-height: 0; } .fund-note { margin: 18px 0; } .pending-button { width: 100%; margin-left: 0; justify-content: center; } .finance-modal { padding: 20px; } .finance-form { grid-template-columns: 1fr; } .form-field-wide { grid-column: auto; } .modal-actions { flex-direction: column-reverse; } .modal-actions button { width: 100%; } .pending-row { grid-template-columns: 1fr auto; } .pending-row button { grid-column: 1 / -1; } }
+
+.price-section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.price-heading p { margin: 8px 0 0; color: #95899d; font-size: 11px; line-height: 1.6; }
+.price-table-wrap { overflow-x: auto; border: 1px solid #eee7f2; border-radius: 12px; background: #fff; }
+.price-table { width: 100%; border-collapse: collapse; text-align: left; }
+.price-table th { padding: 14px 16px; border-bottom: 1px solid #f0eaf4; background: #fdfbfe; color: #95899d; font-size: 9px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; white-space: nowrap; }
+.price-table td { padding: 15px 16px; border-bottom: 1px solid #f4eff6; color: #685b72; font-size: 11px; white-space: nowrap; }
+.price-table tbody tr:last-child td { border-bottom: 0; }
+.price-table td strong { color: #382d41; }
+.price-table td.amount-out { color: #a44855 !important; }
