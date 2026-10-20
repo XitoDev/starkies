@@ -4,11 +4,12 @@
 
 The admin and public catalog share foundational design tokens and iconography, but **they do not share a visual theme**. Keep product-specific palettes and distinctive brand typography at the app level; reuse scales, interaction states, accessibility conventions, and primitive styles from `libs/shared/src/lib/design-system`.
 
-## Shared foundation
+## Shared foundation and Angular Material integration
 
 - `tokens.ts`: typed constants for semantic colors, spacing, control sizes, shape, typography, and elevation.
 - `ds.css`: CSS custom properties and opt-in primitive classes (`.ds-button`, `.ds-icon-button`, `.ds-field`, `.ds-surface`) plus Google Material Symbols Rounded via `.ds-icon`.
-- `public-api.ts`: exports the token constants for Angular consumers.
+- `material.ts`: exports the official Angular Material modules for shared reuse.
+- `public-api.ts`: exports token constants and the Angular Material modules for Angular consumers.
 - Both apps import the shared CSS from their global stylesheet and override semantic color tokens independently.
 
 ## Quick UI inventory and Material mapping
@@ -38,4 +39,4 @@ The admin and public catalog share foundational design tokens and iconography, b
 2. Prefer Google Material Symbols Rounded for icons. The `.ds-icon` element uses the icon's ligature text (for example, `<span class="ds-icon" aria-hidden="true">inventory_2</span>`).
 3. Adopt primitive classes incrementally component-by-component. Avoid a blanket class replacement that could alter layout, interaction, routing, or responsive behavior.
 4. Preserve semantic HTML, keyboard navigation, visible focus, accessible names, disabled states, and error/destructive states.
-5. This audit is based on the shared/global styles, root layouts, admin sidebar/topbar, and public order-sheet styles inspected for this change. It is an initial migration inventory, not a claim that every individual page/component has already been migrated.
+5. Angular Material and CDK are dependencies of the workspace. The admin sidebar now uses the real `MatIcon` component with Material Symbols Rounded for its navigation and account actions. Both apps load the Angular Material theme and map Material system color tokens to their own palette. This is the first component migration, not a claim that every individual page/component has already been migrated. This audit is based on the shared/global styles, root layouts, admin sidebar/topbar, and public order-sheet styles inspected for this change.
