@@ -5,7 +5,7 @@
       <h1 class="page-title">Ingredientes e insumos</h1>
       <p class="page-subtitle">Controla existencias, costos unitarios y niveles mínimos de inventario.</p>
     </div>
-    <button class="btn-primary" type="button" (click)="openNewIngredient()">
+    <button matButton="elevated" class="btn-primary" type="button" (click)="openNewIngredient()">
       <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
       Nuevo insumo
     </button>
@@ -45,19 +45,19 @@
         <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
         <input type="search" placeholder="Buscar ingrediente..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
-      <button class="filter-button" type="button" [class.active]="lowStockOnly()" [attr.aria-pressed]="lowStockOnly()" (click)="lowStockOnly.update(value => !value)">
+      <button matButton="elevated" class="filter-button" type="button" [class.active]="lowStockOnly()" [attr.aria-pressed]="lowStockOnly()" (click)="lowStockOnly.update(value => !value)">
         <svg [lucideIcon]="icons.AlertTriangle" class="filter-icon"></svg> Solo stock bajo
       </button>
       <span class="result-count">{{ filteredIngredients().length }} ingredientes</span>
     </div>
     <div class="ingredient-category-tabs" role="group" aria-label="Categorías de ingredientes">
-      <button type="button" [class.active]="selectedGroup() === 'Todos'" (click)="selectedGroup.set('Todos')">Todos <span>{{ ingredients().length }}</span></button>
+      <button matButton="text" type="button" [class.active]="selectedGroup() === 'Todos'" (click)="selectedGroup.set('Todos')">Todos <span>{{ ingredients().length }}</span></button>
       @for (group of supplyGroups; track group) {
-        <button type="button" [class.active]="selectedGroup() === group" (click)="selectedGroup.set(group)">{{ group }} <span>{{ countByGroup(group) }}</span></button>
+        <button matButton="text" type="button" [class.active]="selectedGroup() === group" (click)="selectedGroup.set(group)">{{ group }} <span>{{ countByGroup(group) }}</span></button>
       }
     </div>
     @if (groupedIngredients().length === 0) {
-      <div class="empty-state"><span class="empty-mark">◎</span><strong>{{ ingredients().length === 0 ? 'Todavía no hay ingredientes' : 'No encontramos ingredientes' }}</strong><p>{{ ingredients().length === 0 ? 'Registra el primer ingrediente para comenzar a controlar tu inventario.' : 'Prueba con otro nombre o cambia la categoría seleccionada.' }}</p><button class="btn-primary" type="button" (click)="openNewIngredient()">Nuevo ingrediente</button></div>
+      <div class="empty-state"><span class="empty-mark">◎</span><strong>{{ ingredients().length === 0 ? 'Todavía no hay ingredientes' : 'No encontramos ingredientes' }}</strong><p>{{ ingredients().length === 0 ? 'Registra el primer ingrediente para comenzar a controlar tu inventario.' : 'Prueba con otro nombre o cambia la categoría seleccionada.' }}</p><button matButton="elevated" class="btn-primary" type="button" (click)="openNewIngredient()">Nuevo ingrediente</button></div>
     }
     @for (group of groupedIngredients(); track group.group) {
       <section class="ingredient-group-section">
@@ -67,12 +67,12 @@
             <article class="ingredient-card">
               <div class="ingredient-card-top">
                 <div class="ingredient-avatar"><svg [lucideIcon]="icons.Package"></svg></div>
-                <button class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)">⋮</button>
+                <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)">⋮</button>
                 @if (openMenuId() === ingredient.id) {
                   <div class="ingredient-menu">
-                    <button type="button" (click)="openPurchase(ingredient)">＋ Comprar</button>
-                    <button type="button" (click)="openMenuId.set(null); openEditIngredient(ingredient)">✎ Editar</button>
-                    <button class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)">⌫ Eliminar</button>
+                    <button matButton="text" type="button" (click)="openPurchase(ingredient)">＋ Comprar</button>
+                    <button matButton="text" type="button" (click)="openMenuId.set(null); openEditIngredient(ingredient)">✎ Editar</button>
+                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)">⌫ Eliminar</button>
                   </div>
                 }
               </div>
@@ -85,7 +85,7 @@
               <div class="ingredient-card-meta"><span>Costo por {{ ingredient.unit }}</span><strong>{{ ingredient.costPerUnit | currency:'USD' }}</strong></div>
               <div class="ingredient-card-bottom">
                 @if (isLowStock(ingredient.stock, ingredient.minStock)) { <span class="status-pill status-warning">Stock bajo</span> } @else { <span class="status-pill status-ok">Suficiente</span> }
-                <button class="buy-ingredient-button" type="button" (click)="openPurchase(ingredient)">Comprar</button>
+                <button matButton="elevated" class="buy-ingredient-button" type="button" (click)="openPurchase(ingredient)">Comprar</button>
               </div>
             </article>
           }
@@ -104,7 +104,7 @@
           <h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2>
           <p>Los cambios se guardarán en Firebase.</p>
         </div>
-        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
       </div>
 
       <form class="ingredient-form" (submit)="submitForm($event)">
@@ -162,8 +162,8 @@
         }
 
         <div class="modal-actions">
-          <button class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button class="btn-primary" type="submit" [disabled]="saving()">
+          <button matButton="outlined" class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
             {{ saving() ? 'Guardando…' : (editingId() ? 'Guardar cambios' : 'Crear insumo') }}
           </button>
         </div>
@@ -177,7 +177,7 @@
     <section class="ingredient-modal" role="dialog" aria-modal="true" aria-labelledby="purchase-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">
         <div><p class="eyebrow">Inventario / Compras</p><h2 id="purchase-title">Registrar compra</h2><p>El stock y el costo promedio se actualizarán al guardar.</p></div>
-        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">×</button>
       </div>
       <form class="ingredient-form" (submit)="$event.preventDefault(); savePurchase()">
         <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="selectedPurchaseIngredientName()" /></label>
@@ -185,7 +185,7 @@
         <label class="form-field"><span>Costo por unidad (USD) *</span><input required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
         <p class="purchase-total form-field-wide">Total de la compra <strong>{{ purchaseQuantity() * purchaseUnitCost() | currency:'USD' }}</strong></p>
         @if (purchaseError()) { <p class="form-error form-field-wide" role="alert">{{ purchaseError() }}</p> }
-        <div class="modal-actions form-field-wide"><button class="btn-primary cancel-button" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
+        <div class="modal-actions form-field-wide"><button matButton="outlined" class="btn-primary cancel-button" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
       </form>
     </section>
   </div>
