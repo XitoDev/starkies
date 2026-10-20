@@ -44,7 +44,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   }
 
   try {
-    const url = new URL(req.url ?? '/', 'https://' + headerValue(req.headers['host'] ?? req.headers['x-forwarded-host']) || 'https://starkies.lat');
+    const host = headerValue(req.headers['host'] ?? req.headers['x-forwarded-host']) || 'starkies.lat';
+    const url = new URL(req.url ?? '/', 'https://' + host);
     const token = url.searchParams.get('token') ?? '';
     const verified = verifyToken(token, getSigningKey());
     if (!verified) {
@@ -65,7 +66,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const record = snapshot.data()?.['value'] as StoredOrder | undefined;
     if (!record) {
-      res.status(404).setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.status(404);
       res.send('No encontramos los detalles de este pedido.');
       return;
     }
