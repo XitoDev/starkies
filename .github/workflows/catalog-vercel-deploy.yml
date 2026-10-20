@@ -1,101 +1,130 @@
-name: Deploy Public Catalog Preview to Vercel
+name: Deploy Public Catalog to Vercel
 
 on:
-  push:
-    branches:
-      - "feat/**"
-    paths:
-      - "apps/catalog/**"
-      - "api/orders.ts"
-      - "angular.json"
-      - "package.json"
-      - "package-lock.json"
-      - "docs/public-catalog-seo-and-domain.md"
-      - ".github/workflows/catalog-vercel-deploy.yml"
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Feature branch to deploy as a Preview"
+      target_environment:
+        description: "Deployment target"
         required: true
-        default: "feat/public-catalog-orders-seo"
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+      confirm_production:
+        description: 'For production only, enter exactly "DEPLOY"'
+        required: false
         type: string
+        default: ""
 
 permissions:
   contents: read
 
 concurrency:
-  group: vercel-catalog-preview-${{ github.event.inputs.ref || github.ref }}
-  cancel-in-progress: true
+  group: vercel-catalog-${{ inputs.target_environment }}
+  cancel-in-progress: false
 
 jobs:
-  deploy-catalog-preview:
-    name: Build and deploy public catalog Preview
+  validate-and-deploy:
+    name: Validate Catalog, then deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Check Vercel project settings
-        id: vercel
+      - name: Guard production deployment
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          if [ "$TARGET_ENVIRONMENT" = "production" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "::error::Production deployments can only run from main."
+              exit 1
+            fi
+            if [ "$CONFIRM_PRODUCTION" != "DEPLOY" ]; then
+              echo "::error::Type DEPLOY in confirm_production to authorize a production deployment."
+              exit 1
+            fi
+          fi
+
+      - name: Check Vercel secrets
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
         run: |
           if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            {
-              echo "## Public catalog Preview not deployed"
-              echo ""
-              echo "Configure VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_CATALOG_PROJECT_ID in GitHub Actions secrets to enable the isolated Vercel project."
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "::notice::Preview skipped because the public catalog Vercel secrets are not all configured."
-            exit 0
+            echo "::error::Missing VERCEL_TOKEN, VERCEL_ORG_ID or VERCEL_CATALOG_PROJECT_ID."
+            exit 1
           fi
-          echo "ready=true" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout selected branch
-        if: steps.vercel.outputs.ready == 'true'
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
 
       - name: Set up Node.js
-        if: steps.vercel.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Pull Vercel Preview settings
-        if: steps.vercel.outputs.ready == 'true'
+      - name: Install dependencies from committed lockfile
+        run: npm ci
+
+      - name: Build catalog with static prerendering
+        run: npx ng build catalog --configuration production
+
+      - name: Verify prerendered catalog HTML for search engines
+        run: |
+          HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+          if [ -z "$HTML_FILE" ]; then
+            echo "::error::No prerendered index.html was produced."
+            exit 1
+          fi
+          grep -qi 'rel="canonical"' "$HTML_FILE"
+          grep -qi 'Sunny Carrot' "$HTML_FILE"
+          echo "Verified canonical metadata and rendered catalog content in $HTML_FILE"
+
+      - name: Test catalog
+        run: npx ng test catalog --watch=false
+
+      - name: Type-check public order API
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
+
+      - name: Pull Vercel settings
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
-        run: npx vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+        run: npx vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
-      - name: Build Preview artifacts
-        if: steps.vercel.outputs.ready == 'true'
+      - name: Build Vercel production artifacts
+        if: inputs.target_environment == 'production'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: npx vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel preview artifacts
+        if: inputs.target_environment == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
         run: npx vercel build --token="$VERCEL_TOKEN"
 
-      - name: Deploy Preview
-        if: steps.vercel.outputs.ready == 'true'
+      - name: Deploy to Vercel production
+        if: inputs.target_environment == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
-        run: |
-          set -o pipefail
-          npx vercel deploy --prebuilt --token="$VERCEL_TOKEN" 2>&1 | tee vercel-deploy.log
-          DEPLOYMENT_URL="$(grep -Eo 'https://[^[:space:]]+\.vercel\.app' vercel-deploy.log | tail -n 1 || true)"
-          if [ -z "$DEPLOYMENT_URL" ]; then
-            echo "::error::Vercel did not return a Preview URL."
-            exit 1
-          fi
-          {
-            echo "## Public catalog Preview"
-            echo ""
-            echo "Preview URL: $DEPLOYMENT_URL"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy Vercel preview
+        if: inputs.target_environment == 'preview'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
