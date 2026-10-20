@@ -11,13 +11,14 @@
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
 
   <div class="finance-tabs">
-    <button class="finance-tab active" type="button" aria-current="page">Resumen financiero</button>
-    <a class="finance-tab" routerLink="/recetas">Productos y Precios</a>
+    <button class="finance-tab" [class.active]="financeTab() === 'resumen'" type="button" [attr.aria-pressed]="financeTab() === 'resumen'" (click)="financeTab.set('resumen')">Resumen financiero</button>
+    <button class="finance-tab" [class.active]="financeTab() === 'productos'" type="button" [attr.aria-pressed]="financeTab() === 'productos'" (click)="financeTab.set('productos')">Productos y Precios</button>
     <button class="pending-button" type="button" (click)="pendingPanelOpen.set(true)">
       TRANSACCIONES POR REALIZAR <span>{{ pendingCount() }}</span>
     </button>
   </div>
 
+  @if (financeTab() === 'resumen') {
   <section class="bank-section" aria-labelledby="bank-title">
     <h2 id="bank-title" class="section-title"><svg [lucideIcon]="icons.Wallet"></svg> Cuentas bancarias</h2>
     <div class="bank-grid">
@@ -66,6 +67,22 @@
       }
     </div>
   </section>
+  } @else {
+    <section class="price-section" aria-labelledby="prices-title">
+      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>Compara el costo unitario de elaboración con el precio actual y el precio sugerido (costo × 3).</p></div></div>
+      <div class="price-table-wrap">
+        <table class="price-table">
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Costo unitario</th><th>Precio actual</th><th>Precio sugerido</th><th>Diferencia</th></tr></thead>
+          <tbody>
+            @for (product of priceRows(); track product.id) {
+              <tr><td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.unitCost | currency:'USD' }}</td><td>{{ product.currentPrice | currency:'USD' }}</td><td>{{ product.suggestedPrice | currency:'USD' }}</td><td [class.amount-out]="product.extraProfit < 0">{{ product.extraProfit | currency:'USD' }}</td></tr>
+            }
+            @if (priceRows().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>No hay productos para calcular</strong><p>Registra recetas e ingredientes con sus costos para ver los precios sugeridos.</p></div></td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
 </div>
 
 @if (formOpen()) {
