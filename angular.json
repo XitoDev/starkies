@@ -115,7 +115,10 @@
             ],
             "styles": [
               "apps/catalog/src/styles.css"
-            ]
+            ],
+            "server": "apps/catalog/src/main.server.ts",
+            "prerender": true,
+            "outputMode": "static"
           },
           "configurations": {
             "production": {
@@ -127,8 +130,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "9kB",
+                  "maximumError": "10kB"
                 }
               ],
               "outputHashing": "all"

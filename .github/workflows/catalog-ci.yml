@@ -1,0 +1,89 @@
+name: Public Catalog CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/catalog/**"
+      - "apps/admin/src/app/pages/pedidos/**"
+      - "apps/admin/src/app/services/data.service.ts"
+      - "libs/shared/**"
+      - "api/orders.ts"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/catalog-ci.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "apps/catalog/**"
+      - "apps/admin/src/app/pages/pedidos/**"
+      - "apps/admin/src/app/services/data.service.ts"
+      - "libs/shared/**"
+      - "api/orders.ts"
+      - "angular.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/catalog-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-catalog:
+    name: Build and test public catalog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate npm lockfile with strict peer dependency resolution
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Build catalog with static prerendering
+        run: npx ng build catalog --configuration production
+
+      - name: Verify prerendered catalog HTML for search engines
+        run: |
+          HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+          if [ -z "$HTML_FILE" ]; then
+            echo "::error::No prerendered index.html was produced."
+            exit 1
+          fi
+          grep -qi 'rel="canonical"' "$HTML_FILE"
+          grep -qi 'Sunny Carrot' "$HTML_FILE"
+          echo "Verified canonical metadata and rendered catalog content in $HTML_FILE"
+
+      - name: Test catalog
+        run: npx ng test catalog --watch=false
+
+      - name: Type-check public order API
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
+
+      - name: Commit refreshed lockfile on feature branches
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): refresh npm lockfile"
+            git push
+          else
+            echo "package-lock.json is already current."
+          fi

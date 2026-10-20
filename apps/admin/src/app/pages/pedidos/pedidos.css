@@ -85,3 +85,7 @@
 .btn-secondary:disabled, .btn-danger:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 760px) { .order-modal { padding: 20px; } }
 @media (max-width: 460px) { .order-detail-grid { grid-template-columns: 1fr; } .modal-actions { flex-direction: column-reverse; } .modal-actions button { width: 100%; } }
+
+.delivery-date { color: #8056ad; font-size: 12px; }
+.customer-notes { margin: 0 0 18px; }
+.customer-notes p { margin: 8px 0 0; color: #685b72; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }

@@ -103,6 +103,10 @@ export class Pedidos {
     return this.recipes().find(recipe => recipe.id === recipeId)?.name ?? 'Receta no disponible';
   }
 
+  getLineName(item: Order['items'][number]): string {
+    return item.name || this.getRecipeName(item.recipeId);
+  }
+
   getLineTotal(item: Order['items'][number]): number {
     return item.quantity * item.unitPrice;
   }

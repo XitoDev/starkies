@@ -286,12 +286,17 @@ export class DataService {
         customerId: customerKey,
         items: lines.map((line) => ({
           recipeId: this.asString(line['id'] ?? line['recipeId']),
+          name: this.asOptionalString(line['name']),
           quantity: this.asNumber(line['qty'] ?? line['quantity']),
           unitPrice: this.asNumber(line['price'] ?? line['unitPrice']),
         })),
         total: this.asNumber(item['total']),
         status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
-        createdAt: this.asString(item['created'] ?? item['date']),
+        createdAt: this.asString(item['createdAt'] ?? item['created'] ?? item['date']),
+        deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['date']),
+        zone: this.asOptionalString(item['zone']),
+        notes: this.asOptionalString(item['notes']),
+        cookieName: this.asOptionalString(item['cookieName']),
       };
     });
 

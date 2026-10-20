@@ -21,7 +21,10 @@
     "tslib": "^2.3.0",
     "zone.js": "^0.16.3",
     "firebase": "^12.0.0",
-    "@lucide/angular": "1.59.0"
+    "@lucide/angular": "1.59.0",
+    "@angular/platform-server": "^22.2.0",
+    "@angular/ssr": "^22.2.3",
+    "firebase-admin": "^13.4.0"
   },
   "devDependencies": {
     "@angular/build": "^22.2.3",
@@ -31,6 +34,7 @@
     "ng-packagr": "^22.2.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "@types/node": "^22.13.10"
   }
 }

@@ -1,7 +1,14 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Product, BoxPresentation, PackedBox, DeliveryZone } from './catalog.models';
+import { Meta, Title } from '@angular/platform-browser';
+import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
+import { BOX_PRESENTATIONS, CATALOG_PRODUCTS, DELIVERY_ZONES } from './catalog.data';
+
+interface OrderConfirmation {
+  id: string;
+  total: number;
+}
 
 @Component({
   selector: 'app-catalog',
@@ -11,104 +18,89 @@ import { Product, BoxPresentation, PackedBox, DeliveryZone } from './catalog.mod
   styleUrls: ['./catalog.css']
 })
 export class Catalog {
-  // Configuración de presentaciones
-  presentations: BoxPresentation[] = [
-    { id: 'clasicas', name: 'Caja solo clásicas', desc: '10 clásicas', price: 6.00, reqClasicas: 10, reqNY: 0 },
-    { id: 'ny', name: 'Caja solo New York', desc: '6 New York', price: 7.80, reqClasicas: 0, reqNY: 6 },
-    { id: 'mixta', name: 'Caja mitad New York, mitad clásicas', desc: '4 clásicas + 4 New York', price: 7.60, reqClasicas: 4, reqNY: 4 }
-  ];
+  readonly presentations = BOX_PRESENTATIONS;
+  readonly products = signal<Product[]>(CATALOG_PRODUCTS.map(product => ({ ...product })));
+  readonly zones = DELIVERY_ZONES;
 
-  // Catálogo de productos
-  products = signal<Product[]>([
-    { id: '1', name: 'Brownie Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de cacao y textura craquelada.', tag: 'Más vendido', price: 0.60, isNy: false, stock: true },
-    { id: '2', name: 'Avena Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g elaborada con avena y toque de vainilla.', price: 0.60, isNy: false, stock: true },
-    { id: '3', name: 'Chispas de Chocolate Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de vainilla y chispas.', price: 0.60, isNy: false, stock: true },
-    { id: '4', name: 'Canela Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g con masa de vainilla y toque de canela.', price: 0.60, isNy: false, stock: true },
-    { id: '5', name: 'Red Velvet Classic', category: 'Galletas clásicas', description: 'Galleta de 30 g red velvet con chocolate blanco.', tag: 'Agotado', price: 0.60, isNy: false, stock: false },
-    { id: '6', name: 'Sunny Carrot', category: 'Galletas NY', description: 'Galleta de 60 g con zanahoria rallada y frosting de queso crema.', price: 1.30, isNy: true, stock: true },
-    { id: '7', name: 'Chips Stars', category: 'Galletas NY', description: 'Galleta de 60 g con chispas y chocolate derretido.', tag: 'Nuevo', price: 1.30, isNy: true, stock: true },
-    { id: '8', name: 'Velvet Kiss', category: 'Galletas NY', description: 'Galleta de 60 g red velvet decorada con chocolate blanco.', price: 1.30, isNy: true, stock: true },
-    { id: '9', name: 'Cinna Moon', category: 'Galletas NY', description: 'Galleta de 60 g con canela y glaseado cremoso.', price: 1.30, isNy: true, stock: true },
-    { id: '10', name: 'Nuti Dream', category: 'Galletas NY', description: 'Galleta de 60 g con masa de vainilla y Nutella.', price: 1.30, isNy: true, stock: true },
-    { id: '11', name: 'Lemon Glow', category: 'Galletas NY', description: 'Galleta de 60 g sabor a limón con frosting blanco.', tag: 'Recomendado', price: 1.30, isNy: true, stock: true },
-    { id: '12', name: 'Brownie Bliss', category: 'Galletas NY', description: 'Galleta de 60 g con masa de brownie y chocolate derretido.', tag: 'Más vendido', price: 1.30, isNy: true, stock: true },
-    { id: '13', name: 'Choco Meteor', category: 'Galletas NY', description: 'Galleta de 60 g con masa de cacao y chispas.', tag: 'Nuevo', price: 1.30, isNy: true, stock: true }
-  ]);
+  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[0]);
+  readonly currentBoxItems = signal<{ [productId: string]: number }>({});
+  readonly completedBoxes = signal<PackedBox[]>([]);
+  readonly searchQuery = signal('');
+  readonly showBoxChoiceModal = signal(false);
+  readonly showOrderSheetModal = signal(false);
+  readonly savingOrder = signal(false);
+  readonly orderError = signal('');
+  readonly orderSuccess = signal<OrderConfirmation | null>(null);
 
-  zones: DeliveryZone[] = [
-    { id: '1', name: 'Kennedy', fee: 0.99 },
-    { id: '2', name: 'Norte', fee: 3.50 },
-    { id: '3', name: 'Centro', fee: 3.99 },
-    { id: '4', name: 'Sur', fee: 4.50 },
-    { id: '5', name: 'Daule/Samborondón', fee: 5.99 },
-    { id: '6', name: 'Retiro en tienda', fee: 0.00 }
-  ];
+  orderForm = this.emptyOrderForm();
 
-  // Estado reactivo (Signals)
-  selectedPresentation = signal<BoxPresentation>(this.presentations[0]);
-  currentBoxItems = signal<{ [productId: string]: number }>({});
-  completedBoxes = signal<PackedBox[]>([]);
-  searchQuery = signal<string>('');
+  readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
 
-  // Modales
-  showBoxChoiceModal = signal<boolean>(false);
-  showOrderSheetModal = signal<boolean>(false);
-
-  // Formulario
-  orderForm = {
-    name: '',
-    phone: '',
-    zone: null as DeliveryZone | null,
-    address: '',
-    date: new Date().toISOString().split('T')[0],
-    cookieName: '',
-    notes: ''
-  };
-
-  // Computados
-  categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
-
-  filteredProducts = computed(() => {
-    const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return this.products();
-    return this.products().filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
+  readonly filteredProducts = computed(() => {
+    const query = this.searchQuery().toLocaleLowerCase('es').trim();
+    if (!query) return this.products();
+    return this.products().filter(product =>
+      product.name.toLocaleLowerCase('es').includes(query)
+      || product.description.toLocaleLowerCase('es').includes(query),
+    );
   });
 
-  currentClasicasCount = computed(() => {
+  readonly currentClasicasCount = computed(() => {
     let count = 0;
-    const items = this.currentBoxItems();
-    for (const [id, qty] of Object.entries(items)) {
-      const prod = this.products().find(p => p.id === id);
-      if (prod && !prod.isNy) count += qty;
+    for (const [id, quantity] of Object.entries(this.currentBoxItems())) {
+      const product = this.products().find(item => item.id === id);
+      if (product && !product.isNy) count += quantity;
     }
     return count;
   });
 
-  currentNYCount = computed(() => {
+  readonly currentNYCount = computed(() => {
     let count = 0;
-    const items = this.currentBoxItems();
-    for (const [id, qty] of Object.entries(items)) {
-      const prod = this.products().find(p => p.id === id);
-      if (prod && prod.isNy) count += qty;
+    for (const [id, quantity] of Object.entries(this.currentBoxItems())) {
+      const product = this.products().find(item => item.id === id);
+      if (product && product.isNy) count += quantity;
     }
     return count;
   });
 
-  totalBoxRequired = computed(() => this.selectedPresentation().reqClasicas + this.selectedPresentation().reqNY);
-  totalBoxCurrent = computed(() => this.currentClasicasCount() + this.currentNYCount());
-
-  isBoxComplete = computed(() => {
-    const pres = this.selectedPresentation();
-    return this.currentClasicasCount() === pres.reqClasicas && this.currentNYCount() === pres.reqNY;
+  readonly totalBoxRequired = computed(() =>
+    this.selectedPresentation().reqClasicas + this.selectedPresentation().reqNY,
+  );
+  readonly totalBoxCurrent = computed(() => this.currentClasicasCount() + this.currentNYCount());
+  readonly isBoxComplete = computed(() => {
+    const presentation = this.selectedPresentation();
+    return this.currentClasicasCount() === presentation.reqClasicas
+      && this.currentNYCount() === presentation.reqNY;
   });
+  readonly boxesTotalSum = computed(() =>
+    this.completedBoxes().reduce((total, box) => total + box.presentation.price, 0),
+  );
+  readonly shippingFee = computed(() => this.orderForm.zone?.fee ?? 0);
+  readonly grandTotal = computed(() => this.boxesTotalSum() + this.shippingFee());
 
-  boxesTotalSum = computed(() => this.completedBoxes().reduce((acc, b) => acc + b.presentation.price, 0));
-  shippingFee = computed(() => this.orderForm.zone ? this.orderForm.zone.fee : 0);
-  grandTotal = computed(() => this.boxesTotalSum() + this.shippingFee());
+  constructor() {
+    const title = inject(Title);
+    const meta = inject(Meta);
+    title.setTitle('Cajas de galletas artesanales en Guayaquil | StarKies');
+    meta.updateTag({
+      name: 'description',
+      content: 'Arma tu caja de galletas artesanales StarKies en Guayaquil. Elige sabores clásicos y New York, revisa los precios y solicita tu pedido en línea.',
+    });
+    meta.updateTag({ property: 'og:title', content: 'StarKies | Cajas de galletas artesanales' });
+    meta.updateTag({
+      property: 'og:description',
+      content: 'Combina tus sabores favoritos en cajas de galletas clásicas y New York. Pedidos en Guayaquil y sectores cercanos.',
+    });
+    meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
+    meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+  }
 
-  // Acciones
-  selectPresentation(pres: BoxPresentation) {
-    this.selectedPresentation.set(pres);
+  setTabSearch(value: string): void {
+    this.searchQuery.set(value);
+  }
+
+  selectPresentation(presentation: BoxPresentation): void {
+    this.selectedPresentation.set(presentation);
     this.currentBoxItems.set({});
   }
 
@@ -116,76 +108,166 @@ export class Catalog {
     return this.currentBoxItems()[productId] || 0;
   }
 
-  changeQuantity(productId: string, delta: number) {
-    const prod = this.products().find(p => p.id === productId);
-    if (!prod || !prod.stock) return;
+  changeQuantity(productId: string, delta: number): void {
+    const product = this.products().find(item => item.id === productId);
+    if (!product || !product.stock) return;
 
-    const pres = this.selectedPresentation();
+    const presentation = this.selectedPresentation();
     if (delta > 0) {
-      if (!prod.isNy && this.currentClasicasCount() >= pres.reqClasicas) return;
-      if (prod.isNy && this.currentNYCount() >= pres.reqNY) return;
+      if (!product.isNy && this.currentClasicasCount() >= presentation.reqClasicas) return;
+      if (product.isNy && this.currentNYCount() >= presentation.reqNY) return;
     }
 
-    const currentMap = { ...this.currentBoxItems() };
-    const newQty = (currentMap[productId] || 0) + delta;
-
-    if (newQty <= 0) {
-      delete currentMap[productId];
-    } else {
-      currentMap[productId] = newQty;
-    }
-
-    this.currentBoxItems.set(currentMap);
+    const nextItems = { ...this.currentBoxItems() };
+    const nextQuantity = (nextItems[productId] || 0) + delta;
+    if (nextQuantity <= 0) delete nextItems[productId];
+    else nextItems[productId] = nextQuantity;
+    this.currentBoxItems.set(nextItems);
   }
 
-  finishBox() {
+  finishBox(): void {
     if (!this.isBoxComplete()) return;
-
-    this.completedBoxes.update(prev => [
-      ...prev,
-      { presentation: this.selectedPresentation(), items: { ...this.currentBoxItems() } }
+    this.completedBoxes.update(previous => [
+      ...previous,
+      { presentation: this.selectedPresentation(), items: { ...this.currentBoxItems() } },
     ]);
-
     this.currentBoxItems.set({});
     this.showBoxChoiceModal.set(true);
+    this.orderError.set('');
+    this.orderSuccess.set(null);
   }
 
-  openOrderSheet() {
+  openOrderSheet(): void {
     this.showBoxChoiceModal.set(false);
+    this.orderError.set('');
     this.showOrderSheetModal.set(true);
   }
 
+  closeOrderSheet(): void {
+    if (this.savingOrder()) return;
+    this.showOrderSheetModal.set(false);
+    this.orderError.set('');
+  }
+
   getProductName(id: string): string {
-    return this.products().find(p => p.id === id)?.name || '';
+    return this.products().find(product => product.id === id)?.name ?? 'Producto';
   }
 
-  getObjectKeys(obj: Record<string, number>): string[] {
-    return Object.keys(obj);
+  getObjectKeys(object: Record<string, number>): string[] {
+    return Object.keys(object);
   }
 
-  sendToWhatsApp() {
-    const f = this.orderForm;
-    let msg = `*¡Hola StarKies! Quisiera realizar un pedido:*\n\n`;
-    msg += `👤 *Cliente:* ${f.name}\n`;
-    msg += `📞 *Teléfono:* ${f.phone}\n`;
-    msg += `📍 *Sector:* ${f.zone?.name || 'Por definir'}\n`;
-    msg += `🏡 *Dirección:* ${f.address}\n`;
-    msg += `📅 *Fecha:* ${f.date}\n`;
-    msg += `🏷️ *Nombre en caja:* ${f.cookieName || f.name}\n`;
-    if (f.notes) msg += `📝 *Notas:* ${f.notes}\n`;
+  today(): string {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Guayaquil',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  }
 
-    msg += `\n📦 *DETALLE DE CAJAS:*\n`;
-    this.completedBoxes().forEach((box, i) => {
-      msg += `\n*Caja ${i + 1} (${box.presentation.name}):*\n`;
-      for (const [id, qty] of Object.entries(box.items)) {
-        msg += `  • ${qty}x ${this.getProductName(id)}\n`;
+  async submitOrder(): Promise<void> {
+    if (this.savingOrder()) return;
+    if (this.completedBoxes().length === 0) {
+      this.orderError.set('Agrega al menos una caja antes de confirmar tu pedido.');
+      return;
+    }
+    if (!this.orderForm.zone) {
+      this.orderError.set('Selecciona el sector de entrega o retiro en tienda.');
+      return;
+    }
+
+    this.savingOrder.set(true);
+    this.orderError.set('');
+
+    const payload = {
+      name: this.orderForm.name.trim(),
+      phone: this.orderForm.phone.trim(),
+      zoneId: this.orderForm.zone.id,
+      address: this.orderForm.address.trim(),
+      deliveryDate: this.orderForm.date,
+      cookieName: this.orderForm.cookieName.trim(),
+      notes: this.orderForm.notes.trim(),
+      website: this.orderForm.website,
+      boxes: this.completedBoxes().map(box => ({
+        presentationId: box.presentation.id,
+        items: { ...box.items },
+      })),
+    };
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        const record = this.asRecord(result);
+        const message = typeof record['message'] === 'string'
+          ? record['message']
+          : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.';
+        throw new Error(message);
+      }
+
+      const resultRecord = this.asRecord(result);
+      const orderId = typeof resultRecord['orderId'] === 'string' && resultRecord['orderId']
+        ? resultRecord['orderId']
+        : 'recibido';
+      const total = this.grandTotal();
+      this.orderSuccess.set({ id: orderId, total });
+      this.showOrderSheetModal.set(false);
+      this.completedBoxes.set([]);
+      this.currentBoxItems.set({});
+      this.orderForm = this.emptyOrderForm();
+    } catch (error) {
+      this.orderError.set(error instanceof Error
+        ? error.message
+        : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
+    } finally {
+      this.savingOrder.set(false);
+    }
+  }
+
+  getWhatsAppUrl(): string {
+    const form = this.orderForm;
+    let message = '*¡Hola StarKies! Quisiera realizar un pedido:*\n\n';
+    message += '👤 *Cliente:* ' + form.name + '\n';
+    message += '📞 *Teléfono:* ' + form.phone + '\n';
+    message += '📍 *Sector:* ' + (form.zone?.name || 'Por definir') + '\n';
+    message += '🏡 *Dirección:* ' + (form.address || 'Retiro en tienda') + '\n';
+    message += '📅 *Fecha solicitada:* ' + form.date + '\n';
+    message += '🏷️ *Nombre en la caja:* ' + (form.cookieName || form.name) + '\n';
+    if (form.notes.trim()) message += '📝 *Notas:* ' + form.notes.trim() + '\n';
+    message += '\n📦 *DETALLE DE CAJAS:*\n';
+    this.completedBoxes().forEach((box, index) => {
+      message += '\n*Caja ' + (index + 1) + ' (' + box.presentation.name + '):*\n';
+      for (const [id, quantity] of Object.entries(box.items)) {
+        message += '  • ' + quantity + 'x ' + this.getProductName(id) + '\n';
       }
     });
+    message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2);
+    message += '\n🛵 *Envío:* $' + this.shippingFee().toFixed(2);
+    message += '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
+    return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
+  }
 
-    msg += `\n💰 *Total Cajas:* $${this.boxesTotalSum().toFixed(2)}`;
-    msg += `\n🛵 *Envío:* $${this.shippingFee().toFixed(2)}`;
-    msg += `\n💵 *Total a pagar:* $${this.grandTotal().toFixed(2)}`;
+  private emptyOrderForm() {
+    return {
+      name: '',
+      phone: '',
+      zone: null as DeliveryZone | null,
+      address: '',
+      date: this.today(),
+      cookieName: '',
+      notes: '',
+      website: '',
+    };
+  }
 
-    window.open(`https://wa.me/593985313438?text=${encodeURIComponent(msg)}`, '_blank');
+  private asRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {};
   }
 }
