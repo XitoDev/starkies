@@ -3,7 +3,7 @@ name: Deploy Admin Preview to Vercel
 on:
   push:
     branches:
-      - feat/admin-angular-firebase-foundation
+      - "feat/**"
     paths:
       - "apps/admin/**"
       - "libs/shared/**"

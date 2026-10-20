@@ -12,6 +12,7 @@ import {
   setDoc,
   writeBatch,
 } from 'firebase/firestore';
+import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
 import { FirestoreBackupArchiveService } from './firestore-backup-archive.service';
 
@@ -262,6 +263,159 @@ export class FirestoreBusinessRepository {
         },
       }, { merge: true });
     });
+  }
+
+  async recordCashMovement(movement: CashMovement): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+    this.validateCashMovement(movement);
+
+    const metadataRef = this.stateMetaRef();
+    const movementRef = doc(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'cashMovements', 'records', movement.id,
+    );
+
+    await runTransaction(this.firebase.firestore, async (transaction) => {
+      const metadataSnapshot = await transaction.get(metadataRef);
+      const existingMovement = await transaction.get(movementRef);
+      if (!metadataSnapshot.exists() || metadataSnapshot.data()['status'] !== 'complete') {
+        throw new Error('La migración de StarKies no está completa. No se registró el movimiento.');
+      }
+      if (existingMovement.exists()) {
+        throw new Error('Este movimiento ya existe. Actualiza la pantalla e inténtalo de nuevo.');
+      }
+
+      const metadata = metadataSnapshot.data() as StateMetadata;
+      const counts = metadata.recordCounts ?? {};
+      const nextCount = Number(counts['cashMovements'] ?? 0) + 1;
+      transaction.set(movementRef, { index: Date.now(), value: movement });
+      transaction.set(metadataRef, {
+        arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
+        stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
+        recordCounts: { ...counts, cashMovements: nextCount },
+      }, { merge: true });
+    });
+  }
+
+  /**
+   * Records the cash outflow and stock increase in one Firestore transaction.
+   * The ingredient cost is updated using a weighted average, so inventory value
+   * remains consistent after purchases at different unit prices.
+   */
+  async recordIngredientPurchase(movement: CashMovement): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    const ingredientId = String(movement.ingredientId ?? '').trim();
+    const quantity = Number(movement.quantity);
+    const unitCost = Number(movement.unitCost);
+    if (!ingredientId) throw new Error('Selecciona el insumo de la compra.');
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new Error('La cantidad comprada debe ser mayor que cero.');
+    }
+    if (!Number.isFinite(unitCost) || unitCost <= 0) {
+      throw new Error('El costo por unidad debe ser mayor que cero.');
+    }
+
+    const amount = Math.round(quantity * unitCost * 100) / 100;
+    const savedMovement: CashMovement = {
+      ...movement,
+      type: 'OUT',
+      category: 'compra_insumo',
+      amount,
+    };
+    this.validateCashMovement(savedMovement);
+
+    const ingredientsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'ingredients', 'records',
+    );
+    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
+    const matchingIngredient = ingredientSnapshot.docs.find((snapshot) => {
+      const stored = snapshot.data()['value'];
+      return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
+    });
+    if (!matchingIngredient) {
+      throw new Error('No se encontró el insumo seleccionado. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const metadataRef = this.stateMetaRef();
+    const movementRef = doc(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'cashMovements', 'records', savedMovement.id,
+    );
+
+    await runTransaction(this.firebase.firestore, async (transaction) => {
+      const metadataSnapshot = await transaction.get(metadataRef);
+      const currentIngredientSnapshot = await transaction.get(matchingIngredient.ref);
+      const existingMovement = await transaction.get(movementRef);
+
+      if (!metadataSnapshot.exists() || metadataSnapshot.data()['status'] !== 'complete') {
+        throw new Error('La migración de StarKies no está completa. No se registró la compra.');
+      }
+      if (!currentIngredientSnapshot.exists()) {
+        throw new Error('El insumo cambió durante el registro. Actualiza la pantalla e inténtalo de nuevo.');
+      }
+      if (existingMovement.exists()) {
+        throw new Error('Esta compra ya existe. Actualiza la pantalla e inténtalo de nuevo.');
+      }
+
+      const stored = currentIngredientSnapshot.data()['value'];
+      if (!this.isRecord(stored)) {
+        throw new Error('No se pudo leer el insumo seleccionado. No se registró la compra.');
+      }
+
+      const currentStock = Number(stored['stock'] ?? 0);
+      const currentUnitCost = Number(stored['costPerUnit'] ?? stored['cost'] ?? 0);
+      if (!Number.isFinite(currentStock) || currentStock < 0
+        || !Number.isFinite(currentUnitCost) || currentUnitCost < 0) {
+        throw new Error('El stock o costo actual del insumo no es válido. Corrige el inventario antes de comprar.');
+      }
+
+      const nextStock = currentStock + quantity;
+      const weightedAverageCost = (currentStock * currentUnitCost + quantity * unitCost) / nextStock;
+      const updatedIngredient: Record<string, unknown> = {
+        ...stored,
+        stock: nextStock,
+        costPerUnit: weightedAverageCost,
+      };
+      // Preserve compatibility with backups whose original field was named "cost".
+      if (Object.prototype.hasOwnProperty.call(stored, 'cost')) {
+        updatedIngredient['cost'] = weightedAverageCost;
+      }
+
+      const metadata = metadataSnapshot.data() as StateMetadata;
+      const counts = metadata.recordCounts ?? {};
+      const nextCount = Number(counts['cashMovements'] ?? 0) + 1;
+      transaction.set(currentIngredientSnapshot.ref, {
+        index: Number(currentIngredientSnapshot.data()['index'] ?? 0),
+        value: updatedIngredient,
+      });
+      transaction.set(movementRef, { index: Date.now(), value: savedMovement });
+      transaction.set(metadataRef, {
+        arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
+        stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
+        recordCounts: { ...counts, cashMovements: nextCount },
+      }, { merge: true });
+    });
+  }
+
+  private validateCashMovement(movement: CashMovement): void {
+    if (!movement.id?.trim()) throw new Error('El movimiento necesita un identificador.');
+    if (!movement.description?.trim()) throw new Error('Ingresa una descripción para el movimiento.');
+    if (!movement.date?.trim() || !Number.isFinite(Date.parse(movement.date))) {
+      throw new Error('Selecciona una fecha válida para el movimiento.');
+    }
+    if (movement.type !== 'IN' && movement.type !== 'OUT') {
+      throw new Error('El tipo de movimiento no es válido.');
+    }
+    if (!Number.isFinite(movement.amount) || movement.amount <= 0) {
+      throw new Error('El monto debe ser mayor que cero.');
+    }
+    if (!movement.category?.trim()) throw new Error('Selecciona una categoría para el movimiento.');
   }
 
   async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {

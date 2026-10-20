@@ -51,12 +51,27 @@ export interface Order {
   createdAt: string;
 }
 
+export interface CashMovement {
+  id: string;
+  date: string;
+  description: string;
+  type: 'IN' | 'OUT';
+  amount: number;
+  category: string;
+  subcategory?: string;
+  ingredientId?: string;
+  ingredientName?: string;
+  ingredientUnit?: string;
+  quantity?: number;
+  unitCost?: number;
+}
+
 export interface StarkiesBackup {
   ingredients: Ingredient[];
   recipes: Recipe[];
   customers: Customer[];
   orders: Order[];
-  cashMovements?: any[];
+  cashMovements?: CashMovement[];
   inventoryAdjustments?: any[];
   catalogSettings?: any;
 }
