@@ -1,4 +1,4 @@
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import type { Firestore } from 'firebase-admin/firestore';
 import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data';
 
 export interface PublicProduct {
