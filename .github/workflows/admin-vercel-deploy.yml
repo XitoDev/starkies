@@ -11,11 +11,6 @@ on:
           - preview
           - production
         default: preview
-      confirm_production:
-        description: 'For production only, enter exactly "DEPLOY"'
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -32,16 +27,11 @@ jobs:
       - name: Guard production deployment
         env:
           TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
-          CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
           SELECTED_REF: ${{ github.ref }}
         run: |
           if [ "$TARGET_ENVIRONMENT" = "production" ]; then
             if [ "$SELECTED_REF" != "refs/heads/main" ]; then
               echo "::error::Production deployments can only run from main."
-              exit 1
-            fi
-            if [ "$CONFIRM_PRODUCTION" != "DEPLOY" ]; then
-              echo "::error::Type DEPLOY in confirm_production to authorize a production deployment."
               exit 1
             fi
           fi
