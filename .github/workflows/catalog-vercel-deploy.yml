@@ -1,6 +1,9 @@
 name: Deploy Public Catalog to Vercel
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       target_environment:
@@ -22,6 +25,7 @@ concurrency:
 jobs:
   validate-and-deploy:
     name: Validate Catalog, then deploy
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, 'feat(catalog): make delivery or pickup easy to select'))
     runs-on: ubuntu-latest
     env:
       TARGET_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
