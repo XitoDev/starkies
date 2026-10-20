@@ -4,7 +4,7 @@
 </header>
 <main>
   @if (orderSuccess(); as confirmation) {
-    <section class="order-success" role="status" aria-live="polite"><div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a matButton="elevated" class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div><button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)">×</button></section>
+    <section class="order-success" role="status" aria-live="polite"><div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a matButton="elevated" class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div><button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></section>
   }
   <section class="hero" id="inicio-contenido" aria-labelledby="hero-title">
     <div class="hero-copy"><h1 id="hero-title">La estrella<br><em>eres tú.</em></h1><p>Elige tus sabores favoritos y crea una caja muy tuya.</p></div>
@@ -65,7 +65,7 @@
     <div class="sheet-panel">
       <div class="sheet-heading">
         <h2 id="order-sheet-title">Tu pedido</h2>
-        <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()">✕</button>
+        <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form (ngSubmit)="submitOrder()">
         <div class="sheet-body">
