@@ -59,7 +59,7 @@
               <button type="button" (click)="openLedgerAction('boxesPayment')">Registrar pago de cajas</button>
             }
             @if (fund.key === 'ingredients' || fund.key === 'expenses' || fund.key === 'boxes' || fund.key === 'profit' || fund.key === 'extraProfit') {
-              <button class="text-action" type="button" (click)="openLedgerAction('transfer', fund.key === 'extraProfit' || fund.key === 'profit' ? 'profit' : fund.key === 'boxes' ? 'expenses' : fund.key)">Transferir dinero</button>
+              <button class="text-action" type="button" (click)="openLedgerAction('transfer', transferSourceForFund(fund.key))">Transferir dinero</button>
             }
           </div>
         </article>
@@ -214,7 +214,7 @@
       @if (pendingTransactions().length) {
         <div class="pending-list">
           @for (item of pendingTransactions(); track item.id) {
-            <article class="pending-row"><div><strong>{{ item.description }}</strong><p>{{ item.date | date:'mediumDate' }}</p></div><strong>{{ item.amount | currency:'USD' }}</strong><button class="btn-outline" type="button" (click)="pendingPanelOpen.set(false); openLedgerAction('boxesPayment')">Registrar pago</button></article>
+            <article class="pending-row"><div><strong>{{ item.description }}</strong><p>{{ item.date | date:'mediumDate' }}</p></div><strong>{{ item.amount | currency:'USD' }}</strong><button class="btn-outline" type="button" (click)="openLedgerAction('boxesPayment'); selectPendingBoxPurchase(item.id); pendingPanelOpen.set(false)">Registrar pago</button></article>
           }
         </div>
       } @else {
