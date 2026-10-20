@@ -126,7 +126,7 @@ export class Catalog {
     }
     const deliveryZone = this.orderForm.zone && !this.isPickupZone(this.orderForm.zone)
       ? this.orderForm.zone
-      : this.zones.find(zone => !this.isPickupZone(zone)) ?? null;
+      : null;
     this.setDeliveryZone(deliveryZone);
   }
   isPickupZone(zone: DeliveryZone | null | undefined): boolean {
