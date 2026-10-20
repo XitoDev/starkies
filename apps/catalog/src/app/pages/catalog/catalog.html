@@ -48,7 +48,23 @@
     </div>
   </section>
 </main>
-<footer class="site-footer"><mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
+<footer class="site-footer" aria-label="Información y redes sociales de StarKies">
+  <mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon>
+  <strong class="footer-wordmark">StarKies.</strong>
+  <p class="footer-tagline">La estrella eres tú.</p>
+  <nav class="footer-social" aria-label="Redes sociales y contacto">
+    <a matButton="outlined" class="footer-social-link" href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">chat</mat-icon><span>WhatsApp</span>
+    </a>
+    <a matButton="outlined" class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en Instagram">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">photo_camera</mat-icon><span>Instagram</span>
+    </a>
+    <a matButton="outlined" class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en TikTok">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">music_note</mat-icon><span>TikTok</span>
+    </a>
+  </nav>
+  <small class="footer-copyright">© {{ currentYear }} StarKies. Todos los derechos reservados.</small>
+</footer>
 <aside class="cart-dock" aria-label="Resumen de tu caja"><div class="dock-card"><div class="dock-progress">
   <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
   <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
