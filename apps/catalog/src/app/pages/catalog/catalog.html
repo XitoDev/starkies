@@ -48,7 +48,15 @@
     </div>
   </section>
 </main>
-<footer class="site-footer"><mat-icon class="footer-star" fontSet="material-symbols-rounded" aria-hidden="true">star</mat-icon><strong class="footer-wordmark">StarKies.</strong><p>La estrella eres tú.</p></footer>
+<footer class="site-footer" aria-label="Información y redes sociales de StarKies">
+  <a matButton="text" href="#inicio" class="brand footer-brand" aria-label="StarKies, volver al inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
+  <nav class="footer-social" aria-label="Redes sociales y contacto">
+    <a matButton="outlined" class="footer-social-link" href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>WhatsApp</span></a>
+    <a matButton="outlined" class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en Instagram"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>Instagram</span></a>
+    <a matButton="outlined" class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en TikTok"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>TikTok</span></a>
+  </nav>
+  <small class="footer-copyright">© {{ currentYear }} StarKies. Todos los derechos reservados.</small>
+</footer>
 <aside class="cart-dock" aria-label="Resumen de tu caja"><div class="dock-card"><div class="dock-progress">
   <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
   <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
