@@ -34,6 +34,17 @@ describe('Sidebar', () => {
     expect(fixture.nativeElement.querySelector('.online-indicator')).toBeNull();
   });
 
+  it('provides an accessible Material-styled shortcut to the public store', () => {
+    const storeLink = fixture.nativeElement.querySelector('.business-card') as HTMLAnchorElement;
+
+    expect(storeLink.getAttribute('href')).toBe('https://starkies.lat/');
+    expect(storeLink.getAttribute('target')).toBe('_blank');
+    expect(storeLink.getAttribute('rel')).toContain('noopener');
+    expect(storeLink.getAttribute('aria-label')).toContain('Ir a mi tienda');
+    expect(storeLink.textContent).toContain('Ir a mi tienda');
+    expect(storeLink.textContent).toContain('Ver catálogo público');
+  });
+
   it('signs out of Firebase and navigates to login', async () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
