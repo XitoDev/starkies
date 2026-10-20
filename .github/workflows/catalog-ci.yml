@@ -62,7 +62,7 @@ jobs:
         run: npx ng test catalog --watch=false
 
       - name: Type-check public order API
-        run: npx tsc --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
 
       - name: Commit refreshed lockfile on feature branches
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
