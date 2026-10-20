@@ -24,8 +24,15 @@ export class Catalog {
   readonly lookingUpCustomer = signal(false);
   readonly editingBoxIndex = signal<number | null>(null);
   readonly wantsCookieName = signal(false);
+  readonly selectedDeliveryZone = signal<DeliveryZone | null>(null);
   orderForm = this.emptyOrderForm();
-  readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
+  readonly categories = computed(() => {
+    const presentation = this.selectedPresentation();
+    const visible: string[] = [];
+    if (presentation.reqClasicas > 0) visible.push('Galletas clásicas');
+    if (presentation.reqNY > 0) visible.push('Galletas NY');
+    return visible;
+  });
   readonly filteredProducts = computed(() => {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
     const availableProducts = this.products().filter(product => product.stock);
@@ -49,7 +56,7 @@ export class Catalog {
     return this.currentClasicasCount() === presentation.reqClasicas && this.currentNYCount() === presentation.reqNY;
   });
   readonly boxesTotalSum = computed(() => this.completedBoxes().reduce((total, box) => total + box.presentation.price, 0));
-  readonly shippingFee = computed(() => this.orderForm.zone?.fee ?? 0);
+  readonly shippingFee = computed(() => this.selectedDeliveryZone()?.fee ?? 0);
   readonly grandTotal = computed(() => this.boxesTotalSum() + this.shippingFee());
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
@@ -63,6 +70,10 @@ export class Catalog {
   }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
   selectPresentation(presentation: BoxPresentation): void { this.selectedPresentation.set(presentation); this.currentBoxItems.set({}); }
+  setDeliveryZone(zone: DeliveryZone | null): void {
+    this.orderForm.zone = zone;
+    this.selectedDeliveryZone.set(zone);
+  }
   getQuantity(productId: string): number { return this.currentBoxItems()[productId] || 0; }
   changeQuantity(productId: string, delta: number): void {
     const product = this.products().find(item => item.id === productId);
@@ -196,6 +207,11 @@ export class Catalog {
     message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2) + '\n🛵 *Envío:* $' + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
     return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
   }
-  private emptyOrderForm() { this.wantsCookieName.set(false); this.customerLookupMessage.set(''); return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' }; }
+  private emptyOrderForm() {
+    this.wantsCookieName.set(false);
+    this.customerLookupMessage.set('');
+    this.selectedDeliveryZone.set(null);
+    return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
+  }
   private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 }
