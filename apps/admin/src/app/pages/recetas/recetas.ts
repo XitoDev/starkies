@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
@@ -24,7 +26,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, LucideDynamicIcon, MasasBaseList],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, LucideDynamicIcon, MasasBaseList, MatButtonModule, MatIconModule],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
