@@ -67,3 +67,11 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Public catalog and order PDFs
+
+The storefront loads its products and delivery fees from the business data through the public catalog API. That endpoint projects only visible, non-archived recipes into `businesses/starkies/collections/catalog/records`; the public app no longer keeps a separate hardcoded product list. Order validation reads the same live recipes and delivery settings.
+
+The Firestore rules intentionally make only `businesses/starkies/collections/catalog/records/*` publicly readable. All other business data and writes remain restricted to approved administrators (server-side Firebase Admin SDK writes are governed by service-account IAM, not client Firestore rules). After reviewing this change, deploy the updated rules with the Firebase CLI for the `starkies` project.
+
+Order creation now prepares its signed PDF access token before persisting the order, so missing document-signing configuration cannot produce a successful-looking order that has no PDF link. The PDF URL is served by `GET /api/order-document?token=...` and expires after seven days. Keep `FIREBASE_SERVICE_ACCOUNT_JSON` configured in the Vercel environment for the catalog deployment.

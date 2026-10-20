@@ -23,9 +23,10 @@ service cloud.firestore {
       allow read, write: if isApprovedAdmin();
     }
 
-    // Future public catalog: visitors may read published catalog documents,
-    // but only approved admins can change them.
-    match /publicCatalog/{document=**} {
+    // Public storefront projection. Only this collection is readable without
+    // admin authentication; all other business collections remain admin-only.
+    // The server publishes only visible, non-archived products into this path.
+    match /businesses/starkies/collections/catalog/records/{recordId} {
       allow read: if true;
       allow create, update, delete: if isApprovedAdmin();
     }

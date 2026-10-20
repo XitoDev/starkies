@@ -70,14 +70,14 @@ jobs:
             exit 1
           fi
           grep -qi 'rel="canonical"' "$HTML_FILE"
-          grep -qi 'Sunny Carrot' "$HTML_FILE"
-          echo "Verified canonical metadata and rendered catalog content in $HTML_FILE"
+          grep -qi 'Elige tu caja' "$HTML_FILE"
+          echo "Verified canonical metadata and catalog shell in $HTML_FILE"
 
       - name: Test catalog
         run: npx ng test catalog --watch=false
 
       - name: Type-check public order API
-        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/orders.ts
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/customer-lookup.ts
 
       - name: Pull Vercel settings
         env:
