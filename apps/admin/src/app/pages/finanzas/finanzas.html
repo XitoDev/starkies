@@ -20,7 +20,7 @@
 
   @if (financeTab() === 'resumen') {
   <section class="bank-section" aria-labelledby="bank-title">
-    <h2 id="bank-title" class="section-title"><svg [lucideIcon]="icons.Wallet"></svg> Cuentas bancarias</h2>
+    <h2 id="bank-title" class="section-title"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">account_balance_wallet</mat-icon> Cuentas bancarias</h2>
     <div class="bank-grid">
       @for (account of bankCards(); track account.key) {
         <article class="bank-card" [class]="'bank-card bank-' + account.tone">
