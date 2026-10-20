@@ -16,6 +16,7 @@ export class Catalog {
   readonly searchQuery = signal('');
   readonly showBoxChoiceModal = signal(false);
   readonly showOrderSheetModal = signal(false);
+  readonly isOrderSheetClosing = signal(false);
   readonly savingOrder = signal(false);
   readonly orderError = signal('');
   readonly orderSuccess = signal<OrderConfirmation | null>(null);
@@ -128,8 +129,24 @@ export class Catalog {
       this.lookingUpCustomer.set(false);
     }
   }
-  openOrderSheet(): void { this.showBoxChoiceModal.set(false); this.orderError.set(''); this.showOrderSheetModal.set(true); }
-  closeOrderSheet(): void { if (this.savingOrder()) return; this.showOrderSheetModal.set(false); this.orderError.set(''); }
+  openOrderSheet(): void {
+    this.showBoxChoiceModal.set(false);
+    this.orderError.set('');
+    this.isOrderSheetClosing.set(false);
+    this.showOrderSheetModal.set(true);
+  }
+  closeOrderSheet(): void {
+    if (this.savingOrder() || !this.showOrderSheetModal() || this.isOrderSheetClosing()) return;
+    this.isOrderSheetClosing.set(true);
+    window.setTimeout(() => {
+      this.showOrderSheetModal.set(false);
+      this.isOrderSheetClosing.set(false);
+      this.orderError.set('');
+    }, 220);
+  }
+  onOrderBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closeOrderSheet();
+  }
   getProductName(id: string): string { return this.products().find(product => product.id === id)?.name ?? 'Producto'; }
   getObjectKeys(object: Record<string, number>): string[] { return Object.keys(object); }
   today(): string {
