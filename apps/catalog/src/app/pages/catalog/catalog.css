@@ -35,7 +35,6 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .hero-star { position:absolute; z-index:2; color:#9b76a2; font-size:21px; }
 .hero-star-one { top:18%; left:16%; }
 .hero-star-two { top:30%; right:8%; font-size:26px; }
-.hero-caption { position:absolute; z-index:2; bottom:2px; right:9%; color:#9a7da0; font:italic 12px 'Playfair Display',Georgia,serif; }
 .section-title { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:20px; }
 .eyebrow { margin-bottom:9px; font-size:9px; font-weight:800; letter-spacing:3px; }
 .section-title h2 { margin:0 0 11px; color:#68416f; font:italic 700 clamp(30px,3.5vw,39px)/1.1 'Playfair Display',Georgia,serif; letter-spacing:-.7px; }
