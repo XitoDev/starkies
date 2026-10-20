@@ -1,15 +1,3 @@
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { Component, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import {
-  LucideDynamicIcon,
-  LucideSearch,
-  LucideTriangleAlert,
-  LucidePlus,
-  LucideSquarePen,
-  LucidePackage,
-} from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 import { Ingredient } from 'shared';
 
@@ -30,20 +18,12 @@ type IngredientForm = {
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   templateUrl: './ingredientes.html',
   styleUrls: ['./ingredientes.css'],
 })
 export class Ingredientes {
   private readonly dataService = inject(DataService);
-
-  readonly icons = {
-    Search: LucideSearch,
-    AlertTriangle: LucideTriangleAlert,
-    Plus: LucidePlus,
-    Edit: LucideSquarePen,
-    Package: LucidePackage,
-  };
 
   readonly ingredients = this.dataService.ingredients;
   readonly supplyGroups = SUPPLY_GROUPS;
