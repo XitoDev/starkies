@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
-import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
 
 @Component({
   selector: 'app-topbar',
@@ -15,18 +14,6 @@ import { FirebaseClientService } from '../../core/firebase/firebase-client.servi
       </div>
       <div class="topbar-actions">
         <time class="today">{{ today }}</time>
-        @if (logoutMessage()) {
-          <span class="logout-error" role="status" aria-live="polite">{{ logoutMessage() }}</span>
-        }
-        <button
-          type="button"
-          class="logout-button"
-          [disabled]="loggingOut()"
-          (click)="logout()"
-        >
-          <span aria-hidden="true">↪</span>
-          {{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
-        </button>
       </div>
     </header>
   `,
@@ -82,47 +69,6 @@ import { FirebaseClientService } from '../../core/firebase/firebase-client.servi
       white-space: nowrap;
     }
 
-    .logout-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 38px;
-      padding: 0 13px;
-      border: 1px solid #e8deef;
-      border-radius: 10px;
-      background: #fff;
-      color: #75518e;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: background-color .15s ease, border-color .15s ease;
-    }
-
-    .logout-button:hover:not(:disabled) {
-      background: #f8f2fc;
-      border-color: #d7c4e7;
-    }
-
-    .logout-button:focus-visible {
-      outline: 3px solid #bba0d1;
-      outline-offset: 3px;
-    }
-
-    .logout-button:disabled {
-      cursor: progress;
-      opacity: .65;
-    }
-
-    .logout-error {
-      max-width: 240px;
-      color: #a23b43;
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
     @media (max-width: 760px) {
       .topbar {
         min-height: 66px;
@@ -132,22 +78,12 @@ import { FirebaseClientService } from '../../core/firebase/firebase-client.servi
       }
 
       .breadcrumb { gap: 9px; }
-      .topbar-actions { gap: 8px; }
       .today { display: none; }
-      .logout-button { min-height: 36px; padding: 0 9px; font-size: 11px; }
-      .logout-error { max-width: 110px; }
-    }
-
-    @media (max-width: 390px) {
-      .logout-button { gap: 4px; padding: 0 7px; }
-      .logout-error { display: none; }
     }
   `]
 })
 export class Topbar {
   readonly currentPage = signal('Recetas');
-  readonly loggingOut = signal(false);
-  readonly logoutMessage = signal('');
   readonly today = new Intl.DateTimeFormat('es-EC', {
     day: 'numeric',
     month: 'long',
@@ -163,29 +99,11 @@ export class Topbar {
     finanzas: 'Finanzas',
   };
 
-  constructor(
-    private readonly router: Router,
-    private readonly firebase: FirebaseClientService,
-  ) {
+  constructor(private readonly router: Router) {
     this.updatePage(router.url);
     router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event) => this.updatePage(event.urlAfterRedirects));
-  }
-
-  async logout(): Promise<void> {
-    if (this.loggingOut()) return;
-    this.loggingOut.set(true);
-    this.logoutMessage.set('');
-
-    try {
-      await this.firebase.signOut();
-      await this.router.navigateByUrl('/login');
-    } catch {
-      this.logoutMessage.set('No se pudo cerrar la sesión. Comprueba tu conexión e inténtalo otra vez.');
-    } finally {
-      this.loggingOut.set(false);
-    }
   }
 
   private updatePage(url: string): void {
