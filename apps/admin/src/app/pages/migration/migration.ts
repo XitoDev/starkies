@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,7 +10,7 @@ import { DataService } from '../../services/data.service';
 @Component({
   selector: 'app-migration',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule],
   template: `
     <main class="migration-page">
       <section class="migration-card">
@@ -25,7 +27,7 @@ import { DataService } from '../../services/data.service';
             Los datos de StarKies ya están inicializados en Firebase. La importación está bloqueada
             para evitar sobrescribir registros existentes.
           </div>
-          <button type="button" class="primary" (click)="openAdmin()">Ir al administrador</button>
+          <button matButton="text" type="button" class="primary" (click)="openAdmin()">Ir al administrador</button>
         } @else {
           @if (routeError()) {
             <div class="notice warning" role="status">
@@ -81,7 +83,7 @@ import { DataService } from '../../services/data.service';
             <div class="notice success" role="status">{{ success() }}</div>
           }
 
-          <button
+          <button matButton="text"
             type="button"
             class="primary"
             (click)="importBackup()"
