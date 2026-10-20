@@ -13,7 +13,7 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
   imports: [CommonModule, CurrencyPipe, DecimalPipe, MatButtonModule, MatIconModule],
   template: `
     <section class="base-list">
-      <button matButton="text" class="primary" type="button" (click)="create()">Nueva masa base</button>
+      <button matButton="elevated" class="primary" type="button" (click)="create()">Nueva masa base</button>
       @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
       @if (bases().length === 0) {
         <div class="empty">No hay masas base registradas. Crea una nueva o copia la masa de una receta existente.</div>
@@ -23,13 +23,13 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
             <article class="card">
               <header class="card-header">
                 <h2>{{ base.name || 'Masa base sin nombre' }}</h2>
-                <button matButton="text" class="menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + base.name" [attr.aria-expanded]="openMenuId() === base.id" (click)="openMenuId.set(openMenuId() === base.id ? null : base.id)">⋮</button>
+                <button matIconButton class="menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + base.name" [attr.aria-expanded]="openMenuId() === base.id" (click)="openMenuId.set(openMenuId() === base.id ? null : base.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
                 @if (openMenuId() === base.id) {
                   <div class="menu">
                     <button matButton="text" type="button" [disabled]="$index === 0" (click)="move(base, -1)">↑ <span>Subir</span></button>
-                    <button matButton="text" type="button" [disabled]="$index === bases().length - 1" (click)="move(base, 1)">↓ <span>Bajar</span></button>
+                    <button matButton="text" type="button" [disabled]="$index === bases().length - 1" (click)="move(base, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_downward</mat-icon> <span>Bajar</span></button>
                     <button matButton="text" type="button" (click)="edit(base)">✎ <span>Editar</span></button>
-                    <button matButton="text" type="button" class="danger" (click)="remove(base)">▤ <span>Eliminar</span></button>
+                    <button matButton="outlined" type="button" class="danger" (click)="remove(base)">▤ <span>Eliminar</span></button>
                   </div>
                 }
               </header>
