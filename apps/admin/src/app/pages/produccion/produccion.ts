@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -33,7 +35,7 @@ type IngredientRequirement = {
 @Component({
   selector: 'app-produccion',
   standalone: true,
-  imports: [CommonModule, LucideDynamicIcon],
+  imports: [CommonModule, LucideDynamicIcon, MatButtonModule, MatIconModule],
   templateUrl: './produccion.html',
   styleUrls: ['./produccion.css'],
 })
