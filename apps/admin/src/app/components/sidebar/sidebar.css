@@ -65,12 +65,50 @@
 .business-card {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 11px;
+  width: 100%;
   min-height: 72px;
   padding: 13px 11px;
-  border: 1px solid #eee7f2;
-  border-radius: 13px;
   margin-bottom: 28px;
+  border: 1px solid #e8e0ed;
+  border-radius: 13px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.business-card:hover {
+  border-color: #d8c2e9;
+  background: #faf7fc;
+}
+
+.business-card:focus-visible {
+  outline: 2px solid #8056ad;
+  outline-offset: 3px;
+}
+
+.business-card .business-mark {
+  flex: 0 0 36px;
+}
+
+.business-mark mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.business-external {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: #8f7ba1;
+  font-size: 18px;
 }
 
 .business-mark,
@@ -275,13 +313,34 @@
 
   .sidebar-brand { margin-bottom: 25px; }
   .brand-name,
-  .business-card,
+  .business-copy,
   .nav-caption,
   .nav-label,
   .nav-badge,
   .business-copy,
   .sidebar-profile,
   .btn-backup span { display: none; }
+
+  .business-card {
+    width: 44px;
+    min-height: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+    margin-bottom: 20px;
+    border-radius: 12px;
+  }
+
+  .business-card .business-mark {
+    flex-basis: 22px;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    color: #8056ad;
+  }
+
+  .business-mark mat-icon { font-size: 22px; }
+  .business-external { display: none; }
 
   .sidebar-nav { width: 100%; }
   .nav-item { justify-content: center; padding: 0; }
