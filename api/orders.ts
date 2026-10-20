@@ -73,6 +73,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       status: 'PENDING',
       total: order.total,
       lines: order.lines,
+      boxes: order.boxes.map(box => {
+        const presentation = BOX_PRESENTATIONS.find(item => item.id === box.presentationId)!;
+        return {
+          presentationId: presentation.id,
+          presentationName: presentation.name,
+          price: presentation.price,
+          items: Object.entries(box.items).map(([productId, quantity]) => {
+            const product = CATALOG_PRODUCTS.find(item => item.id === productId)!;
+            return { id: product.id, name: product.name, quantity };
+          }),
+        };
+      }),
+      deliveryFee: DELIVERY_ZONES.find(item => item.id === order.zoneId)!.fee,
       orderChannel: 'public-web',
     };
 
