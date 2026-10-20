@@ -9,6 +9,7 @@ import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
+  readonly currentYear = new Date().getFullYear();
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
   zones: DeliveryZone[] = [];
