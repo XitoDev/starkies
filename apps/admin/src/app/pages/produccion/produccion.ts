@@ -102,9 +102,29 @@ export class Produccion {
     const recipe = this.selectedRecipe();
     if (!recipe) return [];
     const totals = new Map<string, number>();
+    const batches = this.batchCount();
+    if (recipe.baseId) {
+      const rawBases = this.dataService.rawState()?.['doughBases'];
+      const bases = Array.isArray(rawBases) ? rawBases as Record<string, unknown>[] : [];
+      const base = bases.find(item => String(item['id'] ?? '') === recipe.baseId);
+      const baseItems = Array.isArray(base?.['ingredients']) ? base['ingredients']
+        : Array.isArray(base?.['items']) ? base['items'] : [];
+      const baseWeight = Number(base?.['weight'] ?? 0);
+      const gramsNeeded = Number(recipe.baseGramsPerCookie ?? 0) * Math.max(1, recipe.yield);
+      const baseScale = baseWeight > 0 && gramsNeeded > 0 ? gramsNeeded / baseWeight : 1;
+      for (const rawItem of baseItems) {
+        if (typeof rawItem !== 'object' || rawItem === null) continue;
+        const item = rawItem as Record<string, unknown>;
+        const ingredientId = String(item['ingredientId'] ?? item['id'] ?? '');
+        const quantity = Number(item['quantity'] ?? item['qty'] ?? 0) * baseScale * batches;
+        if (ingredientId && quantity > 0) totals.set(ingredientId, (totals.get(ingredientId) ?? 0) + quantity);
+      }
+    }
     for (const section of recipe.sections) {
+      const sectionName = section.name.toLocaleLowerCase('es');
+      const quantityScale = recipe.baseId && sectionName !== 'masa' ? Math.max(1, recipe.yield) : 1;
       for (const item of section.ingredients) {
-        totals.set(item.ingredientId, (totals.get(item.ingredientId) ?? 0) + item.quantity * this.batchCount());
+        totals.set(item.ingredientId, (totals.get(item.ingredientId) ?? 0) + item.quantity * quantityScale * batches);
       }
     }
     return Array.from(totals.entries()).map(([ingredientId, quantity]) => ({

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci",
+  "buildCommand": "npx ng build catalog --configuration production",
+  "outputDirectory": "dist/catalog/browser",
+  "git": {
+    "deploymentEnabled": false
+  }
+}
