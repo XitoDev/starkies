@@ -107,7 +107,7 @@ jobs:
         run: npx vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
-        if: inputs.target_environment == 'production'
+        if: env.TARGET_ENVIRONMENT == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -115,7 +115,7 @@ jobs:
         run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Vercel preview
-        if: inputs.target_environment == 'preview'
+        if: env.TARGET_ENVIRONMENT == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
