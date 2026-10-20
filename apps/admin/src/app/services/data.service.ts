@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Ingredient, Recipe, Order, Customer, StarkiesBackup } from 'shared';
+import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
 
@@ -140,6 +140,32 @@ export class DataService {
     const nextState = { ...state, orders: nextOrders };
     this.rawState.set(nextState);
     this.loadViewModels(nextState);
+  }
+
+  async recordCashMovement(movement: CashMovement): Promise<void> {
+    if (!this.rawState()) {
+      throw new Error('No hay datos de StarKies cargados. Completa la migración e inténtalo de nuevo.');
+    }
+
+    await this.repository.recordCashMovement(movement);
+    await this.refreshAfterFinancialWrite();
+  }
+
+  async recordIngredientPurchase(movement: CashMovement): Promise<void> {
+    if (!this.rawState()) {
+      throw new Error('No hay datos de StarKies cargados. Completa la migración e inténtalo de nuevo.');
+    }
+
+    await this.repository.recordIngredientPurchase(movement);
+    await this.refreshAfterFinancialWrite();
+  }
+
+  private async refreshAfterFinancialWrite(): Promise<void> {
+    await this.loadFromCloud();
+    if (this.error()) throw new Error(this.error());
+    if (this.migrationRequired() || !this.rawState()) {
+      throw new Error('No se pudo recargar el estado de StarKies después de guardar el movimiento.');
+    }
   }
 
   async recordProduction(

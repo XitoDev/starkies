@@ -3,13 +3,23 @@
     <div>
       <p class="eyebrow">Mi negocio / Control financiero</p>
       <h1 class="page-title">Finanzas</h1>
-      <p class="page-subtitle">Consulta los movimientos registrados y el valor de inventario calculado a partir de tus datos.</p>
+      <p class="page-subtitle">Registra compras y gastos, consulta los movimientos y controla el valor del inventario.</p>
     </div>
     <div class="header-actions">
-      <button class="btn-outline" type="button" disabled title="El registro de gastos se habilitará con el esquema contable">Registrar gasto</button>
-      <button class="btn-primary" type="button" disabled title="El registro de compras se habilitará con el esquema contable">Registrar compra</button>
+      <button class="btn-outline" type="button" (click)="openExpenseForm()">
+        <svg [lucideIcon]="icons.Receipt" class="btn-icon"></svg>
+        Registrar gasto
+      </button>
+      <button class="btn-primary" type="button" (click)="openPurchaseForm()">
+        <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
+        Registrar compra
+      </button>
     </div>
   </div>
+
+  @if (notice()) {
+    <div class="notice" role="status">{{ notice() }}</div>
+  }
 
   <section class="summary-grid" aria-label="Resumen financiero">
     <article class="summary-card"><div class="summary-icon"><svg [lucideIcon]="icons.Wallet"></svg></div><div><p class="summary-label">Caja estimada</p><p class="summary-value">{{ availableCash() | currency:'USD' }}</p><p class="summary-note">Ingresos menos egresos registrados</p></div></article>
@@ -20,7 +30,7 @@
   <div class="tabs-container" role="tablist" aria-label="Tipo de movimiento">
     <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'movimientos'" [class.active]="activeTab() === 'movimientos'" (click)="setTab('movimientos')">Historial de movimientos</button>
     <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'compras'" [class.active]="activeTab() === 'compras'" (click)="setTab('compras')">Compras de insumos</button>
-    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'gastos'" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">Gastos fijos</button>
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'gastos'" [class.active]="activeTab() === 'gastos'" (click)="setTab('gastos')">Gastos</button>
   </div>
 
   <section class="table-card">
@@ -34,12 +44,18 @@
 
     <div class="table-responsive">
       <table class="data-table">
-        <thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th class="amount-cell">Monto</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Tipo</th><th class="amount-cell">Monto</th></tr></thead>
         <tbody>
           @for (movement of visibleMovements(); track movement.id) {
             <tr>
               <td>{{ movement.date ? (movement.date | date:'mediumDate') : '—' }}</td>
-              <td><strong class="primary-cell">{{ movement.description }}</strong></td>
+              <td>
+                <strong class="primary-cell">{{ movement.description }}</strong>
+                @if (movement.quantity !== undefined && movement.unitCost !== undefined) {
+                  <small class="movement-detail">{{ movement.quantity }} {{ movement.ingredientUnit || 'unidades' }} × {{ movement.unitCost | currency:'USD' }} por unidad</small>
+                }
+              </td>
+              <td>{{ movement.subcategory || (movement.category === 'compra_insumo' ? 'Compra de insumos' : movement.category === 'gasto' ? 'Gasto' : movement.category || '—') }}</td>
               <td>
                 @if (movement.type === 'IN') {
                   <span class="status-pill status-ok"><svg [lucideIcon]="icons.TrendingUp"></svg> Ingreso</span>
@@ -51,10 +67,104 @@
             </tr>
           }
           @if (visibleMovements().length === 0) {
-            <tr><td colspan="4"><div class="empty-state"><strong>{{ activeTab() === 'movimientos' ? 'Todavía no hay movimientos financieros' : 'No hay movimientos en esta categoría' }}</strong><p>Los importes se mostrarán cuando existan registros contables compatibles en Firebase.</p></div></td></tr>
+            <tr><td colspan="5"><div class="empty-state"><strong>{{ activeTab() === 'movimientos' ? 'Todavía no hay movimientos financieros' : activeTab() === 'compras' ? 'Todavía no hay compras registradas' : 'Todavía no hay gastos registrados' }}</strong><p>{{ activeTab() === 'movimientos' ? 'Las compras y los gastos que registres aparecerán aquí.' : activeTab() === 'compras' ? 'Registra una compra para guardar el egreso y actualizar el stock del insumo.' : 'Registra un gasto para llevar el control de los egresos del negocio.' }}</p></div></td></tr>
           }
         </tbody>
       </table>
     </div>
   </section>
 </div>
+
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <section class="finance-modal" role="dialog" aria-modal="true" aria-labelledby="finance-modal-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Control financiero</p>
+          <h2 id="finance-modal-title">{{ formOpen() === 'purchase' ? 'Registrar compra de insumos' : 'Registrar gasto' }}</h2>
+          <p>{{ formOpen() === 'purchase' ? 'El egreso y el aumento de stock se guardan juntos.' : 'El gasto quedará registrado como un egreso de caja.' }}</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()">×</button>
+      </div>
+
+      @if (formOpen() === 'purchase') {
+        <form class="finance-form" (submit)="submitPurchaseForm($event)">
+          <label class="form-field form-field-wide">
+            <span>Insumo *</span>
+            <select required [value]="purchaseForm().ingredientId" (change)="updatePurchaseIngredient($any($event.target).value)">
+              <option value="" disabled>Selecciona un insumo</option>
+              @for (ingredient of dataService.ingredients(); track ingredient.id) {
+                <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option>
+              }
+            </select>
+          </label>
+          @if (dataService.ingredients().length === 0) {
+            <p class="form-help form-field-wide">Primero registra un insumo en Inventario para poder cargar una compra.</p>
+          }
+          <label class="form-field">
+            <span>Cantidad comprada *</span>
+            <input type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Costo por {{ dataService.ingredients().find(item => item.id === purchaseForm().ingredientId)?.unit || 'unidad' }} (USD) *</span>
+            <input type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Fecha de compra *</span>
+            <input type="date" required [value]="purchaseForm().date" (input)="updatePurchaseText('date', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Total estimado</span>
+            <input type="text" readonly [value]="purchaseTotal() | currency:'USD'" />
+          </label>
+          <label class="form-field form-field-wide">
+            <span>Nota (opcional)</span>
+            <input maxlength="160" [value]="purchaseForm().note" (input)="updatePurchaseText('note', $any($event.target).value)" placeholder="Ej. Compra semanal en proveedor" />
+          </label>
+          @if (formError()) {
+            <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
+          }
+          <div class="modal-actions form-field-wide">
+            <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+            <button class="btn-primary" type="submit" [disabled]="saving() || dataService.ingredients().length === 0">
+              {{ saving() ? 'Guardando…' : 'Guardar compra' }}
+            </button>
+          </div>
+        </form>
+      } @else {
+        <form class="finance-form" (submit)="submitExpenseForm($event)">
+          <label class="form-field form-field-wide">
+            <span>Descripción *</span>
+            <input required maxlength="160" [value]="expenseForm().description" (input)="updateExpenseText('description', $any($event.target).value)" placeholder="Ej. Pago de electricidad" />
+          </label>
+          <label class="form-field">
+            <span>Categoría *</span>
+            <select required [value]="expenseForm().category" (change)="updateExpenseText('category', $any($event.target).value)">
+              <option value="alquiler">Alquiler</option>
+              <option value="servicios">Servicios</option>
+              <option value="transporte">Transporte</option>
+              <option value="otros">Otros</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span>Monto (USD) *</span>
+            <input type="number" min="0.01" step="0.01" required [value]="expenseForm().amount" (input)="updateExpenseNumber($any($event.target).value)" />
+          </label>
+          <label class="form-field form-field-wide">
+            <span>Fecha del gasto *</span>
+            <input type="date" required [value]="expenseForm().date" (input)="updateExpenseText('date', $any($event.target).value)" />
+          </label>
+          @if (formError()) {
+            <p class="form-error form-field-wide" role="alert">{{ formError() }}</p>
+          }
+          <div class="modal-actions form-field-wide">
+            <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+            <button class="btn-primary" type="submit" [disabled]="saving()">
+              {{ saving() ? 'Guardando…' : 'Guardar gasto' }}
+            </button>
+          </div>
+        </form>
+      }
+    </section>
+  </div>
+}
