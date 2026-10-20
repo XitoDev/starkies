@@ -265,7 +265,7 @@ function formatDate(value: unknown): string {
 }
 function text(value: unknown): string {
   if (value === null || value === undefined) return '-';
-  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, '').trim() || '-';
+  return String(value).replace(/[\\u0000-\\u001F\\u007F-\\u009F]/g, '').replace(/[^\\x20-\\xFF]/g, '').trim() || '-';
 }
 function wrapLine(value: string, max: number): string[] {
   if (!value) return [''];
