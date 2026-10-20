@@ -94,6 +94,11 @@ export class Ingredientes {
 
   readonly ingredientCount = computed(() => this.ingredients().length);
 
+  countByGroup(group: string): number { return this.ingredients().filter(item => (item.supplyGroup ?? 'Secos') === group).length; }
+  selectedPurchaseIngredientName(): string { return this.ingredients().find(item => item.id === this.purchaseIngredientId())?.name ?? ''; }
+  onPurchaseQuantityChange(value: string): void { const parsed = Number(value); this.purchaseQuantity.set(Number.isFinite(parsed) ? Math.max(0, parsed) : 0); }
+  onPurchaseUnitCostChange(value: string): void { const parsed = Number(value); this.purchaseUnitCost.set(Number.isFinite(parsed) ? Math.max(0, parsed) : 0); }
+
   isLowStock(stock: number, minStock?: number): boolean {
     return minStock !== undefined && minStock !== null && stock <= minStock;
   }
