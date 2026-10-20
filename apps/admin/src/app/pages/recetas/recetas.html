@@ -39,7 +39,7 @@
         <h2 class="group-title">{{ group.category }}</h2>
         <div class="recipes-grid">
           @for (recipe of group.recipes; track recipe.id) {
-            <article class="recipe-card" role="button" tabindex="0" [attr.aria-label]="'Editar ' + recipe.name" (click)="openEditRecipe(recipe)" (keydown.enter)="openEditRecipe(recipe)" (keydown.space)="$event.preventDefault(); openEditRecipe(recipe)">
+            <article class="recipe-card" tabindex="0" [attr.aria-label]="'Editar ' + recipe.name" (click)="openEditRecipe(recipe)" (keydown.enter)="openEditRecipe(recipe)" (keydown.space)="$event.preventDefault(); openEditRecipe(recipe)">
               <div class="card-image-wrapper">
                 <img [src]="getImageUrl(recipe.image)" [alt]="recipe.name" class="recipe-img" loading="lazy" (error)="onImageError($event)" />
                 <span class="yield-badge">{{ recipe.yield }} por lote</span>
