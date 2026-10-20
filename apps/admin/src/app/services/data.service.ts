@@ -111,6 +111,39 @@ export class DataService {
     this.loadViewModels(nextState);
   }
 
+  async saveRecipe(recipe: Recipe): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+    const rawRecipes = this.asArray(state['recipes']);
+    const existingIndex = rawRecipes.findIndex(item => this.asString(item['id']) === recipe.id);
+    const existing = existingIndex >= 0 ? rawRecipes[existingIndex] : {};
+    const flattenedItems = recipe.sections.flatMap(section => section.ingredients.map(item => ({
+      id: item.ingredientId,
+      ingredientId: item.ingredientId,
+      qty: item.quantity,
+      quantity: item.quantity,
+      section: section.name,
+    })));
+    const savedRecord: RawRecord = {
+      ...existing,
+      ...recipe,
+      sections: recipe.sections.map(section => ({
+        name: section.name,
+        ingredients: section.ingredients.map(item => ({ ingredientId: item.ingredientId, quantity: item.quantity })),
+      })),
+      items: flattenedItems,
+    };
+    await this.repository.upsertCollectionRecord('recipes', recipe.id, savedRecord);
+    const nextRecipes = [...rawRecipes];
+    if (existingIndex >= 0) nextRecipes[existingIndex] = savedRecord;
+    else nextRecipes.push(savedRecord);
+    const nextState = { ...state, recipes: nextRecipes };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const state = this.rawState();
     if (!state) {
