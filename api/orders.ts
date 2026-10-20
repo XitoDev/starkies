@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { BOX_PRESENTATIONS, CATALOG_PRODUCTS, DELIVERY_ZONES } from '../apps/catalog/src/app/pages/catalog/catalog.data';
@@ -121,7 +121,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }, { merge: true });
     });
 
-    res.status(201).json({ ok: true, orderId, total: order.total });
+    const documentExpiresAt = now + 7 * 24 * 60 * 60 * 1000;
+    const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
+    res.status(201).json({ ok: true, orderId, total: order.total, documentToken, documentExpiresAt });
   } catch (error) {
     if (error instanceof HttpError) {
       res.status(error.statusCode).json({ message: error.message });
@@ -330,4 +332,25 @@ function todayInEcuador(): string {
   }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
   return values['year'] + '-' + values['month'] + '-' + values['day'];
+}
+
+
+function getDocumentSigningKey(): string {
+  const raw = process.env['FIREBASE_SERVICE_ACCOUNT_JSON'];
+  if (!raw) throw new HttpError(503, 'La configuración de documentos de pedidos no está completa.');
+  try {
+    const account = JSON.parse(raw) as { project_id?: string; private_key?: string };
+    if (account.project_id !== 'starkies' || !account.private_key) {
+      throw new Error('Invalid service account');
+    }
+    return account.private_key;
+  } catch {
+    throw new HttpError(503, 'La configuración de documentos de pedidos no está completa.');
+  }
+}
+
+function createOrderDocumentToken(orderId: string, expiresAt: number, signingKey: string): string {
+  const payload = orderId + '.' + expiresAt;
+  const signature = createHmac('sha256', signingKey).update(payload).digest('hex');
+  return payload + '.' + signature;
 }
