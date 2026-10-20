@@ -1,4 +1,4 @@
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { BOX_PRESENTATIONS } from '../apps/catalog/src/app/pages/catalog/catalog.data';
 
 export interface PublicProduct {
@@ -59,9 +59,11 @@ function numberValue(value: unknown, fallback = 0): number {
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   const recipesRef = db.collection('businesses/starkies/collections/recipes/records');
-  const [recipesSnapshot, zonesSnapshot, metaSnapshot] = await Promise.all([
+  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot] = await Promise.all([
     recipesRef.orderBy('index', 'asc').get(),
     db.doc('businesses/starkies/settings/deliveryZones').get(),
+    db.doc('businesses/starkies/settings/catalogSettings').get(),
+    db.collection('businesses/starkies/collections/deliveryZones/records').orderBy('index', 'asc').get(),
     db.doc('businesses/starkies/system/stateMeta').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
@@ -92,7 +94,10 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     }];
   });
 
-  const zonesValue = zonesSnapshot.data()?.['value'];
+  const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['value']);
+  const zonesValue = zonesSnapshot.data()?.['value']
+    ?? catalogSettings['deliveryZones']
+    ?? legacyZonesSnapshot.docs.map(document => document.data()['value']);
   if (!Array.isArray(zonesValue)) throw new Error('No hay tarifas de entrega configuradas en el negocio.');
   const zones = zonesValue.flatMap((raw, index) => {
     const zone = asRecord(raw);
