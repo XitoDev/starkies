@@ -55,7 +55,7 @@ describe('DataService catalog visibility', () => {
   it('shows a hidden recipe again without changing its other stored fields', async () => {
     service.rawState.update(state => ({
       ...state!,
-      recipes: [{ ...((state!.recipes as Record<string, unknown>[])[0]), catalogVisible: false, catalogLabel: 'Favorita' }],
+      recipes: [{ ...((state!['recipes'] as Record<string, unknown>[])[0]), catalogVisible: false, catalogLabel: 'Favorita' }],
     }));
 
     await service.setRecipeCatalogVisibility('000015', true);
