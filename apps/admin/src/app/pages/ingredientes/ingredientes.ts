@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
 import { DataService } from '../../services/data.service';
 import { Ingredient } from 'shared';
 
@@ -22,7 +23,7 @@ type IngredientForm = {
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatInputModule],
   templateUrl: './ingredientes.html',
   styleUrls: ['./ingredientes.css'],
 })
