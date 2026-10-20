@@ -7,7 +7,7 @@
       <p class="page-subtitle">{{ view() === 'recipes' ? 'Administra tus productos, recetas, costos y precios.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
     </div>
     @if (view() === 'recipes') {
-      <button matButton="elevated" class="btn-primary" type="button" (click)="openNewRecipe()"><span class="plus-sign">＋</span> Nueva receta</button>
+      <button matButton="elevated" class="btn-primary" type="button" (click)="openNewRecipe()"><mat-icon class="plus-sign" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Nueva receta</button>
     }
   </div>
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
@@ -48,7 +48,7 @@
                   <div class="card-menu-popover">
                     <button matButton="text" type="button" (click)="duplicateRecipe(recipe)"><span>▢</span> Duplicar receta</button>
                     <button matButton="text" type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</button>
-                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><span>⌫</span> Eliminar producto</button>
+                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Eliminar producto</button>
                   </div>
                 }
               </div>
@@ -114,8 +114,8 @@
           @if (form().kind === 'base') { <div class="ingredient-group readonly-base"><p>Masa base</p><div class="base-formula-preview">@for (row of selectedBaseIngredients(); track row.name) { <div><span>{{ row.name }}</span><b>{{ row.quantity | number:'1.0-2' }} {{ row.unit }}</b></div> }<small>Calculado para este lote. Se edita desde Masas base.</small></div></div> }
           @else {
             <div class="ingredient-group"><p>Masa</p>
-              @for (row of form().dough; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Ingrediente de masa" [value]="row.ingredientId" (change)="updateIngredient('dough', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('dough', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button matIconButton class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('dough', $index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></div> }
-              <button matButton="elevated" class="add-ingredient-button" type="button" (click)="addIngredient('dough')">＋ Agregar ingrediente</button>
+              @for (row of form().dough; track $index) { <div class="ingredient-row"><span class="drag-handle"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">drag_indicator</mat-icon></span><select aria-label="Ingrediente de masa" [value]="row.ingredientId" (change)="updateIngredient('dough', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('dough', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button matIconButton class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('dough', $index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></div> }
+              <button matButton="elevated" class="add-ingredient-button" type="button" (click)="addIngredient('dough')"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Agregar ingrediente</button>
             </div>
           }
           <div class="ingredient-group"><p>{{ form().kind === 'base' ? 'Añadidos a la masa · por galleta' : 'Añadidos a la masa · por lote' }}</p>
