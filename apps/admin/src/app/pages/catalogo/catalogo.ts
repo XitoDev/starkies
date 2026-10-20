@@ -6,7 +6,7 @@ import { LucideDynamicIcon, LucideStore, LucideSettings, LucideExternalLink, Luc
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
-import { DEFAULT_DELIVERY_ZONES } from '../../../catalog/src/app/pages/catalog/catalog.data';
+import { DEFAULT_DELIVERY_ZONES } from '../../../../../catalog/src/app/pages/catalog/catalog.data';
 
 interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
