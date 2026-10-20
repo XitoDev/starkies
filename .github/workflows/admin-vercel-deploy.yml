@@ -79,7 +79,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: npx vercel build --prod --token="$VERCEL_TOKEN"
+        run: npx vercel build --local-config=vercel.admin.json --prod --token="$VERCEL_TOKEN"
 
       - name: Build Vercel preview artifacts
         if: inputs.target_environment == 'preview'
@@ -87,7 +87,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: npx vercel build --token="$VERCEL_TOKEN"
+        run: npx vercel build --local-config=vercel.admin.json --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
         if: inputs.target_environment == 'production'
@@ -95,7 +95,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: npx vercel deploy --local-config=vercel.admin.json --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Vercel preview
         if: inputs.target_environment == 'preview'
@@ -103,4 +103,4 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-        run: npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+        run: npx vercel deploy --local-config=vercel.admin.json --prebuilt --token="$VERCEL_TOKEN"
