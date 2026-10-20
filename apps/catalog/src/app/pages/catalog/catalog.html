@@ -36,7 +36,7 @@
                 @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
               </div><div class="product-body"><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
                 @if (!product.stock) { <button type="button" disabled>Agotado</button> }
-                @else if (getQuantity(product.id) === 0) { <button type="button" class="add-button" (click)="changeQuantity(product.id, 1)">Agregar +</button> }
+                @else if (getQuantity(product.id) === 0) { <button type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><span class="add-icon" aria-hidden="true">+</span></button> }
                 @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)">−</button><b>{{ getQuantity(product.id) }}</b><button type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)">+</button></div> }
               </div></div></article>
             }
@@ -70,7 +70,7 @@
           <label class="honeypot" aria-hidden="true">No completar este campo<input type="text" [(ngModel)]="orderForm.website" name="website" tabindex="-1" autocomplete="off"></label>
           <label>Número de teléfono<input required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" (blur)="lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567">@if (lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (customerLookupMessage()) { <small class="lookup-message">{{ customerLookupMessage() }}</small> }</label>
           <label>Tu nombre<input required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre"></label>
-          <label>Sector de entrega<select required [(ngModel)]="orderForm.zone" name="zone"><option [ngValue]="null" disabled>Selecciona ubicación</option>@for (z of zones; track z.id) { <option [ngValue]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</option> }</select></label>
+          <label>Sector de entrega<select required [ngModel]="orderForm.zone" (ngModelChange)="setDeliveryZone($event)" name="zone"><option [ngValue]="null" disabled>Selecciona ubicación</option>@for (z of zones; track z.id) { <option [ngValue]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</option> }</select></label>
           <label>Dirección exacta<textarea [required]="orderForm.zone?.id !== '6'" autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></label>
           <label>Fecha de entrega<input type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date"></label>
           <div class="optional-name-toggle"><label for="wantsCookieName"><input id="wantsCookieName" type="checkbox" [ngModel]="wantsCookieName()" (ngModelChange)="wantsCookieName.set($event)" name="wantsCookieName"> ¿Quieres agregar un nombre a la caja?</label></div>
@@ -81,7 +81,7 @@
             @for (box of completedBoxes(); track $index) { <div class="packed-box">
               <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
               <ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ getProductName(key) }}</li> }</ul>
-              <div class="box-actions"><button type="button" (click)="editBox($index)">Editar sabores</button><button type="button" (click)="removeBox($index)">♧ Quitar caja</button></div>
+              <div class="box-actions"><button type="button" (click)="editBox($index)">Editar sabores</button><button type="button" class="remove-box-action" (click)="removeBox($index)"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="m19 6-1 14H6L5 6"></path><path d="M10 10v6M14 10v6"></path></svg> Quitar caja</button></div>
             </div> }
             <button class="add-box-button" type="button" (click)="closeOrderSheet(); showBoxChoiceModal.set(false)">Añadir otra caja</button>
             <div class="cart-row"><span>Valor de las cajas</span><strong>{{ boxesTotalSum() | currency:'USD' }}</strong></div>
