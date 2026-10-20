@@ -70,9 +70,9 @@
                 <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
                 @if (openMenuId() === ingredient.id) {
                   <div class="ingredient-menu">
-                    <button matButton="text" type="button" (click)="openPurchase(ingredient)">＋ Comprar</button>
+                    <button matButton="text" type="button" (click)="openPurchase(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Comprar</button>
                     <button matButton="text" type="button" (click)="openMenuId.set(null); openEditIngredient(ingredient)">✎ Editar</button>
-                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)">⌫ Eliminar</button>
+                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Eliminar</button>
                   </div>
                 }
               </div>
