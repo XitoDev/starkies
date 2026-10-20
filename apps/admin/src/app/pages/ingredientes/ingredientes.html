@@ -53,7 +53,7 @@
     <div class="ingredient-category-tabs" role="group" aria-label="Categorías de ingredientes">
       <button type="button" [class.active]="selectedGroup() === 'Todos'" (click)="selectedGroup.set('Todos')">Todos <span>{{ ingredients().length }}</span></button>
       @for (group of supplyGroups; track group) {
-        <button type="button" [class.active]="selectedGroup() === group" (click)="selectedGroup.set(group)">{{ group }} <span>{{ ingredients().filter(item => (item.supplyGroup ?? 'Secos') === group).length }}</span></button>
+        <button type="button" [class.active]="selectedGroup() === group" (click)="selectedGroup.set(group)">{{ group }} <span>{{ countByGroup(group) }}</span></button>
       }
     </div>
     @if (groupedIngredients().length === 0) {
@@ -180,9 +180,9 @@
         <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">×</button>
       </div>
       <form class="ingredient-form" (submit)="$event.preventDefault(); savePurchase()">
-        <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="ingredients().find(item => item.id === purchaseIngredientId())?.name ?? ''" /></label>
-        <label class="form-field"><span>Cantidad comprada *</span><input required type="number" min="0.001" step="any" [value]="purchaseQuantity()" (input)="purchaseQuantity.set(Math.max(0, Number($any($event.target).value) || 0))" /></label>
-        <label class="form-field"><span>Costo por unidad (USD) *</span><input required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="purchaseUnitCost.set(Math.max(0, Number($any($event.target).value) || 0))" /></label>
+        <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="selectedPurchaseIngredientName()" /></label>
+        <label class="form-field"><span>Cantidad comprada *</span><input required type="number" min="0.001" step="any" [value]="purchaseQuantity()" (input)="onPurchaseQuantityChange($any($event.target).value)" /></label>
+        <label class="form-field"><span>Costo por unidad (USD) *</span><input required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
         <p class="purchase-total form-field-wide">Total de la compra <strong>{{ purchaseQuantity() * purchaseUnitCost() | currency:'USD' }}</strong></p>
         @if (purchaseError()) { <p class="form-error form-field-wide" role="alert">{{ purchaseError() }}</p> }
         <div class="modal-actions form-field-wide"><button class="btn-primary cancel-button" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
