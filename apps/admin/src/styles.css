@@ -17,6 +17,20 @@
   --ds-color-text-muted: #91869b;
   --ds-color-outline: #91869b;
   --ds-color-outline-variant: #eee7f2;
+
+  /* Map Angular Material 3 system tokens to this app's own palette. */
+  --mat-sys-primary: var(--ds-color-primary);
+  --mat-sys-on-primary: var(--ds-color-on-primary);
+  --mat-sys-primary-container: var(--ds-color-primary-container);
+  --mat-sys-on-primary-container: var(--ds-color-on-primary-container);
+  --mat-sys-secondary: var(--ds-color-secondary);
+  --mat-sys-surface: var(--ds-color-surface);
+  --mat-sys-on-surface: var(--ds-color-text);
+  --mat-sys-surface-container: var(--ds-color-surface-container);
+  --mat-sys-surface-container-high: var(--ds-color-surface-container-high);
+  --mat-sys-outline: var(--ds-color-outline);
+  --mat-sys-outline-variant: var(--ds-color-outline-variant);
+
   --sk-ink: var(--ds-color-text);
   --sk-muted: var(--ds-color-text-muted);
   --sk-line: var(--ds-color-outline-variant);
