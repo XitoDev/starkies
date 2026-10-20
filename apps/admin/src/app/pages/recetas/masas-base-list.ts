@@ -26,7 +26,7 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
                 <button matIconButton class="menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + base.name" [attr.aria-expanded]="openMenuId() === base.id" (click)="openMenuId.set(openMenuId() === base.id ? null : base.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
                 @if (openMenuId() === base.id) {
                   <div class="menu">
-                    <button matButton="text" type="button" [disabled]="$index === 0" (click)="move(base, -1)">↑ <span>Subir</span></button>
+                    <button matButton="text" type="button" [disabled]="$index === 0" (click)="move(base, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_upward</mat-icon> <span>Subir</span></button>
                     <button matButton="text" type="button" [disabled]="$index === bases().length - 1" (click)="move(base, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_downward</mat-icon> <span>Bajar</span></button>
                     <button matButton="text" type="button" (click)="edit(base)">✎ <span>Editar</span></button>
                     <button matButton="outlined" type="button" class="danger" (click)="remove(base)">▤ <span>Eliminar</span></button>
