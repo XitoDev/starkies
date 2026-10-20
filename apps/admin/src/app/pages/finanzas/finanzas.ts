@@ -258,6 +258,8 @@ export class Finanzas {
         return Array.isArray(boxLines) ? boxLines : [];
       }) : []);
       let allocated = 0;
+      const banksBeforeOrder = { ...next.bankBalances };
+      const fundsBeforeOrder = Object.fromEntries(Object.entries(next.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'];
       let complete = true;
       for (const rawLine of lines) {
         if (!rawLine || typeof rawLine !== 'object' || Array.isArray(rawLine)) continue;
@@ -291,6 +293,10 @@ export class Finanzas {
       if (complete && lines.length > 0) {
         next.processedOrderIds.push(orderId);
         next.history.unshift({ id: crypto.randomUUID(), description: `Distribución de venta · Pedido ${orderId}`, amount: this.money(allocated), date: String(order['date'] ?? order['createdAt'] ?? this.today()), status: 'Venta distribuida' });
+      } else {
+        next.bankBalances = banksBeforeOrder;
+        next.funds = fundsBeforeOrder;
+        allocated = 0;
       }
     }
     if (next.processedOrderIds.length === current.processedOrderIds.length) return;
