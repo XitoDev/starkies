@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import {
   LucideDynamicIcon,
   LucideDollarSign,
@@ -44,7 +43,7 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideDynamicIcon],
+  imports: [CommonModule, LucideDynamicIcon],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })
