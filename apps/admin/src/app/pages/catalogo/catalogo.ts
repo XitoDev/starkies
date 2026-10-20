@@ -50,6 +50,9 @@ export class Catalogo {
       this.initialized.set(true);
     });
   }
+  categoryCount(category: string): number { return this.recipes().filter(recipe => !recipe.archived && recipe.category === category).length; }
+  labelBackground(color?: string): string { return ({'Morado':'#8056ad','Rosa suave':'#f5d8d1','Crema':'#eee5f2','Arena':'#e9ddd3','Azul':'#4f6f9f','Verde':'#55775f','Coral':'#a65b50','Dorado':'#b58a3e','Ciruela':'#7b5678'} as Record<string,string>)[color ?? 'Morado'] ?? '#8056ad'; }
+  labelForeground(color?: string): string { return ['Morado','Azul','Verde','Coral','Ciruela'].includes(color ?? 'Morado') ? '#fff' : '#51445b'; }
   getImageUrl(imagePath: string | undefined): string { return this.recipeImageService.getImageUrl(imagePath); }
   onImageError(event: Event): void { const image = event.target as HTMLImageElement; if (!image.src.endsWith('/images/recipe-placeholder.svg')) image.src = '/images/recipe-placeholder.svg'; }
   async toggleVisibility(item: Recipe): Promise<void> {
