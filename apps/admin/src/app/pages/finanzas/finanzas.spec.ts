@@ -1,5 +1,6 @@
 import { signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Ingredient } from 'shared';
 import { DataService } from '../../services/data.service';
 import { Finanzas } from './finanzas';
@@ -7,21 +8,25 @@ import { Finanzas } from './finanzas';
 describe('Finanzas', () => {
   let component: Finanzas;
   let fixture: ComponentFixture<Finanzas>;
+  let recordCashMovement: ReturnType<typeof vi.fn>;
+  let recordIngredientPurchase: ReturnType<typeof vi.fn>;
   let dataServiceStub: {
     rawState: WritableSignal<Record<string, unknown> | null>;
     ingredients: WritableSignal<Ingredient[]>;
-    recordCashMovement: jasmine.Spy;
-    recordIngredientPurchase: jasmine.Spy;
+    recordCashMovement: typeof recordCashMovement;
+    recordIngredientPurchase: typeof recordIngredientPurchase;
   };
 
   beforeEach(async () => {
+    recordCashMovement = vi.fn().mockResolvedValue(undefined);
+    recordIngredientPurchase = vi.fn().mockResolvedValue(undefined);
     dataServiceStub = {
       rawState: signal<Record<string, unknown> | null>({ cashMovements: [] }),
       ingredients: signal<Ingredient[]>([
         { id: 'flour', name: 'Harina', unit: 'kg', stock: 4, costPerUnit: 2.5, minStock: 1 },
       ]),
-      recordCashMovement: jasmine.createSpy('recordCashMovement').and.resolveTo(),
-      recordIngredientPurchase: jasmine.createSpy('recordIngredientPurchase').and.resolveTo(),
+      recordCashMovement,
+      recordIngredientPurchase,
     };
 
     await TestBed.configureTestingModule({
@@ -53,7 +58,7 @@ describe('Finanzas', () => {
 
     await component.saveExpense();
 
-    expect(dataServiceStub.recordCashMovement).toHaveBeenCalledWith(jasmine.objectContaining({
+    expect(recordCashMovement).toHaveBeenCalledWith(expect.objectContaining({
       description: 'Electricidad',
       type: 'OUT',
       category: 'gasto',
@@ -69,7 +74,7 @@ describe('Finanzas', () => {
 
     await component.savePurchase();
 
-    expect(dataServiceStub.recordIngredientPurchase).toHaveBeenCalledWith(jasmine.objectContaining({
+    expect(recordIngredientPurchase).toHaveBeenCalledWith(expect.objectContaining({
       ingredientId: 'flour',
       quantity: 2,
       unitCost: 3.5,
@@ -86,7 +91,7 @@ describe('Finanzas', () => {
 
     await component.saveExpense();
 
-    expect(dataServiceStub.recordCashMovement).not.toHaveBeenCalled();
+    expect(recordCashMovement).not.toHaveBeenCalled();
     expect(component.formError()).toContain('descripción');
   });
-}
+});

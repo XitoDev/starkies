@@ -52,6 +52,9 @@ jobs:
       - name: Build admin
         run: npx ng build admin --configuration production
 
+      - name: Test admin
+        run: npx ng test admin --watch=false
+
       - name: Commit refreshed lockfile on feature branches
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feat/')
         run: |
