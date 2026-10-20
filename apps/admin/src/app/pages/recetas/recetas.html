@@ -1,3 +1,4 @@
+@if (!routeEditor()) {
 <div class="page-container">
   <div class="page-heading">
     <div>
@@ -76,6 +77,8 @@
     </div>
   }
 </div>
+
+}
 
 @if (editorOpen()) {
   <div class="recipe-modal-backdrop" [class.route-editor]="routeEditor()" (click)="closeEditor()">
