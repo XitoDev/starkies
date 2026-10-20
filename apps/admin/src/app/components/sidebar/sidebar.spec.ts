@@ -27,11 +27,12 @@ describe('Sidebar', () => {
     await fixture.whenStable();
   });
 
-  it('renders the logout button in place of the private-access text and omits the green indicator', () => {
+  it('offers backup and logout inside the settings menu and omits the old profile section', () => {
     expect(component).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.profile-logout')?.textContent).toContain('Cerrar sesión');
-    expect(fixture.nativeElement.textContent).not.toContain('Acceso privado');
-    expect(fixture.nativeElement.querySelector('.online-indicator')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.settings-trigger')?.textContent).toContain('Configuración');
+    expect(fixture.nativeElement.querySelector('.sidebar-profile')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.business-mark')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.business-external')).not.toBeNull();
   });
 
   it('provides an accessible Material-styled shortcut to the public store', () => {

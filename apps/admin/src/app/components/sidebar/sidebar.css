@@ -22,44 +22,33 @@
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
   min-height: 52px;
   margin-bottom: 27px;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 41px;
-  height: 41px;
-  border-radius: 12px;
-  background: #eee4f7;
-  color: #8056ad;
-  font-size: 25px;
-  line-height: 1;
-}
-
 .brand-name {
   display: flex;
-  align-items: baseline;
-  font-size: 29px;
-  letter-spacing: -1.3px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  color: #5e3769;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 30px;
+  font-style: italic;
   font-weight: 800;
+  letter-spacing: -1.4px;
   line-height: 1;
-  color: #2b2433;
 }
 
-.brand-name strong {
-  color: #8056ad;
-  font-weight: 800;
-}
-
-.brand-name sup {
-  font-size: 10px;
-  margin-left: 2px;
-  top: -1em;
-  position: relative;
-  letter-spacing: 0;
+.brand-tagline {
+  padding-left: 1px;
+  color: #5e3769;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 2.4px;
+  white-space: nowrap;
 }
 
 .business-card {
@@ -92,37 +81,12 @@
   outline-offset: 3px;
 }
 
-.business-card .business-mark {
-  flex: 0 0 36px;
-}
-
-.business-mark mat-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-}
-
 .business-external {
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
-  margin-left: auto;
   color: #8f7ba1;
   font-size: 18px;
-}
-
-.business-mark,
-.profile-mark {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: #f4eee3;
-  color: #997548;
-  font-weight: 800;
-  font-size: 15px;
 }
 
 .business-copy,
@@ -163,6 +127,11 @@
   flex-direction: column;
   gap: 5px;
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {
@@ -213,90 +182,55 @@
 }
 
 .sidebar-bottom {
-  margin-top: 20px;
-}
-
-.btn-backup {
-  width: 100%;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 10px;
-  background: transparent;
-  color: #8f8497;
-  border: 0;
-  border-radius: 8px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.btn-backup:hover {
-  background: #faf7fc;
-  color: #7951a5;
-}
-
-.btn-icon {
-  width: 17px;
-  height: 17px;
-  font-size: 17px;
-}
-
-.sidebar-profile {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding-top: 18px;
-  margin-top: 10px;
+  flex: 0 0 auto;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid #eee8f2;
 }
 
-.profile-mark {
-  background: #eee4f7;
-  color: #8056ad;
-}
-
-.profile-copy {
-  flex: 1;
-}
-
-.profile-logout {
-  display: inline-flex;
+.settings-trigger {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
   align-items: center;
-  align-self: flex-start;
-  gap: 5px;
-  padding: 0;
+  gap: 11px;
+  padding: 0 12px;
   border: 0;
+  border-radius: 10px;
   background: transparent;
   color: #8056ad;
   font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.settings-trigger:hover {
+  background: #f5eef9;
+}
+
+.settings-trigger > mat-icon:first-child {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.settings-trigger span {
+  flex: 1;
+}
+
+.settings-chevron {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #93879d;
+}
+
+.settings-error {
+  max-width: 250px;
+  padding: 8px 16px;
+  color: #a23b43;
   font-size: 11px;
   line-height: 1.4;
-  cursor: pointer;
-}
-
-.profile-logout:hover:not(:disabled) {
-  color: #704795;
-  text-decoration: underline;
-}
-
-.profile-logout:focus-visible {
-  outline: 2px solid #bba0d1;
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-
-.profile-logout:disabled {
-  cursor: progress;
-  opacity: .65;
-}
-
-.profile-logout-error {
-  color: #a23b43 !important;
-  font-size: 10px !important;
-  line-height: 1.4 !important;
 }
 
 @media (max-width: 760px) {
@@ -313,13 +247,12 @@
 
   .sidebar-brand { margin-bottom: 25px; }
   .brand-name,
-  .business-copy,
   .nav-caption,
   .nav-label,
   .nav-badge,
   .business-copy,
-  .sidebar-profile,
-  .btn-backup span { display: none; }
+  .settings-trigger span,
+  .settings-chevron { display: none; }
 
   .business-card {
     width: 44px;
@@ -331,20 +264,16 @@
     border-radius: 12px;
   }
 
-  .business-card .business-mark {
-    flex-basis: 22px;
-    width: 22px;
-    height: 22px;
-    background: transparent;
-    color: #8056ad;
+  .business-card {
+    justify-content: center;
   }
 
-  .business-mark mat-icon { font-size: 22px; }
-  .business-external { display: none; }
+  .business-external { display: block; }
 
   .sidebar-nav { width: 100%; }
   .nav-item { justify-content: center; padding: 0; }
   .nav-icon { flex-basis: 22px; width: 22px; height: 22px; }
-  .sidebar-bottom { width: 100%; }
-  .btn-backup { justify-content: center; padding: 0; }
+  .sidebar-bottom { width: 100%; padding-top: 10px; }
+  .settings-trigger { justify-content: center; padding: 0; }
+  .settings-trigger > mat-icon:first-child { margin: 0; }
 }
