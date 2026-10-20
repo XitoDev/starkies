@@ -34,9 +34,19 @@
       <div class="profile-mark">S</div>
       <div class="profile-copy">
         <strong>StarKies</strong>
-        <span>Acceso privado</span>
+        <button
+          type="button"
+          class="profile-logout"
+          [disabled]="loggingOut()"
+          (click)="logout()"
+        >
+          <span aria-hidden="true">↪</span>
+          {{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+        </button>
+        @if (logoutMessage()) {
+          <span class="profile-logout-error" role="status" aria-live="polite">{{ logoutMessage() }}</span>
+        }
       </div>
-      <span class="online-indicator" aria-label="Sesión activa"></span>
     </div>
   </div>
 </aside>
