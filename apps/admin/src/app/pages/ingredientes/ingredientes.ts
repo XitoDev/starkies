@@ -209,14 +209,12 @@ export class Ingredientes {
     const quantity = this.purchaseQuantity();
     const unitCost = this.purchaseUnitCost();
     if (!ingredient) { this.purchaseError.set('No se encontró el ingrediente. Actualiza la pantalla e inténtalo de nuevo.'); return; }
-    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) { this.purchaseError.set('Ingresa una cantidad mayor que cero y un costo válido.'); return; }
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost <= 0) { this.purchaseError.set('Ingresa una cantidad y un costo por unidad mayores que cero.'); return; }
     this.purchaseSaving.set(true);
     this.purchaseError.set('');
     const amount = Math.round(quantity * unitCost * 100) / 100;
-    const newStock = ingredient.stock + quantity;
-    const newCost = newStock > 0 ? ((ingredient.stock * ingredient.costPerUnit) + amount) / newStock : unitCost;
     try {
-      await this.dataService.saveIngredient({ ...ingredient, stock: newStock, costPerUnit: newCost });
+      // The repository transaction updates stock, weighted-average cost and cash movement atomically.
       await this.dataService.recordIngredientPurchase({
         id: crypto.randomUUID(), date: new Date().toISOString().slice(0, 10),
         description: `Compra de ${ingredient.name}`, type: 'OUT', amount,
