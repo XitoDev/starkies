@@ -2,6 +2,8 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { CashMovement } from 'shared';
 import { DataService } from '../../services/data.service';
 
@@ -35,7 +37,7 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 @Component({
   selector: 'app-finanzas',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: './finanzas.html',
   styleUrls: ['./finanzas.css']
 })

@@ -2,6 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { DataService } from '../../services/data.service';
 import { Ingredient, Recipe } from 'shared';
 
@@ -25,7 +27,7 @@ type IngredientRequirement = {
 @Component({
   selector: 'app-produccion',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: './produccion.html',
   styleUrls: ['./produccion.css'],
 })
