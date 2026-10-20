@@ -33,10 +33,10 @@ jobs:
         env:
           TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
           CONFIRM_PRODUCTION: ${{ inputs.confirm_production }}
-          GITHUB_REF: ${{ github.ref }}
+          SELECTED_REF: ${{ github.ref }}
         run: |
           if [ "$TARGET_ENVIRONMENT" = "production" ]; then
-            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            if [ "$SELECTED_REF" != "refs/heads/main" ]; then
               echo "::error::Production deployments can only run from main."
               exit 1
             fi
