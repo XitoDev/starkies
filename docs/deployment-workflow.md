@@ -11,7 +11,7 @@ Los workflows de Vercel son manuales: no despliegan al hacer push. Antes de invo
 5. En el Catálogo, verifica que el HTML prerenderizado contiene canonical y contenido esperado, y comprueba los tipos de la API de pedidos.
 6. Solo si todos los checks pasan, ejecuta `vercel pull`, `vercel build` y finalmente `vercel deploy`.
 
-La producción solo se puede desplegar desde `main` y requiere escribir exactamente `DEPLOY` en el campo de confirmación. El despliegue Preview no publica en el dominio de producción.
+La producción solo se puede desplegar desde `main`. No hay que escribir una segunda confirmación: basta con elegir `production` en el selector del workflow. El valor predeterminado es `preview`, para reducir el riesgo de publicar por accidente.
 
 Los workflows CI de Admin y Catálogo corren en PRs y pushes a `main`, pero no despliegan ni modifican el lockfile. Un fallo de compilación/pruebas no consume un despliegue de Vercel.
 
@@ -25,6 +25,18 @@ El workflow de GitHub no puede detener por sí solo el despliegue automático co
 4. Guarda y repite para el otro proyecto.
 
 A partir de entonces, usa **GitHub → Actions → Deploy Admin to Vercel** o **Deploy Public Catalog to Vercel → Run workflow** para lanzar un despliegue explícito. Los despliegues ejecutados por CLI desde estos workflows no dependen de la integración automática Git. Comprueba la configuración en ambos proyectos antes de asumir que los pushes ya no consumen cuota.
+
+## Cuándo usar Preview y cuándo producción
+
+No se despliega Preview automáticamente por cada cambio. El flujo recomendado para alguien que no programa es:
+
+1. Yo hago los cambios y ejecuto los checks de CI/compilación primero; eso no crea un deployment de Vercel.
+2. Si los checks pasan, se puede revisar localmente durante el desarrollo.
+3. Cuando la versión esté lista para que otra persona la vea en una URL compartible, ejecutar **Deploy Admin to Vercel** o **Deploy Public Catalog to Vercel** con destino `preview`. Hazlo una vez por conjunto de cambios, no por cada ajuste.
+4. La persona revisa el enlace de Preview y da el visto bueno.
+5. Solo tras ese visto bueno, ejecutar el workflow con destino `production` desde `main`.
+
+Preview consume cuota de despliegue igual que una publicación; no debe usarse como vista previa continua. Para cambios pequeños de texto/estilo, acumularlos y generar una sola Preview cuando el conjunto esté listo. Para cambios internos sin impacto visual, normalmente bastan CI y build local.
 
 ## Ver cambios localmente, sin desplegar
 
