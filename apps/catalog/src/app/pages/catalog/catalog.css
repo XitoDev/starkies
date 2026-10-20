@@ -56,7 +56,7 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .category-groups { display:grid; gap:40px; }
 .category-title { margin:0 0 20px; color:#68416f; font:italic 700 26px/1.2 'Playfair Display',Georgia,serif; }
 .products { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; }
-.product { min-width:0; display:flex; flex-direction:column; overflow:hidden; border:1px solid #cdb7d0; border-radius:24px; background:rgba(230,211,232,.84); box-shadow:0 8px 24px #4b31530a; }
+.product { min-width:0; display:flex; flex-direction:column; overflow:hidden; border:1px solid #cdb7d0; border-radius:24px; background:rgba(230,211,232,.84); }
 .photo { position:relative; display:grid; place-items:center; overflow:hidden; aspect-ratio:1/.76; margin:0; background:#eadbd3; }
 .photo img { display:block; width:100%; height:100%; object-fit:contain; mix-blend-mode:multiply; }
 .product-tag { position:absolute; top:8px; left:8px; z-index:2; max-width:calc(100% - 16px); padding:5px 9px; color:#786b7c; border-radius:15px; background:#fff; font-size:10px; font-weight:700; }
