@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +10,7 @@ import { Order } from 'shared';
 @Component({
   selector: 'app-pedido-ruta',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DatePipe, FormsModule, RouterLink],
+  imports: [CommonModule, CurrencyPipe, DatePipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
   template: `
     @if (order(); as item) {
       <section class="order-page">
@@ -22,14 +24,14 @@ import { Order } from 'shared';
           <div class="summary"><div><span>Cliente</span><strong>{{ customerName() }}</strong><small>{{ customer()?.phone || 'Sin teléfono' }}</small><small>{{ customer()?.address || 'Sin dirección registrada' }}</small></div><div><span>Entrega</span><strong>{{ item.deliveryDate ? (item.deliveryDate | date:'d MMM y') : 'Por confirmar' }}</strong><small>Sector: {{ item.zone || 'Por confirmar' }}</small><small>Estado: {{ statusLabel(item.status) }}</small></div></div>
           @if (item.notes) { <div class="notes"><span>Notas del pedido</span><p>{{ item.notes }}</p></div> }
           <section class="lines"><header><strong>Productos del pedido</strong><span>{{ item.items.length }} líneas</span></header>@for(line of item.items;track line.recipeId + '-' + $index){<div class="line"><div><strong>{{ line.name || recipeName(line.recipeId) }}</strong><small>{{ line.quantity }} × {{ line.unitPrice | currency:'USD' }}</small></div><b>{{ line.quantity * line.unitPrice | currency:'USD' }}</b></div>}<div class="total"><span>Total del pedido</span><strong>{{ item.total | currency:'USD' }}</strong></div></section>
-          <footer class="actions"><a class="secondary" routerLink="/pedidos">Volver</a><a class="primary" [routerLink]="['/pedidos', item.id, 'editar']">Editar pedido</a><button class="danger" type="button" (click)="remove()">Eliminar pedido</button></footer>
+          <footer class="actions"><a class="secondary" routerLink="/pedidos">Volver</a><a class="primary" [routerLink]="['/pedidos', item.id, 'editar']">Editar pedido</a><button matButton="text" class="danger" type="button" (click)="remove()">Eliminar pedido</button></footer>
         } @else {
           <form (ngSubmit)="save()">
             <label>Fecha de entrega<input type="date" [(ngModel)]="deliveryDate" name="deliveryDate"></label>
             <label>Sector de entrega<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Ej. Kennedy, Norte o Retiro en tienda"></label>
             <label>Notas adicionales<textarea rows="4" maxlength="1000" [(ngModel)]="notes" name="notes"></textarea></label>
             <div class="readonly-total"><span>Total actual · los productos no se modifican desde este formulario</span><strong>{{ item.total | currency:'USD' }}</strong></div>
-            <footer class="actions"><a class="secondary" [routerLink]="['/pedidos', item.id]">Cancelar</a><button class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar pedido' }}</button></footer>
+            <footer class="actions"><a class="secondary" [routerLink]="['/pedidos', item.id]">Cancelar</a><button matButton="text" class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar pedido' }}</button></footer>
           </form>
         }
       </section>
