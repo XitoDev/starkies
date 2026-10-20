@@ -67,7 +67,7 @@
             <article class="ingredient-card">
               <div class="ingredient-card-top">
                 <div class="ingredient-avatar"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
-                <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)">⋮</button>
+                <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
                 @if (openMenuId() === ingredient.id) {
                   <div class="ingredient-menu">
                     <button matButton="text" type="button" (click)="openPurchase(ingredient)">＋ Comprar</button>
@@ -104,7 +104,7 @@
           <h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2>
           <p>Los cambios se guardarán en Firebase.</p>
         </div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
 
       <form class="ingredient-form" (submit)="submitForm($event)">
@@ -177,7 +177,7 @@
     <section class="ingredient-modal" role="dialog" aria-modal="true" aria-labelledby="purchase-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">
         <div><p class="eyebrow">Inventario / Compras</p><h2 id="purchase-title">Registrar compra</h2><p>El stock y el costo promedio se actualizarán al guardar.</p></div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">×</button>
+        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form class="ingredient-form" (submit)="$event.preventDefault(); savePurchase()">
         <label class="form-field form-field-wide"><span>Ingrediente</span><input readonly [value]="selectedPurchaseIngredientName()" /></label>
