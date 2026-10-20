@@ -453,3 +453,29 @@
   .card-image-wrapper { height: 245px; }
   .view-tabs button { padding: 0 13px; }
 }
+
+/* Route editor keeps the app navigation and breadcrumb while replacing only page content. */
+.recipe-modal-backdrop.route-editor {
+  position: static;
+  z-index: auto;
+  display: block;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+.recipe-modal.route-editor {
+  width: 100%;
+  max-width: 1080px;
+  max-height: none;
+  margin: 0 auto;
+  overflow: visible;
+  border: 1px solid #eee7f2;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgb(48 38 58 / 4%);
+}
+.recipe-modal.route-editor .recipe-modal-header {
+  position: static;
+}
+.recipe-modal.route-editor .recipe-modal-close {
+  background: #f6f0fa;
+}
