@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -77,6 +78,72 @@ export class FirestoreBusinessRepository {
     }));
 
     return state;
+  }
+
+  /**
+   * Upserts one record inside an imported business collection while preserving
+   * the original numeric order. Deleted records may leave index gaps; this is
+   * intentional because loadState orders by index and does not require gaps to
+   * be compacted.
+   */
+  async upsertCollectionRecord(
+    collectionKey: string,
+    recordId: string,
+    value: Record<string, unknown>,
+  ): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    const recordsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', collectionKey, 'records',
+    );
+    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
+    const matching = snapshot.docs.find((record) => {
+      const storedValue = record.data()['value'];
+      return this.isRecord(storedValue)
+        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
+    });
+
+    if (matching) {
+      const index = Number(matching.data()['index'] ?? 0);
+      await setDoc(matching.ref, { index, value });
+      return;
+    }
+
+    const maxIndex = snapshot.docs.reduce(
+      (max, record) => Math.max(max, Number(record.data()['index'] ?? -1)),
+      -1,
+    );
+    const nextIndex = maxIndex + 1;
+    await setDoc(doc(recordsRef, String(nextIndex).padStart(6, '0')), {
+      index: nextIndex,
+      value,
+    });
+  }
+
+  async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    const recordsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', collectionKey, 'records',
+    );
+    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
+    const matching = snapshot.docs.find((record) => {
+      const storedValue = record.data()['value'];
+      return this.isRecord(storedValue)
+        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
+    });
+
+    if (!matching) {
+      throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    await deleteDoc(matching.ref);
   }
 
   async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {

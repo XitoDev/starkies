@@ -50,6 +50,67 @@ export class DataService {
     }
   }
 
+  async saveIngredient(ingredient: Ingredient): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const currentIngredients = this.asArray(state['ingredients']);
+    const existingIndex = currentIngredients.findIndex(
+      (item) => this.asString(item['id']) === ingredient.id,
+    );
+    const existing = existingIndex >= 0 ? currentIngredients[existingIndex] : {};
+    const savedRecord: RawRecord = { ...existing, ...ingredient };
+
+    await this.repository.upsertCollectionRecord('ingredients', ingredient.id, savedRecord);
+
+    const nextIngredients = [...currentIngredients];
+    if (existingIndex >= 0) {
+      nextIngredients[existingIndex] = savedRecord;
+    } else {
+      nextIngredients.push(savedRecord);
+    }
+
+    const nextState = { ...state, ingredients: nextIngredients };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async deleteIngredient(ingredientId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) {
+      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+
+    const rawRecipes = this.asArray(state['recipes']);
+    const isUsedByRecipe = rawRecipes.some((recipe) => {
+      const items = this.asArray(recipe['items']);
+      const sections = this.asArray(recipe['sections']);
+      const usedInItems = items.some(
+        (item) => this.asString(item['id'] ?? item['ingredientId']) === ingredientId,
+      );
+      const usedInSections = sections.some((section) =>
+        this.asArray(section['ingredients']).some(
+          (item) => this.asString(item['ingredientId'] ?? item['id']) === ingredientId,
+        ),
+      );
+      return usedInItems || usedInSections;
+    });
+
+    if (isUsedByRecipe) {
+      throw new Error('Este insumo está utilizado en una receta. No se puede eliminar mientras exista esa relación.');
+    }
+
+    await this.repository.deleteCollectionRecord('ingredients', ingredientId);
+    const nextIngredients = this.asArray(state['ingredients']).filter(
+      (item) => this.asString(item['id']) !== ingredientId,
+    );
+    const nextState = { ...state, ingredients: nextIngredients };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
   exportBackup(): void {
     const state = this.rawState();
     if (!state) {
