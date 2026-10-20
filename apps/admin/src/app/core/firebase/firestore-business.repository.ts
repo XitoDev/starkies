@@ -153,11 +153,21 @@ export class FirestoreBusinessRepository {
     if (!this.firebase.isConfigured) {
       throw new Error('Firebase no está configurado.');
     }
+    const metadataRef = this.stateMetaRef();
+    const metadataSnapshot = await getDoc(metadataRef);
+    if (!metadataSnapshot.exists() || metadataSnapshot.data()['status'] !== 'complete') {
+      throw new Error('La migración de StarKies no está completa. No se guardó la configuración.');
+    }
+    const metadata = metadataSnapshot.data() as StateMetadata;
     await setDoc(
       doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
       { value },
       { merge: true },
     );
+    await setDoc(metadataRef, {
+      settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
+      stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
+    }, { merge: true });
   }
 
   /**
