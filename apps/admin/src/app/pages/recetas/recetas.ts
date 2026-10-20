@@ -96,42 +96,51 @@ export class Recetas {
     const form = this.form();
     const grams = form.gramsPerCookie ?? 0;
     if (grams <= 0) return this.editingRecipe()?.yield ?? 1;
-    const baseWeight = form.kind === 'base' ? Number(this.selectedBase()?.weight ?? 0) : this.rowMass(form.dough);
-    const addedWeight = this.rowMass(form.additions) + this.rowMass(form.filling);
-    const result = Math.floor((baseWeight + addedWeight) / grams);
-    return Math.max(1, result || 1);
+    const batchMass = form.kind === 'base'
+      ? Number(this.selectedBase()?.weight ?? 0)
+      : this.rowMass(form.dough) + this.rowMass(form.additions) + this.rowMass(form.filling);
+    return Math.max(1, Math.floor(batchMass / grams) || 1);
   });
   readonly unitCost = computed(() => {
     const form = this.form();
-    const rows = [...form.dough, ...form.additions, ...form.filling];
-    let total = rows.reduce((sum, row) => {
+    const costForRows = (rows: IngredientRow[]) => rows.reduce((sum, row) => {
       const ingredient = this.ingredients().find(item => item.id === row.ingredientId);
       return sum + (ingredient ? Number(row.quantity ?? 0) * ingredient.costPerUnit : 0);
     }, 0);
     if (form.kind === 'base') {
-      total += this.selectedBaseIngredients().reduce((sum, row) => {
+      const base = this.selectedBase();
+      const baseTotal = this.selectedBaseIngredients().reduce((sum, row) => {
         const ingredient = this.ingredients().find(item => item.name === row.name);
         return sum + (ingredient ? row.quantity * ingredient.costPerUnit : 0);
       }, 0);
+      const baseCostPerCookie = base && Number(base.weight) > 0
+        ? baseTotal * Number(form.gramsPerCookie ?? 0) / Number(base.weight)
+        : 0;
+      return baseCostPerCookie + costForRows(form.additions) + costForRows(form.filling);
     }
-    return total / Math.max(1, this.batchYield());
+    return (costForRows(form.dough) + costForRows(form.additions) + costForRows(form.filling)) / Math.max(1, this.batchYield());
   });
   readonly currentRecipeCost = (recipe: Recipe): number => {
-    const yieldCount = Math.max(1, recipe.yield);
-    let total = recipe.sections.reduce((sum, section) => sum + section.ingredients.reduce((sectionSum, row) => {
+    const costForRows = (rows: { ingredientId: string; quantity: number }[]) => rows.reduce((sum, row) => {
       const ingredient = this.ingredients().find(item => item.id === row.ingredientId);
-      return sectionSum + (ingredient ? ingredient.costPerUnit * row.quantity : 0);
-    }, 0), 0);
+      return sum + (ingredient ? ingredient.costPerUnit * row.quantity : 0);
+    }, 0);
     if (recipe.baseId) {
       const base = this.doughBases().find(item => item.id === recipe.baseId);
-      const rows = base?.ingredients ?? base?.items ?? [];
-      total += rows.reduce((sum, row) => {
+      const baseRows = base?.ingredients ?? base?.items ?? [];
+      const baseTotal = baseRows.reduce((sum, row) => {
         const id = String(row.ingredientId ?? row.id ?? '');
         const ingredient = this.ingredients().find(item => item.id === id || item.name === row.name);
         return sum + (ingredient ? ingredient.costPerUnit * Number(row.quantity ?? row.qty ?? 0) : 0);
       }, 0);
+      const baseCostPerCookie = Number(base?.weight ?? 0) > 0
+        ? baseTotal * Number(recipe.baseGramsPerCookie ?? 0) / Number(base?.weight)
+        : 0;
+      const additionsCost = recipe.sections.filter(section => section.name.toLocaleLowerCase('es') !== 'masa')
+        .reduce((sum, section) => sum + costForRows(section.ingredients), 0);
+      return baseCostPerCookie + additionsCost;
     }
-    return total / yieldCount;
+    return recipe.sections.reduce((sum, section) => sum + costForRows(section.ingredients), 0) / Math.max(1, recipe.yield);
   };
 
   setView(view: 'recipes' | 'bases'): void { this.view.set(view); }
