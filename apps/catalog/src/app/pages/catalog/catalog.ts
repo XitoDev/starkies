@@ -10,7 +10,7 @@ export class Catalog {
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>(CATALOG_PRODUCTS.map(product => ({ ...product })));
   readonly zones = DELIVERY_ZONES;
-  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[0]);
+  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[2]);
   readonly currentBoxItems = signal<{ [productId: string]: number }>({});
   readonly completedBoxes = signal<PackedBox[]>([]);
   readonly searchQuery = signal('');
