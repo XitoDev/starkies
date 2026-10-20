@@ -3,13 +3,15 @@ import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
-import { BOX_PRESENTATIONS, CATALOG_PRODUCTS, DELIVERY_ZONES } from './catalog.data';
+import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   readonly presentations = BOX_PRESENTATIONS;
-  readonly products = signal<Product[]>(CATALOG_PRODUCTS.map(product => ({ ...product })));
-  readonly zones = DELIVERY_ZONES;
+  readonly products = signal<Product[]>([]);
+  zones: DeliveryZone[] = [];
+  readonly catalogLoading = signal(true);
+  readonly catalogLoadError = signal('');
   readonly selectedPresentation = signal<BoxPresentation>(this.presentations[2]);
   readonly currentBoxItems = signal<{ [productId: string]: number }>({});
   readonly completedBoxes = signal<PackedBox[]>([]);
@@ -73,6 +75,36 @@ export class Catalog {
     meta.updateTag({ property: 'og:description', content: 'Combina tus sabores favoritos en cajas de galletas clásicas y New York. Pedidos en Guayaquil y sectores cercanos.' });
     meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
     meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    void this.loadCatalog();
+  }
+  private async loadCatalog(): Promise<void> {
+    this.catalogLoading.set(true);
+    this.catalogLoadError.set('');
+    try {
+      const response = await fetch('/api/catalog', { headers: { Accept: 'application/json' } });
+      const result: unknown = await response.json().catch(() => null);
+      const record = this.asRecord(result);
+      if (!response.ok) throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos cargar el catálogo.');
+      if (!Array.isArray(record['products']) || !Array.isArray(record['zones'])) {
+        throw new Error('La respuesta del catálogo no tiene un formato válido.');
+      }
+      const products = record['products'].filter((value): value is Product => {
+        const item = this.asRecord(value);
+        return typeof item['id'] === 'string' && typeof item['name'] === 'string'
+          && typeof item['price'] === 'number' && typeof item['isNy'] === 'boolean';
+      });
+      const zones = record['zones'].filter((value): value is DeliveryZone => {
+        const item = this.asRecord(value);
+        return typeof item['id'] === 'string' && typeof item['name'] === 'string' && typeof item['fee'] === 'number';
+      });
+      if (!products.length || !zones.length) throw new Error('Todavía no hay productos o tarifas publicables en el negocio.');
+      this.products.set(products);
+      this.zones = zones;
+    } catch (error) {
+      this.catalogLoadError.set(error instanceof Error ? error.message : 'No pudimos cargar el catálogo.');
+    } finally {
+      this.catalogLoading.set(false);
+    }
   }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
   selectPresentation(presentation: BoxPresentation): void { this.selectedPresentation.set(presentation); this.currentBoxItems.set({}); }
