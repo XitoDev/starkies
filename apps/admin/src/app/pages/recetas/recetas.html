@@ -7,19 +7,19 @@
       <p class="page-subtitle">{{ view() === 'recipes' ? 'Administra tus productos, recetas, costos y precios.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
     </div>
     @if (view() === 'recipes') {
-      <button class="btn-primary" type="button" (click)="openNewRecipe()"><span class="plus-sign">＋</span> Nueva receta</button>
+      <button matButton="elevated" class="btn-primary" type="button" (click)="openNewRecipe()"><span class="plus-sign">＋</span> Nueva receta</button>
     }
   </div>
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
   <div class="view-and-status-row">
     <div class="view-tabs" role="tablist" aria-label="Tipo de receta">
-      <button type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Productos</button>
-      <button type="button" role="tab" [attr.aria-selected]="view() === 'bases'" [class.active]="view() === 'bases'" (click)="setView('bases')">Masas base</button>
+      <button matButton="text" type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Productos</button>
+      <button matButton="text" type="button" role="tab" [attr.aria-selected]="view() === 'bases'" [class.active]="view() === 'bases'" (click)="setView('bases')">Masas base</button>
     </div>
     @if (view() === 'recipes') {
       <div class="archive-tabs" role="group" aria-label="Estado de las recetas">
-        <button type="button" [class.active]="!showArchived()" (click)="setArchiveState(false)">Activas ({{ activeCount() }})</button>
-        <button type="button" [class.active]="showArchived()" (click)="setArchiveState(true)">▱ Archivadas ({{ archivedCount() }})</button>
+        <button matButton="text" type="button" [class.active]="!showArchived()" (click)="setArchiveState(false)">Activas ({{ activeCount() }})</button>
+        <button matButton="text" type="button" [class.active]="showArchived()" (click)="setArchiveState(true)">▱ Archivadas ({{ archivedCount() }})</button>
       </div>
     }
   </div>
@@ -43,12 +43,12 @@
               <div class="card-image-wrapper">
                 <img [src]="getImageUrl(recipe.image)" [alt]="recipe.name" class="recipe-img" loading="lazy" (error)="onImageError($event)" />
                 <span class="yield-badge">{{ recipe.yield }} por lote</span>
-                <button class="card-menu-button" type="button" [attr.aria-label]="'Opciones de ' + recipe.name" [attr.aria-expanded]="openMenuId() === recipe.id" (click)="openMenuId.set(openMenuId() === recipe.id ? null : recipe.id)">⋮</button>
+                <button matIconButton class="card-menu-button" type="button" [attr.aria-label]="'Opciones de ' + recipe.name" [attr.aria-expanded]="openMenuId() === recipe.id" (click)="openMenuId.set(openMenuId() === recipe.id ? null : recipe.id)">⋮</button>
                 @if (openMenuId() === recipe.id) {
                   <div class="card-menu-popover">
-                    <button type="button" (click)="duplicateRecipe(recipe)"><span>▢</span> Duplicar receta</button>
-                    <button type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</button>
-                    <button class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><span>⌫</span> Eliminar producto</button>
+                    <button matButton="text" type="button" (click)="duplicateRecipe(recipe)"><span>▢</span> Duplicar receta</button>
+                    <button matButton="text" type="button" (click)="archiveRecipe(recipe)"><span>▱</span> {{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</button>
+                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="deleteRecipe(recipe)"><span>⌫</span> Eliminar producto</button>
                   </div>
                 }
               </div>
@@ -62,7 +62,7 @@
                 </div>
                 <div class="profit-line"><span>Ganancia / unidad</span><strong [class.negative]="recipe.price < currentRecipeCost(recipe)">{{ (recipe.price - currentRecipeCost(recipe)) | currency:'USD' }}</strong></div>
                 <p class="margin-line">Margen sobre venta: {{ recipe.price > 0 ? (((recipe.price - currentRecipeCost(recipe)) / recipe.price) * 100 | number:'1.0-1') : '0' }} %</p>
-                <button class="view-edit-button" type="button" (click)="openEditRecipe(recipe)">Ver y editar <span>↗</span></button>
+                <button matButton="elevated" class="view-edit-button" type="button" (click)="openEditRecipe(recipe)">Ver y editar <span>↗</span></button>
               </div>
             </article>
           }
@@ -81,7 +81,7 @@
     <section class="recipe-modal" [class.route-editor]="routeEditor()" [attr.role]="routeEditor() ? null : 'dialog'" [attr.aria-modal]="routeEditor() ? null : 'true'" aria-labelledby="recipe-modal-title" (click)="$event.stopPropagation()">
       <header class="recipe-modal-header">
         <div><p class="eyebrow">Starkies / Mi negocio</p><h2 id="recipe-modal-title">{{ editingId() ? 'Editar receta' : 'Nueva receta' }}</h2></div>
-        <button class="recipe-modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeEditor()">×</button>
+        <button matIconButton class="recipe-modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeEditor()">×</button>
       </header>
       <form class="recipe-form" (submit)="$event.preventDefault(); saveRecipe()">
         <div class="photo-upload-panel">
@@ -91,7 +91,7 @@
           </div>
           <div class="photo-controls">
             <label class="photo-select-button">{{ selectedFile() ? 'Cambiar foto' : (imagePreview() ? 'Cambiar foto' : 'Agregar foto') }}<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPhotoSelected($event)" /></label>
-            @if (imagePreview()) { <button type="button" class="remove-photo-button" (click)="removePhoto()">Quitar foto</button> }
+            @if (imagePreview()) { <button matIconButton type="button" class="remove-photo-button" (click)="removePhoto()">Quitar foto</button> }
           </div>
         </div>
         <div class="recipe-form-grid">
@@ -114,23 +114,23 @@
           @if (form().kind === 'base') { <div class="ingredient-group readonly-base"><p>Masa base</p><div class="base-formula-preview">@for (row of selectedBaseIngredients(); track row.name) { <div><span>{{ row.name }}</span><b>{{ row.quantity | number:'1.0-2' }} {{ row.unit }}</b></div> }<small>Calculado para este lote. Se edita desde Masas base.</small></div></div> }
           @else {
             <div class="ingredient-group"><p>Masa</p>
-              @for (row of form().dough; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Ingrediente de masa" [value]="row.ingredientId" (change)="updateIngredient('dough', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('dough', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('dough', $index)">×</button></div> }
-              <button class="add-ingredient-button" type="button" (click)="addIngredient('dough')">＋ Agregar ingrediente</button>
+              @for (row of form().dough; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Ingrediente de masa" [value]="row.ingredientId" (change)="updateIngredient('dough', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('dough', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button matIconButton class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('dough', $index)">×</button></div> }
+              <button matButton="elevated" class="add-ingredient-button" type="button" (click)="addIngredient('dough')">＋ Agregar ingrediente</button>
             </div>
           }
           <div class="ingredient-group"><p>{{ form().kind === 'base' ? 'Añadidos a la masa · por galleta' : 'Añadidos a la masa · por lote' }}</p>
-            @for (row of form().additions; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Ingrediente añadido" [value]="row.ingredientId" (change)="updateIngredient('additions', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('additions', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('additions', $index)">×</button></div> }
-            <button class="add-ingredient-button" type="button" (click)="addIngredient('additions')">＋ Agregar ingrediente</button>
+            @for (row of form().additions; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Ingrediente añadido" [value]="row.ingredientId" (change)="updateIngredient('additions', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('additions', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button matIconButton class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('additions', $index)">×</button></div> }
+            <button matButton="elevated" class="add-ingredient-button" type="button" (click)="addIngredient('additions')">＋ Agregar ingrediente</button>
           </div>
           <div class="ingredient-group"><p>Relleno y decoración · por galleta</p>
-            @for (row of form().filling; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Relleno o decoración" [value]="row.ingredientId" (change)="updateIngredient('filling', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('filling', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('filling', $index)">×</button></div> }
-            <button class="add-ingredient-button" type="button" (click)="addIngredient('filling')">＋ Agregar ingrediente</button>
+            @for (row of form().filling; track $index) { <div class="ingredient-row"><span class="drag-handle">⠿</span><select aria-label="Relleno o decoración" [value]="row.ingredientId" (change)="updateIngredient('filling', $index, 'ingredientId', $any($event.target).value)"><option value="">Selecciona ingrediente</option>@for (ingredient of ingredients(); track ingredient.id) { <option [value]="ingredient.id">{{ ingredient.name }} ({{ ingredient.unit }})</option> }</select><input aria-label="Cantidad" type="number" min="0.001" step="any" [value]="row.quantity ?? ''" (input)="updateIngredient('filling', $index, 'quantity', $any($event.target).value)" placeholder="Cantidad" /><button matIconButton class="row-remove" type="button" aria-label="Quitar ingrediente" (click)="removeIngredient('filling', $index)">×</button></div> }
+            <button matButton="elevated" class="add-ingredient-button" type="button" (click)="addIngredient('filling')">＋ Agregar ingrediente</button>
           </div>
           <div class="recipe-cost-summary"><span>Rendimiento estimado</span><strong>{{ batchYield() }} por lote</strong><span>Costo estimado por unidad</span><strong>{{ unitCost() | currency:'USD' }}</strong></div>
         </section>
         <label class="recipe-field notes-field"><span>Notas de la receta · opcional</span><textarea rows="4" maxlength="1500" [value]="form().notes" (input)="setFormText('notes', $any($event.target).value)" placeholder="Ej. Usar solo una parte de las yemas o reservar un poco de masa para la decoración."></textarea></label>
         @if (formError()) { <p class="recipe-form-error" role="alert">{{ formError() }}</p> }
-        <footer class="recipe-form-footer"><button class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar ✓' }}</button></footer>
+        <footer class="recipe-form-footer"><button matButton="outlined" class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar ✓' }}</button></footer>
       </form>
     </section>
   </div>
