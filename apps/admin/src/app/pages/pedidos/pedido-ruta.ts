@@ -17,7 +17,7 @@ import { Order } from 'shared';
         <p class="eyebrow">Starkies / Mi negocio / Pedidos</p>
         <header class="heading">
           <div><h1>{{ editing() ? 'Editar pedido' : 'Detalle del pedido' }}</h1><p>{{ customerName() }} · Pedido #{{ item.id }}</p></div>
-          <a class="close" routerLink="/pedidos" aria-label="Volver a pedidos">×</a>
+          <a class="close" routerLink="/pedidos" aria-label="Volver a pedidos"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_back</mat-icon></a>
         </header>
         @if (error()) { <p class="message error">{{ error() }}</p> }
         @if (!editing()) {
