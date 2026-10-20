@@ -14,6 +14,8 @@
     <div class="section-title"><div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación para cada antojo. Tú eliges los sabores.</p></div>
       <label class="search-field"><span class="visually-hidden">Buscar un sabor</span><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Buscar un sabor…"></label>
     </div>
+    @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
+    @if (catalogLoadError()) { <p role="alert" class="catalog-instruction">{{ catalogLoadError() }}</p> }
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id) {
         <button type="button" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
