@@ -19,6 +19,10 @@ export class Catalog {
   readonly savingOrder = signal(false);
   readonly orderError = signal('');
   readonly orderSuccess = signal<OrderConfirmation | null>(null);
+  readonly customerLookupMessage = signal('');
+  readonly lookingUpCustomer = signal(false);
+  readonly editingBoxIndex = signal<number | null>(null);
+  readonly wantsCookieName = signal(false);
   orderForm = this.emptyOrderForm();
   readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
   readonly filteredProducts = computed(() => {
@@ -68,8 +72,59 @@ export class Catalog {
   }
   finishBox(): void {
     if (!this.isBoxComplete()) return;
-    this.completedBoxes.update(previous => [...previous, { presentation: this.selectedPresentation(), items: { ...this.currentBoxItems() } }]);
+    const box = { presentation: this.selectedPresentation(), items: { ...this.currentBoxItems() } };
+    const editingIndex = this.editingBoxIndex();
+    if (editingIndex !== null) {
+      this.completedBoxes.update(previous => previous.map((item, index) => index === editingIndex ? box : item));
+      this.editingBoxIndex.set(null);
+    } else {
+      this.completedBoxes.update(previous => [...previous, box]);
+    }
     this.currentBoxItems.set({}); this.showBoxChoiceModal.set(true); this.orderError.set(''); this.orderSuccess.set(null);
+  }
+  editBox(index: number): void {
+    const box = this.completedBoxes()[index];
+    if (!box) return;
+    const availableItems = Object.fromEntries(Object.entries(box.items).filter(([id]) => this.products().some(product => product.id === id && product.stock)));
+    this.selectedPresentation.set(box.presentation);
+    this.currentBoxItems.set(availableItems);
+    this.editingBoxIndex.set(index);
+    this.showOrderSheetModal.set(false);
+    this.orderError.set('');
+    document.getElementById('sabores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  removeBox(index: number): void {
+    this.completedBoxes.update(previous => previous.filter((_, current) => current !== index));
+  }
+  boxHasUnavailableItems(box: PackedBox): boolean {
+    return Object.keys(box.items).some(id => !this.products().some(product => product.id === id && product.stock));
+  }
+  async lookupCustomerByPhone(): Promise<void> {
+    const phone = this.orderForm.phone.trim();
+    if (phone.replace(/\\D/g, '').length < 7) { this.customerLookupMessage.set(''); return; }
+    this.lookingUpCustomer.set(true);
+    this.customerLookupMessage.set('');
+    try {
+      const response = await fetch('/api/customer-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const result: unknown = await response.json().catch(() => null);
+      const record = this.asRecord(result);
+      if (!response.ok) throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos consultar los datos del cliente.');
+      if (record['found'] === true) {
+        if (typeof record['name'] === 'string' && !this.orderForm.name.trim()) this.orderForm.name = record['name'];
+        if (typeof record['address'] === 'string' && !this.orderForm.address.trim()) this.orderForm.address = record['address'];
+        this.customerLookupMessage.set('Encontramos tus datos; revisa que estén actualizados.');
+      } else {
+        this.customerLookupMessage.set('No encontramos un cliente con ese teléfono. Completa tus datos para registrarlo.');
+      }
+    } catch {
+      this.customerLookupMessage.set('No pudimos consultar datos guardados. Puedes completar el formulario normalmente.');
+    } finally {
+      this.lookingUpCustomer.set(false);
+    }
   }
   openOrderSheet(): void { this.showBoxChoiceModal.set(false); this.orderError.set(''); this.showOrderSheetModal.set(true); }
   closeOrderSheet(): void { if (this.savingOrder()) return; this.showOrderSheetModal.set(false); this.orderError.set(''); }
@@ -87,7 +142,7 @@ export class Catalog {
     this.savingOrder.set(true); this.orderError.set('');
     const payload = {
       name: this.orderForm.name.trim(), phone: this.orderForm.phone.trim(), zoneId: this.orderForm.zone.id,
-      address: this.orderForm.address.trim(), deliveryDate: this.orderForm.date, cookieName: this.orderForm.cookieName.trim(),
+      address: this.orderForm.address.trim(), deliveryDate: this.orderForm.date, cookieName: this.wantsCookieName() ? this.orderForm.cookieName.trim() : '',
       notes: this.orderForm.notes.trim(), website: this.orderForm.website,
       boxes: this.completedBoxes().map(box => ({ presentationId: box.presentation.id, items: { ...box.items } })),
     };
@@ -122,6 +177,6 @@ export class Catalog {
     message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2) + '\n🛵 *Envío:* $' + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
     return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
   }
-  private emptyOrderForm() { return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' }; }
+  private emptyOrderForm() { this.wantsCookieName.set(false); this.customerLookupMessage.set(''); return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' }; }
   private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 }
