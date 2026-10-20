@@ -92,6 +92,9 @@
           <p class="eyebrow">Detalle del pedido</p>
           <h2 id="order-modal-title">Pedido #{{ order.id }}</h2>
           <p>{{ order.createdAt ? (order.createdAt | date:'medium') : 'Fecha no registrada' }}</p>
+          @if (order.deliveryDate) {
+            <p class="delivery-date">Entrega solicitada: {{ order.deliveryDate | date:'mediumDate' }}</p>
+          }
         </div>
         <button class="modal-close" type="button" aria-label="Cerrar detalle" [disabled]="savingStatus()" (click)="closeOrderDetails()">×</button>
       </div>
@@ -102,6 +105,12 @@
           <strong>{{ getCustomerName(order.customerId) }}</strong>
           <small><svg [lucideIcon]="icons.Phone"></svg>{{ selectedCustomer()?.phone || 'Teléfono no registrado' }}</small>
           <small><svg [lucideIcon]="icons.MapPin"></svg>{{ selectedCustomer()?.address || 'Dirección no registrada' }}</small>
+          @if (order.zone) {
+            <small><svg [lucideIcon]="icons.MapPin"></svg>Sector: {{ order.zone }}</small>
+          }
+          @if (order.cookieName) {
+            <small>Nombre en caja: {{ order.cookieName }}</small>
+          }
         </article>
         <article class="detail-card">
           <span class="detail-label">Estado actual</span>
@@ -116,6 +125,13 @@
         </article>
       </div>
 
+      @if (order.notes) {
+        <section class="detail-card customer-notes">
+          <span class="detail-label">Notas del cliente</span>
+          <p>{{ order.notes }}</p>
+        </section>
+      }
+
       <section class="order-lines">
         <div class="order-lines-heading">
           <strong>Productos del pedido</strong>
@@ -124,7 +140,7 @@
         @for (item of order.items; track item.recipeId + '-' + $index) {
           <div class="order-line">
             <div class="order-line-main">
-              <strong>{{ getRecipeName(item.recipeId) }}</strong>
+              <strong>{{ getLineName(item) }}</strong>
               <span>{{ item.quantity }} × {{ item.unitPrice | currency:'USD' }}</span>
             </div>
             <strong class="line-total">{{ getLineTotal(item) | currency:'USD' }}</strong>
