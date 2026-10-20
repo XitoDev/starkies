@@ -123,3 +123,20 @@ main { padding-bottom:170px; position:relative; z-index:1; }
   .fulfillment-option strong { font-size:12px; }
   .fulfillment-option small { font-size:10px; }
 }
+
+/* Social footer: use the public catalog's StarKies design tokens. */
+.site-footer { gap:10px; margin-top:34px; padding:42px 24px 28px; color:var(--muted); }
+.footer-star { color:var(--purple); font-size:25px; width:25px; height:25px; }
+.footer-wordmark { font-size:30px; }
+.footer-tagline { margin:0; color:var(--muted); font-size:13px; }
+.footer-social { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.footer-social-link { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:0 16px; border:1px solid var(--line); border-radius:999px; color:var(--purple); background:rgba(255,255,255,.65); font-size:12px; font-weight:700; text-decoration:none; transition:background .18s,border-color .18s,transform .18s; }
+.footer-social-link:hover { border-color:var(--purple); background:#fff; transform:translateY(-1px); }
+.footer-social-link mat-icon { width:18px; height:18px; font-size:18px; }
+.footer-copyright { margin-top:12px; color:var(--muted); font-size:10px; text-align:center; }
+@media (max-width:480px) {
+  .footer-social { width:100%; gap:8px; }
+  .footer-social-link { flex:1 1 calc(50% - 8px); padding:0 10px; }
+  .footer-social-link:last-child { flex-grow:0; min-width:120px; }
+  .site-footer { margin-bottom:130px; padding-inline:16px; }
+}
