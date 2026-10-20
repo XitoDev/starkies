@@ -4,7 +4,6 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { LucideDynamicIcon, LucideStore, LucideSettings, LucideExternalLink, LucideEye, LucideEyeOff, LucidePencil, LucideSave, LucideSend } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
@@ -14,14 +13,13 @@ interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, LucideDynamicIcon, MatButtonModule, MatIconModule],
+  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
 export class Catalogo {
   private readonly dataService = inject(DataService);
   private readonly recipeImageService = inject(RecipeImageService);
-  readonly icons = { Store: LucideStore, Settings: LucideSettings, ExternalLink: LucideExternalLink, Eye: LucideEye, EyeOff: LucideEyeOff, Pencil: LucidePencil, Save: LucideSave, Send: LucideSend };
   readonly recipes = this.dataService.recipes;
   readonly categoryFilter = signal('Todos');
   readonly showHidden = signal(false);
