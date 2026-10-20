@@ -34,7 +34,6 @@ import { Topbar } from './components/topbar/topbar';
     .main-wrapper {
       flex: 1;
       min-width: 0;
-      margin-left: 270px;
       display: flex;
       flex-direction: column;
     }
@@ -46,7 +45,6 @@ import { Topbar } from './components/topbar/topbar';
     }
 
     @media (max-width: 760px) {
-      .main-wrapper { margin-left: 72px; }
       .content-area { padding: 26px 18px; }
     }
   `]
