@@ -117,15 +117,15 @@ export class Recetas {
    */
   private readonly imageFilesById: Record<string, string> = {
     '6539b2bd-5e58-4485-8ff9-b625d1aa6147': 'recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg', // Brownie Classic
-    '202edec5-9b83-4e9b-a466-c32bd1a05d44': 'recipe-image.jpg', // Avena Classic
-    '85e499f3-37c9-4701-bf89-5176007ce546': 'recipe-image.png', // Sunny Carrot
-    '02885ca5-c58c-48a7-b116-cd614290c697': 'recipe-image (1).png', // Chips Stars
-    'f126ae46-9eee-4ac2-8cff-d2f954d708e9': 'recipe-image (2).png', // Velvet Kiss
-    '5cbf3e5f-edb0-490b-b544-8741ba6cffe7': 'recipe-image (3).png', // Cinna Moon
-    '99e32e0c-61fb-41b1-8018-fa18ef655750': 'recipe-image (4).png', // Nuti Dream
-    '0794f338-588b-460d-b002-ee4e614826c9': 'recipe-image (5).png', // Lemon Glow
-    '5954e0af-d58c-40ce-a79d-cbcff10c7b78': 'recipe-image (6).png', // Brownie Bliss
-    'e9005152-d579-444f-905f-a06a5ad3d74b': 'recipe-image (1).jpg', // Canela Classic
+    '202edec5-9b83-4e9b-a466-c32bd1a05d44': 'recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg', // Avena Classic
+    '85e499f3-37c9-4701-bf89-5176007ce546': 'recipe-85e499f3-37c9-4701-bf89-5176007ce546.png', // Sunny Carrot
+    '02885ca5-c58c-48a7-b116-cd614290c697': 'recipe-02885ca5-c58c-48a7-b116-cd614290c697.png', // Chips Stars
+    'f126ae46-9eee-4ac2-8cff-d2f954d708e9': 'recipe-f126ae46-9eee-4ac2-8cff-d2f954d708e9.png', // Velvet Kiss
+    '5cbf3e5f-edb0-490b-b544-8741ba6cffe7': 'recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png', // Cinna Moon
+    '99e32e0c-61fb-41b1-8018-fa18ef655750': 'recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png', // Nuti Dream
+    '0794f338-588b-460d-b002-ee4e614826c9': 'recipe-0794f338-588b-460d-b002-ee4e614826c9.png', // Lemon Glow
+    '5954e0af-d58c-40ce-a79d-cbcff10c7b78': 'recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png', // Brownie Bliss
+    'e9005152-d579-444f-905f-a06a5ad3d74b': 'recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg', // Canela Classic
   };
 
   getImageUrl(imagePath: string | undefined): string {
@@ -136,7 +136,7 @@ export class Recetas {
       const fileName = imageId ? this.imageFilesById[imageId] : undefined;
 
       if (fileName) {
-        return `https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/${encodeURIComponent(fileName)}`;
+        return `https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/${encodeURIComponent(fileName)}`;
       }
 
       // Archived recipes not yet present in the downloaded image set still use the source URL.
