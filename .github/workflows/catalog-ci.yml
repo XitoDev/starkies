@@ -58,6 +58,17 @@ jobs:
       - name: Build catalog with static prerendering
         run: npx ng build catalog --configuration production
 
+      - name: Verify prerendered catalog HTML for search engines
+        run: |
+          HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+          if [ -z "$HTML_FILE" ]; then
+            echo "::error::No prerendered index.html was produced."
+            exit 1
+          fi
+          grep -qi 'rel="canonical"' "$HTML_FILE"
+          grep -qi 'Sunny Carrot' "$HTML_FILE"
+          echo "Verified canonical metadata and rendered catalog content in $HTML_FILE"
+
       - name: Test catalog
         run: npx ng test catalog --watch=false
 
