@@ -15,6 +15,7 @@ interface ApiResponse {
 interface CustomerRecord {
   id?: unknown;
   name?: unknown;
+  customer?: unknown;
   phone?: unknown;
   address?: unknown;
 }
