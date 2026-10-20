@@ -15,3 +15,34 @@ export const DEFAULT_DELIVERY_ZONES: DeliveryZone[] = [
   { id: 'daule-samborondon', name: 'Daule/Samborondón', fee: 5.99 },
   { id: 'retiro', name: 'Retiro en tienda', fee: 0 },
 ];
+
+
+/**
+ * New cookies lead, the best seller follows, then the remaining cookies are
+ * ordered from lowest sales to highest to give slower sellers more visibility.
+ */
+export function rankCatalogProducts<T extends { id: string; tag?: string }>(
+  products: T[],
+  salesCounts: ReadonlyMap<string, number>,
+): T[] {
+  const label = (product: T) => (product.tag ?? '').trim().toLocaleLowerCase('es');
+  const isNew = (product: T) => label(product) === 'nuevo';
+  const previousBestSeller = (product: T) => label(product) === 'más vendida';
+  const bestSeller = products.filter(product => !isNew(product)).reduce<T | null>((best, product) => {
+    const sold = salesCounts.get(product.id) ?? 0;
+    return sold > 0 && (!best || sold > (salesCounts.get(best.id) ?? 0)) ? product : best;
+  }, null);
+  return products.map((product, index) => {
+    const tag = isNew(product) ? 'Nuevo'
+      : bestSeller?.id === product.id ? 'Más vendida'
+      : previousBestSeller(product) ? undefined : product.tag;
+    return { product: { ...product, tag }, index };
+  }).sort((a, b) => {
+    const aNew = isNew(a.product), bNew = isNew(b.product);
+    if (aNew !== bNew) return aNew ? -1 : 1;
+    const aBest = bestSeller?.id === a.product.id, bBest = bestSeller?.id === b.product.id;
+    if (aBest !== bBest) return aBest ? -1 : 1;
+    const salesDifference = (salesCounts.get(a.product.id) ?? 0) - (salesCounts.get(b.product.id) ?? 0);
+    return salesDifference || a.index - b.index;
+  }).map(item => item.product);
+}

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { Catalog } from './catalog';
-import { BOX_PRESENTATIONS } from './catalog.data';
+import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
 import { DeliveryZone, Product } from './catalog.models';
 
 const TEST_PRODUCTS: Product[] = [
@@ -46,6 +46,22 @@ describe('Catalog', () => {
     expect(component.products().length).toBe(13);
     expect(component.presentations).toEqual(BOX_PRESENTATIONS);
     expect(component.zones).toEqual(TEST_ZONES);
+  });
+
+  it('places new cookies first, the best seller second, and least-sold cookies before the second best seller', () => {
+    const products = [
+      { id: 'top', tag: undefined },
+      { id: 'second', tag: undefined },
+      { id: 'least', tag: undefined },
+      { id: 'middle', tag: undefined },
+      { id: 'new', tag: 'Nuevo' },
+    ];
+    const ranked = rankCatalogProducts(products, new Map([
+      ['top', 100], ['second', 80], ['middle', 20], ['least', 2],
+    ]));
+    expect(ranked.map(product => product.id)).toEqual(['new', 'top', 'least', 'middle', 'second']);
+    expect(ranked[0].tag).toBe('Nuevo');
+    expect(ranked[1].tag).toBe('Más vendida');
   });
 
   it('filters products by name and description', () => {

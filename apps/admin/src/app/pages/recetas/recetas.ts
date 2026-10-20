@@ -261,12 +261,14 @@ export class Recetas {
     if (sections.some(section => section.ingredients.some(row => !Number.isFinite(row.quantity) || row.quantity <= 0))) { this.formError.set('Revisa las cantidades de los ingredientes.'); return; }
     this.saving.set(true); this.formError.set('');
     try {
+      const isNewRecipe = !this.editingId();
       const id = this.editingId() ?? crypto.randomUUID();
       const image = await this.uploadPhoto(id);
       const recipe: Recipe & { notes?: string } = {
         ...(this.editingRecipe() ?? {} as Recipe),
         id, name, category, yield: this.batchYield(), price: Math.max(0, Number(form.price ?? 0)),
-        image: image || undefined, archived: this.editingRecipe()?.archived ?? false,
+        image: image || undefined, ...(isNewRecipe ? { catalogLabel: 'Nuevo' } : {}),
+        archived: this.editingRecipe()?.archived ?? false,
         baseId: form.kind === 'base' ? form.baseId : undefined,
         baseGramsPerCookie: form.gramsPerCookie ?? undefined, sections, notes: form.notes.trim() || undefined,
       };

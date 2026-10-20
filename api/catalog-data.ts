@@ -1,6 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 // Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
-import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
+import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES, rankCatalogProducts } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
 
 export interface PublicProduct {
   id: string;
@@ -60,12 +60,13 @@ function numberValue(value: unknown, fallback = 0): number {
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   const recipesRef = db.collection('businesses/starkies/collections/recipes/records');
-  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot] = await Promise.all([
+  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, ordersSnapshot] = await Promise.all([
     recipesRef.orderBy('index', 'asc').get(),
     db.doc('businesses/starkies/settings/deliveryZones').get(),
     db.doc('businesses/starkies/settings/catalogSettings').get(),
     db.collection('businesses/starkies/collections/deliveryZones/records').orderBy('index', 'asc').get(),
     db.doc('businesses/starkies/system/stateMeta').get(),
+    db.collection('businesses/starkies/collections/orders/records').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
@@ -95,6 +96,47 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     }];
   });
 
+  const salesCounts = new Map<string, number>();
+  for (const orderDocument of ordersSnapshot.docs) {
+    const order = asRecord(orderDocument.data()['value']);
+    if (stringValue(order['status']).toUpperCase() !== 'DELIVERED') continue;
+    const lines = Array.isArray(order['lines']) ? order['lines'] : [];
+    const validLines = lines.map(raw => asRecord(raw)).map(line => ({
+      id: stringValue(line['id'] ?? line['productId']),
+      quantity: numberValue(line['qty'] ?? line['quantity'], 0),
+    })).filter(line => line.id && line.id !== 'shipping' && line.quantity > 0);
+    if (validLines.length) {
+      for (const line of validLines) salesCounts.set(line.id, (salesCounts.get(line.id) ?? 0) + line.quantity);
+      continue;
+    }
+    const boxes = Array.isArray(order['boxes']) ? order['boxes'] : [];
+    let countedBoxItems = false;
+    for (const rawBox of boxes) {
+      const box = asRecord(rawBox);
+      const items = Array.isArray(box['items']) ? box['items'] : [];
+      for (const rawItem of items) {
+        const item = asRecord(rawItem);
+        const id = stringValue(item['id'] ?? item['productId']);
+        const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
+        if (id && id !== 'shipping' && quantity > 0) {
+          salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
+          countedBoxItems = true;
+        }
+      }
+    }
+    if (countedBoxItems) continue;
+    const legacyItems = Array.isArray(order['items']) ? order['items'] : [];
+    for (const rawItem of legacyItems) {
+      const item = asRecord(rawItem);
+      const id = stringValue(item['recipeId'] ?? item['id'] ?? item['productId']);
+      const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
+      if (id && id !== 'shipping' && quantity > 0) {
+        salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
+      }
+    }
+  }
+  const rankedProducts = rankCatalogProducts(products, salesCounts);
+
   const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['value']);
   // An empty settings array must not mask valid legacy/catalog settings.
   const zoneCandidates: unknown[] = [
@@ -115,7 +157,7 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     zones.push(...DEFAULT_DELIVERY_ZONES);
   }
 
-  return { products, zones, presentations: BOX_PRESENTATIONS };
+  return { products: rankedProducts, zones, presentations: BOX_PRESENTATIONS };
 }
 
 /**
