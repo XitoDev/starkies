@@ -22,6 +22,10 @@
               {
                 "glob": "**/*",
                 "input": "apps/admin/public"
+              },
+              {
+                "glob": "starkies-icon.svg",
+                "input": "libs/shared/src/lib/design-system/assets"
               }
             ],
             "styles": [
@@ -112,6 +116,10 @@
               {
                 "glob": "**/*",
                 "input": "apps/catalog/public"
+              },
+              {
+                "glob": "starkies-icon.svg",
+                "input": "libs/shared/src/lib/design-system/assets"
               }
             ],
             "styles": [
