@@ -8,7 +8,7 @@
   }
   <section class="hero" id="inicio-contenido" aria-labelledby="hero-title">
     <div class="hero-copy"><h1 id="hero-title">La estrella<br><em>eres tú.</em></h1><p>Elige tus sabores favoritos y crea una caja muy tuya.</p></div>
-    <div class="hero-art" aria-hidden="true"><div class="hero-orbit"></div><span class="hero-star">✦</span><span class="hero-cookie hero-cookie-one"></span><span class="hero-cookie hero-cookie-two"></span><span class="hero-cookie hero-cookie-three"></span><span class="hero-caption">hecho con cariño</span></div>
+    <div class="hero-art" aria-hidden="true"><div class="hero-orbit"></div><span class="hero-star hero-star-one">✧</span><span class="hero-star hero-star-two">✧</span><img class="hero-sketch" src="/starkies-sketch.webp" alt="" width="900" height="420" fetchpriority="high"></div>
   </section>
   <section id="sabores" aria-labelledby="box-title">
     <div class="section-title"><div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación para cada antojo. Tú eliges los sabores.</p></div>
@@ -22,14 +22,14 @@
         </button>
       }
     </div>
-    <p class="availability-note">Una caja guardada tiene un sabor agotado o no disponible. En Ver pedido, usa Editar sabores para cambiarlo.</p>
+  
     <p class="catalog-instruction">Completa una caja, guárdala en tu pedido y añade otra si te apetece. Puedes combinar distintas presentaciones.</p>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
         <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title">{{ cat }}</h3><div class="products">
           @for (product of filteredProducts(); track product.id) {
             @if (product.category === cat) {
-              <article class="product" [class.sold-out]="!product.stock"><div class="photo" [class.photo-ny]="product.isNy" [class.photo-sold-out]="!product.stock">
+              <article class="product" [class.sold-out]="!product.stock"><div class="photo" [class.photo-sold-out]="!product.stock">
                 @if (product.image) { <img [ngSrc]="product.image" [alt]="product.name" width="320" height="320" [priority]="product.id === '1' || product.id === '6'"> }
                 @else { <span class="cookie-illustration" [class.cookie-ny]="product.isNy" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span> }
                 @if (product.tag && product.stock) { <span class="product-tag">{{ product.tag }}</span> }
@@ -58,17 +58,43 @@
 </div></aside>
 @if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }
 @if (showOrderSheetModal()) {
-<div class="modal-backdrop"><section class="order-sheet" role="dialog" aria-modal="true" aria-labelledby="order-sheet-title"><div class="sheet-panel"><div class="sheet-heading"><h2 id="order-sheet-title">Tu pedido</h2><button type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()">✕</button></div>
-<form (ngSubmit)="submitOrder()"><label class="honeypot" aria-hidden="true">No completar este campo<input type="text" [(ngModel)]="orderForm.website" name="website" tabindex="-1" autocomplete="off"></label>
-<label>Número de teléfono<input required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" name="phone" placeholder="Ej. 0991234567"></label>
-<label>Tu nombre<input required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre"></label>
-<label>Sector de entrega<select required [(ngModel)]="orderForm.zone" name="zone"><option [ngValue]="null" disabled>Selecciona ubicación</option>@for (z of zones; track z.id) { <option [ngValue]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</option> }</select></label>
-<label>Dirección exacta<textarea [required]="orderForm.zone?.id !== '6'" autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></label>
-<label>Fecha de entrega<input type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date"></label>
-<label>Nombre en la caja<input type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Para etiquetar la caja"></label>
-<label>Notas (opcional)<textarea [(ngModel)]="orderForm.notes" name="notes" rows="2" maxlength="500" placeholder="Indicaciones adicionales para tu pedido"></textarea></label>
-<div class="summary"><h3>Resumen</h3>@for (box of completedBoxes(); track $index) { <div class="packed-box"><strong>{{ box.presentation.name }} ({{ box.presentation.price | currency:'USD' }})</strong><ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }}x {{ getProductName(key) }}</li> }</ul></div> }<div class="cart-row total"><span>Total a pagar</span><strong>{{ grandTotal() | currency:'USD' }}</strong></div></div>
-@if (orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ orderError() }}</p><a class="button whatsapp-fallback" [href]="getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
-<button type="submit" class="button full" [disabled]="savingOrder()">{{ savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
-</form></div></section></div>
+<div class="modal-backdrop order-backdrop" [class.closing]="isOrderSheetClosing()" (click)="onOrderBackdropClick($event)">
+  <section class="order-sheet" [class.closing]="isOrderSheetClosing()" role="dialog" aria-modal="true" aria-labelledby="order-sheet-title" (click)="$event.stopPropagation()">
+    <div class="sheet-panel">
+      <div class="sheet-heading">
+        <h2 id="order-sheet-title">Tu pedido</h2>
+        <button type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="savingOrder()" (click)="closeOrderSheet()">✕</button>
+      </div>
+      <form (ngSubmit)="submitOrder()">
+        <div class="sheet-body">
+          <label class="honeypot" aria-hidden="true">No completar este campo<input type="text" [(ngModel)]="orderForm.website" name="website" tabindex="-1" autocomplete="off"></label>
+          <label>Número de teléfono<input required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="orderForm.phone" (blur)="lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567">@if (lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (customerLookupMessage()) { <small class="lookup-message">{{ customerLookupMessage() }}</small> }</label>
+          <label>Tu nombre<input required type="text" autocomplete="name" maxlength="80" [(ngModel)]="orderForm.name" name="name" placeholder="Tu nombre"></label>
+          <label>Sector de entrega<select required [(ngModel)]="orderForm.zone" name="zone"><option [ngValue]="null" disabled>Selecciona ubicación</option>@for (z of zones; track z.id) { <option [ngValue]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</option> }</select></label>
+          <label>Dirección exacta<textarea [required]="orderForm.zone?.id !== '6'" autocomplete="street-address" maxlength="250" [(ngModel)]="orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></label>
+          <label>Fecha de entrega<input type="date" required [min]="today()" [(ngModel)]="orderForm.date" name="date"></label>
+          <div class="optional-name-toggle"><label for="wantsCookieName"><input id="wantsCookieName" type="checkbox" [ngModel]="wantsCookieName()" (ngModelChange)="wantsCookieName.set($event)" name="wantsCookieName"> ¿Quieres agregar un nombre a la caja?</label></div>
+          @if (wantsCookieName()) { <label>Nombre en la caja<input type="text" maxlength="80" [(ngModel)]="orderForm.cookieName" name="cookieName" placeholder="Si lo dejas vacío, usaremos tu nombre"></label> }
+          <label>Notas adicionales<textarea [(ngModel)]="orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></label>
+          <div class="summary"><h3>Resumen de tu pedido</h3>
+            @if (hasUnavailableBox()) { <p class="summary-warning">Hay un sabor agotado o no disponible. Usa Editar sabores en la caja correspondiente antes de confirmar.</p> }
+            @for (box of completedBoxes(); track $index) { <div class="packed-box">
+              <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
+              <ul>@for (key of getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ getProductName(key) }}</li> }</ul>
+              <div class="box-actions"><button type="button" (click)="editBox($index)">Editar sabores</button><button type="button" (click)="removeBox($index)">♧ Quitar caja</button></div>
+            </div> }
+            <button class="add-box-button" type="button" (click)="closeOrderSheet(); showBoxChoiceModal.set(false)">Añadir otra caja</button>
+            <div class="cart-row"><span>Valor de las cajas</span><strong>{{ boxesTotalSum() | currency:'USD' }}</strong></div>
+            <div class="cart-row"><span>Envío</span><strong>{{ orderForm.zone ? (shippingFee() | currency:'USD') : 'Por confirmar' }}</strong></div>
+          </div>
+          @if (orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ orderError() }}</p><a class="button whatsapp-fallback" [href]="getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
+        </div>
+        <div class="sheet-footer">
+          <div class="sheet-total"><span>{{ orderForm.zone ? 'Total estimado' : 'Subtotal sin envío' }}</span><strong>{{ grandTotal() | currency:'USD' }}</strong></div>
+          <button type="submit" class="button full" [disabled]="savingOrder() || hasUnavailableBox()">{{ savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
 }
