@@ -1,4 +1,6 @@
 import { MatIconModule } from '@angular/material/icon';
+import { MatBottomSheet, MatBottomSheetModule, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { CatalogOrderSheetComponent } from './catalog-order-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -11,7 +13,7 @@ import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
 import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
-@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
+@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatBottomSheetModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
@@ -23,8 +25,8 @@ export class Catalog {
   readonly completedBoxes = signal<PackedBox[]>([]);
   readonly searchQuery = signal('');
   readonly showBoxChoiceModal = signal(false);
-  readonly showOrderSheetModal = signal(false);
-  readonly isOrderSheetClosing = signal(false);
+  private readonly bottomSheet = inject(MatBottomSheet);
+  private orderSheetRef: MatBottomSheetRef<CatalogOrderSheetComponent> | null = null;
   readonly savingOrder = signal(false);
   readonly orderError = signal('');
   readonly orderSuccess = signal<OrderConfirmation | null>(null);
@@ -167,7 +169,8 @@ export class Catalog {
     this.selectedPresentation.set(box.presentation);
     this.currentBoxItems.set(availableItems);
     this.editingBoxIndex.set(index);
-    this.showOrderSheetModal.set(false);
+    this.orderSheetRef?.dismiss();
+    this.orderSheetRef = null;
     this.orderError.set('');
     document.getElementById('sabores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -207,20 +210,26 @@ export class Catalog {
   openOrderSheet(): void {
     this.showBoxChoiceModal.set(false);
     this.orderError.set('');
-    this.isOrderSheetClosing.set(false);
-    this.showOrderSheetModal.set(true);
+    if (this.orderSheetRef) return;
+    this.orderSheetRef = this.bottomSheet.open(CatalogOrderSheetComponent, {
+      data: { catalog: this },
+      panelClass: 'catalog-order-bottom-sheet',
+      ariaLabel: 'Tu pedido',
+      disableClose: true,
+    });
+    this.orderSheetRef.backdropClick().subscribe(() => this.closeOrderSheet());
+    this.orderSheetRef.keydownEvents().subscribe(event => {
+      if (event.key === 'Escape') this.closeOrderSheet();
+    });
+    this.orderSheetRef.afterDismissed().subscribe(() => {
+      this.orderSheetRef = null;
+      this.orderError.set('');
+    });
   }
   closeOrderSheet(): void {
-    if (this.savingOrder() || !this.showOrderSheetModal() || this.isOrderSheetClosing()) return;
-    this.isOrderSheetClosing.set(true);
-    window.setTimeout(() => {
-      this.showOrderSheetModal.set(false);
-      this.isOrderSheetClosing.set(false);
-      this.orderError.set('');
-    }, 220);
-  }
-  onOrderBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) this.closeOrderSheet();
+    if (this.savingOrder() || !this.orderSheetRef) return;
+    this.orderSheetRef.dismiss();
+    this.orderSheetRef = null;
   }
   getProductName(id: string): string { return this.products().find(product => product.id === id)?.name ?? 'Producto'; }
   getObjectKeys(object: Record<string, number>): string[] { return Object.keys(object); }
@@ -256,7 +265,7 @@ export class Catalog {
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
-      this.showOrderSheetModal.set(false); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
+      this.orderSheetRef?.dismiss(); this.orderSheetRef = null; this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
     } catch (error) {
       if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
