@@ -223,8 +223,8 @@ export class Catalog {
       const documentUrl = documentToken ? new URL('/api/order-document', window.location.origin) : null;
       if (documentUrl) documentUrl.searchParams.set('token', documentToken);
       const pdfUrl = documentUrl?.toString() ?? '';
-      const message = 'Hola StarKies, quiero confirmar mi pedido ' + orderId + '.\\n\\n'
-        + (pdfUrl ? 'Mi pedido en PDF:\\n' + pdfUrl + '\\n\\n' : '')
+      const message = 'Hola StarKies, quiero confirmar mi pedido ' + orderId + '.\n\n'
+        + (pdfUrl ? 'Mi pedido en PDF:\n' + pdfUrl + '\n\n' : '')
         + 'Recuerda enviar tu ubicación exacta por WhatsApp para la entrega.';
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
