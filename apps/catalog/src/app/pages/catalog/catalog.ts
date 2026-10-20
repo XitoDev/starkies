@@ -170,7 +170,6 @@ export class Catalog {
     this.currentBoxItems.set(availableItems);
     this.editingBoxIndex.set(index);
     this.orderSheetRef?.dismiss();
-    this.orderSheetRef = null;
     this.orderError.set('');
     document.getElementById('sabores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -211,25 +210,25 @@ export class Catalog {
     this.showBoxChoiceModal.set(false);
     this.orderError.set('');
     if (this.orderSheetRef) return;
-    this.orderSheetRef = this.bottomSheet.open(CatalogOrderSheetComponent, {
+    const sheetRef = this.bottomSheet.open(CatalogOrderSheetComponent, {
       data: { catalog: this },
       panelClass: 'catalog-order-bottom-sheet',
       ariaLabel: 'Tu pedido',
       disableClose: true,
     });
-    this.orderSheetRef.backdropClick().subscribe(() => this.closeOrderSheet());
-    this.orderSheetRef.keydownEvents().subscribe(event => {
+    this.orderSheetRef = sheetRef;
+    sheetRef.backdropClick().subscribe(() => this.closeOrderSheet());
+    sheetRef.keydownEvents().subscribe(event => {
       if (event.key === 'Escape') this.closeOrderSheet();
     });
-    this.orderSheetRef.afterDismissed().subscribe(() => {
-      this.orderSheetRef = null;
+    sheetRef.afterDismissed().subscribe(() => {
+      if (this.orderSheetRef === sheetRef) this.orderSheetRef = null;
       this.orderError.set('');
     });
   }
   closeOrderSheet(): void {
     if (this.savingOrder() || !this.orderSheetRef) return;
     this.orderSheetRef.dismiss();
-    this.orderSheetRef = null;
   }
   getProductName(id: string): string { return this.products().find(product => product.id === id)?.name ?? 'Producto'; }
   getObjectKeys(object: Record<string, number>): string[] { return Object.keys(object); }
@@ -265,7 +264,7 @@ export class Catalog {
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
-      this.orderSheetRef?.dismiss(); this.orderSheetRef = null; this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
+      this.orderSheetRef?.dismiss(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
     } catch (error) {
       if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
