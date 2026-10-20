@@ -43,7 +43,8 @@ export class Catalogo {
       const configured = state['deliveryZones'];
       const catalogSettings = state['catalogSettings'] as Record<string, unknown> | undefined;
       const configuredZones = Array.isArray(configured) && configured.length ? configured : null;
-      const catalogZones = Array.isArray(catalogSettings?.['deliveryZones']) && catalogSettings['deliveryZones'].length ? catalogSettings['deliveryZones'] : null;
+      const catalogZonesValue = catalogSettings?.['deliveryZones'];
+      const catalogZones = Array.isArray(catalogZonesValue) && catalogZonesValue.length ? catalogZonesValue : null;
       const hasStoredZones = configuredZones !== null || catalogZones !== null;
       const zones = configuredZones ?? catalogZones ?? this.defaultZones;
       this.zones.set(zones.map((zone, index) => {
