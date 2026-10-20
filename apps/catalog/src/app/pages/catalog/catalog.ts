@@ -27,8 +27,9 @@ export class Catalog {
   readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
   readonly filteredProducts = computed(() => {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
-    if (!query) return this.products();
-    return this.products().filter(product => product.name.toLocaleLowerCase('es').includes(query) || product.description.toLocaleLowerCase('es').includes(query));
+    const availableProducts = this.products().filter(product => product.stock);
+    if (!query) return availableProducts;
+    return availableProducts.filter(product => product.name.toLocaleLowerCase('es').includes(query) || product.description.toLocaleLowerCase('es').includes(query));
   });
   readonly currentClasicasCount = computed(() => {
     let count = 0;
