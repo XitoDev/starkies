@@ -27,7 +27,7 @@ import { DataService } from '../../services/data.service';
             Los datos de StarKies ya están inicializados en Firebase. La importación está bloqueada
             para evitar sobrescribir registros existentes.
           </div>
-          <button matButton="text" type="button" class="primary" (click)="openAdmin()">Ir al administrador</button>
+          <button matButton="elevated" type="button" class="primary" (click)="openAdmin()">Ir al administrador</button>
         } @else {
           @if (routeError()) {
             <div class="notice warning" role="status">
@@ -83,7 +83,7 @@ import { DataService } from '../../services/data.service';
             <div class="notice success" role="status">{{ success() }}</div>
           }
 
-          <button matButton="text"
+          <button matButton="elevated"
             type="button"
             class="primary"
             (click)="importBackup()"
