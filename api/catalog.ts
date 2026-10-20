@@ -1,6 +1,6 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { readPublicCatalog, syncPublicCatalogProjection } from './catalog-data';
+import { readPublicCatalog, syncPublicCatalogProjection } from './catalog-data.js';
 
 interface ApiRequest { method?: string; }
 interface ApiResponse {
