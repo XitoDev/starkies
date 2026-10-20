@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0');
-@import '@angular/material/prebuilt-themes/azure-blue.css';
 
 /* Starkies Design System (ds): shared Material-inspired foundations.
    Product-specific palettes may override the semantic tokens in each app. */
