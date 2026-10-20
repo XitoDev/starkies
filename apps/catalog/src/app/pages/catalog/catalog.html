@@ -38,8 +38,8 @@
                 @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
               </div><div class="product-body"><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
                 @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
-                @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><span class="add-icon" aria-hidden="true">+</span></button> }
-                @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matButton="text" type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)">−</button><b>{{ getQuantity(product.id) }}</b><button matButton="text" type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)">+</button></div> }
+                @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
+                @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
               </div></div></article>
             }
           }
