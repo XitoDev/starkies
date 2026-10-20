@@ -1,3 +1,5 @@
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -5,7 +7,7 @@ import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
 import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
-@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
+@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
