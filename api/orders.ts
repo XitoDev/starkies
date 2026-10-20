@@ -173,7 +173,7 @@ function assertAllowedOrigin(origin: string | undefined): void {
     || hostname === 'www.starkies.lat'
     || hostname === 'localhost'
     || hostname === '127.0.0.1'
-    || hostname.endsWith('.vercel.app');
+    || (hostname.startsWith('starkies') && hostname.endsWith('.vercel.app'));
   if (!allowed) throw new HttpError(403, 'Origen no permitido.');
 }
 
@@ -311,9 +311,14 @@ function headerValue(value: HeaderValue): string | undefined {
 }
 
 function clientIp(req: ApiRequest): string {
+  const realIp = headerValue(req.headers['x-real-ip']);
+  if (realIp) return realIp.trim();
   const forwarded = headerValue(req.headers['x-forwarded-for']);
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return headerValue(req.headers['x-real-ip']) ?? 'unknown';
+  if (forwarded) {
+    const chain = forwarded.split(',').map(value => value.trim()).filter(Boolean);
+    if (chain.length) return chain[chain.length - 1];
+  }
+  return 'unknown';
 }
 
 function todayInEcuador(): string {
