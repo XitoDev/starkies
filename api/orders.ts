@@ -56,10 +56,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
+    const customersCollection = db.collection('businesses/starkies/collections/customers/records');
+    const customersSnapshot = await customersCollection.get();
+    const normalizedPhone = normalizePhone(order.phone);
+    const matchedCustomer = customersSnapshot.docs.find(document => {
+      const value = document.data()['value'] as Record<string, unknown> | undefined;
+      return value && normalizePhone(String(value['phone'] ?? '')) === normalizedPhone;
+    });
+    const customerId = matchedCustomer?.id ?? 'web-' + createHash('sha256').update(normalizedPhone).digest('hex').slice(0, 20);
+    const customerRef = matchedCustomer?.ref ?? customersCollection.doc(customerId);
+    const existingCustomerValue = matchedCustomer?.data()['value'] as Record<string, unknown> | undefined;
+    const customerRecord = {
+      ...(existingCustomerValue ?? {}),
+      id: customerId,
+      name: order.name,
+      phone: order.phone,
+      address: order.zoneId === '6' ? (existingCustomerValue?.['address'] ?? '') : order.address,
+    };
 
     const orderRecord = {
       id: orderId,
       code: orderId,
+      customerId,
       customer: order.name,
       phone: order.phone,
       address: order.zoneId === '6' ? 'Retiro en tienda' : order.zoneName + ' — ' + order.address,
@@ -123,6 +141,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         count: nextCount,
         updatedAt: createdAt,
       });
+      transaction.set(customerRef, { index: Number(matchedCustomer?.data()['index'] ?? now), value: customerRecord });
       transaction.set(orderRef, { index: now, value: orderRecord });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
@@ -130,6 +149,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         recordCounts: {
           ...recordCounts,
           orders: Number(recordCounts['orders'] ?? 0) + 1,
+          ...(!matchedCustomer ? { customers: Number(recordCounts['customers'] ?? 0) + 1 } : {}),
         },
       }, { merge: true });
     });
@@ -366,4 +386,8 @@ function createOrderDocumentToken(orderId: string, expiresAt: number, signingKey
   const payload = orderId + '.' + expiresAt;
   const signature = createHmac('sha256', signingKey).update(payload).digest('hex');
   return payload + '.' + signature;
+}
+
+function normalizePhone(value: string): string {
+  return value.replace(/\\D/g, '').replace(/^593/, '0');
 }
