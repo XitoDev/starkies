@@ -16,7 +16,7 @@ import { RecipeImageService } from '../../services/recipe-image.service';
     @if (recipe(); as item) {
       <section class="editor">
         <p class="eyebrow">Mi negocio / Catálogo / Producto</p>
-        <header><div><h1>{{ item.name }}</h1><p>Personaliza cómo se presenta esta galleta en el catálogo público.</p></div><a routerLink="/catalogo" class="close" aria-label="Volver al catálogo">×</a></header>
+        <header><div><h1>{{ item.name }}</h1><p>Personaliza cómo se presenta esta galleta en el catálogo público.</p></div><a routerLink="/catalogo" class="close" aria-label="Volver al catálogo"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_back</mat-icon></a></header>
         <div class="actions"><a class="secondary" [routerLink]="['/recetas', item.id, 'editar']">Editar receta y foto ↗</a></div>
         <form (ngSubmit)="save()">
           <label class="visibility"><input type="checkbox" [(ngModel)]="visible" name="visible"> Visible en el catálogo</label>
