@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   LucideDynamicIcon,
@@ -30,6 +30,7 @@ interface FinanceLedger {
   funds: Record<FundKey, { balance: number; previousBalance: number }>;
   pendingTransactions: { id: string; kind: 'boxes'; description: string; amount: number; date: string; status: 'pending' | 'paid' }[];
   history: { id: string; description: string; amount: number; date: string; status: string }[];
+  processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
 
@@ -161,6 +162,20 @@ export class Finanzas {
   readonly ledgerError = signal('');
   readonly ledgerNotice = signal('');
   readonly pendingPanelOpen = signal(false);
+  private readonly salesSyncInProgress = signal(false);
+
+  constructor() {
+    effect(() => {
+      const state = this.dataService.rawState();
+      if (!state || this.salesSyncInProgress()) return;
+      const pendingSales = this.deliveredOrdersMissingFromLedger(state);
+      if (!pendingSales.length) return;
+      this.salesSyncInProgress.set(true);
+      void this.reconcileDeliveredSales(state, pendingSales).catch(error => {
+        this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudieron actualizar los fondos a partir de las ventas entregadas.');
+      }).finally(() => this.salesSyncInProgress.set(false));
+    });
+  }
 
   private ledger(): FinanceLedger {
     const raw = this.dataService.rawState()?.['financeLedger'];
@@ -187,7 +202,100 @@ export class Finanzas {
     const history = Array.isArray(value['history'])
       ? value['history'].filter((item): item is FinanceLedger['history'][number] => Boolean(item && typeof item === 'object' && typeof (item as Record<string, unknown>)['id'] === 'string'))
       : [];
-    return { bankBalances, funds, pendingTransactions, history };
+    const processedOrderIds = Array.isArray(value['processedOrderIds']) ? value['processedOrderIds'].filter((id): id is string => typeof id === 'string') : [];
+    return { bankBalances, funds, pendingTransactions, history, processedOrderIds };
+  }
+
+
+  private deliveredOrdersMissingFromLedger(state: Record<string, unknown>): Record<string, unknown>[] {
+    const orders = Array.isArray(state['orders']) ? state['orders'] : [];
+    const processed = new Set(this.ledger().processedOrderIds);
+    return orders.filter((value): value is Record<string, unknown> => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+      const order = value as Record<string, unknown>;
+      const status = String(order['status'] ?? '').toLocaleLowerCase('es');
+      const id = String(order['id'] ?? order['code'] ?? '');
+      return Boolean(id && !processed.has(id) && (status.includes('entreg') || status === 'delivered'));
+    });
+  }
+
+  private async reconcileDeliveredSales(state: Record<string, unknown>, orders: Record<string, unknown>[]): Promise<void> {
+    const current = this.ledger();
+    const next: FinanceLedger = {
+      bankBalances: { ...current.bankBalances },
+      funds: Object.fromEntries(Object.entries(current.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'],
+      pendingTransactions: current.pendingTransactions.map(item => ({ ...item })),
+      history: [...current.history],
+      processedOrderIds: [...current.processedOrderIds],
+    };
+    const recipes = Array.isArray(state['recipes']) ? state['recipes'].filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item))) : [];
+    const ingredients = Array.isArray(state['ingredients']) ? state['ingredients'].filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item))) : [];
+    const costPerUnit = (recipe: Record<string, unknown>): number => {
+      const sections = Array.isArray(recipe['sections']) ? recipe['sections'] : [];
+      const batchCost = sections.reduce((total: number, rawSection) => {
+        if (!rawSection || typeof rawSection !== 'object' || Array.isArray(rawSection)) return total;
+        const section = rawSection as Record<string, unknown>;
+        const items = Array.isArray(section['ingredients']) ? section['ingredients'] : [];
+        return total + items.reduce((sectionTotal: number, rawItem) => {
+          if (!rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) return sectionTotal;
+          const item = rawItem as Record<string, unknown>;
+          const ingredient = ingredients.find(entry => String(entry['id'] ?? '') === String(item['ingredientId'] ?? item['id'] ?? ''));
+          const quantity = Number(item['quantity'] ?? item['qty'] ?? 0);
+          const unitCost = Number(ingredient?.['costPerUnit'] ?? ingredient?.['cost'] ?? 0);
+          return sectionTotal + (Number.isFinite(quantity) && quantity > 0 && Number.isFinite(unitCost) ? quantity * unitCost : 0);
+        }, 0);
+      }, 0);
+      const yieldCount = Number(recipe['yield'] ?? 1);
+      return batchCost / (Number.isFinite(yieldCount) && yieldCount > 0 ? yieldCount : 1);
+    };
+
+    for (const order of orders) {
+      const orderId = String(order['id'] ?? order['code'] ?? '');
+      const directLines = Array.isArray(order['lines']) ? order['lines'] : [];
+      const lines = directLines.length ? directLines : (Array.isArray(order['boxOrders']) ? order['boxOrders'].flatMap(box => {
+        if (!box || typeof box !== 'object' || Array.isArray(box)) return [];
+        const boxLines = (box as Record<string, unknown>)['lines'];
+        return Array.isArray(boxLines) ? boxLines : [];
+      }) : []);
+      let allocated = 0;
+      let complete = true;
+      for (const rawLine of lines) {
+        if (!rawLine || typeof rawLine !== 'object' || Array.isArray(rawLine)) continue;
+        const line = rawLine as Record<string, unknown>;
+        const recipeId = String(line['id'] ?? line['recipeId'] ?? '');
+        const recipe = recipes.find(item => String(item['id'] ?? '') === recipeId);
+        const quantity = Number(line['qty'] ?? line['quantity'] ?? 0);
+        const unitPrice = Number(line['price'] ?? line['unitPrice'] ?? recipe?.['price'] ?? 0);
+        if (!recipe || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice < 0) {
+          complete = false;
+          continue;
+        }
+        const unitCost = costPerUnit(recipe);
+        const basePrice = unitCost * 3;
+        const baseRevenue = Math.min(unitPrice, basePrice);
+        const perFund = baseRevenue / 3;
+        const extraProfit = Math.max(0, unitPrice - basePrice);
+        const ingredientAllocation = perFund * quantity;
+        const expenseAllocation = perFund * quantity;
+        const profitAllocation = perFund * quantity;
+        const extraAllocation = extraProfit * quantity;
+        next.funds.ingredients.balance = this.money(next.funds.ingredients.balance + ingredientAllocation);
+        next.funds.expenses.balance = this.money(next.funds.expenses.balance + expenseAllocation);
+        next.funds.profit.balance = this.money(next.funds.profit.balance + profitAllocation);
+        next.funds.extraProfit.balance = this.money(next.funds.extraProfit.balance + extraAllocation);
+        next.bankBalances.ingredients = this.money(next.bankBalances.ingredients + ingredientAllocation);
+        next.bankBalances.expenses = this.money(next.bankBalances.expenses + expenseAllocation);
+        next.bankBalances.profit = this.money(next.bankBalances.profit + profitAllocation + extraAllocation);
+        allocated += unitPrice * quantity;
+      }
+      if (complete && lines.length > 0) {
+        next.processedOrderIds.push(orderId);
+        next.history.unshift({ id: crypto.randomUUID(), description: `Distribución de venta · Pedido ${orderId}`, amount: this.money(allocated), date: String(order['date'] ?? order['createdAt'] ?? this.today()), status: 'Venta distribuida' });
+      }
+    }
+    if (next.processedOrderIds.length === current.processedOrderIds.length) return;
+    await this.dataService.saveBusinessSetting('financeLedger', next);
+    this.ledgerNotice.set('Los fondos se actualizaron con las ventas entregadas.');
   }
 
   private money(value: unknown): number {
@@ -247,6 +355,7 @@ export class Finanzas {
       funds: Object.fromEntries(Object.entries(current.funds).map(([key, value]) => [key, { ...value }])) as FinanceLedger['funds'],
       pendingTransactions: current.pendingTransactions.map(item => ({ ...item })),
       history: [...current.history],
+      processedOrderIds: [...current.processedOrderIds],
     };
     const description = form.description.trim();
     if (action === 'boxesPurchase') {
