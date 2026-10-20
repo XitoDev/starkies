@@ -1,9 +1,6 @@
 name: Deploy Public Catalog to Vercel
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       target_environment:
@@ -19,16 +16,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: vercel-catalog-${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
+  group: vercel-catalog-${{ inputs.target_environment }}
   cancel-in-progress: false
 
 jobs:
   validate-and-deploy:
     name: Validate Catalog, then deploy
-    if: "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, 'fix(deploy): run catalog production deployment once')) }}"
     runs-on: ubuntu-latest
     env:
-      TARGET_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
+      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
     steps:
       - name: Guard production deployment
         env:
