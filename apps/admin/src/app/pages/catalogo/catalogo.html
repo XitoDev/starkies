@@ -1,45 +1,53 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-heading">
     <div>
-      <h1 class="page-title">Catálogo Público</h1>
-      <p class="page-subtitle">Visualiza y configura cómo ven tus clientes los productos en tu tienda web.</p>
+      <p class="eyebrow">Mi negocio / Catálogo</p>
+      <h1 class="page-title">Catálogo público</h1>
+      <p class="page-subtitle">Administra la selección de recetas activas que prepararemos para la tienda de tus clientes.</p>
     </div>
-    <button class="btn-outline">
+    <button class="btn-outline" type="button" disabled title="La configuración de publicación se habilitará en una siguiente fase">
       <svg [lucideIcon]="icons.Settings" class="btn-icon"></svg>
       Configuración
     </button>
   </div>
 
+  <div class="catalog-status">
+    <div class="status-mark"><svg [lucideIcon]="icons.Store"></svg></div>
+    <div>
+      <strong>Vista previa interna</strong>
+      <p>El catálogo público todavía no está publicado. Aquí puedes revisar las recetas activas que se prepararán para esa web.</p>
+    </div>
+    <span class="catalog-count">{{ catalogItems().length }} productos</span>
+  </div>
+
   <div class="recipes-grid">
     @for (item of catalogItems(); track item.id) {
-    <div class="recipe-card">
-      <div class="card-image-wrapper">
-        <!-- Mapeo de imágenes idéntico al de Recetas -->
-        <img
-          [src]="item.image?.includes('/api/') ? 'images/recipe-' + item.id + '.jpg' : (item.image || 'images/placeholder.jpg')"
-          [alt]="item.name"
-          class="recipe-img"
-          onerror="this.src='images/placeholder.jpg'"
-        />
-        <span class="category-badge">{{ item.category }}</span>
-      </div>
-
-      <div class="card-content">
-        <h3 class="recipe-name">{{ item.name }}</h3>
-        <div class="recipe-stats">
-          <span class="price-stat">{{ item.price | currency:'USD' }}</span>
-          <button class="btn-icon-only" title="Ver como cliente">
-            <svg [lucideIcon]="icons.Eye"></svg>
-          </button>
+      <article class="recipe-card">
+        <div class="card-image-wrapper">
+          <img
+            [src]="getImageUrl(item.image)"
+            [alt]="item.name"
+            class="recipe-img"
+            loading="lazy"
+            (error)="onImageError($event)"
+          />
+          <span class="category-badge">{{ item.category }}</span>
         </div>
-      </div>
-    </div>
+        <div class="card-content">
+          <p class="card-kicker">{{ item.yield }} unidades por lote</p>
+          <h3 class="recipe-name">{{ item.name }}</h3>
+          <div class="recipe-stats">
+            <span class="price-stat">{{ item.price | currency:'USD' }}</span>
+            <span class="availability-pill"><span></span> Receta activa</span>
+          </div>
+        </div>
+      </article>
     }
 
     @if (catalogItems().length === 0) {
-    <div class="empty-state">
-      <p>No hay productos configurados para el catálogo.</p>
-    </div>
+      <div class="empty-state">
+        <p>No hay recetas activas disponibles para preparar el catálogo.</p>
+      </div>
     }
   </div>
 </div>

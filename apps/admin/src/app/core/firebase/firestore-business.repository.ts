@@ -27,6 +27,7 @@ interface StateMetadata {
   settingKeys?: string[];
   sourceBackupId?: string;
   sourceExportedAt?: string;
+  recordCounts?: Record<string, number>;
   [key: string]: unknown;
 }
 
@@ -144,6 +145,122 @@ export class FirestoreBusinessRepository {
     }
 
     await deleteDoc(matching.ref);
+  }
+
+  /**
+   * Atomically records a production run, deducts its recipe ingredients from
+   * inventory, and registers the new productionHistory collection in metadata.
+   */
+  async recordProduction(
+    record: Record<string, unknown>,
+    deductions: { ingredientId: string; quantity: number }[],
+  ): Promise<void> {
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    const productionId = String(record['id'] ?? '').trim();
+    if (!productionId) throw new Error('El lote necesita un identificador.');
+
+    const metadataRef = this.stateMetaRef();
+    const metadataSnapshot = await getDoc(metadataRef);
+    if (!metadataSnapshot.exists() || metadataSnapshot.data()['status'] !== 'complete') {
+      throw new Error('La migración de StarKies no está completa. No se registró el lote.');
+    }
+
+    const totals = new Map<string, number>();
+    for (const deduction of deductions) {
+      if (!deduction.ingredientId || !Number.isFinite(deduction.quantity) || deduction.quantity <= 0) {
+        throw new Error('La fórmula contiene una cantidad de ingrediente no válida.');
+      }
+      totals.set(deduction.ingredientId, (totals.get(deduction.ingredientId) ?? 0) + deduction.quantity);
+    }
+
+    const ingredientsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'ingredients', 'records',
+    );
+    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: typeof ingredientSnapshot.docs[number] extends never ? never : (typeof ingredientSnapshot.docs)[number] }[] = [];
+
+    for (const [ingredientId, quantity] of totals.entries()) {
+      const matching = ingredientSnapshot.docs.find((snapshot) => {
+        const stored = snapshot.data()['value'];
+        return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
+      });
+      if (!matching) {
+        throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
+      }
+      ingredientDocs.push({ ingredientId, quantity, ref: matching });
+    }
+
+    const productionRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'productionHistory', 'records',
+    );
+    const newProductionRef = doc(productionRef, productionId);
+
+    await runTransaction(this.firebase.firestore, async (transaction) => {
+      const currentMetadataSnapshot = await transaction.get(metadataRef);
+      if (!currentMetadataSnapshot.exists() || currentMetadataSnapshot.data()['status'] !== 'complete') {
+        throw new Error('La migración de StarKies ya no está disponible. No se registró el lote.');
+      }
+
+      const currentIngredientSnapshots = [];
+      for (const ingredientDoc of ingredientDocs) {
+        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref.ref));
+      }
+      const existingProductionSnapshot = await transaction.get(newProductionRef);
+      if (existingProductionSnapshot.exists()) {
+        throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
+      }
+
+      const updates: { ref: typeof ingredientDocs[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
+      ingredientDocs.forEach((ingredientDoc, index) => {
+        const snapshot = currentIngredientSnapshots[index];
+        if (!snapshot.exists()) {
+          throw new Error('Uno de los ingredientes cambió durante el registro. Actualiza la pantalla e inténtalo de nuevo.');
+        }
+        const data = snapshot.data();
+        const stored = data['value'];
+        if (!this.isRecord(stored)) {
+          throw new Error('No se pudo leer uno de los ingredientes. No se registró el lote.');
+        }
+
+        const currentStock = Number(stored['stock'] ?? 0);
+        if (!Number.isFinite(currentStock) || currentStock < ingredientDoc.quantity) {
+          const ingredientName = String(stored['name'] ?? ingredientDoc.ingredientId);
+          throw new Error(`Stock insuficiente de "${ingredientName}". Se necesitan ${ingredientDoc.quantity} y hay ${currentStock}.`);
+        }
+
+        updates.push({
+          ref: ingredientDoc.ref.ref,
+          index: Number(data['index'] ?? 0),
+          value: { ...stored, stock: currentStock - ingredientDoc.quantity },
+        });
+      });
+
+      const metadata = currentMetadataSnapshot.data() as StateMetadata;
+      const arrayKeys = Array.from(new Set([...(metadata.arrayKeys ?? []), 'productionHistory']));
+      const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory']));
+      const counts = metadata.recordCounts ?? {};
+
+      for (const update of updates) {
+        transaction.set(update.ref, { index: update.index, value: update.value });
+      }
+      transaction.set(newProductionRef, {
+        index: Date.now(),
+        value: record,
+      });
+      transaction.set(metadataRef, {
+        arrayKeys,
+        stateKeys,
+        recordCounts: {
+          ...counts,
+          productionHistory: Number(counts['productionHistory'] ?? 0) + 1,
+        },
+      }, { merge: true });
+    });
   }
 
   async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {

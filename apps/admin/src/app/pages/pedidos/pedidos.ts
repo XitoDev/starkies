@@ -2,6 +2,7 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideDynamicIcon, LucideSearch, LucideShoppingBag, LucideUsers, LucideEye, LucideCircleCheck, LucideCircleX, LucideClock } from '@lucide/angular';
 import { DataService } from '../../services/data.service';
+
 @Component({
   selector: 'app-pedidos',
   standalone: true,
@@ -10,48 +11,49 @@ import { DataService } from '../../services/data.service';
   styleUrls: ['./pedidos.css']
 })
 export class Pedidos {
-  private dataService = inject(DataService);
+  private readonly dataService = inject(DataService);
 
   readonly icons = { ShoppingBag: LucideShoppingBag, Users: LucideUsers, Search: LucideSearch, Eye: LucideEye, CheckCircle: LucideCircleCheck, XCircle: LucideCircleX, Clock: LucideClock };
+  readonly orders = this.dataService.orders;
+  readonly customers = this.dataService.customers;
+  readonly activeTab = signal<'pedidos' | 'clientes'>('pedidos');
+  readonly searchTerm = signal<string>('');
 
-  orders = this.dataService.orders;
-  customers = this.dataService.customers;
+  readonly pendingOrderCount = computed(() => this.orders().filter(order => order.status === 'PENDING').length);
+  readonly deliveredOrderCount = computed(() => this.orders().filter(order => order.status === 'DELIVERED').length);
+  readonly orderValueTotal = computed(() => this.orders().reduce((total, order) => total + order.total, 0));
 
-  // Estado para controlar qué pestaña está activa
-  activeTab = signal<'pedidos' | 'clientes'>('pedidos');
-  searchTerm = signal<string>('');
-
-  // Filtro de Pedidos
-  filteredOrders = computed(() => {
-    const term = this.searchTerm().toLowerCase();
-    const all = this.orders() || [];
+  readonly filteredOrders = computed(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase('es');
+    const all = this.orders();
     if (!term) return all;
-    return all.filter(o =>
-      o.id.toLowerCase().includes(term) ||
-      this.getCustomerName(o.customerId).toLowerCase().includes(term)
+    return all.filter(order =>
+      order.id.toLocaleLowerCase('es').includes(term)
+      || this.getCustomerName(order.customerId).toLocaleLowerCase('es').includes(term)
     );
   });
 
-  // Filtro de Clientes
-  filteredCustomers = computed(() => {
-    const term = this.searchTerm().toLowerCase();
-    const all = this.customers() || [];
+  readonly filteredCustomers = computed(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase('es');
+    const all = this.customers();
     if (!term) return all;
-    return all.filter(c => c.name.toLowerCase().includes(term));
+    return all.filter(customer =>
+      customer.name.toLocaleLowerCase('es').includes(term)
+      || (customer.phone ?? '').toLocaleLowerCase('es').includes(term)
+    );
   });
 
-  setTab(tab: 'pedidos' | 'clientes') {
+  setTab(tab: 'pedidos' | 'clientes'): void {
     this.activeTab.set(tab);
-    this.searchTerm.set(''); // Limpiamos la búsqueda al cambiar de pestaña
+    this.searchTerm.set('');
   }
 
-  onSearch(event: Event) {
-    const input = event.target as HTMLInputElement;
-    this.searchTerm.set(input.value);
+  onSearch(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
   getCustomerName(customerId: string): string {
-    const customer = this.customers().find(c => c.id === customerId);
-    return customer ? customer.name : 'Cliente Desconocido';
+    const customer = this.customers().find(customer => customer.id === customerId);
+    return customer ? customer.name : 'Cliente desconocido';
   }
 }

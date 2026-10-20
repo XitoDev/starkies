@@ -1,124 +1,81 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-heading">
     <div>
-      <h1 class="page-title">Pedidos y Clientes</h1>
-      <p class="page-subtitle">Gestiona las órdenes de compra y la base de datos de tus clientes.</p>
+      <p class="eyebrow">Mi negocio / Ventas</p>
+      <h1 class="page-title">Pedidos y clientes</h1>
+      <p class="page-subtitle">Consulta las órdenes recibidas y la información de tus clientes.</p>
     </div>
-    <button class="btn-primary">Nuevo Pedido</button>
+    <button class="btn-primary" type="button" disabled title="La creación de pedidos se habilitará al integrar el catálogo público">Nuevo pedido</button>
   </div>
 
-  <!-- Pestañas (Tabs) -->
-  <div class="tabs-container">
-    <button
-      class="tab-btn"
-      [class.active]="activeTab() === 'pedidos'"
-      (click)="setTab('pedidos')"
-    >
+  <section class="summary-grid" aria-label="Resumen de pedidos">
+    <article class="summary-card"><div class="summary-icon"><svg [lucideIcon]="icons.ShoppingBag"></svg></div><div><p class="summary-label">Pedidos registrados</p><p class="summary-value">{{ orders().length }}</p></div></article>
+    <article class="summary-card"><div class="summary-icon summary-icon-warning"><svg [lucideIcon]="icons.Clock"></svg></div><div><p class="summary-label">Pendientes</p><p class="summary-value">{{ pendingOrderCount() }}</p></div></article>
+    <article class="summary-card"><div class="summary-icon"><span class="currency-symbol">$</span></div><div><p class="summary-label">Valor total registrado</p><p class="summary-value">{{ orderValueTotal() | currency:'USD' }}</p></div></article>
+  </section>
+
+  <div class="tabs-container" role="tablist" aria-label="Pedidos y clientes">
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'pedidos'" [class.active]="activeTab() === 'pedidos'" (click)="setTab('pedidos')">
       <svg [lucideIcon]="icons.ShoppingBag" class="tab-icon"></svg>
-      Pedidos Recientes
+      Pedidos recientes
     </button>
-    <button
-      class="tab-btn"
-      [class.active]="activeTab() === 'clientes'"
-      (click)="setTab('clientes')"
-    >
+    <button class="tab-btn" type="button" role="tab" [attr.aria-selected]="activeTab() === 'clientes'" [class.active]="activeTab() === 'clientes'" (click)="setTab('clientes')">
       <svg [lucideIcon]="icons.Users" class="tab-icon"></svg>
-      Directorio de Clientes
+      Directorio de clientes
     </button>
   </div>
 
-  <!-- Contenedor Principal (Tabla) -->
-  <div class="table-card">
+  <section class="table-card">
     <div class="table-toolbar">
-      <div class="search-box">
+      <label class="search-box">
         <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
-        <input
-          type="text"
-          [placeholder]="activeTab() === 'pedidos' ? 'Buscar por ID o cliente...' : 'Buscar cliente...'"
-          (input)="onSearch($event)"
-          [value]="searchTerm()"
-        >
-      </div>
+        <input type="search" [placeholder]="activeTab() === 'pedidos' ? 'Buscar por ID o cliente...' : 'Buscar por nombre o teléfono...'" (input)="onSearch($event)" [value]="searchTerm()" />
+      </label>
+      <span class="result-count">{{ activeTab() === 'pedidos' ? filteredOrders().length + ' pedidos' : filteredCustomers().length + ' clientes' }}</span>
     </div>
 
     <div class="table-responsive">
-      <!-- VISTA: PEDIDOS -->
       @if (activeTab() === 'pedidos') {
-      <table class="data-table">
-        <thead>
-        <tr>
-          <th>ID Pedido</th>
-          <th>Cliente</th>
-          <th>Fecha</th>
-          <th>Total</th>
-          <th>Estado</th>
-          <th class="actions-cell">Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        @for (order of filteredOrders(); track order.id) {
-        <tr>
-          <td class="font-medium text-gray">#{{ order.id }}</td>
-          <td class="font-medium">{{ getCustomerName(order.customerId) }}</td>
-          <td>{{ order.createdAt | date:'shortDate' }}</td>
-          <td class="font-bold">{{ order.total | currency:'USD' }}</td>
-          <td>
-            @if (order.status === 'PENDING') {
-            <span class="badge badge-warning"><svg [lucideIcon]="icons.Clock" class="badge-icon"></svg> Pendiente</span>
-            } @else if (order.status === 'DELIVERED') {
-            <span class="badge badge-success"><svg [lucideIcon]="icons.CheckCircle" class="badge-icon"></svg> Entregado</span>
-            } @else {
-            <span class="badge badge-danger"><svg [lucideIcon]="icons.XCircle" class="badge-icon"></svg> Cancelado</span>
+        <table class="data-table">
+          <thead><tr><th>ID pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th class="actions-cell">Detalle</th></tr></thead>
+          <tbody>
+            @for (order of filteredOrders(); track order.id) {
+              <tr>
+                <td class="muted-cell">#{{ order.id }}</td>
+                <td><strong class="primary-cell">{{ getCustomerName(order.customerId) }}</strong></td>
+                <td>{{ order.createdAt | date:'mediumDate' }}</td>
+                <td class="amount-cell">{{ order.total | currency:'USD' }}</td>
+                <td>
+                  @if (order.status === 'PENDING') {
+                    <span class="status-pill status-warning"><svg [lucideIcon]="icons.Clock"></svg> Pendiente</span>
+                  } @else if (order.status === 'DELIVERED') {
+                    <span class="status-pill status-ok"><svg [lucideIcon]="icons.CheckCircle"></svg> Entregado</span>
+                  } @else {
+                    <span class="status-pill status-danger"><svg [lucideIcon]="icons.XCircle"></svg> Cancelado</span>
+                  }
+                </td>
+                <td class="actions-cell"><button class="icon-button" type="button" disabled title="El detalle se habilitará en la siguiente fase" aria-label="Detalle de pedido"><svg [lucideIcon]="icons.Eye"></svg></button></td>
+              </tr>
             }
-          </td>
-          <td class="actions-cell">
-            <button class="btn-icon-only" title="Ver detalle">
-              <svg [lucideIcon]="icons.Eye"></svg>
-            </button>
-          </td>
-        </tr>
-        }
-        @if (filteredOrders().length === 0) {
-        <tr>
-          <td colspan="6" class="empty-state">No hay pedidos para mostrar.</td>
-        </tr>
-        }
-        </tbody>
-      </table>
-      }
-
-      <!-- VISTA: CLIENTES -->
-      @if (activeTab() === 'clientes') {
-      <table class="data-table">
-        <thead>
-        <tr>
-          <th>Nombre del Cliente</th>
-          <th>Teléfono</th>
-          <th>Dirección Principal</th>
-          <th class="actions-cell">Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        @for (customer of filteredCustomers(); track customer.id) {
-        <tr>
-          <td class="font-medium">{{ customer.name }}</td>
-          <td>{{ customer.phone || 'No registrado' }}</td>
-          <td class="text-gray">{{ customer.address || 'Sin dirección' }}</td>
-          <td class="actions-cell">
-            <button class="btn-icon-only" title="Ver perfil">
-              <svg [lucideIcon]="icons.Eye"></svg>
-            </button>
-          </td>
-        </tr>
-        }
-        @if (filteredCustomers().length === 0) {
-        <tr>
-          <td colspan="4" class="empty-state">No hay clientes registrados.</td>
-        </tr>
-        }
-        </tbody>
-      </table>
+            @if (filteredOrders().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>No hay pedidos para mostrar</strong><p>Cuando haya pedidos registrados, aparecerán aquí.</p></div></td></tr> }
+          </tbody>
+        </table>
+      } @else {
+        <table class="data-table">
+          <thead><tr><th>Nombre del cliente</th><th>Teléfono</th><th>Dirección principal</th><th>Pedidos</th></tr></thead>
+          <tbody>
+            @for (customer of filteredCustomers(); track customer.id) {
+              <tr>
+                <td><strong class="primary-cell">{{ customer.name }}</strong></td>
+                <td>{{ customer.phone || 'No registrado' }}</td>
+                <td class="muted-cell">{{ customer.address || 'Sin dirección' }}</td>
+                <td>{{ orders().filter(order => order.customerId === customer.id).length }}</td>
+              </tr>
+            }
+            @if (filteredCustomers().length === 0) { <tr><td colspan="4"><div class="empty-state"><strong>No hay clientes registrados</strong><p>Los clientes se crearán al recibir pedidos desde el catálogo público.</p></div></td></tr> }
+          </tbody>
+        </table>
       }
     </div>
-  </div>
+  </section>
 </div>

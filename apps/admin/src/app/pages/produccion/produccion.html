@@ -1,65 +1,153 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="page-heading">
     <div>
+      <p class="eyebrow">Mi negocio / Operaciones</p>
       <h1 class="page-title">Producción</h1>
-      <p class="page-subtitle">Registra lotes horneados para descontar insumos y actualizar el stock de catálogo.</p>
+      <p class="page-subtitle">Registra lotes horneados, calcula su rendimiento y descuenta automáticamente los insumos de la fórmula.</p>
     </div>
-    <button class="btn-primary">
+    <button class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
       <svg [lucideIcon]="icons.Plus" class="btn-icon"></svg>
-      Nuevo Lote
+      Nuevo lote
     </button>
   </div>
 
-  <div class="table-card">
+  @if (notice()) {
+    <div class="notice" role="status">{{ notice() }}</div>
+  }
+
+  <section class="summary-grid" aria-label="Resumen de producción">
+    <article class="summary-card">
+      <div class="summary-icon"><svg [lucideIcon]="icons.Factory"></svg></div>
+      <div><p class="summary-label">Lotes registrados</p><p class="summary-value">{{ totalBatches() }}</p></div>
+    </article>
+    <article class="summary-card">
+      <div class="summary-icon"><svg [lucideIcon]="icons.Package"></svg></div>
+      <div><p class="summary-label">Unidades producidas</p><p class="summary-value">{{ totalUnits() | number:'1.0-0' }}</p></div>
+    </article>
+    <article class="summary-card">
+      <div class="summary-icon"><span class="currency-symbol">$</span></div>
+      <div><p class="summary-label">Costo de producción registrado</p><p class="summary-value">{{ totalProductionCost() | currency:'USD' }}</p></div>
+    </article>
+  </section>
+
+  <section class="table-card">
     <div class="table-toolbar">
-      <div class="search-box">
-        <svg [lucideIcon]="icons.Calendar" class="search-icon"></svg>
-        <input
-          type="text"
-          placeholder="Buscar por fecha o receta..."
-          (input)="onSearch($event)"
-        >
-      </div>
+      <label class="search-box">
+        <svg [lucideIcon]="icons.Search" class="search-icon"></svg>
+        <input type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)" />
+      </label>
+      <span class="result-count">{{ filteredHistory().length }} registros</span>
     </div>
 
     <div class="table-responsive">
       <table class="data-table">
         <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Receta</th>
-          <th>Cantidad (Lotes)</th>
-          <th>Rendimiento Total</th>
-          <th>Costo Calculado</th>
-          <th>Estado</th>
-        </tr>
+          <tr>
+            <th>Fecha</th>
+            <th>Receta</th>
+            <th>Lotes</th>
+            <th>Rendimiento total</th>
+            <th>Costo calculado</th>
+            <th>Estado</th>
+          </tr>
         </thead>
         <tbody>
-        @for (prod of productionHistory(); track prod.id) {
-        <tr>
-          <td>{{ prod.date | date:'short' }}</td>
-          <td class="font-medium">{{ prod.recipeName }}</td>
-          <td>{{ prod.batches }}</td>
-          <td class="font-bold">{{ prod.totalYield }} uds</td>
-          <td class="text-gray">{{ prod.calculatedCost | currency:'USD' }}</td>
-          <td>
-                <span class="badge badge-success">
-                  <svg [lucideIcon]="icons.CheckCircle" class="badge-icon"></svg>
-                  Completado
-                </span>
-          </td>
-        </tr>
-        }
+          @for (production of filteredHistory(); track production.id) {
+            <tr>
+              <td>{{ production.date ? (production.date | date:'mediumDate') : '—' }}</td>
+              <td><strong class="primary-cell">{{ production.recipeName }}</strong></td>
+              <td>{{ production.batches }}</td>
+              <td>{{ production.totalYield | number:'1.0-0' }} uds</td>
+              <td>{{ production.calculatedCost | currency:'USD' }}</td>
+              <td><span class="status-pill"><svg [lucideIcon]="icons.CheckCircle"></svg> Registrado</span></td>
+            </tr>
+          }
 
-        @if (productionHistory().length === 0) {
-        <tr>
-          <td colspan="6" class="empty-state">
-            Aún no hay registros de producción. ¡Hornea tu primer lote!
-          </td>
-        </tr>
-        }
+          @if (filteredHistory().length === 0) {
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <span class="empty-mark"><svg [lucideIcon]="icons.Factory"></svg></span>
+                  <strong>{{ productionHistory().length === 0 ? 'Aún no hay lotes de producción' : 'No encontramos resultados' }}</strong>
+                  <p>{{ productionHistory().length === 0 ? 'Cuando registres el primer lote, aquí quedarán su rendimiento, costo y fecha.' : 'Prueba con otra fecha o nombre de receta.' }}</p>
+                  @if (productionHistory().length === 0 && activeRecipes().length > 0) {
+                    <button class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 </div>
+
+@if (formOpen()) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <section class="production-modal" role="dialog" aria-modal="true" aria-labelledby="production-modal-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Registro de producción</p>
+          <h2 id="production-modal-title">Preparar un lote</h2>
+          <p>Al confirmar, se registrará el lote y se descontarán sus ingredientes del inventario.</p>
+        </div>
+        <button class="modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeForm()">×</button>
+      </div>
+
+      <div class="production-form">
+        <label class="form-field form-field-wide">
+          <span>Receta *</span>
+          <select [value]="selectedRecipeId()" (change)="selectedRecipeId.set($any($event.target).value)">
+            @for (recipe of activeRecipes(); track recipe.id) {
+              <option [value]="recipe.id">{{ recipe.name }} · {{ recipe.yield }} uds por lote</option>
+            }
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Cantidad de lotes</span>
+          <input type="number" min="1" max="1000" step="1" [value]="batchCount()" (input)="setBatchCount($any($event.target).value)" />
+        </label>
+
+        <div class="estimate-card">
+          <span>Rendimiento estimado</span>
+          <strong>{{ estimatedYield() | number:'1.0-0' }} unidades</strong>
+        </div>
+        <div class="estimate-card">
+          <span>Costo estimado</span>
+          <strong>{{ estimatedCost() | currency:'USD' }}</strong>
+        </div>
+
+        <div class="requirements-panel">
+          <div class="requirements-heading">
+            <strong>Consumo de insumos</strong>
+            <span>{{ requirements().length }} ingredientes</span>
+          </div>
+          @for (item of requirements(); track item.ingredientId) {
+            <div class="requirement-row">
+              <span>{{ item.ingredient?.name ?? 'Ingrediente no registrado' }}</span>
+              <span [class.shortage]="!item.ingredient || item.ingredient.stock < item.quantity">
+                {{ item.quantity | number:'1.0-3' }} {{ item.ingredient?.unit ?? '' }}
+              </span>
+            </div>
+          }
+          @if (stockShortages().length > 0) {
+            <p class="stock-warning"><svg [lucideIcon]="icons.AlertTriangle"></svg> Hay ingredientes faltantes o con stock insuficiente.</p>
+          }
+        </div>
+
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
+          <button class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
+            {{ saving() ? 'Registrando…' : 'Registrar producción' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+}

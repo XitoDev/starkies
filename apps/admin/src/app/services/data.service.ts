@@ -111,6 +111,17 @@ export class DataService {
     this.loadViewModels(nextState);
   }
 
+  async recordProduction(
+    record: Record<string, unknown>,
+    deductions: { ingredientId: string; quantity: number }[],
+  ): Promise<void> {
+    await this.repository.recordProduction(record, deductions);
+    await this.loadFromCloud();
+    if (this.error()) {
+      throw new Error(this.error());
+    }
+  }
+
   exportBackup(): void {
     const state = this.rawState();
     if (!state) {
