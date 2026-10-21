@@ -97,43 +97,55 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   });
 
   const salesCounts = new Map<string, number>();
-  for (const orderDocument of ordersSnapshot.docs) {
-    const order = asRecord(orderDocument.data()['value']);
-    if (stringValue(order['status']).toUpperCase() !== 'DELIVERED') continue;
-    const lines = Array.isArray(order['lines']) ? order['lines'] : [];
-    const validLines = lines.map(raw => asRecord(raw)).map(line => ({
-      id: stringValue(line['id'] ?? line['productId']),
-      quantity: numberValue(line['qty'] ?? line['quantity'], 0),
-    })).filter(line => line.id && line.id !== 'shipping' && line.quantity > 0);
-    if (validLines.length) {
-      for (const line of validLines) salesCounts.set(line.id, (salesCounts.get(line.id) ?? 0) + line.quantity);
-      continue;
+  const productIds = new Set(products.map(product => product.id));
+  const productNames = new Map(products.map(product => [
+    product.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').trim(),
+    product.id,
+  ]));
+  const normalizeStatus = (value: unknown): string => stringValue(value)
+    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleUpperCase('es').trim();
+  const resolveProductId = (item: Record<string, unknown>): string => {
+    const nestedProduct = asRecord(item['product']);
+    const rawId = stringValue(item['recipeId'] ?? item['productId'] ?? item['id'] ?? nestedProduct['id']);
+    if (productIds.has(rawId)) return rawId;
+    const rawName = stringValue(item['productName'] ?? item['name'] ?? nestedProduct['name'])
+      .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').trim();
+    return productNames.get(rawName) ?? '';
+  };
+  const addSales = (rawItems: unknown): boolean => {
+    if (!Array.isArray(rawItems)) return false;
+    let counted = false;
+    for (const rawItem of rawItems) {
+      const item = asRecord(rawItem);
+      const id = resolveProductId(item);
+      const quantity = numberValue(item['qty'] ?? item['quantity'] ?? item['count'], 0);
+      if (id && quantity > 0) {
+        salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
+        counted = true;
+      }
     }
+    return counted;
+  };
+  for (const orderDocument of ordersSnapshot.docs) {
+    const documentData = asRecord(orderDocument.data());
+    const order = asRecord(documentData['value'] ?? documentData);
+    const statusValue = order['status'] ?? order['state'] ?? order['orderStatus'] ?? documentData['status'];
+    const status = normalizeStatus(typeof statusValue === 'object' && statusValue !== null
+      ? (asRecord(statusValue)['value'] ?? asRecord(statusValue)['label'] ?? asRecord(statusValue)['name'])
+      : statusValue);
+    if (!['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status)) continue;
+
+    // Prefer order lines when they resolve to published products. Some older
+    // orders contain generic line IDs, so fall back to their box/item details.
+    if (addSales(order['lines'])) continue;
     const boxes = Array.isArray(order['boxes']) ? order['boxes'] : [];
     let countedBoxItems = false;
     for (const rawBox of boxes) {
       const box = asRecord(rawBox);
-      const items = Array.isArray(box['items']) ? box['items'] : [];
-      for (const rawItem of items) {
-        const item = asRecord(rawItem);
-        const id = stringValue(item['id'] ?? item['productId']);
-        const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
-        if (id && id !== 'shipping' && quantity > 0) {
-          salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
-          countedBoxItems = true;
-        }
-      }
+      if (addSales(box['items'])) countedBoxItems = true;
     }
     if (countedBoxItems) continue;
-    const legacyItems = Array.isArray(order['items']) ? order['items'] : [];
-    for (const rawItem of legacyItems) {
-      const item = asRecord(rawItem);
-      const id = stringValue(item['recipeId'] ?? item['id'] ?? item['productId']);
-      const quantity = numberValue(item['quantity'] ?? item['qty'], 0);
-      if (id && id !== 'shipping' && quantity > 0) {
-        salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
-      }
-    }
+    addSales(order['items']);
   }
   const rankedProducts = rankCatalogProducts(products, salesCounts);
 
@@ -174,7 +186,12 @@ export async function syncPublicCatalogProjection(db: Firestore, catalog: Public
     if (document.id !== 'catalog-settings' && !wantedIds.has(document.id)) batch.delete(document.ref);
   }
   catalog.products.forEach((product, index) => {
-    batch.set(collectionRef.doc(product.id), { index, value: product });
+    // Firestore rejects undefined optional properties. Strip them at the
+    // persistence boundary so an untagged cookie cannot break the whole sync.
+    const value: PublicProduct = { ...product };
+    if (value.tag === undefined || value.tag === '') delete value.tag;
+    if (value.image === undefined || value.image === '') delete value.image;
+    batch.set(collectionRef.doc(product.id), { index, value });
   });
   batch.set(collectionRef.doc('catalog-settings'), {
     index: catalog.products.length,
