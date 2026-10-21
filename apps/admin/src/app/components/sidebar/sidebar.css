@@ -299,11 +299,22 @@
     justify-content: center;
   }
 
+  .business-card.mat-mdc-unelevated-button {
+    padding: 0;
+  }
+
+  .business-card.mat-mdc-unelevated-button .mdc-button__label {
+    justify-content: center;
+    width: auto;
+  }
+
   .business-external { display: block; }
 
   .sidebar-nav { width: 100%; }
   .nav-item { justify-content: center; padding: 0; }
   .nav-icon { flex-basis: 22px; width: 22px; height: 22px; }
-  .settings-trigger { justify-content: center; padding: 0; }
+  .settings-trigger,
+  .settings-trigger.mat-mdc-button { justify-content: center; padding: 0; }
+  .settings-trigger.mat-mdc-button .mdc-button__label { justify-content: center; }
   .settings-trigger > mat-icon:first-child { margin: 0; }
 }
