@@ -31,6 +31,10 @@ interface FinanceLedger {
   processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
+type FinanceBalanceForm = {
+  bankIngredients: number; bankExpenses: number; bankProfit: number;
+  fundIngredients: number; fundExpenses: number; fundBoxes: number; fundProfit: number; fundExtraProfit: number;
+};
 
  type ExpenseForm = {
   description: string;
@@ -165,6 +169,10 @@ export class Finanzas {
   readonly ledgerError = signal('');
   readonly ledgerNotice = signal('');
   readonly pendingPanelOpen = signal(false);
+  readonly editBalancesOpen = signal(false);
+  readonly balanceSaving = signal(false);
+  readonly balanceError = signal('');
+  readonly balanceForm = signal<FinanceBalanceForm>(this.emptyBalanceForm());
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
@@ -317,6 +325,77 @@ export class Finanzas {
   private money(value: unknown): number {
     const parsed = typeof value === 'number' ? value : Number(value ?? 0);
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+  }
+
+  private emptyBalanceForm(): FinanceBalanceForm {
+    return { bankIngredients: 0, bankExpenses: 0, bankProfit: 0, fundIngredients: 0, fundExpenses: 0, fundBoxes: 0, fundProfit: 0, fundExtraProfit: 0 };
+  }
+
+  openBalanceEditor(): void {
+    const ledger = this.ledger();
+    this.balanceForm.set({
+      bankIngredients: ledger.bankBalances.ingredients,
+      bankExpenses: ledger.bankBalances.expenses,
+      bankProfit: ledger.bankBalances.profit,
+      fundIngredients: ledger.funds.ingredients.balance,
+      fundExpenses: ledger.funds.expenses.balance,
+      fundBoxes: ledger.funds.boxes.balance,
+      fundProfit: ledger.funds.profit.balance,
+      fundExtraProfit: ledger.funds.extraProfit.balance,
+    });
+    this.balanceError.set('');
+    this.editBalancesOpen.set(true);
+  }
+
+  updateBalanceField(field: keyof FinanceBalanceForm, value: string): void {
+    const amount = value.trim() === '' ? 0 : Number(value);
+    this.balanceForm.update(current => ({
+      ...current,
+      [field]: Number.isFinite(amount) ? Math.max(0, Math.round(amount * 100) / 100) : 0,
+    }));
+  }
+
+  async saveBalances(): Promise<void> {
+    if (this.balanceSaving()) return;
+    const values = this.balanceForm();
+    if (Object.values(values).some(value => !Number.isFinite(value) || value < 0)) {
+      this.balanceError.set('Ingresa montos válidos iguales o mayores que cero.');
+      return;
+    }
+    const current = this.ledger();
+    const next: FinanceLedger = {
+      ...current,
+      bankBalances: {
+        ingredients: this.money(values.bankIngredients),
+        expenses: this.money(values.bankExpenses),
+        profit: this.money(values.bankProfit),
+      },
+      funds: {
+        ingredients: { balance: this.money(values.fundIngredients), previousBalance: this.money(values.fundIngredients) },
+        expenses: { balance: this.money(values.fundExpenses), previousBalance: this.money(values.fundExpenses) },
+        boxes: { balance: this.money(values.fundBoxes), previousBalance: this.money(values.fundBoxes) },
+        profit: { balance: this.money(values.fundProfit), previousBalance: this.money(values.fundProfit) },
+        extraProfit: { balance: this.money(values.fundExtraProfit), previousBalance: this.money(values.fundExtraProfit) },
+      },
+      history: [{
+        id: crypto.randomUUID(),
+        description: 'Corrección manual de saldos iniciales',
+        amount: 0,
+        date: this.today(),
+        status: 'Saldos actualizados',
+      }, ...current.history],
+    };
+    this.balanceSaving.set(true);
+    this.balanceError.set('');
+    try {
+      await this.dataService.saveBusinessSetting('financeLedger', next);
+      this.editBalancesOpen.set(false);
+      this.ledgerNotice.set('Saldos actuales guardados. Las variaciones de los fondos parten de estos valores.');
+    } catch (error) {
+      this.balanceError.set(error instanceof Error ? error.message : 'No se pudieron guardar los saldos actuales.');
+    } finally {
+      this.balanceSaving.set(false);
+    }
   }
 
   private emptyLedgerActionForm(): LedgerActionForm {
