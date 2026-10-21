@@ -362,16 +362,9 @@ export class FirestoreBusinessRepository {
     };
     this.validateCashMovement(savedMovement);
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'ingredients',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
-    const matchingIngredient = ingredientSnapshot.docs.find((snapshot) => {
-      const stored = snapshot.data()['value'];
-      return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-    });
-    if (!matchingIngredient) {
+    const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+    const matchingIngredient = await getDoc(ingredientRef);
+    if (!matchingIngredient.exists()) {
       throw new Error('No se encontró el insumo seleccionado. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
