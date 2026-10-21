@@ -17,7 +17,7 @@ interface ApiResponse {
 interface OrderLine { id?: unknown; name?: unknown; qty?: unknown; quantity?: unknown; price?: unknown; }
 interface OrderBoxItem { name?: unknown; quantity?: unknown; }
 interface OrderBox { presentationName?: unknown; title?: unknown; price?: unknown; items?: unknown; }
-interface StoredOrder {
+export interface StoredOrder {
   id?: unknown;
   code?: unknown;
   customer?: unknown;
@@ -129,7 +129,7 @@ function getDatabase() {
   return getFirestore(app);
 }
 
-function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
+export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   const commands: string[] = [];
   const purple = '0.47 0.35 0.67';
   const dark = '0.20 0.18 0.25';
