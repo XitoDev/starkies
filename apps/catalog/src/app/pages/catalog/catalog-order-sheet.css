@@ -74,3 +74,17 @@
 .packed-box ul{font-size:13px;line-height:1.9}
 .box-actions button{font-size:12px}
 .add-box-button{color:#68416f!important;background:#ead9ed!important;border:1px solid #cdb1d1!important}
+
+.field-group{display:grid;gap:6px;min-width:0}
+.field-label{display:block;margin:0 0 1px;color:#4b3153;font-size:13px;font-weight:600;line-height:1.35}
+.order-sheet .mat-mdc-form-field{margin:0}
+.order-sheet .mat-mdc-form-field-infix{min-height:48px;padding-block:12px!important}
+.order-sheet .mat-mdc-text-field-wrapper{background:#fff!important;border:1px solid #e4d9e5;border-radius:12px!important}
+.order-sheet .mdc-text-field--filled:not(.mdc-text-field--disabled){background:transparent!important}
+.order-sheet .mdc-line-ripple{display:none!important}
+.order-sheet .mat-mdc-form-field-focus-overlay{display:none!important}
+.order-sheet .mat-mdc-form-field-subscript-wrapper{display:none!important}
+.order-sheet .summary{background:transparent!important;background-color:transparent!important;padding:0!important;border:0!important;box-shadow:none!important}
+.order-sheet .summary h3{background:transparent!important}
+.order-sheet .packed-box{background:#eaddea!important;border-radius:16px;padding:16px;margin:10px 0}
+@media(max-width:600px){.order-sheet{height:92dvh;max-height:92dvh}.sheet-panel{height:100%;max-height:100%}.sheet-body{overflow-y:auto;overscroll-behavior:contain}.fulfillment-options{grid-template-columns:repeat(2,minmax(0,1fr))}.fulfillment-option{align-items:center;flex-direction:row;min-height:76px;padding:10px}.fulfillment-option.active{padding:9px}.fulfillment-option strong{font-size:12px}.fulfillment-option small{font-size:10px}}
