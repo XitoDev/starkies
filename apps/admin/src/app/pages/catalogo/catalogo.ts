@@ -1,11 +1,10 @@
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
-import { MatMenuModule } from '@angular/material/menu';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
@@ -22,6 +21,7 @@ interface DeliveryZone { id: string; name: string; fee: number; }
 export class Catalogo {
   private readonly dataService = inject(DataService);
   private readonly recipeImageService = inject(RecipeImageService);
+  private readonly router = inject(Router);
   readonly recipes = this.dataService.recipes;
   readonly categoryFilter = signal('Todos');
   readonly showHidden = signal(false);
