@@ -219,7 +219,8 @@ export class Recetas {
     this.selectedFile.set(null); this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
   }
   closeEditor(): void {
-    if (this.saving()) return;
+    // Closing the editor must remain responsive even if Firebase is still
+    // completing a request; the save promise handles its own success/error.
     this.formError.set('');
     if (this.routeEditor()) { void this.router.navigate(['/recetas']); return; }
     this.editorOpen.set(false);
