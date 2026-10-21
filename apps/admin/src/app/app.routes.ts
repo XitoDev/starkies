@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { Recetas } from './pages/recetas/recetas';
+import { Resumen } from './pages/resumen/resumen';
 import { MasaBaseEditor } from './pages/recetas/masa-base-editor';
 import { Ingredientes, Inventario } from './pages/ingredientes/ingredientes';
 import { Produccion } from './pages/produccion/produccion';
@@ -17,7 +18,8 @@ import { businessDataReadyGuard } from './core/firebase/business-data-ready.guar
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'migracion', component: Migration, canActivate: [adminAuthGuard] },
-  { path: '', redirectTo: 'recetas', pathMatch: 'full' },
+  { path: '', redirectTo: 'resumen', pathMatch: 'full' },
+  { path: 'resumen', component: Resumen, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/nueva', component: MasaBaseEditor, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/:baseId/editar', component: MasaBaseEditor, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/:recipeId/editar', component: Recetas, canActivate: [adminAuthGuard, businessDataReadyGuard] },
@@ -32,5 +34,5 @@ export const routes: Routes = [
   { path: 'pedidos/:orderId', component: PedidoRuta, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'pedidos', component: Pedidos, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'finanzas', component: Finanzas, canActivate: [adminAuthGuard, businessDataReadyGuard] },
-  { path: '**', redirectTo: 'recetas' },
+  { path: '**', redirectTo: 'resumen' },
 ];
