@@ -32,7 +32,7 @@ class HttpError extends Error {
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX_ORDERS = 8;
-const BUSINESS_PATH = ['businesses', 'starkies'] as const;
+const BUSINESS_PATH = [] as const;
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
@@ -56,11 +56,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const documentExpiresAt = now + 3 * 24 * 60 * 60 * 1000;
     const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     const documentShortCode = randomBytes(6).toString('base64url');
-    const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
-    const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
+    const metadataRef = db.doc('system/stateMeta');
+    const orderRef = db.doc('orders/' + orderId);
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
-    const customersCollection = db.collection('businesses/starkies/collections/customers/records');
+    const customersCollection = db.collection('customers');
     const customersSnapshot = await customersCollection.get();
     const normalizedPhone = normalizePhone(order.phone);
     const matchedCustomer = customersSnapshot.docs.find(document => {
