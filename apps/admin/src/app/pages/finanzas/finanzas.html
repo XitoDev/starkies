@@ -4,8 +4,8 @@
       <p class="eyebrow">Mi negocio / Finanzas</p>
       <h1 class="page-title">Finanzas</h1>
       <p class="page-subtitle">Tu capital, ventas y ganancias en un mismo lugar.</p>
-      <button matButton="outlined" class="edit-balances-button" type="button" (click)="openBalanceEditor()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar saldos</button>
     </div>
+    <button matButton="outlined" class="edit-balances-button" type="button" (click)="openBalanceEditor()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar saldos</button>
   </div>
 
   @if (ledgerNotice()) { <div class="notice" role="status">{{ ledgerNotice() }}</div> }
