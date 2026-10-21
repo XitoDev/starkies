@@ -9,7 +9,6 @@ import { Ingredient } from 'shared';
 
 type IngredientForm = {
   name: string;
-  brand: string;
   packageQuantityGrams: number;
   packagePrice: number;
   unit: string;
@@ -37,12 +36,12 @@ export class Ingredientes {
   readonly formError = signal('');
   readonly notice = signal('');
   readonly form = signal<IngredientForm>(this.emptyForm());
-  readonly brands = computed(() => Array.from(new Set(this.ingredients().map(item => item.brand?.trim()).filter((brand): brand is string => Boolean(brand)))).sort((a, b) => a.localeCompare(b, 'es')));
+
 
   readonly filteredIngredients = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('es');
     return this.ingredients()
-      .filter(item => !term || item.name.toLocaleLowerCase('es').includes(term) || (item.brand ?? '').toLocaleLowerCase('es').includes(term))
+      .filter(item => !term || item.name.toLocaleLowerCase('es').includes(term) || (item.supplyGroup ?? '').toLocaleLowerCase('es').includes(term))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
 
@@ -65,7 +64,6 @@ export class Ingredientes {
     const grams = item.packageQuantityGrams ?? this.gramsPerUnit(item.unit);
     this.form.set({
       name: item.name,
-      brand: item.brand ?? '',
       packageQuantityGrams: grams,
       packagePrice: item.packagePrice ?? item.costPerUnit,
       unit: item.unit || 'g',
@@ -81,8 +79,8 @@ export class Ingredientes {
   }
 
   closeForm(): void { if (!this.saving()) { this.formOpen.set(false); this.formError.set(''); } }
-  updateTextField(field: 'name' | 'brand', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
-  selectBrand(value: string): void { this.form.update(current => ({ ...current, brand: value })); }
+  updateTextField(field: 'name', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
+  updateSupplyType(value: string): void { this.form.update(current => ({ ...current, supplyGroup: value })); }
   updateNumberField(field: 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.form.update(current => ({ ...current, [field]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
@@ -106,7 +104,6 @@ export class Ingredientes {
       const item: Ingredient = {
         id: this.editingId() ?? crypto.randomUUID(),
         name,
-        brand: values.brand.trim() || undefined,
         packageQuantityGrams: values.packageQuantityGrams,
         packagePrice: values.packagePrice,
         unit: values.unit || 'g',
@@ -143,7 +140,7 @@ export class Ingredientes {
     return 0;
   }
   private emptyForm(): IngredientForm {
-    return { name: '', brand: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
+    return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
   }
 }
 
