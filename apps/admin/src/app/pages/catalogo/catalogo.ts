@@ -14,7 +14,7 @@ interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatInputModule],
+  imports: [CommonModule, CurrencyPipe, FormsModule, MatButtonModule, MatIconModule, MatInputModule],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
