@@ -114,9 +114,15 @@ export class Recetas {
     const base = this.selectedBase();
     const rows = base?.ingredients ?? base?.items ?? [];
     return rows.map(row => {
-      const id = String(row.ingredientId ?? row.id ?? '');
-      const ingredient = this.ingredients().find(item => item.id === id);
-      return { name: ingredient?.name ?? row.name ?? 'Insumo', quantity: Number(row.quantity ?? row.qty ?? 0), unit: ingredient?.unit ?? row.unit ?? 'g' };
+      const ingredientId = String(row.ingredientId ?? row.id ?? '');
+      const ingredient = this.ingredients().find(item => item.id === ingredientId);
+      return {
+        ingredientId,
+        name: ingredient?.name ?? row.name ?? 'Insumo',
+        quantity: Number(row.quantity ?? row.qty ?? 0),
+        unit: ingredient?.unit ?? row.unit ?? 'g',
+        costPerUnit: ingredient?.costPerUnit ?? 0,
+      };
     });
   });
   readonly batchYield = computed(() => {
@@ -136,10 +142,10 @@ export class Recetas {
     }, 0);
     if (form.kind === 'base') {
       const base = this.selectedBase();
-      const baseTotal = this.selectedBaseIngredients().reduce((sum, row) => {
-        const ingredient = this.ingredients().find(item => item.name === row.name);
-        return sum + (ingredient ? row.quantity * ingredient.costPerUnit : 0);
-      }, 0);
+      const baseTotal = this.selectedBaseIngredients().reduce(
+        (sum, row) => sum + row.quantity * row.costPerUnit,
+        0,
+      );
       const baseCostPerCookie = base && Number(base.weight) > 0
         ? baseTotal * Number(form.gramsPerCookie ?? 0) / Number(base.weight)
         : 0;
@@ -192,7 +198,16 @@ export class Recetas {
   }
   openEditRecipe(recipe: Recipe): void {
     this.editingId.set(recipe.id);
-    const section = (...names: string[]) => recipe.sections.filter(item => names.some(name => item.name.toLocaleLowerCase('es') === name.toLocaleLowerCase('es'))).flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
+    const section = (...names: string[]) => recipe.sections
+      .filter(item => names.some(name => {
+        const sectionName = item.name.trim().toLocaleLowerCase('es');
+        const expected = name.trim().toLocaleLowerCase('es');
+        return sectionName === expected
+          || (expected === 'masa' && sectionName.includes('masa'))
+          || (expected.includes('añad') && sectionName.includes('añad'))
+          || (expected === 'relleno' && (sectionName.includes('relleno') || sectionName.includes('decoración') || sectionName.includes('decoracion')));
+      }))
+      .flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
     this.form.set({
       name: recipe.name, category: recipe.category, gramsPerCookie: recipe.baseGramsPerCookie ?? null,
       price: recipe.price, kind: recipe.baseId ? 'base' : 'own', baseId: recipe.baseId ?? '',
@@ -259,7 +274,23 @@ export class Recetas {
     }
     if (form.kind === 'base' && !form.baseId) { this.formError.set('Selecciona la masa base que utilizará esta receta.'); return; }
     const sections: RecipeSection[] = [];
-    const makeRows = (rows: IngredientRow[]) => rows.filter(row => row.ingredientId && Number(row.quantity) > 0).map(row => ({ ingredientId: row.ingredientId, quantity: Number(row.quantity) }));
+    const validateRows = (rows: IngredientRow[]): string | null => {
+      for (const row of rows) {
+        const hasIngredient = Boolean(row.ingredientId);
+        const hasQuantity = row.quantity !== null && Number.isFinite(Number(row.quantity)) && Number(row.quantity) > 0;
+        if (hasIngredient !== hasQuantity || (hasIngredient && !this.ingredients().some(item => item.id === row.ingredientId))) {
+          return 'Cada insumo debe tener una selección válida y una cantidad mayor que cero. No se guardó la receta para evitar perder ingredientes.';
+        }
+      }
+      return null;
+    };
+    for (const rows of [form.dough, form.additions, form.filling]) {
+      const validationError = validateRows(rows);
+      if (validationError) { this.formError.set(validationError); return; }
+    }
+    const makeRows = (rows: IngredientRow[]) => rows
+      .filter(row => Boolean(row.ingredientId) && row.quantity !== null && Number(row.quantity) > 0)
+      .map(row => ({ ingredientId: row.ingredientId, quantity: Number(row.quantity) }));
     const dough = makeRows(form.dough), additions = makeRows(form.additions), filling = makeRows(form.filling);
     if (form.kind === 'own' && !dough.length) { this.formError.set('Agrega al menos un ingrediente a la masa.'); return; }
     if (form.kind === 'base' && !form.baseId) { this.formError.set('Selecciona una masa base.'); return; }
