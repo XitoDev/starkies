@@ -60,7 +60,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const orderRef = getDatabase().doc(['businesses', 'starkies', 'collections', 'orders', 'records', verified.orderId].join('/'));
+    const orderRef = getDatabase().doc(['orders', verified.orderId].join('/'));
     const snapshot = await orderRef.get();
     if (!snapshot.exists) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
