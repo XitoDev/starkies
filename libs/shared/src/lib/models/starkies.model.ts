@@ -4,7 +4,7 @@ export interface Ingredient {
   unit: string;
   stock: number;
   costPerUnit: number;
-  /** Supplier package size expressed in grams, for normalized recipe costing. */
+  /** Supplier package quantity expressed in the ingredient's selected unit (g or ml). */
   packageQuantityGrams?: number;
   /** Total purchase price for the supplier package. */
   packagePrice?: number;

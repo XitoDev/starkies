@@ -47,6 +47,8 @@ export class Ingredientes {
 
   onSearch(event: Event): void { this.searchTerm.set((event.target as HTMLInputElement).value); }
   packageQuantity(item: Ingredient): number { return item.packageQuantityGrams ?? this.gramsPerUnit(item.unit); }
+  unitLabel(unit: string): string { return unit === 'ml' ? 'ml' : 'g'; }
+  updateUnit(value: string): void { if (value === 'g' || value === 'ml') this.form.update(current => ({ ...current, unit: value })); }
   packagePrice(item: Ingredient): number { return item.packagePrice ?? item.costPerUnit; }
   costPerGram(item: Ingredient): number { const quantity = this.packageQuantity(item); return quantity > 0 ? this.packagePrice(item) / quantity : 0; }
   costPerGramFromForm(): number { const quantity = this.form().packageQuantityGrams; return quantity > 0 ? this.form().packagePrice / quantity : 0; }
@@ -135,9 +137,7 @@ export class Ingredientes {
 
   private gramsPerUnit(unit: string): number {
     const normalized = unit.toLocaleLowerCase('es');
-    if (normalized === 'kg' || normalized === 'l') return 1000;
-    if (normalized === 'g' || normalized === 'ml') return 1;
-    return 0;
+    return normalized === 'g' || normalized === 'ml' ? 1 : 0;
   }
   private emptyForm(): IngredientForm {
     return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
