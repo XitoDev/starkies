@@ -8,7 +8,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 import { DataService } from '../../services/data.service';
 import { Recipe, RecipeSection, Ingredient } from 'shared';
 import { RecipeImageService } from '../../services/recipe-image.service';
@@ -259,8 +259,25 @@ export class Recetas {
     try {
       const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
       const storageRef = ref(getStorage(this.firebase.app), 'recipe-images/' + recipeId + '/' + crypto.randomUUID() + '.' + extension);
-      const result = await uploadBytes(storageRef, file, { contentType: file.type });
+      const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+      const result = await new Promise<import('firebase/storage').UploadTaskSnapshot>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          task.cancel();
+          reject(new Error('La carga de la foto tardó demasiado. Revisa la configuración CORS de Firebase Storage y vuelve a intentarlo.'));
+        }, 20000);
+        task.then(snapshot => { clearTimeout(timeout); resolve(snapshot); })
+          .catch(error => { clearTimeout(timeout); reject(error); });
+      });
       return await getDownloadURL(result.ref);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error ?? '');
+      if (/storage\/unauthorized|permission/i.test(message)) {
+        throw new Error('Firebase Storage rechazó la foto. Comprueba que hayas iniciado sesión con una cuenta administradora autorizada.');
+      }
+      if (/cors|preflight|network|failed to fetch/i.test(message)) {
+        throw new Error('No se pudo subir la foto por un error de red/CORS de Firebase Storage. La receta no se guardó. Revisa la configuración CORS del bucket starkies.firebasestorage.app.');
+      }
+      throw error;
     } finally { this.uploadingImage.set(false); }
   }
   async saveRecipe(): Promise<void> {
@@ -312,7 +329,12 @@ export class Recetas {
         baseId: form.kind === 'base' ? form.baseId : undefined,
         baseGramsPerCookie: form.gramsPerCookie ?? undefined, sections, notes: form.notes.trim() || undefined,
       };
-      await this.dataService.saveRecipe(recipe);
+      await Promise.race([
+        this.dataService.saveRecipe(recipe),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error(
+          'Firebase no respondió después de 25 segundos. El resultado del guardado es incierto: comprueba si la receta cambió antes de volver a guardar. Si ves ERR_BLOCKED_BY_CLIENT, prueba sin extensiones de bloqueo; si aparece CORS, corrige la configuración del bucket de Firebase Storage.'
+        )), 25000)),
+      ]);
       this.editorOpen.set(false); this.notice.set(this.editingId() ? 'Receta actualizada correctamente.' : 'Receta creada correctamente.');
       this.editingId.set(null); this.selectedFile.set(null);
       if (this.routeEditor()) { await this.router.navigate(['/catalogo']); }
