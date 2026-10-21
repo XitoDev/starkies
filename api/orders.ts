@@ -62,7 +62,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
     const customersCollection = db.collection('customers');
     const normalizedPhone = normalizePhone(order.phone);
-    const phoneLookupRef = db.collection('customerPhoneLookup').doc(createHash('sha256').update(normalizedPhone).digest('hex'));
+    const phoneLookupHash = createHash('sha256').update(normalizedPhone).digest('hex');
+    const phoneLookupRef = db.collection('customerPhoneLookup').doc(phoneLookupHash);
+    const orderPhoneLookupRef = db.collection('orderPhoneLookup').doc(phoneLookupHash);
     const phoneLookupSnapshot = await phoneLookupRef.get();
     const indexedCustomerId = String(phoneLookupSnapshot.data()?.['customerId'] ?? '');
     const customerRef = indexedCustomerId
@@ -152,6 +154,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       });
       transaction.set(customerRef, { index: Number(matchedCustomer?.data()['index'] ?? now), value: customerRecord });
       transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
+      transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
       transaction.set(orderRef, { index: now, value: orderRecord });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
