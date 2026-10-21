@@ -58,16 +58,21 @@ export class Ingredientes {
     { value: 'taza', label: 'Tazas (240 ml)', dimension: 'volume' },
     { value: 'cda', label: 'Cucharadas (15 ml)', dimension: 'volume' },
     { value: 'cdta', label: 'Cucharaditas (5 ml)', dimension: 'volume' },
+    { value: 'unidad', label: 'Unidades (u)', dimension: 'count' },
+    { value: 'pieza', label: 'Piezas (pza)', dimension: 'count' },
+    { value: 'par', label: 'Pares (2 unidades)', dimension: 'count' },
+    { value: 'media_docena', label: 'Media docena (6 unidades)', dimension: 'count' },
+    { value: 'docena', label: 'Docena (12 unidades)', dimension: 'count' },
   ] as const;
   packageQuantity(item: Ingredient): number { return item.packageQuantityGrams ?? this.gramsPerUnit(item.unit); }
   packageUnit(item: Ingredient): string { return item.packageUnit ?? item.unit; }
-  unitLabel(unit: string): string { return unit === 'ml' ? 'ml' : 'g'; }
-  packageUnitLabel(unit: string): string { return this.packageUnits.find(option => option.value === unit)?.value ?? unit; }
+  unitLabel(unit: string): string { return unit === 'ml' ? 'ml' : unit === 'unidad' ? 'u' : 'g'; }
+  packageUnitLabel(unit: string): string { return this.packageUnits.find(option => option.value === unit)?.label ?? unit; }
   updateUnit(value: string): void {
     const option = this.packageUnits.find(item => item.value === value);
     if (!option) return;
     const current = this.form();
-    const nextBaseUnit = option.dimension === 'volume' ? 'ml' : 'g';
+    const nextBaseUnit = option.dimension === 'volume' ? 'ml' : option.dimension === 'count' ? 'unidad' : 'g';
     if (current.unit !== nextBaseUnit && this.editingId()) {
       const id = this.editingId()!;
       const hasStock = (this.ingredients().find(item => item.id === id)?.stock ?? 0) > 0;
@@ -91,13 +96,13 @@ export class Ingredientes {
       const sameDimension = oldOption?.dimension === option.dimension;
       const convertedQuantity = sameDimension
         ? current.packageQuantityGrams * this.packageUnitFactor(current.packageUnit) / this.packageUnitFactor(option.value)
-        : current.packageQuantityGrams;
+        : 1;
       return { ...current, packageQuantityGrams: convertedQuantity, unit: nextBaseUnit, packageUnit: option.value };
     });
   }
   normalizedPackageQuantity(): number { return this.form().packageQuantityGrams * this.packageUnitFactor(this.form().packageUnit); }
   private packageUnitFactor(unit: string): number {
-    const factor: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    const factor: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5, unidad: 1, pieza: 1, par: 2, media_docena: 6, docena: 12 };
     return factor[unit] ?? 1;
   }
   packagePrice(item: Ingredient): number { return item.packagePrice ?? item.costPerUnit; }
@@ -195,7 +200,7 @@ export class Ingredientes {
 
   private gramsPerUnit(unit: string): number {
     const normalized = unit.toLocaleLowerCase('es');
-    return normalized === 'g' || normalized === 'ml' ? 1 : 0;
+    return ['g', 'ml', 'unidad', 'u', 'pieza', 'pza'].includes(normalized) ? 1 : 0;
   }
   private emptyForm(): IngredientForm {
     return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', packageUnit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
