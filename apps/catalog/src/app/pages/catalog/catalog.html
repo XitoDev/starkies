@@ -51,7 +51,7 @@
           <span class="presentation-illustration" aria-hidden="true"><span class="cookie-dot cookie-dot-a"></span><span class="cookie-dot cookie-dot-b"></span><span class="cookie-dot cookie-dot-c"></span><span class="cookie-dot cookie-dot-d"></span><span class="cookie-dot cookie-dot-e"></span></span>
           <strong>@if (p.id === 'clasicas') { Solo clásicas } @else if (p.id === 'ny') { Solo New York } @else { Caja mixta }</strong>
           <span class="presentation-description">@if (p.id === 'clasicas') { 10 galletas } @else if (p.id === 'ny') { 6 galletas } @else { 4 clásicas + 4 New York }</span>
-          <span class="presentation-bottom"><b class="box-price">{{ p.price | currency:'USD' }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
+          <span class="presentation-bottom"><b class="box-price">{{ formatPresentationPrice(p.price) }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
         </button>
       }
     </div>
