@@ -99,7 +99,7 @@
       @if (formOpen() === 'purchase') {
         <form class="finance-form" (submit)="submitPurchaseForm($event)">
           <label class="form-field form-field-wide">
-            <span>Insumo *</span>
+            <span>Insumo</span>
             <select matNativeControl required [value]="purchaseForm().ingredientId" (change)="updatePurchaseIngredient($any($event.target).value)">
               <option value="" disabled>Selecciona un insumo</option>
               @for (ingredient of ingredients(); track ingredient.id) {
@@ -111,15 +111,15 @@
             <p class="form-help form-field-wide">Primero registra un insumo en Inventario para poder cargar una compra.</p>
           }
           <label class="form-field">
-            <span>Cantidad comprada *</span>
+            <span>Cantidad comprada</span>
             <input matInput type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
           </label>
           <label class="form-field">
-            <span>Costo por {{ selectedIngredient()?.unit || 'unidad' }} (USD) *</span>
+            <span>Costo por {{ selectedIngredient()?.unit || 'unidad' }} (USD)</span>
             <input matInput type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
           </label>
           <label class="form-field">
-            <span>Fecha de compra *</span>
+            <span>Fecha de compra</span>
             <input matInput type="date" required [value]="purchaseForm().date" (input)="updatePurchaseText('date', $any($event.target).value)" />
           </label>
           <label class="form-field">
@@ -143,11 +143,11 @@
       } @else {
         <form class="finance-form" (submit)="submitExpenseForm($event)">
           <label class="form-field form-field-wide">
-            <span>Descripción *</span>
+            <span>Descripción</span>
             <input matInput required maxlength="160" [value]="expenseForm().description" (input)="updateExpenseText('description', $any($event.target).value)" placeholder="Ej. Pago de electricidad" />
           </label>
           <label class="form-field">
-            <span>Categoría *</span>
+            <span>Categoría</span>
             <select matNativeControl required [value]="expenseForm().category" (change)="updateExpenseText('category', $any($event.target).value)">
               <option value="alquiler">Alquiler</option>
               <option value="servicios">Servicios</option>
@@ -156,11 +156,11 @@
             </select>
           </label>
           <label class="form-field">
-            <span>Monto (USD) *</span>
+            <span>Monto (USD)</span>
             <input matInput type="number" min="0.01" step="0.01" required [value]="expenseForm().amount" (input)="updateExpenseNumber($any($event.target).value)" />
           </label>
           <label class="form-field form-field-wide">
-            <span>Fecha del gasto *</span>
+            <span>Fecha del gasto</span>
             <input matInput type="date" required [value]="expenseForm().date" (input)="updateExpenseText('date', $any($event.target).value)" />
           </label>
           @if (formError()) {
@@ -188,7 +188,7 @@
       </div>
       <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
         @if (ledgerActionOpen() === 'boxesPayment') {
-          <label class="form-field form-field-wide"><span>Compra pendiente *</span>
+          <label class="form-field form-field-wide"><span>Compra pendiente</span>
             <select matNativeControl required [value]="ledgerActionForm().pendingId" (change)="selectPendingBoxPurchase($any($event.target).value)">
               <option value="" disabled>Selecciona una compra</option>
               @for (item of pendingTransactions(); track item.id) {
@@ -197,21 +197,21 @@
             </select>
           </label>
         } @else if (ledgerActionOpen() === 'boxesPurchase') {
-          <label class="form-field form-field-wide"><span>Descripción *</span><input matInput required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
+          <label class="form-field form-field-wide"><span>Descripción</span><input matInput required maxlength="160" [value]="ledgerActionForm().description" (input)="updateLedgerForm('description', $any($event.target).value)" placeholder="Ej. Compra de cajas medianas" /></label>
         } @else {
-          <label class="form-field"><span>Desde *</span>
+          <label class="form-field"><span>Desde</span>
             <select matNativeControl [value]="ledgerActionForm().from" (change)="updateLedgerForm('from', $any($event.target).value)">
               <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option><option value="external">Ingreso / capital externo</option>
             </select>
           </label>
-          <label class="form-field"><span>Hacia *</span>
+          <label class="form-field"><span>Hacia</span>
             <select matNativeControl [value]="ledgerActionForm().to" (change)="updateLedgerForm('to', $any($event.target).value)">
               <option value="ingredients">Ingredientes</option><option value="expenses">Gastos</option><option value="profit">Ganancia</option>
             </select>
           </label>
         }
-        <label class="form-field"><span>Monto (USD) *</span><input matInput type="number" min="0.01" step="0.01" required [value]="ledgerActionForm().amount" (input)="updateLedgerForm('amount', $any($event.target).value)" /></label>
-        <label class="form-field"><span>Fecha *</span><input matInput type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Monto (USD)</span><input matInput type="number" min="0.01" step="0.01" required [value]="ledgerActionForm().amount" (input)="updateLedgerForm('amount', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Fecha</span><input matInput type="date" required [value]="ledgerActionForm().date" (input)="updateLedgerForm('date', $any($event.target).value)" /></label>
         @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
         <div class="modal-actions form-field-wide">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
