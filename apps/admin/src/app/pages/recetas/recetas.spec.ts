@@ -17,6 +17,13 @@ describe('Recetas', () => {
     await fixture.whenStable();
   });
 
+  it('keeps new category text in the recipe form state', () => {
+    component.setFormText('name', 'Galleta de limón');
+    component.setFormText('category', 'Galletas cítricas');
+    expect(component.form().name).toBe('Galleta de limón');
+    expect(component.form().category).toBe('Galletas cítricas');
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });
