@@ -114,6 +114,24 @@ async function main() {
     if (targetOwners.has(op.target)) throw new Error('Duplicate target ID ' + op.target + ' from ' + targetOwners.get(op.target) + ' and ' + op.source + '. No writes made.');
     targetOwners.set(op.target, op.source);
   }
+  const plannedByCollection = new Map();
+  for (const op of ops) {
+    const collectionName = op.target.split('/')[0];
+    if (!plannedByCollection.has(collectionName)) plannedByCollection.set(collectionName, new Set());
+    plannedByCollection.get(collectionName).add(op.target.split('/')[1]);
+  }
+  for (const [collectionName, plannedIds] of plannedByCollection) {
+    const existingCollection = await db.collection(collectionName).get();
+    const unexpected = existingCollection.docs.filter(document => !plannedIds.has(document.id));
+    if (unexpected.length) {
+      throw new Error('Destination collection ' + collectionName + ' already contains unplanned documents (' + unexpected.slice(0, 5).map(document => document.id).join(', ') + '). No writes made.');
+    }
+  }
+  const targetMeta = await db.doc('system/stateMeta').get();
+  if (targetMeta.exists && !(targetMeta.data().schemaVersion === 2 && targetMeta.data().migratedFrom === metaPath)) {
+    throw new Error('Root system/stateMeta already exists and is not the marker from this migration. Resolve it before continuing; no writes made.');
+  }
+
   const checked = await Promise.all(ops.map(async op => {
     const target = await db.doc(op.target).get();
     return {...op, action: !target.exists ? 'create' : equal(target.data(),op.data) ? 'skip-identical' : 'conflict'};
