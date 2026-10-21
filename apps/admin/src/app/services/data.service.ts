@@ -237,14 +237,36 @@ export class DataService {
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('orders', orderId));
   }
 
-  async saveOrderDetails(orderId: string, changes: { deliveryDate?: string; zone?: string; notes?: string }): Promise<void> {
+  async saveOrderDetails(orderId: string, changes: {
+    deliveryDate?: string;
+    zone?: string;
+    notes?: string;
+    status?: Order['status'];
+    shippingFee?: number;
+    isPaid?: boolean;
+    paymentMethod?: Order['paymentMethod'];
+  }): Promise<void> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawOrders = this.asArray(state['orders']);
     const index = rawOrders.findIndex((order) => this.asString(order['id'] ?? order['code']) === orderId);
     if (index < 0) throw new Error('No se encontró el pedido.');
     const current = rawOrders[index];
-    const updated = { ...current, ...changes, date: changes.deliveryDate ?? current['date'] };
+    const deliveryDate = changes.deliveryDate ?? this.asString(current['deliveryDate'] ?? current['date']);
+    const shippingFee = changes.shippingFee === undefined
+      ? this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0)
+      : Math.max(0, Math.round(changes.shippingFee * 100) / 100);
+    const updated: RawRecord = {
+      ...current,
+      ...changes,
+      deliveryDate,
+      date: deliveryDate || current['date'],
+      zone: changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']),
+      shippingFee,
+      isPaid: changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid'),
+      paymentStatus: (changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid')) ? 'PAID' : 'PENDING',
+      paymentMethod: changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '',
+    };
     const nextOrders = [...rawOrders];
     nextOrders[index] = updated;
     const nextState = { ...state, orders: nextOrders };
@@ -467,9 +489,12 @@ export class DataService {
         status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
         createdAt: this.asString(item['createdAt'] ?? item['created'] ?? item['date']),
         deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['date']),
-        zone: this.asOptionalString(item['zone']),
+        zone: this.asOptionalString(item['zone'] ?? item['deliveryZone'] ?? item['deliveryArea']),
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
+        shippingFee: this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? 0),
+        isPaid: item['isPaid'] === true || item['paymentStatus'] === 'PAID' || item['paymentStatus'] === 'paid',
+        paymentMethod: this.normalizePaymentMethod(this.asString(item['paymentMethod'] ?? item['paymentType'])),
       };
     });
 
@@ -481,7 +506,16 @@ export class DataService {
     const normalized = value.trim().toLocaleLowerCase();
     if (normalized.includes('entreg') || normalized === 'delivered') return 'DELIVERED';
     if (normalized.includes('cancel') || normalized === 'cancelled' || normalized === 'canceled') return 'CANCELLED';
+    if (normalized.includes('listo') || normalized === 'ready') return 'READY';
+    if (normalized.includes('prepar') || normalized === 'in_preparation' || normalized === 'processing') return 'PREPARING';
     return 'PENDING';
+  }
+
+  private normalizePaymentMethod(value: string): Order['paymentMethod'] {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (normalized.includes('transf') || normalized.includes('transfer')) return 'TRANSFER';
+    if (normalized.includes('efect') || normalized.includes('cash')) return 'CASH';
+    return undefined;
   }
 
   private asArray(value: unknown): RawRecord[] {
