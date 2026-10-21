@@ -46,7 +46,7 @@ export class Ingredientes {
 
   onSearch(event: Event): void { this.searchTerm.set((event.target as HTMLInputElement).value); }
   packageQuantity(item: Ingredient): number { return item.packageQuantityGrams ?? this.gramsPerUnit(item.unit); }
-  packagePrice(item: Ingredient): number { return item.packagePrice ?? item.costPerUnit * this.gramsPerUnit(item.unit); }
+  packagePrice(item: Ingredient): number { return item.packagePrice ?? item.costPerUnit; }
   costPerGram(item: Ingredient): number { const quantity = this.packageQuantity(item); return quantity > 0 ? this.packagePrice(item) / quantity : 0; }
   costPerGramFromForm(): number { const quantity = this.form().packageQuantityGrams; return quantity > 0 ? this.form().packagePrice / quantity : 0; }
 
@@ -65,7 +65,7 @@ export class Ingredientes {
       name: item.name,
       brand: item.brand ?? '',
       packageQuantityGrams: grams,
-      packagePrice: item.packagePrice ?? item.costPerUnit * grams / this.gramsPerUnit(item.unit),
+      packagePrice: item.packagePrice ?? item.costPerUnit,
       unit: item.unit || 'g',
       stock: item.stock,
       minStock: item.minStock ?? 0,
@@ -99,6 +99,7 @@ export class Ingredientes {
     try {
       const costPerGram = values.packagePrice / values.packageQuantityGrams;
       const unitFactor = this.gramsPerUnit(values.unit);
+      const costPerUnit = unitFactor > 0 ? costPerGram * unitFactor : values.packagePrice;
       const item: Ingredient = {
         id: this.editingId() ?? crypto.randomUUID(),
         name,
@@ -106,7 +107,7 @@ export class Ingredientes {
         packageQuantityGrams: values.packageQuantityGrams,
         packagePrice: values.packagePrice,
         unit: values.unit || 'g',
-        costPerUnit: costPerGram * unitFactor,
+        costPerUnit,
         stock: values.stock,
         minStock: values.minStock,
         supplyGroup: values.supplyGroup,
@@ -135,7 +136,8 @@ export class Ingredientes {
   private gramsPerUnit(unit: string): number {
     const normalized = unit.toLocaleLowerCase('es');
     if (normalized === 'kg' || normalized === 'l') return 1000;
-    return 1;
+    if (normalized === 'g' || normalized === 'ml') return 1;
+    return 0;
   }
   private emptyForm(): IngredientForm {
     return { name: '', brand: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
