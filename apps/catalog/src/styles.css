@@ -335,3 +335,18 @@ app-catalog .search-field .mdc-notched-outline__trailing { border-radius:0 var(-
 @media (max-width:600px) {
  .catalog-order-bottom-sheet.mat-bottom-sheet-container { width:100vw !important; max-width:100vw !important; max-height:92dvh !important; border-radius:22px 22px 0 0 !important; }
 }
+
+
+app-catalog .search-field{width:min(100%,270px);flex:0 1 270px}
+app-catalog .box-presentations .presentation-check{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:24px;height:24px;color:transparent;border:0;border-radius:50%;font:700 16px/1 'DM Sans',sans-serif}
+app-catalog .box-presentations button.active .presentation-check{color:#fff;background:#795381}
+app-catalog .box-presentations .presentation-check:empty{display:none}
+app-catalog .buy button{min-height:42px;color:#68416f;border:0;background:#ead9ed}
+app-catalog .buy button.add-button{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#ead9ed}
+app-catalog .add-button .add-icon{display:grid;width:24px;height:24px;place-items:center;margin:0;background:transparent}
+app-catalog .add-button .add-label{margin-right:auto;text-align:left}
+app-catalog .buy .quantity{min-height:42px;padding:3px;border:0;background:#ead9ed}
+app-catalog .buy .quantity button{display:grid;width:32px;min-height:32px;place-items:center;padding:0;background:#f8eff9}
+app-catalog .buy .quantity b{min-width:20px;text-align:center}
+app-catalog .dock-continue{background:#81558c}
+@media(max-width:680px){app-catalog .section-title{gap:12px}app-catalog .search-field{width:min(100%,270px);flex-basis:auto}app-catalog .buy button{min-height:42px;padding:6px 9px}app-catalog .buy .quantity{min-height:42px}app-catalog .buy .quantity button{width:32px;min-height:32px}}
