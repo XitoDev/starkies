@@ -55,7 +55,7 @@
                 </div>
                 <div class="product-body"><div class="product-category">{{ product.isNy ? 'NEW YORK STYLE' : 'CLÁSICA' }}</div><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
                   @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
-                  @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
+                  @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">La quiero en mi box</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
                   @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
                 </div></div>
               </article>
@@ -84,7 +84,14 @@
     </div>
 
   </div>
-  <div class="footer-bottom"><small>© {{ currentYear }} StarKies. La estrella eres tú.</small><a href="#inicio">Volver arriba ↑</a></div>
+  <div class="footer-bottom">
+    <small>© {{ currentYear }} StarKies. La estrella eres tú.</small>
+    <a class="footer-brand" href="#inicio" aria-label="StarKies, volver al inicio">
+      <img src="/starkies-icon.svg" alt="" width="34" height="34" loading="lazy">
+      <span class="footer-brand-wordmark">StarKies<span aria-hidden="true">✦</span></span>
+    </a>
+    <a href="#inicio">Volver arriba ↑</a>
+  </div>
 </footer>
 @if (totalBoxCurrent() > 0 || completedBoxes().length > 0) {
   <aside class="cart-dock" aria-label="Resumen de cajas y progreso">

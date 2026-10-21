@@ -1470,3 +1470,98 @@ app-catalog .product-body {
     max-height: 220px !important;
   }
 }
+
+
+/* Final request: product imagery without a colored rectangular tile. */
+app-catalog .photo {
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  isolation: isolate;
+}
+app-catalog .photo img {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  mix-blend-mode: multiply !important;
+  object-fit: contain !important;
+}
+/* Make the call-to-action saturated purple and keep its copy centered independently of the plus. */
+app-catalog .buy .add-button,
+app-catalog .add-button {
+  background: #5B1688 !important;
+  border-color: #5B1688 !important;
+  color: #FFFFFF !important;
+  padding-left: 46px !important;
+  padding-right: 46px !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+app-catalog .buy .add-button .add-label,
+app-catalog .add-button .add-label {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  font-size: clamp(.72rem, 1.7vw, .92rem) !important;
+  letter-spacing: -.01em !important;
+}
+app-catalog .buy .add-button .add-icon,
+app-catalog .add-button .add-icon {
+  right: 9px !important;
+}
+app-catalog .buy .add-button:hover:not(:disabled),
+app-catalog .add-button:hover:not(:disabled) {
+  background: #3D0C61 !important;
+  border-color: #3D0C61 !important;
+}
+app-catalog .footer-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+}
+app-catalog .footer-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 9px !important;
+  margin: 0 auto !important;
+  color: #F7F3EA !important;
+  text-decoration: none !important;
+}
+app-catalog .footer-brand img {
+  display: block !important;
+  width: 34px !important;
+  height: 34px !important;
+  object-fit: contain !important;
+  border-radius: 9px !important;
+}
+app-catalog .footer-brand-wordmark {
+  color: #F7F3EA !important;
+  font-family: inherit !important;
+  font-weight: 900 !important;
+  font-size: 1.4rem !important;
+  letter-spacing: -.045em !important;
+}
+app-catalog .footer-brand-wordmark > span {
+  color: #D6C2E0 !important;
+  margin-left: 3px !important;
+}
+@media (max-width: 640px) {
+  app-catalog .buy .add-button .add-label,
+  app-catalog .add-button .add-label {
+    font-size: .75rem !important;
+  }
+  app-catalog .footer-bottom {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  app-catalog .footer-bottom small {
+    width: 100% !important;
+  }
+}
