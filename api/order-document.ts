@@ -105,7 +105,7 @@ function verifyToken(token: string, signingKey: string): { orderId: string } | n
   const [orderId, expiryRaw, suppliedSignature] = parts;
   if (!/^SK-\d{8}-[A-F0-9]{6}$/.test(orderId) || !/^\d{13}$/.test(expiryRaw) || !/^[a-f0-9]{64}$/.test(suppliedSignature)) return null;
   const expiry = Number(expiryRaw);
-  if (!Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + 8 * 24 * 60 * 60 * 1000) return null;
+  if (!Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + 3 * 24 * 60 * 60 * 1000) return null;
   const payload = orderId + '.' + expiryRaw;
   const expected = createHmac('sha256', signingKey).update(payload).digest();
   const supplied = Buffer.from(suppliedSignature, 'hex');
