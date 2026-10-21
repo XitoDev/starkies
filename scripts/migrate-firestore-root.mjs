@@ -67,6 +67,13 @@ async function main() {
     const hash = createHash('sha256').update(normalizedPhone).digest('hex');
     ops.push({ source: 'derived phone index from ' + owner.source, target: 'customerPhoneLookup/' + hash, data: { customerId: owner.customerId, normalizedPhone } });
   }
+  for (const op of ops.filter(item => item.target.startsWith('orders/'))) {
+    const value = isObject(op.data.value) ? op.data.value : null;
+    if (!value) continue;
+    const normalizedPhone = String(value.phone ?? '').replace(/\\D/g, '').replace(/^593/, '0');
+    const owner = phoneOwners.get(normalizedPhone);
+    if (owner) op.data = { ...op.data, value: { ...value, customerId: owner.customerId } };
+  }
   const latestOrderByPhone = new Map();
   for (const op of ops.filter(item => item.target.startsWith('orders/'))) {
     const value = isObject(op.data.value) ? op.data.value : {};
