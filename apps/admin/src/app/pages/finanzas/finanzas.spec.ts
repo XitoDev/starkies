@@ -52,6 +52,23 @@ describe('Finanzas', () => {
     expect(component).toBeTruthy();
   });
 
+  it('saves manually entered current balances as the new baseline', async () => {
+    component.openBalanceEditor();
+    component.updateBalanceField('bankIngredients', '125.50');
+    component.updateBalanceField('bankProfit', '0');
+    component.updateBalanceField('fundProfit', '45.25');
+
+    await component.saveBalances();
+
+    expect(dataServiceStub.saveBusinessSetting).toHaveBeenCalledWith('financeLedger', expect.objectContaining({
+      bankBalances: expect.objectContaining({ ingredients: 125.5, profit: 0 }),
+      funds: expect.objectContaining({
+        profit: { balance: 45.25, previousBalance: 45.25 },
+      }),
+    }));
+    expect(component.editBalancesOpen()).toBe(false);
+  });
+
   it('prefills the purchase form with the selected ingredient cost', () => {
     component.openPurchaseForm();
     expect(component.formOpen()).toBe('purchase');
