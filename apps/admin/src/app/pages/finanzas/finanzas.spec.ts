@@ -31,7 +31,9 @@ describe('Finanzas', () => {
         { id: 'flour', name: 'Harina', unit: 'g', stock: 4000, costPerUnit: 0.0025, packageUnit: 'kg', packageQuantityGrams: 1, packagePrice: 2.5, minStock: 1000 },
       ]),
       recipes: signal<Record<string, unknown>[]>([]),
-      saveRecipe: vi.fn().mockResolvedValue(undefined),
+      saveRecipe: vi.fn(async (recipe: Record<string, unknown>) => {
+        dataServiceStub.recipes.update(current => current.map(item => item['id'] === recipe['id'] ? recipe : item));
+      }),
       recordCashMovement,
       recordIngredientPurchase,
       saveBusinessSetting: vi.fn().mockResolvedValue(undefined),
