@@ -43,3 +43,7 @@ The migration requires a complete legacy system/stateMeta and a service account 
 ## Execution recommendation
 
 Run locally from a trusted machine after exporting the service-account JSON into FIREBASE_SERVICE_ACCOUNT_JSON. Do not commit the service-account file or backup. GitHub Actions can run this only if secrets and an environment with manual approval are configured; local execution is safer for the first production migration because it avoids placing the production credential in a CI job. The migration is not run automatically by this PR or deployment.
+
+## Review gate for this draft PR
+
+The application repositories and API handlers are being switched to root-level paths on this branch. The deployed rules file still contains the legacy businesses/starkies matches; do not merge or deploy this branch until firestore.rules is updated and reviewed to authorize only the intended root collections and expose only publicCatalog for unauthenticated reads. The GitHub editing connection did not accept the rules-file change, so this remains an explicit blocker rather than a hidden assumption.
