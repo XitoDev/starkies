@@ -197,7 +197,7 @@ export class Ingredientes {
     const ingredient = this.ingredients().find(item => item.id === this.purchaseIngredientId());
     const quantity = this.purchaseQuantity();
     const unitCost = this.purchaseUnitCost();
-    if (!ingredient) { this.purchaseError.set('No se encontró el ingrediente. Actualiza la pantalla e inténtalo de nuevo.'); return; }
+    if (!ingredient) { this.purchaseError.set('No se encontró el insumo. Actualiza la pantalla e inténtalo de nuevo.'); return; }
     if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost <= 0) { this.purchaseError.set('Ingresa una cantidad y un costo por unidad mayores que cero.'); return; }
     this.purchaseSaving.set(true);
     this.purchaseError.set('');
