@@ -192,3 +192,40 @@ app-ingredientes .ingredients-grid{display:grid;grid-template-columns:repeat(5,m
 .mat-mdc-menu-item > mat-icon,
 .mat-mdc-menu-item > .mat-icon { flex: 0 0 24px; display: inline-flex; align-items: center; justify-content: center; margin-inline-end: 12px; }
 .mat-mdc-menu-item > span { display: inline-flex; align-items: center; line-height: 24px; }
+
+
+/* Supplies: the catalog lists only purchase-cost fields; stock is managed in Inventory. */
+app-ingredientes .supply-table-wrap{overflow-x:auto;border:1px solid #eee7f2;border-radius:14px;background:#fff}
+app-ingredientes .supply-table{width:100%;min-width:760px;border-collapse:collapse}
+app-ingredientes .supply-table th,app-ingredientes .supply-table td{padding:15px 16px;border-bottom:1px solid #f0eaf4;text-align:left;font-size:12px;white-space:nowrap}
+app-ingredientes .supply-table th{background:#faf7fc;color:#8d7c98;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+app-ingredientes .supply-table tbody tr:last-child td{border-bottom:0}
+app-ingredientes .supply-table td strong{color:#3d3046}
+app-ingredientes .supply-table .cost-per-gram{color:#5c8b4b}
+app-ingredientes .supply-actions{display:flex;align-items:center;gap:2px}
+app-ingredientes .supply-actions button{width:34px;height:34px}
+app-ingredientes .supply-actions .delete-menu-action{color:#a44855}
+app-ingredientes .cost-preview{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid #e4d6ef;border-radius:10px;background:#f8f3fb;color:#7c6889;font-size:12px}
+app-ingredientes .cost-preview strong{color:#704795;font-size:17px}
+app-ingredientes .ingredient-form .form-field input{box-sizing:border-box}
+app-ingredientes .ingredients-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+app-ingredientes .search-box{position:relative;display:block;flex:1 1 260px;max-width:390px}
+app-ingredientes .search-icon{position:absolute;left:13px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:#a397ad}
+app-ingredientes .search-box input{box-sizing:border-box;width:100%;height:43px;padding:0 13px 0 39px;border:1px solid #e8e0ed;border-radius:9px;outline:none;background:#fff;color:#5b4d65;font-size:12px}
+app-ingredientes .result-count{margin-left:auto;color:#95899d;font-size:11px;white-space:nowrap}
+
+/* Product recipe cards use a clean white surface, equal-height content, and no margin callout. */
+app-recetas .recipe-card{display:flex;flex-direction:column;height:100%;border-color:#eee7f2;background:#fff}
+app-recetas .card-image-wrapper{flex:0 0 clamp(190px,18vw,285px)}
+app-recetas .card-content{display:flex;flex:1;flex-direction:column;min-height:168px}
+app-recetas .recipe-name{min-height:42px;margin-bottom:8px}
+app-recetas .recipe-description{min-height:32px;margin:0 0 12px;color:#95899d;font-size:11px;line-height:1.45}
+app-recetas .recipe-economics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid #f1ebf4}
+app-recetas .recipe-economics>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+app-recetas .recipe-economics span{color:#95899d;font-size:10px}
+app-recetas .recipe-economics strong{color:#3d3046;font-size:13px}
+app-recetas .profit-line{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;color:#95899d;font-size:10px}
+app-recetas .profit-line strong{color:#5c8b4b;font-size:12px}
+app-recetas .profit-line strong.negative{color:#a44855}
+@media(max-width:760px){app-recetas .card-image-wrapper{flex-basis:180px}app-recetas .card-content{min-height:160px}}
+@media(max-width:430px){app-recetas .card-image-wrapper{flex-basis:245px}}
