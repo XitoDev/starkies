@@ -59,6 +59,10 @@ export class Finanzas {
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
   readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
+  readonly categoryFilter = signal('all');
+  readonly priceCategories = computed(() => Array.from(new Set(
+    this.recipes().filter(recipe => !recipe.archived).map(recipe => recipe.category?.trim() || 'Sin categoría'),
+  )).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
   readonly priceRows = computed(() => this.recipes().filter(recipe => !recipe.archived).map(recipe => {
     const ingredientCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
       const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
@@ -71,10 +75,12 @@ export class Finanzas {
     const salePrice = Math.max(0, edit?.salePrice ?? (storedSalePrice > 0 ? storedSalePrice : suggestedPrice));
     const expenses = ingredientCost;
     const services = ingredientCost;
-    const profit = salePrice - ingredientCost - expenses - services;
+    const profit = salePrice - ingredientCost - expenses - services - fixedProfit;
+    const marginPercent = salePrice > 0 ? profit / salePrice * 100 : 0;
+    const priceDifference = salePrice - suggestedPrice;
     return {
       id: recipe.id, name: recipe.name, category: recipe.category, yield: recipe.yield,
-      ingredientCost, expenses, services, fixedProfit, suggestedPrice, salePrice, profit,
+      ingredientCost, expenses, services, fixedProfit, suggestedPrice, salePrice, profit, marginPercent, priceDifference,
     };
   }).sort((a, b) => {
     const categoryOrder = (a.category || 'Sin categoría').localeCompare(
@@ -82,6 +88,9 @@ export class Finanzas {
     );
     return categoryOrder || a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
   }));
+  readonly visiblePriceRows = computed(() => this.priceRows().filter(product =>
+    this.categoryFilter() === 'all' || (product.category || 'Sin categoría') === this.categoryFilter(),
+  ));
 
   updateSalePrice(id: string, value: string): void {
     const row = this.priceRows().find(item => item.id === id);
