@@ -125,7 +125,7 @@
         </section>
         <label class="recipe-field notes-field"><span>Notas de la receta · opcional</span><textarea matInput rows="4" maxlength="1500" [value]="form().notes" (input)="setFormText('notes', $any($event.target).value)" placeholder="Ej. Usar solo una parte de las yemas o reservar un poco de masa para la decoración."></textarea></label>
         @if (formError()) { <p class="recipe-form-error" role="alert">{{ formError() }}</p> }
-        <footer class="recipe-form-footer"><button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar' }}</button></footer>
+        <footer class="recipe-form-footer"><button matButton="outlined" class="btn-secondary" type="button" (click)="closeEditor()">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar' }}</button></footer>
       </form>
     </section>
   </div>

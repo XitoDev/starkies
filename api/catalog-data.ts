@@ -82,7 +82,8 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
     const grams = numberValue(recipe['baseGramsPerCookie'], 0);
     const isNy = normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
-    const image = publicImage(stringValue(recipe['image']), id);
+    // The public catalog owns its image; retain the recipe image as a backward-compatible fallback.
+    const image = publicImage(stringValue(recipe['catalogImage'] ?? recipe['image']), id);
     return [{
       id,
       name,

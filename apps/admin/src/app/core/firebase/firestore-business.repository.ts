@@ -11,6 +11,7 @@ import {
   runTransaction,
   setDoc,
   writeBatch,
+  where,
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
@@ -147,12 +148,16 @@ export class FirestoreBusinessRepository {
       this.firebase.firestore,
       'businesses', 'starkies', 'collections', collectionKey, 'records',
     );
-    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-    const matching = snapshot.docs.find((record) => {
-      const storedValue = record.data()['value'];
-      return this.isRecord(storedValue)
-        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
-    });
+    // Updating an existing recipe/product must not download the entire
+    // collection. Query its indexed ID first; the full ordered snapshot is
+    // needed only when appending a brand-new record to preserve its index.
+    const matchingById = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
+    // Some legacy records (for example imported ingredients) are keyed by code.
+    // Preserve the old id-or-code matching semantics without downloading the whole collection.
+    const matchingByCode = matchingById.empty
+      ? await getDocs(query(recordsRef, where('value.code', '==', recordId)))
+      : null;
+    const matching = matchingById.docs[0] ?? matchingByCode?.docs[0];
 
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
@@ -161,6 +166,7 @@ export class FirestoreBusinessRepository {
       return;
     }
 
+    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
     const maxIndex = snapshot.docs.reduce(
       (max, record) => Math.max(max, Number(record.data()['index'] ?? -1)),
       -1,
