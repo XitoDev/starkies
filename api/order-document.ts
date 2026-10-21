@@ -150,6 +150,7 @@ function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   rect(0, 690, 595, 152, pale);
   rect(0, 690, 8, 152, purple);
   drawText('StarKies.', 42, 800, 23, 'F2', purple);
+  drawText('L A   E S T R E L L A   E R E S   T Ú', 43, 784, 6, 'F1', muted);
   drawText(formatDate(order.createdAt ?? order.created ?? safeDate), 440, 803, 9, 'F1', muted);
   drawText('PEDIDO', 42, 758, 17, 'F2', dark);
   rect(385, 747, 168, 27, '0.90 0.86 0.95');
@@ -161,7 +162,7 @@ function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   drawText('Cliente', 56, 675, 8, 'F2', muted);
   drawText(order.customer, 56, 658, 10, 'F2');
   drawText('En la caja', 310, 675, 8, 'F2', muted);
-  drawText(order.cookieName ?? order.customer, 310, 658, 10);
+  drawText(order.cookieName || 'N/A', 310, 658, 10);
   drawText('Teléfono', 56, 631, 8, 'F2', muted);
   drawText(order.phone, 56, 614, 10);
   drawText('Sector / punto', 310, 631, 8, 'F2', muted);
