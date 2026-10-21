@@ -142,7 +142,7 @@
 
         <div class="modal-actions">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button matButton="outlined" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
+          <button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
             {{ saving() ? 'Registrando…' : 'Registrar producción' }}
           </button>
         </div>

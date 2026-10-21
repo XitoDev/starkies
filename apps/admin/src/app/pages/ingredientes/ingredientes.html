@@ -160,7 +160,7 @@
 
         <div class="modal-actions">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving()">
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
             {{ saving() ? 'Guardando…' : (editingId() ? 'Guardar cambios' : 'Crear insumo') }}
           </button>
         </div>
@@ -181,7 +181,7 @@
         <label class="form-field"><span>Costo por unidad (USD) *</span><input matInput required type="number" min="0" step="0.0001" [value]="purchaseUnitCost()" (input)="onPurchaseUnitCostChange($any($event.target).value)" /></label>
         <p class="purchase-total form-field-wide">Total de la compra <strong>{{ purchaseQuantity() * purchaseUnitCost() | currency:'USD' }}</strong></p>
         @if (purchaseError()) { <p class="form-error form-field-wide" role="alert">{{ purchaseError() }}</p> }
-        <div class="modal-actions form-field-wide"><button matButton="outlined" class="btn-secondary" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button matButton="outlined" class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
+        <div class="modal-actions form-field-wide"><button matButton="outlined" class="btn-secondary" type="button" [disabled]="purchaseSaving()" (click)="purchaseOpen.set(false)">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="purchaseSaving()">{{ purchaseSaving() ? 'Guardando…' : 'Guardar compra' }}</button></div>
       </form>
     </section>
   </div>

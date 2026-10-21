@@ -135,7 +135,7 @@
           }
           <div class="modal-actions form-field-wide">
             <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
+            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
               {{ saving() ? 'Guardando…' : 'Guardar compra' }}
             </button>
           </div>
@@ -168,7 +168,7 @@
           }
           <div class="modal-actions form-field-wide">
             <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving()">
+            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
               {{ saving() ? 'Guardando…' : 'Guardar gasto' }}
             </button>
           </div>
@@ -215,7 +215,7 @@
         @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
         <div class="modal-actions form-field-wide">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
-          <button matButton="outlined" class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
         </div>
       </form>
     </section>
