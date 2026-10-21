@@ -363,8 +363,18 @@ export class Finanzas {
       return;
     }
     const current = this.ledger();
+    const state = this.dataService.rawState() ?? {};
+    const deliveredIds = (Array.isArray(state['orders']) ? state['orders'] : [])
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
+      .filter(order => {
+        const status = String(order['status'] ?? '').toLocaleLowerCase('es');
+        return status.includes('entreg') || status === 'delivered';
+      })
+      .map(order => String(order['id'] ?? order['code'] ?? ''))
+      .filter(Boolean);
     const next: FinanceLedger = {
       ...current,
+      processedOrderIds: Array.from(new Set([...current.processedOrderIds, ...deliveredIds])),
       bankBalances: {
         ingredients: this.money(values.bankIngredients),
         expenses: this.money(values.bankExpenses),
