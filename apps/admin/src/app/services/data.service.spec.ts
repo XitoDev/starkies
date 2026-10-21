@@ -11,8 +11,8 @@ describe('DataService catalog visibility', () => {
   let service: DataService;
 
   beforeEach(() => {
-    repository.loadState.mockClear();
-    repository.upsertCollectionRecord.mockClear();
+    repository.loadState.mockReset().mockResolvedValue(null);
+    repository.upsertCollectionRecord.mockReset().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
         DataService,
@@ -67,4 +67,18 @@ describe('DataService catalog visibility', () => {
     );
     expect(service.recipes()[0].catalogVisible).toBe(true);
   });
+  it('updates catalog visibility immediately and rolls it back if the write fails', async () => {
+    let rejectWrite!: (reason: Error) => void;
+    repository.upsertCollectionRecord.mockReturnValueOnce(new Promise<void>((_resolve, reject) => {
+      rejectWrite = reject;
+    }));
+
+    const save = service.setRecipeCatalogVisibility('000015', false);
+    expect(service.recipes()[0].catalogVisible).toBe(false);
+
+    rejectWrite(new Error('Firebase unavailable'));
+    await expect(save).rejects.toThrow('Firebase unavailable');
+    expect(service.recipes()[0].catalogVisible).toBe(true);
+  });
+
 });

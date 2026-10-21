@@ -63,18 +63,11 @@ export class DataService {
     const existing = existingIndex >= 0 ? currentIngredients[existingIndex] : {};
     const savedRecord: RawRecord = { ...existing, ...ingredient };
 
-    await this.repository.upsertCollectionRecord('ingredients', ingredient.id, savedRecord);
-
     const nextIngredients = [...currentIngredients];
-    if (existingIndex >= 0) {
-      nextIngredients[existingIndex] = savedRecord;
-    } else {
-      nextIngredients.push(savedRecord);
-    }
-
+    if (existingIndex >= 0) nextIngredients[existingIndex] = savedRecord;
+    else nextIngredients.push(savedRecord);
     const nextState = { ...state, ingredients: nextIngredients };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('ingredients', ingredient.id, savedRecord));
   }
 
   async deleteIngredient(ingredientId: string): Promise<void> {
@@ -102,13 +95,9 @@ export class DataService {
       throw new Error('Este insumo está utilizado en una receta. No se puede eliminar mientras exista esa relación.');
     }
 
-    await this.repository.deleteCollectionRecord('ingredients', ingredientId);
-    const nextIngredients = this.asArray(state['ingredients']).filter(
-      (item) => this.asString(item['id']) !== ingredientId,
-    );
+    const nextIngredients = this.asArray(state['ingredients']).filter((item) => this.asString(item['id']) !== ingredientId);
     const nextState = { ...state, ingredients: nextIngredients };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('ingredients', ingredientId));
   }
 
   async saveRecipe(recipe: Recipe): Promise<void> {
@@ -135,13 +124,11 @@ export class DataService {
       })),
       items: flattenedItems,
     };
-    await this.repository.upsertCollectionRecord('recipes', recipe.id, savedRecord);
     const nextRecipes = [...rawRecipes];
     if (existingIndex >= 0) nextRecipes[existingIndex] = savedRecord;
     else nextRecipes.push(savedRecord);
     const nextState = { ...state, recipes: nextRecipes };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('recipes', recipe.id, savedRecord));
   }
 
 
@@ -155,10 +142,8 @@ export class DataService {
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawRecipes = this.asArray(state['recipes']);
     if (!rawRecipes.some(recipe => this.asString(recipe['id']) === recipeId)) throw new Error('No se encontró el producto.');
-    await this.repository.deleteCollectionRecord('recipes', recipeId);
     const nextState = { ...state, recipes: rawRecipes.filter(recipe => this.asString(recipe['id']) !== recipeId) };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('recipes', recipeId));
   }
 
   async setRecipeCatalogVisibility(recipeId: string, visible: boolean): Promise<void> {
@@ -174,13 +159,10 @@ export class DataService {
     }
 
     const updatedRecipe: RawRecord = { ...rawRecipes[recipeIndex], catalogVisible: visible };
-    await this.repository.upsertCollectionRecord('recipes', recipeId, updatedRecipe);
-
     const nextRecipes = [...rawRecipes];
     nextRecipes[recipeIndex] = updatedRecipe;
     const nextState = { ...state, recipes: nextRecipes };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('recipes', recipeId, updatedRecipe));
   }
 
   async saveCustomer(customer: Customer): Promise<void> {
@@ -251,10 +233,8 @@ export class DataService {
   async deleteOrder(orderId: string): Promise<void> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
-    await this.repository.deleteCollectionRecord('orders', orderId);
     const nextState = { ...state, orders: this.asArray(state['orders']).filter((order) => this.asString(order['id'] ?? order['code']) !== orderId) };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('orders', orderId));
   }
 
   async saveOrderDetails(orderId: string, changes: { deliveryDate?: string; zone?: string; notes?: string }): Promise<void> {
@@ -265,12 +245,10 @@ export class DataService {
     if (index < 0) throw new Error('No se encontró el pedido.');
     const current = rawOrders[index];
     const updated = { ...current, ...changes, date: changes.deliveryDate ?? current['date'] };
-    await this.repository.upsertCollectionRecord('orders', orderId, updated);
     const nextOrders = [...rawOrders];
     nextOrders[index] = updated;
     const nextState = { ...state, orders: nextOrders };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updated));
   }
 
   async saveBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -303,13 +281,10 @@ export class DataService {
     }
 
     const updatedOrder: RawRecord = { ...currentOrder, status };
-    await this.repository.upsertCollectionRecord('orders', orderId, updatedOrder);
-
     const nextOrders = [...rawOrders];
     nextOrders[orderIndex] = updatedOrder;
     const nextState = { ...state, orders: nextOrders };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updatedOrder));
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
@@ -328,6 +303,18 @@ export class DataService {
 
     await this.repository.recordIngredientPurchase(movement);
     await this.refreshAfterFinancialWrite();
+  }
+
+  private async applyOptimisticState(previousState: RawRecord, nextState: RawRecord, persist: () => Promise<void>): Promise<void> {
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+    try {
+      await persist();
+    } catch (error) {
+      this.rawState.set(previousState);
+      this.loadViewModels(previousState);
+      throw error;
+    }
   }
 
   private async refreshAfterFinancialWrite(): Promise<void> {

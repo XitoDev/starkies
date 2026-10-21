@@ -38,10 +38,50 @@ export class FirestoreBusinessRepository {
   private readonly stateMetaRef = () =>
     doc(this.firebase.firestore, 'businesses', 'starkies', 'system', 'stateMeta');
 
+  private readonly stateCacheTtlMs = 15_000;
+  private stateCache: { value: Record<string, unknown> | null; expiresAt: number } | null = null;
+  private stateLoadPromise: Promise<Record<string, unknown> | null> | null = null;
+  private cacheGeneration = 0;
+
   constructor(
     private readonly firebase: FirebaseClientService,
     private readonly archiveService: FirestoreBackupArchiveService,
   ) {}
+
+  /**
+   * Reuses a recent complete business snapshot and coalesces simultaneous reads.
+   * Writes invalidate the cache; the short TTL also bounds staleness from other sessions.
+   */
+  async loadState(): Promise<Record<string, unknown> | null> {
+    if (this.stateCache && this.stateCache.expiresAt > Date.now()) {
+      return this.cloneState(this.stateCache.value);
+    }
+    if (this.stateLoadPromise) {
+      return this.stateLoadPromise.then((state) => this.cloneState(state));
+    }
+
+    const generation = this.cacheGeneration;
+    const request = this.fetchStateFromFirestore();
+    this.stateLoadPromise = request;
+    try {
+      const state = await request;
+      if (generation === this.cacheGeneration) {
+        this.stateCache = { value: this.cloneState(state), expiresAt: Date.now() + this.stateCacheTtlMs };
+      }
+      return this.cloneState(state);
+    } finally {
+      if (this.stateLoadPromise === request) this.stateLoadPromise = null;
+    }
+  }
+
+  invalidateStateCache(): void {
+    this.cacheGeneration++;
+    this.stateCache = null;
+  }
+
+  private cloneState(state: Record<string, unknown> | null): Record<string, unknown> | null {
+    return state === null ? null : structuredClone(state);
+  }
 
   async hasCompletedMigration(): Promise<boolean> {
     if (!this.firebase.isConfigured) return false;
@@ -49,7 +89,7 @@ export class FirestoreBusinessRepository {
     return snapshot.exists() && snapshot.data()['status'] === 'complete';
   }
 
-  async loadState(): Promise<Record<string, unknown> | null> {
+  private async fetchStateFromFirestore(): Promise<Record<string, unknown> | null> {
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -94,6 +134,7 @@ export class FirestoreBusinessRepository {
     recordId: string,
     value: Record<string, unknown>,
   ): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -112,6 +153,7 @@ export class FirestoreBusinessRepository {
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
       await setDoc(matching.ref, { index, value });
+      this.invalidateStateCache();
       return;
     }
 
@@ -124,9 +166,11 @@ export class FirestoreBusinessRepository {
       index: nextIndex,
       value,
     });
+    this.invalidateStateCache();
   }
 
   async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -147,9 +191,11 @@ export class FirestoreBusinessRepository {
     }
 
     await deleteDoc(matching.ref);
+    this.invalidateStateCache();
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error('Firebase no está configurado.');
     }
@@ -168,6 +214,7 @@ export class FirestoreBusinessRepository {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
     }, { merge: true });
+    this.invalidateStateCache();
   }
 
   /**
@@ -287,6 +334,7 @@ export class FirestoreBusinessRepository {
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -326,6 +374,7 @@ export class FirestoreBusinessRepository {
    * remains consistent after purchases at different unit prices.
    */
   async recordIngredientPurchase(movement: CashMovement): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -440,6 +489,7 @@ export class FirestoreBusinessRepository {
   }
 
   async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {
+    this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
