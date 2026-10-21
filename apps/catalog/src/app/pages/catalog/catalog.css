@@ -88,7 +88,6 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 @media (max-width:680px) {
   .modal-backdrop:has(.order-sheet) { align-items:flex-end; padding:0; }
   .order-sheet { max-width:none; }
-
   header,main { width:min(100% - 32px,1436px); } header { padding:28px 0 28px; }
   .hero { grid-template-columns:1fr; gap:14px; min-height:auto; margin:0 0 39px; padding:28px 25px 22px; border-radius:28px; }
   .hero h1 { margin-bottom:16px; font-size:clamp(42px,10vw,56px); } .hero p { max-width:330px; font-size:13px; } .hero-art { min-height:170px; } .hero-sketch { max-width:440px; max-height:190px; }
@@ -97,13 +96,8 @@ main { padding-bottom:170px; position:relative; z-index:1; }
   .products { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .product { border-radius:15px; } .photo { margin:6px 6px 0; aspect-ratio:1/.88; } .product-body { padding:11px 10px 10px; } .product-body h3 { margin-bottom:7px; font-size:12px; } .product-body p { min-height:66px; margin-bottom:10px; font-size:10px; line-height:1.5; } .product-tag { top:5px; left:5px; padding:4px 6px; font-size:8px; } .buy button { min-height:34px; padding:6px 5px; font-size:10px; } .quantity { gap:3px; } .quantity button { width:27px; min-height:28px; font-size:14px; }
   .dock-card { min-height:78px; gap:12px; padding:12px 14px; border-radius:18px; } .dock-title { align-items:flex-start; flex-direction:column; gap:3px; } .dock-title>span { margin-left:0; } .box-composition { gap:4px 10px; font-size:9px; } .dock-continue { min-width:94px; padding:11px 10px; font-size:10px; } .site-footer { margin-top:20px; padding-top:34px; }
 }
-@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }
-
 .success-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .success-actions .button { margin-top:0; text-decoration:none; }
-
-
-/* Checkout fulfillment choice: make delivery vs. pickup obvious before location details. */
 .fulfillment-picker { min-width:0; margin:0; padding:0; border:0; }
 .fulfillment-picker legend { margin-bottom:10px; color:var(--ink); font-size:14px; font-weight:750; }
 .fulfillment-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
@@ -122,7 +116,6 @@ main { padding-bottom:170px; position:relative; z-index:1; }
   .fulfillment-option { align-items:flex-start; flex-direction:column; gap:8px; min-height:104px; padding:11px; }
   .fulfillment-option.active { padding:10px; }
 }
-
 .box-presentations button{position:relative;text-align:center}
 .box-presentations .presentation-check{position:absolute;top:10px;right:12px;display:grid;place-items:center;width:24px;height:24px;font:700 16px/1 'DM Sans',sans-serif;color:transparent}
 .box-presentations button.active .presentation-check{color:#fff;background:#795381;border-radius:50%}
