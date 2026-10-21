@@ -39,6 +39,52 @@ describe('DataService catalog visibility', () => {
     });
   });
 
+  it('persists recipe ingredient IDs and quantities in both canonical sections and legacy items', async () => {
+    service.rawState.set({
+      ingredients: [{ id: 'flour', name: 'Harina', unit: 'g', costPerUnit: 0.002 }],
+      orders: [],
+      recipes: [],
+    });
+
+    await service.saveRecipe({
+      id: 'cookie-1',
+      name: 'Galleta de prueba',
+      category: 'Clásicas',
+      yield: 12,
+      price: 1,
+      sections: [{ name: 'masa', ingredients: [{ ingredientId: 'flour', quantity: 125 }] }],
+    } as never);
+
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'recipes',
+      'cookie-1',
+      expect.objectContaining({
+        sections: [{ name: 'masa', ingredients: [{ ingredientId: 'flour', quantity: 125 }] }],
+        items: [expect.objectContaining({ id: 'flour', ingredientId: 'flour', qty: 125, quantity: 125, section: 'masa' })],
+      }),
+    );
+    expect(service.recipes()[0].sections[0].ingredients).toEqual([{ ingredientId: 'flour', quantity: 125 }]);
+  });
+
+  it('recovers recipe ingredients from flattened legacy items when section rows are empty', () => {
+    const legacyState = {
+      ingredients: [{ id: 'flour', name: 'Harina', unit: 'g', costPerUnit: 0.002 }],
+      orders: [],
+      recipes: [{
+        id: 'legacy-cookie',
+        name: 'Galleta anterior',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        sections: [{ name: 'masa', ingredients: [] }],
+        items: [{ id: 'flour', qty: 125, section: 'masa' }],
+      }],
+    };
+
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels(legacyState);
+    expect(service.recipes()[0].sections[0].ingredients).toEqual([{ ingredientId: 'flour', quantity: 125 }]);
+  });
+
   it('hides a recipe by updating only the stored record visibility flag', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
