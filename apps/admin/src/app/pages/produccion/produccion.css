@@ -69,3 +69,7 @@
 @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; gap: 10px; } .summary-card { padding: 15px; } }
 @media (max-width: 760px) { .page-heading { align-items: flex-start; flex-direction: column; } .table-toolbar { padding: 13px; } .search-box { flex-basis: 100%; max-width: none; } .production-modal { padding: 20px; } }
 @media (max-width: 460px) { .production-form { grid-template-columns: 1fr; } .form-field-wide, .requirements-panel, .form-error, .modal-actions { grid-column: 1; } .modal-actions { flex-direction: column-reverse; } .modal-actions button { width: 100%; } }
+/* Dialog actions use outlined buttons, with the main action last on the right. */
+.modal-actions{justify-content:flex-end;}
+.modal-actions .btn-primary{border-color:#d9c4e8;background:#fff;color:#8056ad;}
+.modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}

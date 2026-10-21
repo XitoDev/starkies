@@ -20,3 +20,9 @@
   height: 20px;
   font-size: 20px;
 }
+
+/* Keep modal actions outlined, aligned right, with the main action last. */
+.settings-modal footer{justify-content:flex-end;}
+.settings-modal footer .btn-primary{border:1px solid #d9c4e8;background:#fff;color:#8056ad;font-weight:700;}
+.product-card{cursor:pointer;}
+.product-card:focus-visible{outline:2px solid #b99ad4;outline-offset:3px;}

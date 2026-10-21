@@ -16,13 +16,9 @@
     @if(categoryFilter()==='Todos'||categoryFilter()===category){
       <section class="product-group"><h2>{{category}}</h2><div class="products-grid">
         @for(item of catalogItems();track item.id){@if(item.category===category){
-          <article class="product-card">
+          <article class="product-card" tabindex="0" [attr.aria-label]="'Editar ' + item.name" (click)="openProduct(item)" (keydown.enter)="openProductFromKeyboard($any($event), item)" (keydown.space)="openProductFromKeyboard($any($event), item)">
             <div class="image-wrap"><img [src]="getImageUrl(item.image)" [alt]="item.name" loading="lazy" (error)="onImageError($event)">
-              <button matIconButton class="dots" type="button" [matMenuTriggerFor]="productMenu" [attr.aria-label]="'Opciones de '+item.name"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
-              <mat-menu #productMenu="matMenu">
-                <button mat-menu-item type="button" [routerLink]="['/catalogo/productos',item.id]"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon><span>Editar producto</span></button>
-              </mat-menu>
-              <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="toggleVisibility(item)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ item.catalogVisible === false ? "visibility_off" : "visibility" }}</mat-icon></button>
+              <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="$event.stopPropagation(); toggleVisibility(item)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ item.catalogVisible === false ? "visibility_off" : "visibility" }}</mat-icon></button>
             </div>
             <div class="product-copy"><h3>{{item.name}}</h3>@if(item.catalogLabel){<span class="label-chip" [style.background]="labelBackground(item.catalogLabelColor)" [style.color]="labelForeground(item.catalogLabelColor)">{{item.catalogLabel}}</span>}<strong>{{item.price|currency:'USD'}}</strong></div>
           </article>
@@ -34,11 +30,11 @@
 </div>
 @if(settingsOpen()){
   <div class="backdrop" (click)="settingsOpen.set(false)"><section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="delivery-settings-title" (click)="$event.stopPropagation()">
-    <header><h2 id="delivery-settings-title">🚚 Opciones y tarifas de entrega</h2><button matIconButton type="button" class="close" aria-label="Cerrar" (click)="settingsOpen.set(false)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></header>
+    <header><h2 id="delivery-settings-title">Opciones y tarifas de entrega</h2></header>
     <div class="settings-toolbar"><p>Organiza las zonas y define cuánto cuesta entregar cada pedido.</p><button matButton="outlined" class="btn-outline" type="button" (click)="addZone()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Añadir</button></div>
     <div class="zone-header"><span>Zona o punto</span><span>Tarifa (USD)</span><span>Acciones</span></div>
     @for(zone of zones();track zone.id;let i=$index){<div class="zone-row"><span class="order-actions"><button matIconButton type="button" [disabled]="i===0" (click)="moveZone(i,-1)" aria-label="Subir zona"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">drag_indicator</mat-icon></button><button matIconButton type="button" [disabled]="i===zones().length-1" (click)="moveZone(i,1)" aria-label="Bajar zona"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_downward</mat-icon></button></span><input matInput aria-label="Nombre de zona" [(ngModel)]="zone.name" maxlength="100"><input matInput aria-label="Tarifa de entrega" type="number" min="0" step="0.01" [(ngModel)]="zone.fee"><button matIconButton class="remove" type="button" (click)="removeZone(i)" aria-label="Eliminar zona"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon></button></div>}
     @if(error()){<p class="error">{{error()}}</p>}
-    <footer><button matButton="outlined" class="btn-outline" type="button" (click)="settingsOpen.set(false)">Cancelar</button><button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="saveZones()">{{saving()?'Guardando…':'Guardar tarifas'}}</button></footer>
+    <footer><button matButton="outlined" class="btn-outline" type="button" (click)="settingsOpen.set(false)">Cancelar</button><button matButton="outlined" class="btn-primary" type="button" [disabled]="saving()" (click)="saveZones()">{{saving()?'Guardando…':'Guardar tarifas'}}</button></footer>
   </section></div>
 }

@@ -94,7 +94,6 @@
           <h2 id="finance-modal-title">{{ formOpen() === 'purchase' ? 'Registrar compra de insumos' : 'Registrar gasto' }}</h2>
           <p>{{ formOpen() === 'purchase' ? 'El egreso y el aumento de stock se guardan juntos.' : 'El gasto quedará registrado como un egreso de caja.' }}</p>
         </div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar formulario" [disabled]="saving()" (click)="closeForm()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
 
       @if (formOpen() === 'purchase') {
@@ -136,7 +135,7 @@
           }
           <div class="modal-actions form-field-wide">
             <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
+            <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving() || ingredients().length === 0">
               {{ saving() ? 'Guardando…' : 'Guardar compra' }}
             </button>
           </div>
@@ -169,7 +168,7 @@
           }
           <div class="modal-actions form-field-wide">
             <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
+            <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving()">
               {{ saving() ? 'Guardando…' : 'Guardar gasto' }}
             </button>
           </div>
@@ -186,7 +185,6 @@
           <h2 id="ledger-modal-title">{{ ledgerActionOpen() === 'boxesPurchase' ? 'Registrar compra de cajas' : ledgerActionOpen() === 'boxesPayment' ? 'Registrar pago de cajas' : 'Transferir dinero' }}</h2>
           <p>{{ ledgerActionOpen() === 'boxesPurchase' ? 'La compra se guardará como una transacción pendiente de pago.' : ledgerActionOpen() === 'boxesPayment' ? 'Selecciona una compra pendiente para registrar su pago.' : 'Mueve saldo entre cuentas o registra un ingreso de capital.' }}</p>
         </div>
-        <button matIconButton class="modal-close" type="button" aria-label="Cerrar" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form class="finance-form" (submit)="$event.preventDefault(); saveLedgerAction()">
         @if (ledgerActionOpen() === 'boxesPayment') {
@@ -217,7 +215,7 @@
         @if (ledgerError()) { <p class="form-error form-field-wide" role="alert">{{ ledgerError() }}</p> }
         <div class="modal-actions form-field-wide">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="ledgerSaving()" (click)="ledgerActionOpen.set(null)">Cancelar</button>
-          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
+          <button matButton="outlined" class="btn-primary" type="submit" [disabled]="ledgerSaving() || (ledgerActionOpen() === 'boxesPayment' && pendingCount() === 0)">{{ ledgerSaving() ? 'Guardando…' : 'Confirmar operación' }}</button>
         </div>
       </form>
     </section>
@@ -227,7 +225,7 @@
 @if (pendingPanelOpen()) {
   <div class="modal-backdrop" (click)="pendingPanelOpen.set(false)">
     <section class="finance-modal pending-modal" role="dialog" aria-modal="true" aria-labelledby="pending-title" (click)="$event.stopPropagation()">
-      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div><button matIconButton class="modal-close" type="button" aria-label="Cerrar" (click)="pendingPanelOpen.set(false)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></div>
+      <div class="modal-heading"><div><p class="eyebrow">Finanzas</p><h2 id="pending-title">Transacciones por realizar</h2><p>Compras registradas que todavía no tienen un pago confirmado.</p></div></div>
       @if (pendingTransactions().length) {
         <div class="pending-list">
           @for (item of pendingTransactions(); track item.id) {
@@ -237,6 +235,7 @@
       } @else {
         <div class="empty-state"><strong>No hay transacciones pendientes</strong><p>Las compras de cajas que registres aparecerán aquí hasta que se paguen.</p></div>
       }
+      <footer class="modal-actions"><button matButton="outlined" class="btn-secondary" type="button" (click)="pendingPanelOpen.set(false)">Cerrar</button></footer>
     </section>
   </div>
 }

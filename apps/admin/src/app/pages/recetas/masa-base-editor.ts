@@ -15,7 +15,6 @@ type BaseRow = { ingredientId: string; quantity: number | null };
   imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, RouterLink, MatButtonModule, MatIconModule],
   template: `
     <section class="editor-page">
-      <p class="breadcrumb"><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Mi negocio</a><span>›</span><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Recetas</a><span>›</span><a routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Masas base</a><span>›</span><strong>{{ editing() ? 'Editar masa base' : 'Nueva masa base' }}</strong></p>
       <header class="heading"><div><h1>{{ editing() ? 'Editar masa base' : 'Nueva masa base' }}</h1><p>{{ editing() ? 'Actualiza la fórmula y el rendimiento del lote.' : 'Define una fórmula que puedas reutilizar en distintas recetas.' }}</p></div></header>
       @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
       @if (!loading() && editing() && !base()) { <p class="message error">No se encontró esta masa base. Puede que todavía se estén cargando los datos.</p> }
@@ -62,18 +61,18 @@ type BaseRow = { ingredientId: string; quantity: number | null };
         <label class="field">Notas de la base
           <textarea rows="3" maxlength="1500" name="notes" [(ngModel)]="notes"></textarea>
         </label>
-        <footer><button matButton="elevated" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button><a class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cerrar</a></footer>
+        <footer><a matButton="outlined" class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cancelar</a><button matButton="outlined" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button></footer>
       </form>
     </section>
   `,
   styles: [`
-    :host{display:block;min-width:0;color:#30263a}.editor-page{width:100%;box-sizing:border-box;padding:4px 0 28px}.breadcrumb{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 25px;color:#9b8ba7;font-size:12px}.breadcrumb a{color:#8b7199;text-decoration:none}.breadcrumb a:hover{text-decoration:underline}.breadcrumb strong{color:#5b4d65;font-weight:600}
+    :host{display:block;min-width:0;color:#30263a}.editor-page{width:100%;box-sizing:border-box;padding:4px 0 28px}
     .heading{margin-bottom:24px}.heading h1{margin:0;font-size:26px;font-weight:500;letter-spacing:-.7px}.heading p{margin:8px 0 0;color:#95899d;font-size:12px;line-height:1.6}form{display:grid;gap:22px}.field{display:grid;gap:10px;color:#957fa5;font-size:12px}
     input,select,textarea{width:100%;min-width:0;box-sizing:border-box;min-height:52px;padding:0 15px;border:1px solid #e5d9ed;border-radius:9px;background:#fff;color:#5b4d65;font:inherit;font-size:13px;outline:none}textarea{padding:13px 15px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:#b99ad4;box-shadow:0 0 0 3px rgb(128 86 173 / 9%)}
     .yield{padding:22px 18px;border-radius:15px;background:#eee2f3;color:#765388}.yield h2{margin:0 0 20px;font-size:13px;font-weight:750}.yield-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.yield-grid>div{display:grid;gap:8px}.yield-grid span,.yield-grid small{color:#8b7199;font-size:12px}.yield-grid strong{color:#684578;font-size:23px}.yield p{margin:20px 0 0;color:#8b7199;font-size:12px;line-height:1.5}.hint{margin:-4px 0 0;color:#a090ae;font-size:12px;line-height:1.5}
     .ingredients-panel{display:grid;gap:14px;padding:20px 18px;border:1px solid #eee7f2;border-radius:14px;background:#fff}.ingredients-panel h2{margin:0;font-size:16px;font-weight:500}.ingredient-row{display:grid;grid-template-columns:30px minmax(0,1fr) 125px 32px;align-items:center;gap:8px}.ingredient-row select,.ingredient-row input{min-height:48px}.drag{display:grid;place-items:center;width:30px;height:40px;border-radius:8px;background:#f7f0fa;color:#a38ab7;font-size:20px}.remove{width:32px;height:38px;border:0;border-radius:8px;background:#f7f0fa;color:#a38ab7;font-size:24px;cursor:pointer}.remove:disabled{opacity:.35;cursor:not-allowed}.add{justify-self:start;border:0;background:transparent;color:#9b73b7;font-size:13px;cursor:pointer;padding:3px 0}
-    footer{display:flex;align-items:center;gap:12px}.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:55px;padding:0 22px;border:0;border-radius:10px;background:#8056ad;color:#fff;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer}.secondary{min-height:53px;border:1px solid #e8e0ed;background:#fff;color:#7d6c88;font-weight:500}.primary:disabled{opacity:.6;cursor:wait}.message{padding:12px 14px;border-radius:9px;background:#f7f0fb;color:#704795;font-size:12px}.error{background:#fff0f0;color:#a44855}
-    @media(max-width:620px){.ingredient-row{grid-template-columns:25px minmax(0,1fr) 88px 30px;gap:5px}.ingredient-row select,.ingredient-row input{padding:0 8px;font-size:11px}.yield-grid strong{font-size:20px}footer{align-items:stretch;flex-direction:column}footer>*{width:100%;box-sizing:border-box}}
+    footer{display:flex;align-items:center;justify-content:flex-end;gap:12px}.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 22px;border:1px solid #d9c4e8;border-radius:10px;background:#fff;color:#8056ad;font-size:13px;font-weight:750;text-decoration:none;cursor:pointer}.secondary{border-color:#e8e0ed;color:#7d6c88;font-weight:500}.primary:disabled{opacity:.6;cursor:wait}.message{padding:12px 14px;border-radius:9px;background:#f7f0fb;color:#704795;font-size:12px}.error{background:#fff0f0;color:#a44855}
+    @media(max-width:620px){.ingredient-row{grid-template-columns:25px minmax(0,1fr) 88px 30px;gap:5px}.ingredient-row select,.ingredient-row input{padding:0 8px;font-size:11px}.yield-grid strong{font-size:20px}footer{align-items:stretch;flex-direction:column-reverse}footer>*{width:100%;box-sizing:border-box}}
   `]
 })
 export class MasaBaseEditor {
