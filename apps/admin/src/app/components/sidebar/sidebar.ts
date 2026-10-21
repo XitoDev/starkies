@@ -24,7 +24,8 @@ export class Sidebar {
   readonly logoutMessage = signal('');
   navItems = [
     { label: 'Productos', path: '/recetas', icon: 'cookie' },
-    { label: 'Insumos', path: '/ingredientes', icon: 'inventory_2' },
+    { label: 'Insumos', path: '/ingredientes', icon: 'science' },
+    { label: 'Inventario', path: '/inventario', icon: 'inventory_2' },
     { label: 'Producción', path: '/produccion', icon: 'precision_manufacturing' },
     { label: 'Catálogo', path: '/catalogo', icon: 'storefront' },
     { label: 'Pedidos', path: '/pedidos', icon: 'shopping_bag' },
