@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '../../services/data.service';
@@ -7,7 +7,7 @@ import { DataService } from '../../services/data.service';
 @Component({
   selector: 'app-resumen',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DecimalPipe, RouterLink, MatIconModule],
+  imports: [CommonModule, DecimalPipe, RouterLink, MatIconModule],
   template: `
     <div class="page-container summary-page">
       <div class="page-heading">
