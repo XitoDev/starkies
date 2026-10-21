@@ -111,7 +111,13 @@
             <p class="form-help form-field-wide">Primero registra un insumo en Inventario para poder cargar una compra.</p>
           }
           <label class="form-field">
-            <span>Cantidad del empaque (gramos)</span>
+            <span>Unidad del empaque</span>
+            <select matNativeControl required [value]="purchaseForm().packageUnit" (change)="updatePurchaseUnit($any($event.target).value)">
+              <option value="g">Gramos (g)</option><option value="kg">Kilogramos (kg)</option><option value="mg">Miligramos (mg)</option><option value="lb">Libras (lb)</option><option value="oz">Onzas (oz)</option><option value="ml">Mililitros (ml)</option><option value="l">Litros (l)</option><option value="taza">Tazas (240 ml)</option><option value="cda">Cucharadas (15 ml)</option><option value="cdta">Cucharaditas (5 ml)</option>
+            </select>
+          </label>
+          <label class="form-field">
+            <span>Cantidad del empaque ({{ purchaseForm().packageUnit }})</span>
             <input matInput type="number" min="0.001" step="any" required [value]="purchaseForm().packageQuantityGrams" (input)="updatePurchaseNumber('packageQuantityGrams', $any($event.target).value)" />
           </label>
           <label class="form-field">
