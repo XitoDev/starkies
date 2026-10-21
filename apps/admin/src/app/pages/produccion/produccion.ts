@@ -28,7 +28,7 @@ type DoughBase = { id: string; name: string; weight: number; ingredients?: Recor
 type InventoryRow = { id: string; name: string; quantity: number; unit: string };
 type CommandLine = { key: string; orderId: string; recipeId: string; recipeName: string; quantity: number };
 type PlannedRecipe = { recipeId: string; recipeName: string; requested: number; markedReady: number; remaining: number; stock: number; toBake: number; baseId?: string; baseName?: string; doughGrams: number };
-type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; batchWeight: number; batchesNeeded: number };
+type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; availableGrams: number; gramsToPrepare: number; batchWeight: number; batchesNeeded: number };
 
 @Component({
   selector: 'app-produccion',
@@ -129,10 +129,15 @@ export class Produccion {
       current.grams += item.doughGrams;
       grouped.set(item.baseId, current);
     }
-    return Array.from(grouped.entries()).map(([baseId, item]) => ({
-      baseId, baseName: item.name, gramsNeeded: item.grams, batchWeight: item.weight,
-      batchesNeeded: item.weight > 0 ? Math.ceil(item.grams / item.weight) : 0,
-    }));
+    return Array.from(grouped.entries()).map(([baseId, item]) => {
+      const availableGrams = this.doughInventory().find(row => row.id === `base:${baseId}`)?.quantity ?? 0;
+      const gramsToPrepare = Math.max(0, item.grams - Math.max(0, availableGrams));
+      return {
+        baseId, baseName: item.name, gramsNeeded: item.grams, availableGrams, gramsToPrepare,
+        batchWeight: item.weight,
+        batchesNeeded: item.weight > 0 ? Math.ceil(gramsToPrepare / item.weight) : 0,
+      };
+    });
   });
 
   readonly productionHistory = computed<ProductionEntry[]>(() => {
@@ -165,7 +170,7 @@ export class Produccion {
   });
 
   readonly totalBatches = computed(() => this.productionHistory().reduce((total, item) => total + item.batches, 0));
-  readonly totalUnits = computed(() => this.productionHistory().reduce((total, item) => total + item.totalYield, 0));
+  readonly totalUnits = computed(() => this.productionHistory().reduce((total, item) => total + (item.outputUnit === 'g' ? 0 : item.totalYield), 0));
   readonly totalProductionCost = computed(() => this.productionHistory().reduce((total, item) => total + item.calculatedCost, 0));
 
   readonly selectedRecipe = computed(() =>
@@ -191,26 +196,12 @@ export class Produccion {
     if (!recipe) return [];
     const totals = new Map<string, number>();
     const batches = this.batchCount();
-    if (recipe.baseId) {
-      const rawBases = this.dataService.rawState()?.['doughBases'];
-      const bases = Array.isArray(rawBases) ? rawBases as Record<string, unknown>[] : [];
-      const base = bases.find(item => String(item['id'] ?? '') === recipe.baseId);
-      const baseItems = Array.isArray(base?.['ingredients']) ? base['ingredients']
-        : Array.isArray(base?.['items']) ? base['items'] : [];
-      const baseWeight = Number(base?.['weight'] ?? 0);
-      const gramsNeeded = Number(recipe.baseGramsPerCookie ?? 0) * Math.max(1, recipe.yield);
-      const baseScale = baseWeight > 0 && gramsNeeded > 0 ? gramsNeeded / baseWeight : 1;
-      for (const rawItem of baseItems) {
-        if (typeof rawItem !== 'object' || rawItem === null) continue;
-        const item = rawItem as Record<string, unknown>;
-        const ingredientId = String(item['ingredientId'] ?? item['id'] ?? '');
-        const quantity = Number(item['quantity'] ?? item['qty'] ?? 0) * baseScale * batches;
-        if (ingredientId && quantity > 0) totals.set(ingredientId, (totals.get(ingredientId) ?? 0) + quantity);
-      }
-    }
     for (const section of recipe.sections) {
       const sectionName = section.name.toLocaleLowerCase('es');
-      const quantityScale = recipe.baseId && sectionName !== 'masa' ? Math.max(1, recipe.yield) : 1;
+      // A recipe based on a dough base consumes the prepared dough stock.
+      // Its "masa" ingredients were already deducted when that base was made.
+      if (recipe.baseId && sectionName === 'masa') continue;
+      const quantityScale = recipe.baseId ? Math.max(1, recipe.yield) : 1;
       for (const item of section.ingredients) {
         totals.set(item.ingredientId, (totals.get(item.ingredientId) ?? 0) + item.quantity * quantityScale * batches);
       }
@@ -337,9 +328,16 @@ export class Produccion {
       const state = this.dataService.rawState();
       const rawInventory = state?.['finishedProductInventory'];
       const inventoryRows = Array.isArray(rawInventory) ? rawInventory.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
-      const previousQuantity = this.asNumber(inventoryRows.find(item => String(item['id'] ?? item['recipeId'] ?? '') === outputId)?.['quantity']);
-      const nextInventory = inventoryRows.filter(item => String(item['id'] ?? item['recipeId'] ?? '') !== outputId)
-        .concat([{ id: outputId, quantity: previousQuantity + this.estimatedYield(), updatedAt: new Date().toISOString() }]);
+      const inventoryMap = new Map(inventoryRows.map(item => [String(item['id'] ?? item['recipeId'] ?? ''), this.asNumber(item['quantity'])]));
+      inventoryMap.set(outputId, (inventoryMap.get(outputId) ?? 0) + this.estimatedYield());
+      const baseGramsConsumed = recipe?.baseId
+        ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * Math.max(1, recipe.yield) * batches
+        : 0;
+      if (recipe?.baseId && baseGramsConsumed > 0) {
+        const baseStockId = `base:${recipe.baseId}`;
+        inventoryMap.set(baseStockId, (inventoryMap.get(baseStockId) ?? 0) - baseGramsConsumed);
+      }
+      const nextInventory = Array.from(inventoryMap.entries()).map(([id, quantity]) => ({ id, quantity, updatedAt: new Date().toISOString() }));
       await this.dataService.saveBusinessSetting('finishedProductInventory', nextInventory);
       this.formOpen.set(false);
       this.notice.set('Producción registrada. Se actualizaron las existencias y los insumos se descontaron incluso si quedan negativos.');
