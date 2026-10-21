@@ -57,17 +57,23 @@ export interface OrderItem {
   unitPrice: number;
 }
 
+export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
+export type OrderPaymentMethod = 'TRANSFER' | 'CASH';
+
 export interface Order {
   id: string;
   customerId: string;
   items: OrderItem[];
   total: number;
-  status: 'PENDING' | 'DELIVERED' | 'CANCELLED';
+  status: OrderStatus;
   createdAt: string;
   deliveryDate?: string;
   zone?: string;
   notes?: string;
   cookieName?: string;
+  shippingFee?: number;
+  isPaid?: boolean;
+  paymentMethod?: OrderPaymentMethod;
 }
 
 export interface CashMovement {
