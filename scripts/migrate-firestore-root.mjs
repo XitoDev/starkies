@@ -109,6 +109,49 @@ async function main() {
     });
   }
 
+  const products = new Map();
+  const sales = new Map();
+  const cleanName = value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();
+  for (const op of ops.filter(item => item.target.startsWith('recipes/'))) {
+    const value = isObject(op.data.value) ? op.data.value : {};
+    products.set(op.target.slice('recipes/'.length), cleanName(value.name));
+  }
+  const resolveProduct = item => {
+    const nested = isObject(item.product) ? item.product : {};
+    const id = String(item.recipeId ?? item.productId ?? item.id ?? nested.id ?? '');
+    if (products.has(id)) return id;
+    const name = cleanName(item.productName ?? item.name ?? nested.name);
+    return [...products.entries()].find(([, productName]) => productName === name)?.[0] ?? '';
+  };
+  const addSales = items => {
+    if (!Array.isArray(items)) return false;
+    let counted = false;
+    for (const rawItem of items) {
+      const item = isObject(rawItem) ? rawItem : {};
+      const id = resolveProduct(item);
+      const quantity = Number(item.qty ?? item.quantity ?? item.count ?? 0);
+      if (id && Number.isFinite(quantity) && quantity > 0) {
+        sales.set(id, (sales.get(id) ?? 0) + quantity);
+        counted = true;
+      }
+    }
+    return counted;
+  };
+  for (const op of ops.filter(item => item.target.startsWith('orders/'))) {
+    const order = isObject(op.data.value) ? op.data.value : {};
+    const status = cleanName(order.status ?? order.state ?? order.orderStatus).toUpperCase();
+    if (!['DELIVERED','ENTREGADO','ENTREGADA','COMPLETED','COMPLETE'].includes(status)) continue;
+    if (addSales(order.lines)) continue;
+    let countedBoxes = false;
+    for (const box of Array.isArray(order.boxes) ? order.boxes : []) {
+      if (isObject(box) && addSales(box.items)) countedBoxes = true;
+    }
+    if (!countedBoxes) addSales(order.items);
+  }
+  for (const [productId, unitsSold] of sales) {
+    ops.push({ source: 'derived sales from delivered legacy orders', target: 'productSalesStats/' + productId, data: { productId, unitsSold, migratedAt: new Date().toISOString() } });
+  }
+
   const targetOwners = new Map();
   for (const op of ops) {
     if (targetOwners.has(op.target)) throw new Error('Duplicate target ID ' + op.target + ' from ' + targetOwners.get(op.target) + ' and ' + op.source + '. No writes made.');
