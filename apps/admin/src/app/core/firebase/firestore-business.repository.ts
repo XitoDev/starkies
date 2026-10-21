@@ -152,13 +152,30 @@ export class FirestoreBusinessRepository {
     // collection. Query its indexed ID first; the full ordered snapshot is
     // needed only when appending a brand-new record to preserve its index.
     const matchingById = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
-    // Some legacy records (for example imported ingredients) are keyed by code.
-    // Preserve the old id-or-code matching semantics without downloading the whole collection.
-    const matchingByCode = matchingById.empty
-      ? await getDocs(query(recordsRef, where('value.code', '==', recordId)))
-      : null;
-    const matching = matchingById.docs[0] ?? matchingByCode?.docs[0];
+    const matchingByIdDoc = matchingById.docs[0];
+    if (matchingByIdDoc) {
+      const index = Number(matchingByIdDoc.data()['index'] ?? 0);
+      await setDoc(matchingByIdDoc.ref, { index, value: safeValue });
+      this.invalidateStateCache();
+      return;
+    }
 
+    // New recipes can use a stable document ID and a monotonic timestamp index.
+    // This avoids two additional collection reads (legacy-code lookup + full
+    // ordered scan) on the most common "create cookie" flow.
+    if (collectionKey === 'recipes') {
+      await setDoc(doc(recordsRef, 'recipe-' + recordId), {
+        index: Date.now(),
+        value: safeValue,
+      });
+      this.invalidateStateCache();
+      return;
+    }
+
+    // Some legacy records (for example imported ingredients) are keyed by code.
+    // Preserve the old id-or-code matching semantics for other collections.
+    const matchingByCode = await getDocs(query(recordsRef, where('value.code', '==', recordId)));
+    const matching = matchingByCode.docs[0];
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
       await setDoc(matching.ref, { index, value: safeValue });
