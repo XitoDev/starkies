@@ -103,7 +103,7 @@
       <div class="section-heading"><div><h2>Masas base necesarias</h2><p>Se suman los gramos requeridos por todas las recetas y se calcula cuántos lotes completos hacen falta.</p></div></div>
       <div class="dough-plan-grid">
         @for (base of doughPlan(); track base.baseId) {
-          <article class="dough-plan-card"><span>{{ base.baseName }}</span><strong>{{ base.gramsNeeded | number:'1.0-2' }} g</strong><small>{{ base.batchWeight > 0 ? base.batchesNeeded + ' lotes de ' + (base.batchWeight | number:'1.0-2') + ' g' : 'Configura el peso del lote de la masa base' }}</small></article>
+          <article class="dough-plan-card"><span>{{ base.baseName }}</span><strong>{{ base.gramsToPrepare | number:'1.0-2' }} g por preparar</strong><small>{{ base.gramsNeeded | number:'1.0-2' }} g requeridos · {{ base.availableGrams | number:'1.0-2' }} g disponibles · {{ base.batchesNeeded }} lotes</small></article>
         }
         @if (doughPlan().length === 0) { <p class="muted-empty">No hay masas base necesarias para las comandas abiertas.</p> }
       </div>
