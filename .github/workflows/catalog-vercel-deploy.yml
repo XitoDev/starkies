@@ -1,6 +1,12 @@
 name: Deploy Public Catalog to Vercel
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "public/images/**"
+      - "public/images/image-map.json"
   workflow_dispatch:
     inputs:
       target_environment:
@@ -16,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: vercel-catalog-${{ inputs.target_environment }}
+  group: vercel-catalog-${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +30,7 @@ jobs:
     name: Validate Catalog, then deploy
     runs-on: ubuntu-latest
     env:
-      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
     steps:
       - name: Guard production deployment
         env:
@@ -95,7 +101,7 @@ jobs:
         run: npx vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
       - name: Build Vercel production artifacts
-        if: env.TARGET_ENVIRONMENT == 'production'
+        if: github.event_name == 'push' || env.TARGET_ENVIRONMENT == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -103,7 +109,7 @@ jobs:
         run: npx vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Build Vercel preview artifacts
-        if: env.TARGET_ENVIRONMENT == 'preview'
+        if: github.event_name != 'push' && env.TARGET_ENVIRONMENT == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -111,7 +117,7 @@ jobs:
         run: npx vercel build --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
-        if: env.TARGET_ENVIRONMENT == 'production'
+        if: github.event_name == 'push' || env.TARGET_ENVIRONMENT == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -119,7 +125,7 @@ jobs:
         run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Vercel preview
-        if: env.TARGET_ENVIRONMENT == 'preview'
+        if: github.event_name != 'push' && env.TARGET_ENVIRONMENT == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
