@@ -299,7 +299,8 @@ export class Produccion {
       this.formError.set('La cantidad de lotes debe ser un entero mayor que cero.');
       return;
     }
-    if (this.requirements().length === 0) {
+    const consumesPreparedBase = Boolean(recipe?.baseId && this.asNumber(recipe.baseGramsPerCookie) > 0);
+    if (this.requirements().length === 0 && !consumesPreparedBase) {
       this.formError.set('Esta fórmula no tiene insumos vinculados. Completa sus ingredientes antes de registrar producción.');
       return;
     }
