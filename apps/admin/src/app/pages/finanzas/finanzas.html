@@ -70,24 +70,25 @@
   </section>
   } @else {
     <section class="price-section" aria-labelledby="prices-title">
-      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>El precio sugerido suma cuatro partes iguales: COSTOS, gastos, servicios y ganancia fija. El precio de venta se guarda automáticamente al terminar de editarlo; si está vacío, se utiliza el precio sugerido.</p></div></div>
+      <div class="price-heading"><h2 id="prices-title" class="section-title">Productos y precios</h2></div>
       <div class="price-table-wrap">
         <table class="price-table">
-          <thead><tr><th>Producto</th><th>Categoría</th><th>Unid. / lote</th><th>COSTOS</th><th>Gastos</th><th>Servicios</th><th>Ganancia fija</th><th>Precio sugerido</th><th>Precio de venta</th><th>Margen de ganancia</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Categoría</th><th>COSTOS</th><th>Gastos</th><th>Servicios</th><th>Ganancia fija</th><th>Precio sugerido</th><th>Precio de venta</th><th>Margen de ganancia</th></tr></thead>
           <tbody>
             @for (product of priceRows(); track product.id) {
               <tr>
-                <td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.yield }}</td>
-                <td>{{ product.ingredientCost | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td>{{ product.expenses | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td>{{ product.services | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td>{{ product.fixedProfit | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td class="suggested-price-cell">{{ product.suggestedPrice | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td><input class="price-edit-input" aria-label="Precio de venta por galleta" type="number" min="0" step="0.01" [value]="product.salePrice" (input)="updateSalePrice(product.id, $any($event.target).value)" (change)="saveProductPricing(product.id)" /></td>
-                <td [class.amount-out]="product.profit < 0">{{ product.profit | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Producto"><strong>{{ product.name }}</strong></td>
+                <td data-label="Categoría">{{ product.category || 'Sin categoría' }}</td>
+                <td data-label="COSTOS">{{ product.ingredientCost | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Gastos">{{ product.expenses | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Servicios">{{ product.services | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Ganancia fija">{{ product.fixedProfit | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Precio sugerido" class="suggested-price-cell">{{ product.suggestedPrice | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Precio de venta"><input class="price-edit-input" [attr.aria-label]="'Precio de venta de ' + product.name" type="number" min="0" step="0.01" [value]="product.salePrice" (input)="updateSalePrice(product.id, $any($event.target).value)" (change)="saveProductPricing(product.id)" /></td>
+                <td data-label="Margen de ganancia" [class.amount-out]="product.profit < 0">{{ product.profit | currency:'USD':'symbol':'1.2-4' }}</td>
               </tr>
             }
-            @if (priceRows().length === 0) { <tr><td colspan="10"><div class="empty-state"><strong>No hay recetas para calcular</strong><p>Registra recetas e insumos con sus costos para ver los precios sugeridos.</p></div></td></tr> }
+            @if (priceRows().length === 0) { <tr><td colspan="9"><div class="empty-state"><strong>No hay recetas para calcular</strong><p>Registra recetas e insumos con sus costos para ver los precios sugeridos.</p></div></td></tr> }
           </tbody>
         </table>
       </div>
