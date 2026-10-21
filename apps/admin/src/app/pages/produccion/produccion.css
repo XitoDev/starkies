@@ -73,3 +73,51 @@
 .modal-actions{justify-content:flex-end;}
 
 .modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}
+
+
+.heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.production-tabs{display:flex;align-items:center;gap:8px;border-bottom:1px solid #eee7f2;padding-bottom:8px;overflow-x:auto}
+.production-tabs button{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border-radius:9px;color:#776a80;white-space:nowrap}
+.production-tabs button.active{background:#f0e7f7;color:#68418d;font-weight:700}
+.production-tabs mat-icon{width:18px;height:18px;font-size:18px}
+.tab-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#fff;font-size:10px;font-weight:800}
+.section-block{display:flex;flex-direction:column;gap:15px;min-width:0}
+.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.section-heading h2{margin:0;color:#30263a;font-size:20px;font-weight:650;letter-spacing:-.4px}
+.section-heading p{margin:7px 0 0;color:#95899d;font-size:12px;line-height:1.55}
+.inventory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.inventory-card{display:flex;flex-direction:column;gap:13px;min-width:0;padding:17px;border:1px solid #eee7f2;border-radius:13px;background:#fff;box-shadow:0 2px 6px rgb(48 38 58 / 3%)}
+.inventory-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
+.inventory-card-heading h3{margin:0;color:#382d41;font-size:13px;line-height:1.45}
+.stock-state{padding:5px 7px;border-radius:6px;background:#edf7ef;color:#33764b;font-size:9px;font-weight:800;white-space:nowrap}
+.stock-state.stock-zero{background:#f5f2f6;color:#8a7d91}
+.stock-state.stock-negative{background:#fff0f0;color:#a44855}
+.inventory-current{display:flex;align-items:baseline;gap:7px;margin:0}
+.inventory-current strong{color:#30263a;font-size:26px;font-weight:750;letter-spacing:-.7px}
+.inventory-current span{color:#95899d;font-size:10px}
+.inventory-edit{display:flex;flex-direction:column;gap:6px;color:#685b72;font-size:10px;font-weight:700}
+.inventory-edit input{width:100%;height:39px;padding:0 10px;border:1px solid #e8e0ed;border-radius:8px;background:#fff;color:#51445b;font-size:12px}
+.inventory-edit input:focus{outline:2px solid #e0d2eb;outline-offset:1px}
+.inventory-save{width:100%;min-height:37px!important;font-size:11px!important}
+.inventory-save mat-icon{width:16px;height:16px;font-size:16px}
+.commands-list{display:flex;flex-direction:column;gap:8px}
+.command-line{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:13px 15px;border:1px solid #eee7f2;border-radius:11px;background:#fff;cursor:pointer}
+.command-line>input{width:17px;height:17px;accent-color:#8056ad}
+.command-product{display:flex;flex-direction:column;gap:4px;min-width:0}
+.command-product strong{color:#382d41;font-size:12px}
+.command-product small{color:#95899d;font-size:10px}
+.command-quantity{color:#51445b;font-size:15px;font-weight:800;white-space:nowrap}
+.command-quantity small{color:#95899d;font-size:10px;font-weight:500}
+.command-status{padding:5px 8px;border-radius:6px;background:#fff4e5;color:#9b641f;font-size:9px;font-weight:800}
+.command-ready{border-color:#dcefe0;background:#fbfefb}
+.command-ready .command-status{background:#edf7ef;color:#33764b}
+.dough-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.dough-plan-card{display:flex;flex-direction:column;gap:8px;padding:17px;border:1px solid #eee7f2;border-radius:12px;background:#fff}
+.dough-plan-card span{color:#685b72;font-size:12px;font-weight:700}
+.dough-plan-card strong{color:#30263a;font-size:24px}
+.dough-plan-card small{color:#95899d;font-size:10px;line-height:1.5}
+.muted-empty{margin:0;color:#95899d;font-size:12px}
+.data-table td strong.stock-negative{color:#a44855}
+@media(max-width:1150px){.inventory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:850px){.inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-heading{align-items:flex-start;flex-direction:column}.dough-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.heading-actions{width:100%}.heading-actions button{flex:1}.inventory-grid,.dough-plan-grid{grid-template-columns:1fr}.command-line{grid-template-columns:20px minmax(0,1fr) auto}.command-status{grid-column:2/-1;justify-self:start}.production-tabs button{padding:0 10px}}
