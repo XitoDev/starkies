@@ -157,7 +157,7 @@ export class Finanzas {
       if (params.get('action') !== 'purchase') return;
       const ingredientId = params.get('ingredientId') ?? '';
       this.openPurchaseForm();
-      this.purchaseForm.update(current => ({ ...current, ingredientId }));
+      this.updatePurchaseIngredient(ingredientId);
       void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
     });
     effect(() => {
@@ -430,6 +430,9 @@ export class Finanzas {
       ingredientId: ingredient?.id ?? '',
       quantity: 1,
       unitCost: ingredient?.costPerUnit ?? 0,
+      brand: ingredient?.brand ?? '',
+      packageQuantityGrams: ingredient?.packageQuantityGrams ?? 1000,
+      packagePrice: ingredient?.packagePrice ?? ((ingredient?.costPerUnit ?? 0) * (['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1 : 1000)),
       date: this.today(),
       note: '',
     });
