@@ -14,6 +14,7 @@ type ProductionEntry = {
   recipeName: string;
   batches: number;
   totalYield: number;
+  outputUnit?: string;
   calculatedCost: number;
   status: string;
 };
@@ -146,6 +147,7 @@ export class Produccion {
         recipeName: this.asString(item['recipeName'], 'Receta sin nombre'),
         batches: this.asNumber(item['batches']),
         totalYield: this.asNumber(item['totalYield']),
+        outputUnit: this.asString(item['outputUnit'], 'uds'),
         calculatedCost: this.asNumber(item['calculatedCost']),
         status: this.asString(item['status'], 'COMPLETED'),
       }))
@@ -235,6 +237,10 @@ export class Produccion {
 
   onSearch(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  updateInventoryEdit(id: string, value: string): void {
+    this.inventoryEdits.update(edits => ({ ...edits, [id]: value }));
   }
 
   setBatchCount(value: string): void {
