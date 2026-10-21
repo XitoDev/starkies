@@ -73,7 +73,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const customerSnapshot = await customerRef.get();
     const matchedCustomer = customerSnapshot.exists ? customerSnapshot : null;
     const customerId = customerRef.id;
-    const existingCustomerValue = matchedCustomer?.data()['value'] as Record<string, unknown> | undefined;
+    const existingCustomerValue = matchedCustomer?.data()?.['value'] as Record<string, unknown> | undefined;
     const customerRecord = {
       ...(existingCustomerValue ?? {}),
       id: customerId,
