@@ -1565,3 +1565,25 @@ app-catalog .footer-brand-wordmark > span {
     width: 100% !important;
   }
 }
+
+
+/* Requested storefront refinements: product photo blends into the card, larger cookie titles and darker add action. */
+app-catalog .photo { background: #fffaf4 !important; }
+app-catalog .photo img { object-fit: contain !important; padding: 8px; }
+app-catalog .product-body h3 { font-size: calc(1.45rem + 2px) !important; }
+app-catalog .buy button.add-button,
+app-catalog .buy button.add-button:visited { background: #795381 !important; border-color: #795381 !important; color: #fff !important; }
+app-catalog .buy button.add-button:hover:not(:disabled),
+app-catalog .buy button.add-button:focus-visible { background: #70457c !important; border-color: #70457c !important; color: #fff !important; }
+app-catalog .footer-bottom .footer-brand { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+app-catalog .footer-bottom .footer-brand .wordmark { color: #fff7ee; font-size: 2.25rem; }
+app-catalog .footer-bottom .footer-brand .wordmark-star { color: #f7e8dc; }
+app-catalog .footer-bottom .footer-brand .brand-tagline { color: #f7e8dc; }
+@media(max-width:700px) {
+  app-catalog .product-body h3 { font-size: calc(1.25rem + 2px) !important; }
+  app-catalog .footer-bottom .footer-brand { display: none; }
+  app-catalog .footer-content { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:380px) {
+  app-catalog .product-body h3 { font-size: calc(1.15rem + 2px) !important; }
+}
