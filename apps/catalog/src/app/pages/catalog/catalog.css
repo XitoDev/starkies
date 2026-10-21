@@ -122,3 +122,17 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .search-field input{border:0!important;background:transparent!important;box-shadow:none!important}
 .footer-social-link{border:0!important;background:transparent!important}
 @media(max-width:680px){.box-presentations button{text-align:left;padding-right:46px}.box-presentations .presentation-check{top:12px;right:12px}}
+
+.search-field{width:min(100%,270px);flex:0 1 270px}
+.box-presentations .presentation-check{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:24px;height:24px;color:transparent;border:0;border-radius:50%;font:700 16px/1 'DM Sans',sans-serif}
+.box-presentations button.active .presentation-check{color:#fff;background:#795381}
+.box-presentations .presentation-check:empty{display:none}
+.buy button{min-height:42px;color:#68416f;border:0;background:#ead9ed}
+.buy button.add-button{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#ead9ed}
+.add-button .add-icon{display:grid;width:24px;height:24px;place-items:center;margin:0;background:transparent}
+.add-button .add-label{margin-right:auto;text-align:left}
+.buy .quantity{min-height:42px;padding:3px;border:0;background:#ead9ed}
+.buy .quantity button{display:grid;width:32px;min-height:32px;place-items:center;padding:0;background:#f8eff9}
+.buy .quantity b{min-width:20px;text-align:center}
+.dock-continue{background:#81558c}
+@media(max-width:680px){.section-title{gap:12px}.search-field{width:min(100%,270px);flex-basis:auto}.buy button{min-height:42px;padding:6px 9px}.buy .quantity{min-height:42px}.buy .quantity button{width:32px;min-height:32px}}
