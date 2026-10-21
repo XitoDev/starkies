@@ -31,7 +31,10 @@ export interface Recipe {
   category: string;
   yield: number; // Cantidad por tanda
   price: number;
+  /** Image used by the recipe editor and internal recipe cards. */
   image?: string;
+  /** Independent image displayed in the public customer catalog. */
+  catalogImage?: string;
   catalogVisible?: boolean;
   catalogLabel?: string;
   catalogLabelColor?: string;
