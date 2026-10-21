@@ -4,6 +4,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 interface ApiRequest { method?: string; url?: string; headers: Record<string, string | string[] | undefined>; }
 interface ApiResponse { status(code: number): ApiResponse; setHeader(name: string, value: string): void; send(body: Buffer | string): void; end(body?: Buffer | string): void; json(body: unknown): void; }
+interface StoredShortLink { documentToken?: unknown; documentExpiresAt?: unknown; id?: unknown; }
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
@@ -14,14 +15,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   }
   try {
     const url = new URL(req.url ?? '/', 'https://starkies.lat');
-    const token = url.searchParams.get('token') ?? '';
+    const code = url.searchParams.get('code') ?? '';
+    if (!/^[A-Za-z0-9_-]{8}$/.test(code)) { res.status(404).send('No encontramos este enlace de pedido.'); return; }
+    const matches = await getDatabase().collection('businesses/starkies/collections/orders/records')
+      .where('value.documentShortCode', '==', code).limit(1).get();
+    if (matches.empty) { res.status(404).send('No encontramos este enlace de pedido.'); return; }
+    const doc = matches.docs[0];
+    const order = doc.data()?.['value'] as StoredShortLink | undefined;
+    const token = typeof order?.documentToken === 'string' ? order.documentToken : '';
+    const expiry = Number(order?.documentExpiresAt ?? 0);
     const verified = verifyToken(token, getSigningKey());
-    if (!verified) {
+    if (!verified || verified.orderId !== doc.id || !Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry !== Number(token.split('.')[1])) {
       res.status(403).send('Este enlace del pedido no es válido o ha caducado. Solicita a StarKies un nuevo enlace.');
       return;
     }
-    const snapshot = await getDatabase().doc(['businesses','starkies','collections','orders','records',verified.orderId].join('/')).get();
-    if (!snapshot.exists) { res.status(404).send('No encontramos este pedido.'); return; }
     res.setHeader('Location', '/api/order-document?token=' + encodeURIComponent(token));
     res.status(302).end();
   } catch (error) {
