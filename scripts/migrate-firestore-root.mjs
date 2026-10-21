@@ -52,6 +52,35 @@ async function main() {
   const archives = await db.collection(oldBase + '/migrationArchives').get();
   for (const d of archives.docs) ops.push({source:d.ref.path,target:'migrationArchives/'+d.id,data:d.data()});
 
+  const phoneOwners = new Map();
+  for (const op of ops.filter(item => item.target.startsWith('customers/'))) {
+    const value = isObject(op.data.value) ? op.data.value : {};
+    const normalizedPhone = String(value.phone ?? '').replace(/\\D/g, '').replace(/^593/, '0');
+    if (normalizedPhone.length < 7) continue;
+    const customerId = op.target.slice('customers/'.length);
+    if (phoneOwners.has(normalizedPhone) && phoneOwners.get(normalizedPhone).customerId !== customerId) {
+      throw new Error('Duplicate normalized customer phone found in ' + phoneOwners.get(normalizedPhone).source + ' and ' + op.source + '. Resolve duplicates before migrating; no writes made.');
+    }
+    phoneOwners.set(normalizedPhone, { customerId, source: op.source });
+  }
+  for (const [normalizedPhone, owner] of phoneOwners) {
+    const hash = createHash('sha256').update(normalizedPhone).digest('hex');
+    ops.push({ source: 'derived phone index from ' + owner.source, target: 'customerPhoneLookup/' + hash, data: { customerId: owner.customerId, normalizedPhone } });
+  }
+  const latestOrderByPhone = new Map();
+  for (const op of ops.filter(item => item.target.startsWith('orders/'))) {
+    const value = isObject(op.data.value) ? op.data.value : {};
+    const normalizedPhone = String(value.phone ?? '').replace(/\\D/g, '').replace(/^593/, '0');
+    if (normalizedPhone.length < 7) continue;
+    const current = latestOrderByPhone.get(normalizedPhone);
+    const timestamp = String(value.createdAt ?? value.created ?? value.date ?? '');
+    if (!current || timestamp > current.timestamp) latestOrderByPhone.set(normalizedPhone, { orderId: op.target.slice('orders/'.length), timestamp, source: op.source });
+  }
+  for (const [normalizedPhone, latest] of latestOrderByPhone) {
+    const hash = createHash('sha256').update(normalizedPhone).digest('hex');
+    ops.push({ source: 'derived order phone index from ' + latest.source, target: 'orderPhoneLookup/' + hash, data: { orderId: latest.orderId, normalizedPhone, createdAt: latest.timestamp } });
+  }
+
   // Build a deterministic phone index so order creation never downloads all customers.
   const phoneOwners = new Map();
   for (const op of ops.filter(item => item.target.startsWith('customers/'))) {
