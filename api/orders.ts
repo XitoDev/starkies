@@ -61,14 +61,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
     const customersCollection = db.collection('customers');
-    const customersSnapshot = await customersCollection.get();
     const normalizedPhone = normalizePhone(order.phone);
-    const matchedCustomer = customersSnapshot.docs.find(document => {
-      const value = document.data()['value'] as Record<string, unknown> | undefined;
-      return value && normalizePhone(String(value['phone'] ?? '')) === normalizedPhone;
-    });
-    const customerId = matchedCustomer?.id ?? 'web-' + createHash('sha256').update(normalizedPhone).digest('hex').slice(0, 20);
-    const customerRef = matchedCustomer?.ref ?? customersCollection.doc(customerId);
+    const phoneLookupRef = db.collection('customerPhoneLookup').doc(createHash('sha256').update(normalizedPhone).digest('hex'));
+    const phoneLookupSnapshot = await phoneLookupRef.get();
+    const indexedCustomerId = String(phoneLookupSnapshot.data()?.['customerId'] ?? '');
+    const customerRef = indexedCustomerId
+      ? customersCollection.doc(indexedCustomerId)
+      : customersCollection.doc('web-' + createHash('sha256').update(normalizedPhone).digest('hex').slice(0, 20));
+    const customerSnapshot = await customerRef.get();
+    const matchedCustomer = customerSnapshot.exists ? customerSnapshot : null;
+    const customerId = customerRef.id;
     const existingCustomerValue = matchedCustomer?.data()['value'] as Record<string, unknown> | undefined;
     const customerRecord = {
       ...(existingCustomerValue ?? {}),
