@@ -28,6 +28,7 @@
     </div>
     <div class="hero-art" aria-label="Ilustración de las mascotas de StarKies">
       <div class="hero-image-frame">
+        <div class="hero-cookie-photo" aria-hidden="true">@if (products()[0]?.image; as heroImage) { <img [ngSrc]="heroImage" alt="" width="240" height="240"> }</div>
         <img class="hero-sketch" src="/starkies-sketch.webp" alt="Las mascotas originales de StarKies acompañan la colección de galletas" width="900" height="420" fetchpriority="high">
       </div>
       <span class="hero-sticker sticker-one" aria-hidden="true">hecho con<br>cariño <span>♡</span></span>
