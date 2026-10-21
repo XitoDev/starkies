@@ -156,6 +156,53 @@ export class FirestoreBusinessRepository {
     this.invalidateStateCache();
   }
 
+  async updateOrderStatus(
+    orderId: string,
+    previousOrder: Record<string, unknown>,
+    updatedOrder: Record<string, unknown>,
+  ): Promise<void> {
+    this.invalidateStateCache();
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const orderRef = doc(this.firebase.firestore, 'orders', orderId);
+    const countSales = String(previousOrder['status'] ?? '').toUpperCase() === 'PENDING'
+      && String(updatedOrder['status'] ?? '').toUpperCase() === 'DELIVERED';
+    const quantities = new Map<string, number>();
+    if (countSales) {
+      const boxes = Array.isArray(previousOrder['boxes']) ? previousOrder['boxes'] : [];
+      for (const rawBox of boxes) {
+        if (!this.isRecord(rawBox) || !Array.isArray(rawBox['items'])) continue;
+        for (const rawItem of rawBox['items']) {
+          if (!this.isRecord(rawItem)) continue;
+          const id = String(rawItem['id'] ?? rawItem['productId'] ?? rawItem['recipeId'] ?? '').trim();
+          const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? 0);
+          if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
+        }
+      }
+    }
+    const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
+    await runTransaction(this.firebase.firestore, async transaction => {
+      const currentOrder = await transaction.get(orderRef);
+      if (!currentOrder.exists()) throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
+      const currentValue = currentOrder.data()['value'];
+      if (!this.isRecord(currentValue)) throw new Error('El pedido no tiene un formato válido.');
+      if (String(currentValue['status'] ?? '').toUpperCase() !== String(previousOrder['status'] ?? '').toUpperCase()) {
+        throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
+      }
+      const statsSnapshots: DocumentSnapshot[] = [];
+      for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
+      transaction.set(orderRef, { index: Number(currentOrder.data()['index'] ?? 0), value: updatedOrder });
+      statsRefs.forEach((ref, index) => {
+        const snapshot = statsSnapshots[index];
+        transaction.set(ref, {
+          productId: ref.id,
+          unitsSold: Number(snapshot.exists() ? snapshot.data()['unitsSold'] ?? 0 : 0) + (quantities.get(ref.id) ?? 0),
+          updatedAt: new Date().toISOString(),
+        });
+      });
+    });
+    this.invalidateStateCache();
+  }
+
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
     this.invalidateStateCache();
     if (!this.firebase.isConfigured) {
