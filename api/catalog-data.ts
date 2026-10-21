@@ -59,14 +59,14 @@ function numberValue(value: unknown, fallback = 0): number {
 }
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
-  const recipesRef = db.collection('businesses/starkies/collections/recipes/records');
+  const recipesRef = db.collection('recipes');
   const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, ordersSnapshot] = await Promise.all([
     recipesRef.orderBy('index', 'asc').get(),
-    db.doc('businesses/starkies/settings/deliveryZones').get(),
-    db.doc('businesses/starkies/settings/catalogSettings').get(),
-    db.collection('businesses/starkies/collections/deliveryZones/records').orderBy('index', 'asc').get(),
-    db.doc('businesses/starkies/system/stateMeta').get(),
-    db.collection('businesses/starkies/collections/orders/records').get(),
+    db.doc('settings/deliveryZones').get(),
+    db.doc('settings/catalogSettings').get(),
+    db.collection('deliveryZones').orderBy('index', 'asc').get(),
+    db.doc('system/stateMeta').get(),
+    db.collection('orders').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
@@ -177,7 +177,7 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
  * products and public delivery settings are copied into this collection.
  */
 export async function syncPublicCatalogProjection(db: Firestore, catalog: PublicCatalog): Promise<void> {
-  const collectionRef = db.collection('businesses/starkies/collections/catalog/records');
+  const collectionRef = db.collection('publicCatalog');
   const current = await collectionRef.get();
   const wantedIds = new Set(catalog.products.map(product => product.id));
   const batch = db.batch();
