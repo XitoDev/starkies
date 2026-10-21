@@ -533,7 +533,7 @@ app-catalog .main-nav a[matButton], app-catalog .main-nav button[matButton] { mi
   app-catalog .hero-copy { padding-left: 0; }
 }
 @media (max-width: 700px) {
-  app-catalog .hero { margin-inline: -16px; min-height: 320px; grid-template-columns: .25fr .75fr; gap: 8px; padding: 24px 16px 42px; }
+  app-catalog .hero { margin-inline: -16px; min-height: 320px; grid-template-columns: minmax(120px, .4fr) minmax(0, .6fr); gap: 8px; padding: 24px 16px 42px; }
   app-catalog .hero-copy { min-height: 235px; align-items: flex-end; padding: 0; }
   app-catalog .hero-cta { min-height: 48px; padding-inline: 16px; white-space: nowrap; font-size: .82rem; }
   app-catalog .hero-art { min-height: 235px; }
