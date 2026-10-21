@@ -47,3 +47,9 @@ Run locally from a trusted machine after exporting the service-account JSON into
 ## Review gate for this draft PR
 
 The application repositories and API handlers are being switched to root-level paths on this branch. The deployed rules file still contains the legacy businesses/starkies matches; do not merge or deploy this branch until firestore.rules is updated and reviewed to authorize only the intended root collections and expose only publicCatalog for unauthenticated reads. The GitHub editing connection did not accept the rules-file change, so this remains an explicit blocker rather than a hidden assumption.
+
+## Derived indexes
+
+- `customerPhoneLookup/{sha256(normalizedPhone)}` stores the stable customer ID for a normalized phone number.
+- `orderPhoneLookup/{sha256(normalizedPhone)}` stores the most recent order ID for the same normalized phone. Public customer lookup reads these index documents rather than downloading all customers or orders.
+- `productSalesStats/{productId}` stores aggregate units sold for delivered orders. The migration seeds the aggregate, and a pending-to-delivered transition updates the order and stats transactionally.
