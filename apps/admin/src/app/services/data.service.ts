@@ -263,20 +263,28 @@ export class DataService {
     const rawLines = this.asArray(current['lines']).length
       ? this.asArray(current['lines'])
       : this.asArray(current['boxOrders']).flatMap(box => this.asArray(box['lines']));
-    const subtotal = rawLines.reduce((sum, line) => {
-      const quantity = this.asNumber(line['qty'] ?? line['quantity']);
-      const unitPrice = this.asNumber(line['price'] ?? line['unitPrice']);
-      return sum + quantity * unitPrice;
-    }, 0);
+    const currentShippingLine = rawLines.find(line => this.asString(line['id']).toLocaleLowerCase() === 'shipping'
+      || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
+    const currentShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? currentShippingLine?.['price'] ?? 0);
+    const subtotal = Math.max(0, this.asNumber(current['total']) - currentShippingFee);
+    const zone = changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']);
+    const updatedLines = rawLines.length
+      ? [
+          ...rawLines.filter(line => this.asString(line['id']).toLocaleLowerCase() !== 'shipping'
+            && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío')),
+          ...(shippingFee > 0 ? [{ id: 'shipping', name: 'Envío — ' + zone, qty: 1, price: shippingFee }] : []),
+        ]
+      : rawLines;
     const updated: RawRecord = {
       ...current,
       ...changes,
+      ...(rawLines.length ? { lines: updatedLines } : {}),
       deliveryDate,
       date: deliveryDate || current['date'],
       deliveryMethod: changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption']),
       deliveryAddress: changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address']),
       deliveryTime: changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot']),
-      zone: changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']),
+      zone,
       shippingFee,
       total: rawLines.length ? Math.round((subtotal + shippingFee) * 100) / 100 : this.asNumber(current['total']),
       isPaid: paid,
