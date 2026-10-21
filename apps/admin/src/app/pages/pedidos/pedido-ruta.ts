@@ -21,7 +21,7 @@ import { Order } from 'shared';
         </header>
         @if (error()) { <p class="message error">{{ error() }}</p> }
         @if (!editing()) {
-          <div class="summary"><div><span>Cliente</span><strong>{{ customerName() }}</strong><small>{{ customer()?.phone || 'Sin teléfono' }}</small><small>{{ customer()?.address || 'Sin dirección registrada' }}</small></div><div><span>Entrega</span><strong>{{ item.deliveryDate ? (item.deliveryDate | date:'d MMM y') : 'Por confirmar' }}</strong><small>Sector / modalidad: {{ item.zone || 'Según catálogo / por confirmar' }}</small><small>Estado: {{ statusLabel(item.status) }}</small><small>Envío: {{ (item.shippingFee ?? 0) | currency:'USD' }}</small><small>Pago: {{ item.isPaid ? 'Pagado' : 'Pendiente de pago' }}@if (item.isPaid && item.paymentMethod) { · {{ paymentMethodLabel(item.paymentMethod) }}}</small></div></div>
+          <div class="summary"><div><span>Cliente</span><strong>{{ customerName() }}</strong><small>{{ customer()?.phone || 'Sin teléfono' }}</small><small>{{ customer()?.address || 'Sin dirección registrada' }}</small></div><div><span>Entrega</span><strong>{{ item.deliveryDate ? (item.deliveryDate | date:'d MMM y') : 'Por confirmar' }}</strong><small>Modalidad: {{ item.deliveryMethod || 'Según catálogo / por confirmar' }}</small><small>Sector: {{ item.zone || 'Por confirmar' }}</small><small>Dirección de entrega: {{ item.deliveryAddress || customer()?.address || 'Por confirmar' }}</small><small>Horario: {{ item.deliveryTime || 'Por confirmar' }}</small><small>Estado: {{ statusLabel(item.status) }}</small><small>Envío: {{ (item.shippingFee ?? 0) | currency:'USD' }}</small><small>Pago: {{ item.isPaid ? 'Pagado' : 'Pendiente de pago' }}@if (item.isPaid && item.paymentMethod) { · {{ paymentMethodLabel(item.paymentMethod) }}}</small></div></div>
           @if (item.notes) { <div class="notes"><span>Notas del pedido</span><p>{{ item.notes }}</p></div> }
           <section class="lines"><header><strong>Productos del pedido</strong><span>{{ item.items.length }} líneas</span></header>@for(line of item.items;track line.recipeId + '-' + $index){<div class="line">@if (recipeImage(line.recipeId); as image) { <img class="cookie-image" [src]="image" [alt]="line.name || recipeName(line.recipeId)" loading="lazy"> } @else { <span class="cookie-placeholder" aria-hidden="true"><mat-icon fontSet="material-symbols-rounded">cookie</mat-icon></span> }<div><strong>{{ line.name || recipeName(line.recipeId) }}</strong><small>{{ line.quantity }} × {{ line.unitPrice | currency:'USD' }}</small></div><b>{{ line.quantity * line.unitPrice | currency:'USD' }}</b></div>}<div class="total-row"><span>Subtotal de galletas</span><strong>{{ subtotal(item) | currency:'USD' }}</strong></div><div class="total-row"><span>Envío</span><strong>{{ (item.shippingFee ?? 0) | currency:'USD' }}</strong></div><div class="total"><span>Total del pedido</span><strong>{{ totalWithShipping(item) | currency:'USD' }}</strong></div></section>
           <footer class="actions"><a matButton="outlined" class="secondary" routerLink="/pedidos">Volver</a><button matButton="outlined" class="danger" type="button" (click)="remove()">Eliminar pedido</button><a matButton="elevated" class="primary" [routerLink]="['/pedidos', item.id, 'editar']">Editar pedido</a></footer>
@@ -29,7 +29,10 @@ import { Order } from 'shared';
           <form (ngSubmit)="save()">
             <label>Estado del pedido<select [(ngModel)]="status" name="status"><option value="PENDING">Pendiente</option><option value="PREPARING">En preparación</option><option value="READY">Listo</option><option value="DELIVERED">Entregado</option><option value="CANCELLED">Cancelado</option></select></label>
             <label>Fecha de entrega<input type="date" [(ngModel)]="deliveryDate" name="deliveryDate"></label>
-            <label>Entrega según catálogo / sector<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Sector, dirección o retiro en tienda"></label>
+            <label>Modalidad según catálogo<input maxlength="100" [(ngModel)]="deliveryMethod" name="deliveryMethod" placeholder="Ej. Entrega a domicilio o retiro"></label>
+            <label>Dirección de entrega<input maxlength="250" [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Dirección registrada en el catálogo"></label>
+            <label>Horario de entrega<input maxlength="100" [(ngModel)]="deliveryTime" name="deliveryTime" placeholder="Horario solicitado en el catálogo"></label>
+            <label>Sector de entrega<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Sector de entrega"></label>
             <label>Costo de envío ($)<input type="number" min="0" step="0.01" [(ngModel)]="shippingFee" name="shippingFee"></label>
             <label class="paid-toggle"><input type="checkbox" [(ngModel)]="isPaid" name="isPaid"> Pedido pagado</label>
             <label>Forma de pago<select [(ngModel)]="paymentMethod" name="paymentMethod" [disabled]="!isPaid"><option value="TRANSFER">Transferencia</option><option value="CASH">Efectivo</option></select></label>
@@ -66,6 +69,9 @@ export class PedidoRuta {
   readonly saving = signal(false);
   readonly downloadingPdf = signal(false);
   deliveryDate = '';
+  deliveryMethod = '';
+  deliveryAddress = '';
+  deliveryTime = '';
   zone = '';
   notes = '';
   status: Order['status'] = 'PENDING';
@@ -78,6 +84,9 @@ export class PedidoRuta {
       const item = this.order();
       if (!item) return;
       this.deliveryDate = item.deliveryDate?.slice(0, 10) ?? '';
+      this.deliveryMethod = item.deliveryMethod ?? '';
+      this.deliveryAddress = item.deliveryAddress ?? this.customer()?.address ?? '';
+      this.deliveryTime = item.deliveryTime ?? '';
       this.zone = item.zone ?? '';
       this.notes = item.notes ?? '';
       this.status = item.status;
@@ -137,6 +146,9 @@ export class PedidoRuta {
     try {
       await this.data.saveOrderDetails(this.orderId(), {
         deliveryDate: this.deliveryDate,
+        deliveryMethod: this.deliveryMethod.trim(),
+        deliveryAddress: this.deliveryAddress.trim(),
+        deliveryTime: this.deliveryTime.trim(),
         zone: this.zone.trim(),
         notes: this.notes.trim(),
         status: this.status,
