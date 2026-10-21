@@ -114,7 +114,8 @@
           <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
           @if (!isBoxComplete()) { <small class="remaining-message">@if (selectedPresentation().reqClasicas > currentClasicasCount() && selectedPresentation().reqNY > currentNYCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} clásicas y {{ selectedPresentation().reqNY - currentNYCount() }} New York para completar tu caja. } @else if (selectedPresentation().reqClasicas > currentClasicasCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} galletas clásicas para completar tu caja. } @else { Te faltan {{ selectedPresentation().reqNY - currentNYCount() }} galletas New York para completar tu caja. }</small> }
         </div>
-      } @else {
+      }
+      @if (completedBoxes().length > 0) {
         <div class="dock-saved-count"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja guardada' : 'cajas guardadas' }}</strong><span>Total: {{ formatPresentationPrice(boxesTotalSum()) }}</span></div>
       }
       <div class="dock-actions">
