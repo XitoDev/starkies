@@ -15,6 +15,8 @@ describe('Finanzas', () => {
   let dataServiceStub: {
     rawState: WritableSignal<Record<string, unknown> | null>;
     ingredients: WritableSignal<Ingredient[]>;
+    recipes: WritableSignal<any[]>;
+    saveRecipe: ReturnType<typeof vi.fn>;
     recordCashMovement: typeof recordCashMovement;
     recordIngredientPurchase: typeof recordIngredientPurchase;
     saveBusinessSetting: ReturnType<typeof vi.fn>;
@@ -28,6 +30,8 @@ describe('Finanzas', () => {
       ingredients: signal<Ingredient[]>([
         { id: 'flour', name: 'Harina', unit: 'g', stock: 4000, costPerUnit: 0.0025, packageUnit: 'kg', packageQuantityGrams: 1, packagePrice: 2.5, minStock: 1000 },
       ]),
+      recipes: signal<any[]>([]),
+      saveRecipe: vi.fn().mockResolvedValue(undefined),
       recordCashMovement,
       recordIngredientPurchase,
       saveBusinessSetting: vi.fn().mockResolvedValue(undefined),
@@ -67,6 +71,22 @@ describe('Finanzas', () => {
       }),
     }));
     expect(component.editBalancesOpen()).toBe(false);
+  });
+
+  it('calculates a four-part suggested price and saves only the editable sale price', async () => {
+    dataServiceStub.recipes.set([{
+      id: 'lemon-cookie', name: 'Lemon Glow', category: 'Galletas NY', yield: 10, price: 1.3, archived: false,
+      sections: [{ ingredients: [{ ingredientId: 'flour', quantity: 100 }] }],
+    }]);
+    const row = component.priceRows()[0];
+    expect(row.ingredientCost).toBe(0.025);
+    expect(row.expenses).toBe(0.025);
+    expect(row.services).toBe(0.025);
+    expect(row.suggestedPrice).toBe(0.1);
+    component.updateSalePrice('lemon-cookie', '0.20');
+    await component.saveProductPricing('lemon-cookie');
+    expect(dataServiceStub.saveRecipe).toHaveBeenCalledWith(expect.objectContaining({ id: 'lemon-cookie', price: 0.2 }));
+    expect(component.priceRows()[0].profit).toBeCloseTo(0.125);
   });
 
   it('prefills the purchase form with the selected ingredient cost', () => {
