@@ -129,47 +129,14 @@ export class FirestoreBusinessRepository {
    * intentional because loadState orders by index and does not require gaps to
    * be compacted.
    */
-  async upsertCollectionRecord(
-    collectionKey: string,
-    recordId: string,
-    value: Record<string, unknown>,
-  ): Promise<void> {
+  async upsertCollectionRecord(collectionKey: string, recordId: string, value: Record<string, unknown>): Promise<void> {
     this.invalidateStateCache();
-    if (!this.firebase.isConfigured) {
-      throw new Error(this.firebase.configurationMessage);
-    }
-
-    // Firestore rejects undefined anywhere in a document. Optional UI/model fields
-    // can explicitly be undefined (for example packageQuantityGrams or notes),
-    // so normalize the payload once at the persistence boundary.
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields(value);
-    const recordsRef = collection(
-      this.firebase.firestore,
-      collectionKey,
-    );
-    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-    const matching = snapshot.docs.find((record) => {
-      const storedValue = record.data()['value'];
-      return this.isRecord(storedValue)
-        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
-    });
-
-    if (matching) {
-      const index = Number(matching.data()['index'] ?? 0);
-      await setDoc(matching.ref, { index, value: safeValue });
-      this.invalidateStateCache();
-      return;
-    }
-
-    const maxIndex = snapshot.docs.reduce(
-      (max, record) => Math.max(max, Number(record.data()['index'] ?? -1)),
-      -1,
-    );
-    const nextIndex = maxIndex + 1;
-    await setDoc(doc(recordsRef, String(nextIndex).padStart(6, '0')), {
-      index: nextIndex,
-      value: safeValue,
-    });
+    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
+    const existing = await getDoc(recordRef);
+    const index = existing.exists() ? Number(existing.data()['index'] ?? 0) : Date.now();
+    await setDoc(recordRef, { index, value: safeValue });
     this.invalidateStateCache();
   }
 
