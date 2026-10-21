@@ -248,8 +248,15 @@ export class Recetas {
     } finally { this.uploadingImage.set(false); }
   }
   async saveRecipe(): Promise<void> {
-    const form = this.form(), name = form.name.trim(), category = form.category.trim();
-    if (!name || !category) { this.formError.set('Ingresa el nombre del sabor y su categoría.'); return; }
+    const form = this.form();
+    const name = String(form.name ?? '').trim();
+    const category = String(form.category ?? '').trim();
+    if (!name || !category) {
+      this.formError.set(!name && !category
+        ? 'Ingresa el nombre del sabor y su categoría.'
+        : !name ? 'Ingresa el nombre del sabor.' : 'Ingresa la categoría de la receta.');
+      return;
+    }
     if (form.kind === 'base' && !form.baseId) { this.formError.set('Selecciona la masa base que utilizará esta receta.'); return; }
     const sections: RecipeSection[] = [];
     const makeRows = (rows: IngredientRow[]) => rows.filter(row => row.ingredientId && Number(row.quantity) > 0).map(row => ({ ingredientId: row.ingredientId, quantity: Number(row.quantity) }));
