@@ -51,7 +51,7 @@ export class Catalog {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
     const presentation = this.selectedPresentation();
     const availableProducts = this.products().filter(product =>
-      product.stock && (product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0),
+      product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0,
     );
     if (!query) return availableProducts;
     return availableProducts.filter(product =>
