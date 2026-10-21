@@ -68,6 +68,9 @@ export interface Order {
   status: OrderStatus;
   createdAt: string;
   deliveryDate?: string;
+  deliveryMethod?: string;
+  deliveryAddress?: string;
+  deliveryTime?: string;
   zone?: string;
   notes?: string;
   cookieName?: string;
