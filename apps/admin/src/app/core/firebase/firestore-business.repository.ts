@@ -135,6 +135,13 @@ export class FirestoreBusinessRepository {
     const safeValue = this.removeUndefinedFields(value);
     const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
     const existing = await getDoc(recordRef);
+    const existingValue = existing.data()?.['value'];
+    if (collectionKey === 'orders' && existing.exists() && this.isRecord(existingValue)
+      && String(existingValue['status'] ?? '').toUpperCase() === 'PENDING'
+      && String(safeValue['status'] ?? '').toUpperCase() === 'DELIVERED') {
+      await this.updateOrderStatus(recordId, existingValue, safeValue);
+      return;
+    }
     const index = existing.exists() ? Number(existing.data()['index'] ?? 0) : Date.now();
     await setDoc(recordRef, { index, value: safeValue });
     this.invalidateStateCache();
