@@ -41,9 +41,11 @@ describe('Sidebar', () => {
     expect(storeLink.getAttribute('href')).toBe('https://starkies.lat/');
     expect(storeLink.getAttribute('target')).toBe('_blank');
     expect(storeLink.getAttribute('rel')).toContain('noopener');
-    expect(storeLink.getAttribute('aria-label')).toContain('Ir a mi tienda');
-    expect(storeLink.textContent).toContain('Ir a mi tienda');
-    expect(storeLink.textContent).toContain('Ver catálogo público');
+    expect(storeLink.getAttribute('aria-label')).toContain('Mi tienda');
+    expect(storeLink.getAttribute('matButton')).toBe('filled');
+    expect(storeLink.textContent).toContain('Mi tienda');
+    expect(storeLink.textContent).not.toContain('Ver catálogo público');
+    expect(storeLink.querySelector('mat-icon')?.textContent?.trim()).toBe('shopping_cart');
   });
 
   it('signs out of Firebase and navigates to login', async () => {
