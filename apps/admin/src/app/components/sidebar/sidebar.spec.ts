@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -17,7 +18,7 @@ describe('Sidebar', () => {
       providers: [
         provideRouter([]),
         { provide: FirebaseClientService, useValue: { signOut: signOutSpy } },
-        { provide: DataService, useValue: { exportBackup: vi.fn() } },
+        { provide: DataService, useValue: { exportBackup: vi.fn(), orders: signal([{ status: 'PENDING' }]) } },
       ],
     }).compileComponents();
 
@@ -46,6 +47,13 @@ describe('Sidebar', () => {
     expect(storeLink.textContent).toContain('Mi tienda');
     expect(storeLink.textContent).not.toContain('Ver catálogo público');
     expect(storeLink.querySelector('mat-icon')?.textContent?.trim()).toBe('shopping_cart');
+  });
+
+
+  it('shows the number of pending orders and hides the badge when there are none', () => {
+    const badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
+    expect(badge.textContent?.trim()).toBe('1');
+    expect(badge.getAttribute('aria-label')).toBe('1 pedidos pendientes');
   });
 
   it('signs out of Firebase and navigates to login', async () => {
