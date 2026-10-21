@@ -8,8 +8,8 @@
   },
   "rewrites": [
     {
-      "source": "/p",
-      "destination": "/api/order-short"
+      "source": "/p/:code",
+      "destination": "/api/order-short?code=:code"
     }
   ]
 }
