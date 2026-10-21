@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -49,4 +49,17 @@ function getDatabase() {
     credential: cert({ projectId: account.project_id, clientEmail: account.client_email, privateKey: account.private_key.replace(/\\n/g, '\n') }),
   }, appName);
   return getFirestore(app);
+}
+
+function verifyToken(token: string, signingKey: string): { orderId: string } | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [orderId, expiryRaw, suppliedSignature] = parts;
+  if (!/^SK-\\d{8}-[A-F0-9]{6}$/.test(orderId) || !/^\\d{13}$/.test(expiryRaw) || !/^[a-f0-9]{64}$/.test(suppliedSignature)) return null;
+  const expiry = Number(expiryRaw);
+  if (!Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + 3 * 24 * 60 * 60 * 1000) return null;
+  const expected = createHmac('sha256', signingKey).update(orderId + '.' + expiryRaw).digest();
+  const supplied = Buffer.from(suppliedSignature, 'hex');
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+  return { orderId };
 }
