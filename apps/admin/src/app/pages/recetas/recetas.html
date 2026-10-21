@@ -77,8 +77,7 @@
   <div class="recipe-modal-backdrop" [class.route-editor]="routeEditor()" (click)="closeEditor()">
     <section class="recipe-modal" [class.route-editor]="routeEditor()" [attr.role]="routeEditor() ? null : 'dialog'" [attr.aria-modal]="routeEditor() ? null : 'true'" aria-labelledby="recipe-modal-title" (click)="$event.stopPropagation()">
       <header class="recipe-modal-header">
-        <div><p class="eyebrow">Starkies / Mi negocio</p><h2 id="recipe-modal-title">{{ editingId() ? 'Editar receta' : 'Nueva receta' }}</h2></div>
-        <button matIconButton class="recipe-modal-close" type="button" aria-label="Cerrar" [disabled]="saving()" (click)="closeEditor()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
+        <div><h2 id="recipe-modal-title">{{ editingId() ? 'Editar receta' : 'Nueva receta' }}</h2></div>
       </header>
       <form class="recipe-form" (submit)="$event.preventDefault(); saveRecipe()">
         <div class="photo-upload-panel">
@@ -127,7 +126,7 @@
         </section>
         <label class="recipe-field notes-field"><span>Notas de la receta · opcional</span><textarea matInput rows="4" maxlength="1500" [value]="form().notes" (input)="setFormText('notes', $any($event.target).value)" placeholder="Ej. Usar solo una parte de las yemas o reservar un poco de masa para la decoración."></textarea></label>
         @if (formError()) { <p class="recipe-form-error" role="alert">{{ formError() }}</p> }
-        <footer class="recipe-form-footer"><button matButton="outlined" class="btn-primary cancel-button" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar ✓' }}</button></footer>
+        <footer class="recipe-form-footer"><button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeEditor()">Cancelar</button><button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving() || uploadingImage()">{{ saving() ? 'Guardando…' : uploadingImage() ? 'Subiendo foto…' : 'Guardar' }}</button></footer>
       </form>
     </section>
   </div>
