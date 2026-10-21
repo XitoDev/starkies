@@ -29,5 +29,5 @@
 
 /* Dialog actions use outlined Material buttons and keep the primary action at the right. */
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
-.modal-actions .btn-primary{border-color:#d9c4e8;background:#fff;color:#8056ad;}
+
 .modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}
