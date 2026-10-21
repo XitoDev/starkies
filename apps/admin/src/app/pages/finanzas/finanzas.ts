@@ -75,7 +75,7 @@ export class Finanzas {
     const salePrice = Math.max(0, edit?.salePrice ?? (storedSalePrice > 0 ? storedSalePrice : suggestedPrice));
     const expenses = ingredientCost;
     const services = ingredientCost;
-    const profit = salePrice - ingredientCost - expenses - services - fixedProfit;
+    const profit = salePrice - ingredientCost - expenses - services;
     const marginPercent = salePrice > 0 ? profit / salePrice * 100 : 0;
     const priceDifference = salePrice - suggestedPrice;
     return {
