@@ -14,6 +14,7 @@ type PurchaseForm = {
   unitCost: number;
   brand: string;
   packageQuantityGrams: number;
+  packageUnit: string;
   packagePrice: number;
   date: string;
   note: string;
@@ -122,6 +123,16 @@ export class Finanzas {
   readonly selectedIngredient = computed(() =>
     this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
   );
+  readonly purchaseUnits = computed(() => {
+    const volume = this.selectedIngredient()?.unit === 'ml';
+    return [
+      { value: 'g', label: 'Gramos (g)', dimension: 'mass' }, { value: 'kg', label: 'Kilogramos (kg)', dimension: 'mass' },
+      { value: 'mg', label: 'Miligramos (mg)', dimension: 'mass' }, { value: 'lb', label: 'Libras (lb)', dimension: 'mass' },
+      { value: 'oz', label: 'Onzas (oz)', dimension: 'mass' }, { value: 'ml', label: 'Mililitros (ml)', dimension: 'volume' },
+      { value: 'l', label: 'Litros (l)', dimension: 'volume' }, { value: 'taza', label: 'Tazas (240 ml)', dimension: 'volume' },
+      { value: 'cda', label: 'Cucharadas (15 ml)', dimension: 'volume' }, { value: 'cdta', label: 'Cucharaditas (5 ml)', dimension: 'volume' },
+    ].filter(unit => unit.dimension === (volume ? 'volume' : 'mass'));
+  });
 
   readonly bankCards = computed(() => {
     const ledger = this.ledger();
@@ -432,6 +443,7 @@ export class Finanzas {
       unitCost: ingredient?.costPerUnit ?? 0,
       brand: ingredient?.brand ?? '',
       packageQuantityGrams: ingredient?.packageQuantityGrams ?? 1000,
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : 'g'),
       packagePrice: ingredient?.packagePrice ?? ((ingredient?.costPerUnit ?? 0) * (['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1 : 1000)),
       date: this.today(),
       note: '',
@@ -462,8 +474,21 @@ export class Finanzas {
       unitCost: ingredient?.costPerUnit ?? current.unitCost,
       brand: ingredient?.brand ?? current.brand,
       packageQuantityGrams: ingredient?.packageQuantityGrams ?? current.packageQuantityGrams,
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : 'g'),
       packagePrice: ingredient?.packagePrice ?? current.packagePrice,
     }));
+  }
+
+  updatePurchaseUnit(value: string): void {
+    const next = this.purchaseUnits().find(unit => unit.value === value);
+    if (!next) return;
+    const current = this.purchaseForm();
+    const old = this.purchaseUnits().find(unit => unit.value === current.packageUnit);
+    const factors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    const quantity = old?.dimension === next.dimension
+      ? current.packageQuantityGrams * factors[current.packageUnit] / factors[value]
+      : current.packageQuantityGrams;
+    this.purchaseForm.update(valueNow => ({ ...valueNow, packageUnit: value, packageQuantityGrams: quantity }));
   }
 
   updatePurchaseText(field: 'date' | 'note' | 'brand', value: string): void {
@@ -506,8 +531,8 @@ export class Finanzas {
     const date = this.normalizeDate(values.date);
     const packageGrams = values.packageQuantityGrams;
     const packagePrice = Math.round(values.packagePrice * 10000) / 10000;
-    const unitFactor = ['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1000 : 1;
-    const quantity = packageGrams / unitFactor;
+    const packageFactors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    const quantity = packageGrams * (packageFactors[values.packageUnit] ?? 1);
     const unitCost = packagePrice / Math.max(quantity, Number.EPSILON);
     const amount = Math.round(packagePrice * 100) / 100;
 
@@ -544,6 +569,7 @@ export class Finanzas {
       unitCost,
       brand: values.brand.trim(),
       packageQuantityGrams: packageGrams,
+      packageUnit: values.packageUnit,
       packagePrice,
     };
 
@@ -609,7 +635,7 @@ export class Finanzas {
   }
 
   private emptyPurchaseForm(): PurchaseForm {
-    return { ingredientId: '', quantity: 1, unitCost: 0, brand: '', packageQuantityGrams: 1000, packagePrice: 0, date: this.today(), note: '' };
+    return { ingredientId: '', quantity: 1, unitCost: 0, brand: '', packageQuantityGrams: 1000, packageUnit: 'g', packagePrice: 0, date: this.today(), note: '' };
   }
 
   private emptyExpenseForm(): ExpenseForm {

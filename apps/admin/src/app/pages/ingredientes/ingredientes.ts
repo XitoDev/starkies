@@ -12,6 +12,7 @@ type IngredientForm = {
   packageQuantityGrams: number;
   packagePrice: number;
   unit: string;
+  packageUnit: string;
   stock: number;
   minStock: number;
   supplyGroup: string;
@@ -46,12 +47,68 @@ export class Ingredientes {
   });
 
   onSearch(event: Event): void { this.searchTerm.set((event.target as HTMLInputElement).value); }
+  readonly packageUnits = [
+    { value: 'g', label: 'Gramos (g)', dimension: 'mass' },
+    { value: 'kg', label: 'Kilogramos (kg)', dimension: 'mass' },
+    { value: 'mg', label: 'Miligramos (mg)', dimension: 'mass' },
+    { value: 'lb', label: 'Libras (lb)', dimension: 'mass' },
+    { value: 'oz', label: 'Onzas (oz)', dimension: 'mass' },
+    { value: 'ml', label: 'Mililitros (ml)', dimension: 'volume' },
+    { value: 'l', label: 'Litros (l)', dimension: 'volume' },
+    { value: 'taza', label: 'Tazas (240 ml)', dimension: 'volume' },
+    { value: 'cda', label: 'Cucharadas (15 ml)', dimension: 'volume' },
+    { value: 'cdta', label: 'Cucharaditas (5 ml)', dimension: 'volume' },
+  ] as const;
   packageQuantity(item: Ingredient): number { return item.packageQuantityGrams ?? this.gramsPerUnit(item.unit); }
+  packageUnit(item: Ingredient): string { return item.packageUnit ?? item.unit; }
   unitLabel(unit: string): string { return unit === 'ml' ? 'ml' : 'g'; }
-  updateUnit(value: string): void { if (value === 'g' || value === 'ml') this.form.update(current => ({ ...current, unit: value })); }
+  packageUnitLabel(unit: string): string { return this.packageUnits.find(option => option.value === unit)?.value ?? unit; }
+  updateUnit(value: string): void {
+    const option = this.packageUnits.find(item => item.value === value);
+    if (!option) return;
+    const current = this.form();
+    const nextBaseUnit = option.dimension === 'volume' ? 'ml' : 'g';
+    if (current.unit !== nextBaseUnit && this.editingId()) {
+      const id = this.editingId()!;
+      const hasStock = (this.ingredients().find(item => item.id === id)?.stock ?? 0) > 0;
+      const rawRecipes = this.dataService.rawState()?.['recipes'];
+      const usedByRecipe = Array.isArray(rawRecipes) && rawRecipes.some(recipe => {
+        if (!recipe || typeof recipe !== 'object') return false;
+        const record = recipe as Record<string, unknown>;
+        const sections = Array.isArray(record['sections']) ? record['sections'] : [];
+        return sections.some(section => section && typeof section === 'object'
+          && Array.isArray((section as Record<string, unknown>)['ingredients'])
+          && ((section as Record<string, unknown>)['ingredients'] as Record<string, unknown>[]).some(item => String(item['ingredientId'] ?? '') === id));
+      });
+      if (hasStock || usedByRecipe) {
+        this.formError.set('No se puede cambiar entre peso y volumen para un insumo que ya tiene existencias o se usa en recetas. Crea otro insumo o ajusta primero sus existencias y recetas; gramos y mililitros no se convierten directamente sin conocer la densidad.');
+        return;
+      }
+    }
+    this.formError.set('');
+    this.form.update(current => {
+      const oldOption = this.packageUnits.find(item => item.value === current.packageUnit);
+      const sameDimension = oldOption?.dimension === option.dimension;
+      const convertedQuantity = sameDimension
+        ? current.packageQuantityGrams * this.packageUnitFactor(current.packageUnit) / this.packageUnitFactor(option.value)
+        : current.packageQuantityGrams;
+      return { ...current, packageQuantityGrams: convertedQuantity, unit: nextBaseUnit, packageUnit: option.value };
+    });
+  }
+  normalizedPackageQuantity(): number { return this.form().packageQuantityGrams * this.packageUnitFactor(this.form().packageUnit); }
+  private packageUnitFactor(unit: string): number {
+    const factor: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    return factor[unit] ?? 1;
+  }
   packagePrice(item: Ingredient): number { return item.packagePrice ?? item.costPerUnit; }
-  costPerGram(item: Ingredient): number { const quantity = this.packageQuantity(item); return quantity > 0 ? this.packagePrice(item) / quantity : 0; }
-  costPerGramFromForm(): number { const quantity = this.form().packageQuantityGrams; return quantity > 0 ? this.form().packagePrice / quantity : 0; }
+  costPerGram(item: Ingredient): number {
+    const quantity = this.packageQuantity(item) * this.packageUnitFactor(this.packageUnit(item));
+    return quantity > 0 ? this.packagePrice(item) / quantity : 0;
+  }
+  costPerGramFromForm(): number {
+    const quantity = this.normalizedPackageQuantity();
+    return quantity > 0 ? this.form().packagePrice / quantity : 0;
+  }
 
   openNewIngredient(): void {
     this.editingId.set(null);
@@ -69,6 +126,7 @@ export class Ingredientes {
       packageQuantityGrams: grams,
       packagePrice: item.packagePrice ?? item.costPerUnit,
       unit: item.unit || 'g',
+      packageUnit: item.packageUnit ?? item.unit ?? 'g',
       stock: item.stock,
       minStock: item.minStock ?? 0,
       supplyGroup: item.supplyGroup ?? 'Secos',
@@ -100,14 +158,14 @@ export class Ingredientes {
     this.saving.set(true);
     this.formError.set('');
     try {
-      const costPerGram = values.packagePrice / values.packageQuantityGrams;
-      const unitFactor = this.gramsPerUnit(values.unit);
-      const costPerUnit = unitFactor > 0 ? costPerGram * unitFactor : values.packagePrice;
+      const canonicalQuantity = this.normalizedPackageQuantity();
+      const costPerUnit = values.packagePrice / canonicalQuantity;
       const item: Ingredient = {
         id: this.editingId() ?? crypto.randomUUID(),
         name,
         packageQuantityGrams: values.packageQuantityGrams,
         packagePrice: values.packagePrice,
+        packageUnit: values.packageUnit,
         unit: values.unit || 'g',
         costPerUnit,
         stock: values.stock,
@@ -140,7 +198,7 @@ export class Ingredientes {
     return normalized === 'g' || normalized === 'ml' ? 1 : 0;
   }
   private emptyForm(): IngredientForm {
-    return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
+    return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', packageUnit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
   }
 }
 

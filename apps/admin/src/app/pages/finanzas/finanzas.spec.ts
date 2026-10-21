@@ -26,7 +26,7 @@ describe('Finanzas', () => {
     dataServiceStub = {
       rawState: signal<Record<string, unknown> | null>({ cashMovements: [] }),
       ingredients: signal<Ingredient[]>([
-        { id: 'flour', name: 'Harina', unit: 'kg', stock: 4, costPerUnit: 2.5, minStock: 1 },
+        { id: 'flour', name: 'Harina', unit: 'g', stock: 4000, costPerUnit: 0.0025, packageUnit: 'kg', packageQuantityGrams: 1, packagePrice: 2.5, minStock: 1000 },
       ]),
       recordCashMovement,
       recordIngredientPurchase,
@@ -56,7 +56,7 @@ describe('Finanzas', () => {
     component.openPurchaseForm();
     expect(component.formOpen()).toBe('purchase');
     expect(component.purchaseForm().ingredientId).toBe('flour');
-    expect(component.purchaseForm().unitCost).toBe(2.5);
+    expect(component.purchaseForm().unitCost).toBe(0.0025);
   });
 
   it('persists an expense as an outgoing cash movement', async () => {
@@ -77,7 +77,7 @@ describe('Finanzas', () => {
 
   it('persists a purchase with stock and cash-flow details', async () => {
     component.openPurchaseForm();
-    component.updatePurchaseNumber('packageQuantityGrams', '2000');
+    component.updatePurchaseNumber('packageQuantityGrams', '2');
     component.updatePurchaseNumber('packagePrice', '7');
     component.updatePurchaseText('brand', 'Molino');
 
@@ -85,10 +85,11 @@ describe('Finanzas', () => {
 
     expect(recordIngredientPurchase).toHaveBeenCalledWith(expect.objectContaining({
       ingredientId: 'flour',
-      quantity: 2,
-      unitCost: 3.5,
+      quantity: 2000,
+      unitCost: 0.0035,
       brand: 'Molino',
-      packageQuantityGrams: 2000,
+      packageQuantityGrams: 2,
+      packageUnit: 'kg',
       packagePrice: 7,
       amount: 7,
       type: 'OUT',
