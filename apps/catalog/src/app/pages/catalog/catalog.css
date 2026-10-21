@@ -125,23 +125,9 @@ main { padding-bottom:170px; position:relative; z-index:1; }
   .fulfillment-option small { font-size:10px; }
 }
 
-/* Presentation cards: selection stays in the corner without reserving a header row. */
-.box-presentations button { position:relative; text-align:center; }
-.box-presentations button strong,.box-presentations .presentation-description,.box-presentations .box-price { padding-inline:8px; }
-.box-presentations .presentation-check { position:absolute; top:10px; right:12px; width:25px; height:25px; color:#cdbbd0; font-size:23px; }
-.box-presentations button.active .presentation-check { color:#795381; }
-.box-presentations button strong { margin-top:5px; }
-@media (max-width:680px) {
- .box-presentations button { text-align:left; padding:14px 46px 14px 14px; }
- .box-presentations button.active { padding:13px 45px 13px 13px; }
- .box-presentations button strong,.box-presentations .presentation-description,.box-presentations .box-price { padding-inline:0; }
- .box-presentations button strong { margin-top:0; }
- .box-presentations .presentation-check { top:12px; right:12px; }
-}
-
-.site-footer{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:34px;padding:42px 24px 28px;color:var(--muted)}.footer-social{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:12px}.social-brand-icon{width:18px;height:18px;fill:currentColor}
-:host header .brand{align-items:center!important}
-:host header .brand .brand-tagline{text-align:center!important}
-.box-presentations .presentation-check{display:grid;place-items:center;font:700 16px/1 'DM Sans',sans-serif}
+.box-presentations button{position:relative;text-align:center}
+.box-presentations .presentation-check{position:absolute;top:10px;right:12px;display:grid;place-items:center;width:24px;height:24px;font:700 16px/1 'DM Sans',sans-serif;color:transparent}
+.box-presentations button.active .presentation-check{color:#fff;background:#795381;border-radius:50%}
 .search-field input{border:0!important;background:transparent!important;box-shadow:none!important}
-.footer-social-link{border:0!important;border-radius:8px!important;background:transparent!important}
+.footer-social-link{border:0!important;background:transparent!important}
+@media(max-width:680px){.box-presentations button{text-align:left;padding-right:46px}.box-presentations .presentation-check{top:12px;right:12px}}
