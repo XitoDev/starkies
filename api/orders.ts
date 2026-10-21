@@ -53,7 +53,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const now = Date.now();
     const createdAt = new Date(now).toISOString();
     const orderId = 'SK-' + todayInEcuador().replaceAll('-', '') + '-' + randomBytes(3).toString('hex').toUpperCase();
-    const documentExpiresAt = now + 7 * 24 * 60 * 60 * 1000;
+    const documentExpiresAt = now + 3 * 24 * 60 * 60 * 1000;
     const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
     const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
@@ -89,7 +89,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       deliveryDate: order.deliveryDate,
       created: createdAt,
       createdAt,
-      cookieName: order.cookieName || order.name,
+      cookieName: order.cookieName || 'N/A',
       notes: order.notes,
       status: 'PENDING',
       total: order.total,
@@ -374,9 +374,7 @@ function getDocumentSigningKey(): string {
   if (!raw) throw new HttpError(503, 'La configuración de documentos de pedidos no está completa.');
   try {
     const account = JSON.parse(raw) as { project_id?: string; private_key?: string };
-    if (account.project_id !== 'starkies' || !account.private_key) {
-      throw new Error('Invalid service account');
-    }
+    if (account.project_id !== 'starkies' || !account.private_key) throw new Error('Invalid service account');
     return account.private_key;
   } catch {
     throw new HttpError(503, 'La configuración de documentos de pedidos no está completa.');
