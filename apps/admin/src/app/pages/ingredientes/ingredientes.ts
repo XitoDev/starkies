@@ -31,6 +31,8 @@ export class Ingredientes {
   private readonly dataService = inject(DataService);
   readonly ingredients = this.dataService.ingredients;
   readonly searchTerm = signal('');
+  readonly selectedCategory = signal('Todos');
+  readonly ingredientCategories = ['Todos', 'Secos', 'Líquidos', 'Decoración y relleno', 'Empaques', 'Utensilios y protección', 'Otros'];
   readonly formOpen = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly saving = signal(false);
@@ -39,12 +41,30 @@ export class Ingredientes {
   readonly form = signal<IngredientForm>(this.emptyForm());
 
 
+  readonly categoryCounts = computed(() => {
+    const items = this.ingredients();
+    return this.ingredientCategories.map(category => ({
+      name: category,
+      count: category === 'Todos' ? items.length : items.filter(item => this.displaySupplyType(item.supplyGroup) === category).length,
+    }));
+  });
   readonly filteredIngredients = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('es');
+    const category = this.selectedCategory();
     return this.ingredients()
-      .filter(item => !term || item.name.toLocaleLowerCase('es').includes(term) || (item.supplyGroup ?? '').toLocaleLowerCase('es').includes(term))
+      .filter(item => category === 'Todos' || this.displaySupplyType(item.supplyGroup) === category)
+      .filter(item => !term
+        || item.name.toLocaleLowerCase('es').includes(term)
+        || this.displaySupplyType(item.supplyGroup).toLocaleLowerCase('es').includes(term))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
+  displaySupplyType(value?: string): string {
+    const normalized = (value ?? '').trim().toLocaleLowerCase('es');
+    if (normalized === 'húmedos' || normalized === 'humedos' || normalized === 'líquidos' || normalized === 'liquidos') return 'Líquidos';
+    return this.ingredientCategories.find(category => category.toLocaleLowerCase('es') === normalized) ?? 'Otros';
+  }
+  selectCategory(category: string): void { this.selectedCategory.set(category); }
+
 
   onSearch(event: Event): void { this.searchTerm.set((event.target as HTMLInputElement).value); }
   readonly packageUnits = [
@@ -134,7 +154,7 @@ export class Ingredientes {
       packageUnit: item.packageUnit ?? item.unit ?? 'g',
       stock: item.stock,
       minStock: item.minStock ?? 0,
-      supplyGroup: item.supplyGroup ?? 'Secos',
+      supplyGroup: this.displaySupplyType(item.supplyGroup),
       foodGroup: item.foodGroup ?? 'No aplica',
       ingredientGroup: item.ingredientGroup ?? '',
     });
@@ -145,7 +165,7 @@ export class Ingredientes {
 
   closeForm(): void { if (!this.saving()) { this.formOpen.set(false); this.formError.set(''); } }
   updateTextField(field: 'name', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
-  updateSupplyType(value: string): void { this.form.update(current => ({ ...current, supplyGroup: value })); }
+  updateSupplyType(value: string): void { this.form.update(current => ({ ...current, supplyGroup: this.displaySupplyType(value) })); }
   updateNumberField(field: 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.form.update(current => ({ ...current, [field]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
@@ -175,7 +195,7 @@ export class Ingredientes {
         costPerUnit,
         stock: values.stock,
         minStock: values.minStock,
-        supplyGroup: values.supplyGroup,
+        supplyGroup: this.displaySupplyType(values.supplyGroup),
         foodGroup: values.foodGroup,
         ingredientGroup: values.ingredientGroup,
       };
