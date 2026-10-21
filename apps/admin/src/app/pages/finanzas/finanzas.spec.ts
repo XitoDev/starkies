@@ -84,11 +84,35 @@ describe('Finanzas', () => {
     expect(row.ingredientCost).toBe(0.025);
     expect(row.expenses).toBe(0.025);
     expect(row.services).toBe(0.025);
+    expect(row.fixedProfit).toBe(0.025);
     expect(row.suggestedPrice).toBe(0.1);
     component.updateSalePrice('lemon-cookie', '0.20');
     await component.saveProductPricing('lemon-cookie');
     expect(dataServiceStub.saveRecipe).toHaveBeenCalledWith(expect.objectContaining({ id: 'lemon-cookie', price: 0.2 }));
     expect(component.priceRows()[0].profit).toBeCloseTo(0.125);
+  });
+
+  it('uses the suggested price when no sale price has been configured', async () => {
+    dataServiceStub.recipes.set([{
+      id: 'oat-cookie', name: 'Avena Classic', category: 'Galletas clásicas', yield: 10, price: 0, archived: false,
+      sections: [{ ingredients: [{ ingredientId: 'flour', quantity: 100 }] }],
+    }]);
+
+    expect(component.priceRows()[0].salePrice).toBe(0.1);
+    expect(component.priceRows()[0].profit).toBeCloseTo(0.025);
+
+    await component.saveProductPricing('oat-cookie');
+    expect(dataServiceStub.saveRecipe).toHaveBeenCalledWith(expect.objectContaining({ id: 'oat-cookie', price: 0.1 }));
+  });
+
+  it('replaces a cleared sale price with the suggested price', () => {
+    dataServiceStub.recipes.set([{
+      id: 'oat-cookie', name: 'Avena Classic', category: 'Galletas clásicas', yield: 10, price: 0, archived: false,
+      sections: [{ ingredients: [{ ingredientId: 'flour', quantity: 100 }] }],
+    }]);
+
+    component.updateSalePrice('oat-cookie', '');
+    expect(component.priceRows()[0].salePrice).toBe(0.1);
   });
 
   it('prefills the purchase form with the selected ingredient cost', () => {
