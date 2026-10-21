@@ -3,19 +3,19 @@
 :root {
   color-scheme: light;
   /* Public catalog palette: warm lilac tones remain distinct from admin. */
-  --ds-color-primary: #75457c;
+  --ds-color-primary: #16002E;
   --ds-color-on-primary: #ffffff;
-  --ds-color-primary-container: #e4d2e6;
-  --ds-color-on-primary-container: #4b3153;
-  --ds-color-secondary: #795e7f;
-  --ds-color-surface: #fffafc;
-  --ds-color-surface-container: #f4eaf2;
-  --ds-color-surface-container-high: #eadce8;
-  --ds-color-page: #f4eaf2;
-  --ds-color-text: #4b3153;
-  --ds-color-text-muted: #795e7f;
-  --ds-color-outline: #9b76a2;
-  --ds-color-outline-variant: #e4d2e6;
+  --ds-color-primary-container: #C5B5E1;
+  --ds-color-on-primary-container: #16002E;
+  --ds-color-secondary: #806C79;
+  --ds-color-surface: #FFF0F3;
+  --ds-color-surface-container: #F7E4ED;
+  --ds-color-surface-container-high: #C5B5E1;
+  --ds-color-page: #FFF0F3;
+  --ds-color-text: #16002E;
+  --ds-color-text-muted: #806C79;
+  --ds-color-outline: #806C79;
+  --ds-color-outline-variant: #C5B5E1;
 
   /* Map Angular Material 3 system tokens to this app's own palette. */
   --mat-sys-primary: var(--ds-color-primary);
@@ -567,3 +567,230 @@ app-catalog .main-nav a[matButton], app-catalog .main-nav button[matButton] { mi
 }
 
 @media (max-width: 700px) { app-catalog .site-footer { padding-bottom: calc(105px + env(safe-area-inset-bottom)); } app-catalog .dock-actions:has(.dock-order:only-child) { grid-template-columns: 1fr; } }
+
+
+/* StarKies premium lilac/rose storefront refresh */
+:root {
+  --cream: #FFF0F3;
+  --ink: #16002E;
+  --purple: #16002E;
+  --pink: #C5B5E1;
+  --starkies-bg: #FFF0F3;
+  --starkies-lilac: #C5B5E1;
+  --starkies-accent: #CE85D8;
+  --starkies-ink: #16002E;
+  --starkies-muted: #806C79;
+}
+html, body { background: #FFF0F3; color: #16002E; }
+body { overflow-x: clip; }
+.site-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 106px;
+  padding: 20px clamp(20px, 5vw, 76px);
+  border-bottom: 1px solid rgb(197 181 225 / 45%);
+  background: rgb(255 240 243 / 94%);
+}
+.site-header .brand { align-items: center; gap: 4px; text-align: center; }
+.site-header .wordmark {
+  color: #16002E;
+  font-family: "SH Sheer Up", "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.05;
+}
+.site-header .wordmark-star { color: #CE85D8; }
+.site-header .brand-tagline {
+  color: #806C79;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .22em;
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: clamp(370px, 46vw, 570px);
+  padding: clamp(28px, 5vw, 68px) clamp(20px, 7vw, 104px);
+  background: #FFF0F3;
+}
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: auto -5% -2px;
+  height: 90px;
+  border-radius: 48% 52% 0 0 / 55% 65% 0 0;
+  background: #C5B5E1;
+  content: "";
+}
+.hero-copy { position: absolute; z-index: 2; left: clamp(20px, 7vw, 104px); bottom: clamp(68px, 9vw, 120px); }
+.hero-copy::before {
+  display: block;
+  max-width: 430px;
+  margin-bottom: 18px;
+  color: #16002E;
+  content: "La estrella eres tú";
+  font-family: "SH Sheer Up", "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-size: clamp(30px, 4vw, 54px);
+  font-weight: 700;
+  line-height: 1.05;
+}
+.hero-cta {
+  min-height: 48px;
+  padding-inline: 22px;
+  border-radius: 999px !important;
+  background: #16002E !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgb(22 0 46 / 15%);
+}
+.hero-art { position: relative; z-index: 1; width: min(62%, 780px); margin: 0 0 0 auto; }
+.hero-image-frame { border: 0 !important; border-radius: 42% 58% 46% 54% / 43% 42% 58% 57%; background: transparent !important; box-shadow: none !important; }
+.hero-sketch {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: transparent;
+  mix-blend-mode: multiply;
+}
+.hero-cookie-photo { border: 8px solid #FFF0F3 !important; box-shadow: 0 18px 40px rgb(22 0 46 / 12%) !important; }
+.hero-sticker { background: #CE85D8 !important; color: #16002E !important; }
+.hero-star { color: #806C79 !important; }
+.hero-brush { display: none; }
+.presentation-section { background: #FFF0F3 !important; padding-top: clamp(54px, 7vw, 92px) !important; }
+.section-title { align-items: end !important; gap: 24px !important; }
+.eyebrow { color: #806C79 !important; letter-spacing: .19em !important; font-weight: 800 !important; }
+#box-title, .catalog-heading h2, .how-heading h2, .box-choice h2 {
+  color: #16002E !important;
+  font-family: "SH Sheer Up", "Bodoni Moda", "Playfair Display", Georgia, serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -.035em;
+}
+#box-title { font-size: clamp(38px, 5vw, 62px) !important; line-height: 1.04 !important; }
+.section-title .small { color: #806C79 !important; }
+.search-field { border: 1px solid #C5B5E1 !important; border-radius: 999px !important; background: #fff9fb !important; box-shadow: 0 6px 18px rgb(22 0 46 / 4%); }
+.search-field input { min-height: 48px; color: #16002E !important; }
+.search-field mat-icon { color: #806C79 !important; }
+.box-presentations { gap: 18px !important; }
+.presentation-card {
+  min-width: 0;
+  min-height: 265px !important;
+  padding: 22px !important;
+  border: 1px solid #D8C9E8 !important;
+  border-radius: 24px !important;
+  background: rgb(255 255 255 / 74%) !important;
+  color: #16002E !important;
+  box-shadow: 0 8px 24px rgb(22 0 46 / 5%) !important;
+  text-align: left !important;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.presentation-card:hover { transform: translateY(-3px); border-color: #CE85D8 !important; }
+.presentation-card.active {
+  border: 2px solid #CE85D8 !important;
+  padding: 21px !important;
+  background: #C5B5E1 !important;
+  box-shadow: 0 14px 32px rgb(22 0 46 / 12%) !important;
+}
+.presentation-number { color: #806C79 !important; font-weight: 800; letter-spacing: .12em; }
+.presentation-check { color: #16002E !important; font-size: 27px !important; line-height: 1; }
+.presentation-card.active .presentation-check { color: #16002E !important; }
+.presentation-card > strong {
+  color: #16002E !important;
+  font-family: "SH Sheer Up", "Bodoni Moda", "Playfair Display", Georgia, serif;
+  font-size: clamp(20px, 2vw, 26px) !important;
+  line-height: 1.15 !important;
+}
+.presentation-description { color: #806C79 !important; font-size: 14px !important; }
+.presentation-bottom { margin-top: auto; padding-top: 20px; }
+.box-price { color: #16002E !important; font-size: 27px !important; font-weight: 850 !important; }
+.choose-label { color: #16002E !important; font-size: 12px !important; font-weight: 800 !important; }
+.presentation-illustration { opacity: .85; }
+.cookie-dot { background: #CE85D8 !important; border-color: #16002E !important; }
+.presentation-card.active .cookie-dot { background: #FFF0F3 !important; }
+.catalog-hint { border: 1px solid #D8C9E8 !important; border-radius: 18px !important; background: #fff8fb !important; color: #806C79 !important; }
+.catalog-hint strong { color: #16002E !important; }
+.hint-icon, .category-sparkle { color: #CE85D8 !important; }
+.catalog-heading { margin-top: clamp(58px, 7vw, 88px) !important; }
+.catalog-heading h2, .how-heading h2 { font-size: clamp(34px, 4vw, 50px) !important; }
+.catalog-count { color: #806C79 !important; }
+.category-title { color: #16002E !important; }
+.product {
+  overflow: hidden;
+  border: 1px solid #E4D7EB !important;
+  border-radius: 22px !important;
+  background: #fffafb !important;
+  box-shadow: 0 7px 22px rgb(22 0 46 / 5%) !important;
+}
+.product .photo { background: #F4E9F4 !important; }
+.product-body h3 { color: #16002E !important; }
+.product-body p, .product-category { color: #806C79 !important; }
+.product-tag { background: #CE85D8 !important; color: #16002E !important; }
+.product .add-button { min-height: 48px !important; border: 0 !important; border-radius: 999px !important; background: #16002E !important; color: white !important; }
+.product .add-icon { background: #CE85D8 !important; color: #16002E !important; }
+.product .quantity { border-color: #CE85D8 !important; background: #F4E7F5 !important; }
+.product .quantity button { min-width: 44px !important; min-height: 44px !important; }
+.how-to { background: #C5B5E1 !important; color: #16002E !important; }
+.how-heading p, .step p { color: #4A315A !important; }
+.step { border-color: rgb(22 0 46 / 12%) !important; background: rgb(255 240 243 / 72%) !important; border-radius: 22px !important; }
+.step-number, .step-icon { color: #806C79 !important; }
+.site-footer { background: #16002E !important; color: #FFF0F3 !important; }
+.footer-brush { background: #C5B5E1 !important; }
+.site-footer .wordmark { color: #FFF0F3 !important; font-family: "SH Sheer Up", "Bodoni Moda", "Playfair Display", Georgia, serif !important; }
+.site-footer .wordmark-star { color: #CE85D8 !important; }
+.site-footer .brand-tagline, .footer-label, .footer-bottom { color: #C5B5E1 !important; }
+.footer-social-link { color: #FFF0F3 !important; }
+.cart-dock { z-index: 50 !important; padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+.dock-card {
+  border: 1px solid #D8C9E8 !important;
+  border-radius: 22px !important;
+  background: rgb(255 240 243 / 97%) !important;
+  box-shadow: 0 12px 42px rgb(22 0 46 / 16%) !important;
+  color: #16002E !important;
+  backdrop-filter: blur(14px);
+}
+.dock-title strong, .dock-saved-count strong { color: #16002E !important; }
+.dock-title span, .dock-saved-count span, .box-composition, .remaining-message { color: #806C79 !important; }
+.cart-dock progress { accent-color: #CE85D8; }
+.dock-continue, .dock-order {
+  min-height: 48px !important;
+  border-radius: 999px !important;
+  background: #16002E !important;
+  color: #fff !important;
+}
+.dock-order { background: #CE85D8 !important; color: #16002E !important; }
+main { padding-bottom: 12px; }
+@media (min-width: 900px) {
+  .box-presentations { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 899px) {
+  .hero { min-height: 500px; padding: 28px 20px 100px; }
+  .hero-art { width: min(100%, 600px); margin-inline: auto; }
+  .hero-copy { left: 24px; bottom: 72px; }
+  .hero-copy::before { max-width: 260px; font-size: clamp(27px, 7vw, 38px); }
+  .section-title { align-items: stretch !important; flex-direction: column; }
+  .search-field { width: 100%; }
+  .box-presentations { grid-template-columns: 1fr !important; }
+  .presentation-card { min-height: 230px !important; }
+  .products { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+  .product { min-width: 0; }
+}
+@media (max-width: 420px) {
+  .site-header { min-height: 88px; padding: 16px; }
+  .site-header .wordmark { font-size: 36px; }
+  .site-header .brand-tagline { font-size: 9px; }
+  .hero { min-height: 390px; }
+  .hero-art { width: 100%; }
+  .hero-copy { bottom: 58px; }
+  .hero-copy::before { font-size: 27px; }
+  .products { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .product-body { padding: 12px !important; }
+  .product-body h3 { font-size: 15px !important; }
+  .product-body p { font-size: 12px !important; }
+  .dock-card { padding: 12px !important; }
+  .dock-actions { gap: 8px !important; }
+  .dock-actions button { min-width: 0; padding-inline: 12px !important; }
+}

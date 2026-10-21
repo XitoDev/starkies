@@ -4,12 +4,6 @@
     <span class="wordmark">StarKies<span class="wordmark-star">✦</span></span>
     <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
   </a>
-  <nav class="main-nav" aria-label="Navegación principal">
-    <a matButton="text" href="#inicio-contenido">Inicio</a>
-    <a matButton="text" href="#sabores">Sabores</a>
-    <a matButton="text" href="#como-pedir">Cómo pedir</a>
-    <button matButton="elevated" class="nav-order" type="button" (click)="openOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_bag</mat-icon> Mi pedido@if (completedBoxes().length) { <span class="nav-order-count">{{ completedBoxes().length }}</span> }</button>
-  </nav>
 </header>
 <main>
   @if (orderSuccess(); as confirmation) {
@@ -35,7 +29,7 @@
 
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
     <div class="section-title">
-      <div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Una caja, mil antojos</h2><p class="small">Escoge tu presentación y combina los sabores que más te gustan.</p></div>
+      <div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Escoge tu presentación y combina los sabores que más te gustan.</p></div>
       <div class="search-field"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Busca tu sabor favorito"></div>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
@@ -45,8 +39,8 @@
         <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
           <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
           <span class="presentation-illustration" aria-hidden="true"><span class="cookie-dot cookie-dot-a"></span><span class="cookie-dot cookie-dot-b"></span><span class="cookie-dot cookie-dot-c"></span><span class="cookie-dot cookie-dot-d"></span><span class="cookie-dot cookie-dot-e"></span></span>
-          <strong>@if (p.id === 'clasicas') { Solo clásicas } @else if (p.id === 'ny') { Solo New York } @else { Caja mixta }</strong>
-          <span class="presentation-description">@if (p.id === 'clasicas') { 10 galletas } @else if (p.id === 'ny') { 6 galletas } @else { 4 clásicas + 4 New York }</span>
+          <strong>{{ p.name }}</strong>
+          <span class="presentation-description">{{ p.desc }}</span>
           <span class="presentation-bottom"><b class="box-price">{{ formatPresentationPrice(p.price) }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
         </button>
       }
