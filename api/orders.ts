@@ -56,7 +56,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const documentExpiresAt = now + 3 * 24 * 60 * 60 * 1000;
     const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     const documentShortCode = randomBytes(6).toString('base64url');
-    const metadataRef = db.doc('system/stateMeta');
+    const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
     const orderRef = db.doc('orders/' + orderId);
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
