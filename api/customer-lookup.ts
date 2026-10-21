@@ -40,14 +40,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const snapshot = await getDatabase().collection('businesses/starkies/collections/customers/records').get();
+    const snapshot = await getDatabase().collection('customers').get();
     const match = snapshot.docs.find(doc => {
       const value = doc.data()['value'] as CustomerRecord | undefined;
       return value && normalizePhone(String(value.phone ?? '')) === normalized;
     });
     let value = match?.data()['value'] as CustomerRecord | undefined;
     if (!value) {
-      const oldOrders = await getDatabase().collection('businesses/starkies/collections/orders/records').get();
+      const oldOrders = await getDatabase().collection('orders').get();
       const previousOrder = oldOrders.docs
         .map(doc => doc.data()['value'] as CustomerRecord | undefined)
         .find(order => order && normalizePhone(String(order.phone ?? '')) === normalized);
