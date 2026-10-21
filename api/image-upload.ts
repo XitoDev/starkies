@@ -23,7 +23,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   try {
     const origin = first(req.headers['origin']);
     if (!origin || !ALLOWED_ORIGINS.has(origin)) throw new HttpError(403, 'Origen no autorizado.');
-    const token = first(req.headers.authorization)?.replace(/^Bearer\s+/i, '');
+    const token = first(req.headers['authorization'])?.replace(/^Bearer\s+/i, '');
     if (!token) throw new HttpError(401, 'Inicia sesión para subir imágenes.');
     const { db, auth } = getFirebaseAdmin();
     const decoded = await auth.verifyIdToken(token);
