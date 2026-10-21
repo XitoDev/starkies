@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { Recetas } from './pages/recetas/recetas';
-import { Resumen } from './pages/resumen/resumen';
 import { MasaBaseEditor } from './pages/recetas/masa-base-editor';
 import { Ingredientes, Inventario } from './pages/ingredientes/ingredientes';
 import { Produccion } from './pages/produccion/produccion';
@@ -19,7 +18,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'migracion', component: Migration, canActivate: [adminAuthGuard] },
   { path: '', redirectTo: 'resumen', pathMatch: 'full' },
-  { path: 'resumen', component: Resumen, canActivate: [adminAuthGuard, businessDataReadyGuard] },
+  { path: 'resumen', loadComponent: () => import('./pages/resumen/resumen').then(module => module.Resumen), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/nueva', component: MasaBaseEditor, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/:baseId/editar', component: MasaBaseEditor, canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/:recipeId/editar', component: Recetas, canActivate: [adminAuthGuard, businessDataReadyGuard] },
