@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -160,15 +161,15 @@ type InventoryDraft = { stock: number; minStock: number };
       @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
       <div class="inventory-table-wrap">
         <table class="inventory-table">
-          <thead><tr><th>Insumo</th><th>Disponible</th><th>Stock mínimo</th><th>Faltante</th><th></th></tr></thead>
+          <thead><tr><th>Insumo</th><th>Existencias</th><th>Stock mínimo</th><th>Faltante</th><th>Acciones</th></tr></thead>
           <tbody>
             @for (item of ingredients(); track item.id) {
               <tr>
                 <td><strong>{{ item.name }}</strong><small>{{ item.brand || 'Sin marca registrada' }}</small></td>
-                <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Cantidad disponible de ' + item.name" [value]="draft(item).stock" (input)="updateDraft(item, 'stock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
+                <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Existencias de ' + item.name" [value]="draft(item).stock" (input)="updateDraft(item, 'stock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Stock mínimo de ' + item.name" [value]="draft(item).minStock" (input)="updateDraft(item, 'minStock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><span class="shortage-pill" [class.has-shortage]="shortage(item) > 0">{{ shortage(item) | number:'1.0-3' }} {{ item.unit }}</span></td>
-                <td><button matButton="outlined" type="button" [disabled]="savingId() === item.id" (click)="saveInventory(item)">{{ savingId() === item.id ? 'Guardando…' : 'Guardar' }}</button></td>
+                <td class="inventory-actions"><button matIconButton class="inventory-action-save" type="button" [attr.aria-label]="'Guardar existencias de ' + item.name" [title]="'Guardar existencias de ' + item.name" [disabled]="savingId() === item.id" (click)="saveInventory(item)"><mat-icon fontSet="material-symbols-rounded">{{ savingId() === item.id ? 'hourglass_top' : 'save' }}</mat-icon></button><button matIconButton class="inventory-action-buy" type="button" [attr.aria-label]="'Comprar ' + item.name" [title]="'Comprar ' + item.name" (click)="buyIngredient(item)"><mat-icon fontSet="material-symbols-rounded">shopping_cart</mat-icon></button></td>
               </tr>
             }
             @if (ingredients().length === 0) { <tr><td colspan="5"><div class="empty-state"><strong>No hay insumos registrados</strong><p>Primero registra los ingredientes y sus costos en Insumos.</p></div></td></tr> }
@@ -178,16 +179,18 @@ type InventoryDraft = { stock: number; minStock: number };
     </div>
   `,
   styles: [`
-    :host{display:block;min-width:0}.page-container{display:flex;flex-direction:column;gap:24px;min-width:0}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:22px}.eyebrow{margin:0 0 12px;color:#8056ad;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}.page-title{margin:0;color:#30263a;font-size:clamp(29px,3vw,37px);font-weight:500;letter-spacing:-1.6px;line-height:1.15}.page-subtitle{margin:13px 0 0;color:#95899d;font-size:13px;line-height:1.6}.notice{padding:12px 15px;border:1px solid #e4d6ef;border-radius:10px;background:#f7f0fb;color:#704795;font-size:12px}.inventory-table-wrap{overflow-x:auto;border:1px solid #eee7f2;border-radius:14px;background:#fff}.inventory-table{width:100%;border-collapse:collapse;min-width:690px}.inventory-table th,.inventory-table td{padding:14px 16px;border-bottom:1px solid #f0eaf4;text-align:left;font-size:12px}.inventory-table th{background:#faf7fc;color:#8d7c98;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}.inventory-table tbody tr:last-child td{border-bottom:0}.inventory-table td>strong{display:block;color:#3d3046}.inventory-table td small{display:block;margin-top:5px;color:#a094aa;font-size:10px}.inventory-input{display:flex;align-items:center;gap:7px;min-width:110px}.inventory-input input{width:92px;min-width:0;height:37px;padding:0 9px;border:1px solid #e8e0ed;border-radius:8px;color:#51445b}.inventory-input span{color:#95899d;font-size:10px}.shortage-pill{display:inline-flex;padding:6px 9px;border-radius:7px;background:#f0e7f7;color:#8056ad;font-weight:700;white-space:nowrap}.shortage-pill.has-shortage{background:#fff0db;color:#a96521}.empty-state{padding:28px;text-align:center;color:#95899d}.empty-state strong{color:#51445b}.empty-state p{font-size:12px}.inventory-table button{white-space:nowrap}@media(max-width:700px){.page-heading{align-items:flex-start;flex-direction:column}.inventory-table th,.inventory-table td{padding:12px}}`
+    :host{display:block;min-width:0}.page-container{display:flex;flex-direction:column;gap:24px;min-width:0}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:22px}.eyebrow{margin:0 0 12px;color:#8056ad;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}.page-title{margin:0;color:#30263a;font-size:clamp(29px,3vw,37px);font-weight:500;letter-spacing:-1.6px;line-height:1.15}.page-subtitle{margin:13px 0 0;color:#95899d;font-size:13px;line-height:1.6}.notice{padding:12px 15px;border:1px solid #e4d6ef;border-radius:10px;background:#f7f0fb;color:#704795;font-size:12px}.inventory-table-wrap{overflow-x:auto;border:1px solid #eee7f2;border-radius:14px;background:#fff}.inventory-table{width:100%;border-collapse:collapse;min-width:690px}.inventory-table th,.inventory-table td{padding:14px 16px;border-bottom:1px solid #f0eaf4;text-align:left;font-size:12px}.inventory-table th{background:#faf7fc;color:#8d7c98;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}.inventory-table tbody tr:last-child td{border-bottom:0}.inventory-table td>strong{display:block;color:#3d3046}.inventory-table td small{display:block;margin-top:5px;color:#a094aa;font-size:10px}.inventory-input{display:flex;align-items:center;gap:7px;min-width:110px}.inventory-input input{width:92px;min-width:0;height:37px;padding:0 9px;border:1px solid #e8e0ed;border-radius:8px;color:#51445b}.inventory-input span{color:#95899d;font-size:10px}.shortage-pill{display:inline-flex;padding:6px 9px;border-radius:7px;background:#f0e7f7;color:#8056ad;font-weight:700;white-space:nowrap}.shortage-pill.has-shortage{background:#fff0db;color:#a96521}.empty-state{padding:28px;text-align:center;color:#95899d}.empty-state strong{color:#51445b}.empty-state p{font-size:12px}.inventory-table button{white-space:nowrap}.inventory-actions{display:flex;align-items:center;gap:5px}.inventory-actions button{width:32px;height:32px;min-width:32px;padding:5px;border-radius:9px}.inventory-actions mat-icon{width:18px;height:18px;font-size:18px;line-height:18px}.inventory-action-save{color:#6d8b57}.inventory-action-save:hover{background:#edf5e8}.inventory-action-buy{color:#8056ad}.inventory-action-buy:hover{background:#f0e7f7}@media(max-width:700px){.page-heading{align-items:flex-start;flex-direction:column}.inventory-table th,.inventory-table td{padding:12px}}`
   ],
 })
 export class Inventario {
   private readonly dataService = inject(DataService);
   readonly ingredients = this.dataService.ingredients;
+  private readonly router = inject(Router);
   readonly drafts = signal<Record<string, InventoryDraft>>({});
   readonly savingId = signal<string | null>(null);
   readonly notice = signal('');
 
+  buyIngredient(item: Ingredient): void { void this.router.navigate(['/finanzas'], { queryParams: { action: 'purchase', ingredientId: item.id } }); }
   draft(item: Ingredient): InventoryDraft { return this.drafts()[item.id] ?? { stock: item.stock, minStock: item.minStock ?? 0 }; }
   shortage(item: Ingredient): number { const draft = this.draft(item); return Math.max(0, draft.minStock - draft.stock); }
   updateDraft(item: Ingredient, field: 'stock' | 'minStock', value: string): void {
