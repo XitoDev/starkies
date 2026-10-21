@@ -42,7 +42,7 @@
             <div class="inventory-card-heading"><h3>{{ row.name }}</h3><span class="stock-state" [class.stock-negative]="row.quantity < 0" [class.stock-zero]="row.quantity === 0">{{ row.quantity < 0 ? 'Negativo' : row.quantity === 0 ? 'Sin existencias' : 'En existencia' }}</span></div>
             <p class="inventory-current"><strong>{{ row.quantity | number:'1.0-2' }}</strong><span>galletas disponibles</span></p>
             <label class="inventory-edit"><span>Conteo manual</span><input type="number" step="1" [attr.aria-label]="'Existencias de ' + row.name" [value]="inventoryEdits()[row.id] ?? row.quantity" (input)="updateInventoryEdit(row.id, $any($event.target).value)"></label>
-            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? '' )">
+            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? row.quantity.toString())">
               <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar conteo
             </button>
           </article>
@@ -59,7 +59,7 @@
             <div class="inventory-card-heading"><h3>{{ row.name }}</h3><span class="stock-state" [class.stock-negative]="row.quantity < 0" [class.stock-zero]="row.quantity === 0">{{ row.quantity < 0 ? 'Negativo' : row.quantity === 0 ? 'Sin existencias' : 'En existencia' }}</span></div>
             <p class="inventory-current"><strong>{{ row.quantity | number:'1.0-2' }}</strong><span>gramos disponibles</span></p>
             <label class="inventory-edit"><span>Conteo manual (g)</span><input type="number" step="any" [attr.aria-label]="'Existencias de masa ' + row.name" [value]="inventoryEdits()[row.id] ?? row.quantity" (input)="updateInventoryEdit(row.id, $any($event.target).value)"></label>
-            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? '')"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar conteo</button>
+            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? row.quantity.toString())"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar conteo</button>
           </article>
         }
         @if (doughInventory().length === 0) { <div class="empty-state"><strong>No hay masas base</strong><p>Crea una masa base desde Recetas para registrar su inventario.</p></div> }
