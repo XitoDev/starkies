@@ -85,7 +85,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const orderRecord = {
       id: orderId,
       code: orderId,
-      customerId: 'phone:' + normalizedPhone,
+      customerId,
       customer: order.name,
       phone: order.phone,
       address: order.zoneName === 'Retiro en tienda' ? 'Retiro en tienda' : order.zoneName + ' — ' + order.address,
