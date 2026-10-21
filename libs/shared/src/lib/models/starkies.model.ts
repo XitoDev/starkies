@@ -4,8 +4,10 @@ export interface Ingredient {
   unit: string;
   stock: number;
   costPerUnit: number;
-  /** Supplier package quantity expressed in the ingredient's selected unit (g or ml). */
+  /** Numeric quantity as printed on the supplier package; see packageUnit. */
   packageQuantityGrams?: number;
+  /** Supplier package unit; normalized internally to g or ml. */
+  packageUnit?: string;
   /** Total purchase price for the supplier package. */
   packagePrice?: number;
   brand?: string;
@@ -83,6 +85,7 @@ export interface CashMovement {
   unitCost?: number;
   brand?: string;
   packageQuantityGrams?: number;
+  packageUnit?: string;
   packagePrice?: number;
 }
 
