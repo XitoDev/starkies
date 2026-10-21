@@ -102,7 +102,7 @@ export class PedidoRuta {
       anchor.href = objectUrl;
       anchor.download = 'pedido-' + orderId + '.pdf';
       anchor.click();
-      URL.revokeObjectURL(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       this.error.set('');
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudo descargar el PDF del pedido.');
