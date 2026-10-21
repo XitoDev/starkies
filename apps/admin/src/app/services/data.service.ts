@@ -256,6 +256,15 @@ export class DataService {
     const shippingFee = changes.shippingFee === undefined
       ? this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0)
       : Math.max(0, Math.round(changes.shippingFee * 100) / 100);
+    const paid = changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid');
+    const rawLines = this.asArray(current['lines']).length
+      ? this.asArray(current['lines'])
+      : this.asArray(current['boxOrders']).flatMap(box => this.asArray(box['lines']));
+    const subtotal = rawLines.reduce((sum, line) => {
+      const quantity = this.asNumber(line['qty'] ?? line['quantity']);
+      const unitPrice = this.asNumber(line['price'] ?? line['unitPrice']);
+      return sum + quantity * unitPrice;
+    }, 0);
     const updated: RawRecord = {
       ...current,
       ...changes,
@@ -263,9 +272,10 @@ export class DataService {
       date: deliveryDate || current['date'],
       zone: changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']),
       shippingFee,
-      isPaid: changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid'),
-      paymentStatus: (changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid')) ? 'PAID' : 'PENDING',
-      paymentMethod: changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '',
+      total: rawLines.length ? Math.round((subtotal + shippingFee) * 100) / 100 : this.asNumber(current['total']),
+      isPaid: paid,
+      paymentStatus: paid ? 'PAID' : 'PENDING',
+      paymentMethod: paid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '',
     };
     const nextOrders = [...rawOrders];
     nextOrders[index] = updated;
