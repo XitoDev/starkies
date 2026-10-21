@@ -92,7 +92,7 @@ export class PedidoRuta {
   paymentMethodLabel(method: NonNullable<Order['paymentMethod']>): string { return method === 'TRANSFER' ? 'Transferencia' : 'Efectivo'; }
   recipeImage(id: string): string { return this.data.recipes().find(recipe => recipe.id === id)?.image ?? ''; }
   subtotal(item: Order): number { return item.items.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0); }
-  totalWithShipping(item: Order): number { return this.subtotal(item) + Math.max(0, Number(item.shippingFee ?? this.shippingFee) || 0); }
+  totalWithShipping(item: Order): number { return this.subtotal(item) + Math.max(0, Number(this.editing() ? this.shippingFee : item.shippingFee ?? 0) || 0); }
   recipeName(id: string): string { return this.data.recipes().find(recipe => recipe.id === id)?.name ?? 'Producto no disponible'; }
   async downloadPdf(orderId: string): Promise<void> {
     if (this.downloadingPdf()) return;
