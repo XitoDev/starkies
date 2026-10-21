@@ -4,6 +4,7 @@
       <p class="eyebrow">Mi negocio / Finanzas</p>
       <h1 class="page-title">Finanzas</h1>
       <p class="page-subtitle">Tu capital, ventas y ganancias en un mismo lugar.</p>
+      <button matButton="outlined" class="edit-balances-button" type="button" (click)="openBalanceEditor()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar saldos</button>
     </div>
   </div>
 
@@ -186,7 +187,39 @@
       }
     </section>
   </div>
-}@if (ledgerActionOpen()) {
+}@if (editBalancesOpen()) {
+  <div class="modal-backdrop" (click)="editBalancesOpen.set(false)">
+    <section class="finance-modal balance-editor-modal" role="dialog" aria-modal="true" aria-labelledby="balance-editor-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Configuración inicial</p>
+          <h2 id="balance-editor-title">Editar saldos actuales</h2>
+          <p>Introduce los importes reales que tienes hoy. Estos valores reemplazarán los saldos mostrados; no se registrarán como ventas ni ganancias nuevas.</p>
+        </div>
+      </div>
+      <form class="finance-form balance-editor-form" (submit)="$event.preventDefault(); saveBalances()">
+        <h3 class="balance-group-title form-field-wide">Cuentas bancarias</h3>
+        <label class="form-field"><span>Ingredientes (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankIngredients" (input)="updateBalanceField('bankIngredients', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Gastos (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankExpenses" (input)="updateBalanceField('bankExpenses', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankProfit" (input)="updateBalanceField('bankProfit', $any($event.target).value)" /></label>
+        <h3 class="balance-group-title form-field-wide">Fondos informativos</h3>
+        <label class="form-field"><span>Ingredientes (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundIngredients" (input)="updateBalanceField('fundIngredients', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Gastos (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundExpenses" (input)="updateBalanceField('fundExpenses', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Cajas (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundBoxes" (input)="updateBalanceField('fundBoxes', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundProfit" (input)="updateBalanceField('fundProfit', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia extra (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundExtraProfit" (input)="updateBalanceField('fundExtraProfit', $any($event.target).value)" /></label>
+        @if (balanceError()) { <p class="form-error form-field-wide" role="alert">{{ balanceError() }}</p> }
+        <p class="form-help form-field-wide">Esto corrige el saldo base y pone la variación de los fondos en cero. Las nuevas ventas entregadas se seguirán contabilizando automáticamente.</p>
+        <div class="modal-actions form-field-wide">
+          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="balanceSaving()" (click)="editBalancesOpen.set(false)">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="balanceSaving()">{{ balanceSaving() ? 'Guardando…' : 'Guardar saldos' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (ledgerActionOpen()) {
   <div class="modal-backdrop" (click)="ledgerActionOpen.set(null)">
     <section class="finance-modal" role="dialog" aria-modal="true" aria-labelledby="ledger-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">
