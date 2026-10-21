@@ -302,11 +302,13 @@ export class FirestoreBusinessRepository {
         }
 
         const currentStock = Number(stored['stock'] ?? 0);
-        if (!Number.isFinite(currentStock) || currentStock < ingredientDoc.quantity) {
+        if (!Number.isFinite(currentStock)) {
           const ingredientName = String(stored['name'] ?? ingredientDoc.ingredientId);
-          throw new Error(`Stock insuficiente de "${ingredientName}". Se necesitan ${ingredientDoc.quantity} y hay ${currentStock}.`);
+          throw new Error(`El stock de "${ingredientName}" no es un número válido. Corrige el inventario antes de producir.`);
         }
 
+        // Production is allowed to reveal a real stock deficit: negative balances
+        // remain visible until the next physical count corrects them.
         updates.push({
           ref: ingredientDoc.ref.ref,
           index: Number(data['index'] ?? 0),
