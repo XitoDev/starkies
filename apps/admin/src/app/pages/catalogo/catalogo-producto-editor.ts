@@ -137,7 +137,7 @@ export class CatalogoProductoEditor {
       const catalogImage = await this.uploadCatalogImage(item.id);
       await this.data.saveRecipe({
         ...item,
-        catalogImage,
+        catalogImage: this.catalogImageRemoved() ? '' : catalogImage,
         catalogVisible:this.visible,
         catalogLabel:this.label.trim(),
         catalogLabelColor:this.labelColor,
