@@ -5,7 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
@@ -15,7 +15,7 @@ interface DeliveryZone { id: string; name: string; fee: number; }
 @Component({
   selector: 'app-catalogo',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatInputModule, MatMenuModule],
+  imports: [CommonModule, CurrencyPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule, MatInputModule],
   templateUrl: './catalogo.html',
   styleUrls: ['./catalogo.css']
 })
@@ -80,5 +80,9 @@ export class Catalogo {
     catch(error){this.error.set(error instanceof Error?error.message:'No se pudieron guardar las tarifas.');}
     finally{this.saving.set(false);}
   }
+  openProduct(item: Recipe): void {
+    void this.router.navigate(['/catalogo/productos', item.id]);
+  }
+
   async syncCatalog():Promise<void>{this.notice.set('');this.error.set('');await this.dataService.loadFromCloud();if(this.dataService.error())this.error.set(this.dataService.error());else this.notice.set('Catálogo sincronizado con los datos guardados.');}
 }
