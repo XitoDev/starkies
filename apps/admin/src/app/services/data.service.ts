@@ -464,6 +464,7 @@ export class DataService {
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
         image: this.asOptionalString(item['image']),
+        catalogImage: this.asOptionalString(item['catalogImage']),
         catalogVisible: item['catalogVisible'] !== false,
         catalogLabel: this.asOptionalString(item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(item['catalogLabelColor']) ?? 'Morado',
