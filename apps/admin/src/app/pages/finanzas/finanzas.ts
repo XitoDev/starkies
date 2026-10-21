@@ -31,6 +31,11 @@ interface FinanceLedger {
   processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
+type ProductPricingEdit = { salePrice: number };
+type FinanceBalanceForm = {
+  bankIngredients: number; bankExpenses: number; bankProfit: number;
+  fundIngredients: number; fundExpenses: number; fundBoxes: number; fundProfit: number; fundExtraProfit: number;
+};
 
  type ExpenseForm = {
   description: string;
@@ -53,14 +58,47 @@ export class Finanzas {
   readonly ingredients = this.dataService.ingredients;
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
+  readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
   readonly priceRows = computed(() => this.recipes().filter(recipe => !recipe.archived).map(recipe => {
-    const batchCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
+    const ingredientCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
       const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
       return sectionTotal + (ingredient?.costPerUnit ?? 0) * item.quantity;
-    }, 0), 0);
-    const unitCost = batchCost / Math.max(1, recipe.yield);
-    return { id: recipe.id, name: recipe.name, category: recipe.category, unitCost, currentPrice: recipe.price, suggestedPrice: unitCost * 3, extraProfit: recipe.price - unitCost * 3 };
+    }, 0), 0) / Math.max(1, recipe.yield);
+    const suggestedPrice = ingredientCost * 4;
+    const edit = this.pricingEdits()[recipe.id];
+    const salePrice = Math.max(0, edit?.salePrice ?? this.money(recipe.price));
+    const expenses = ingredientCost;
+    const services = ingredientCost;
+    const profit = salePrice - ingredientCost - expenses - services;
+    return {
+      id: recipe.id, name: recipe.name, category: recipe.category, yield: recipe.yield,
+      ingredientCost, expenses, services, suggestedPrice, salePrice, profit,
+      profitMargin: salePrice > 0 ? profit / salePrice * 100 : 0,
+    };
   }));
+
+  updateSalePrice(id: string, value: string): void {
+    const parsed = value.trim() === '' ? 0 : Number(value);
+    const salePrice = Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 10000) / 10000) : 0;
+    this.pricingEdits.update(current => ({ ...current, [id]: { salePrice } }));
+  }
+
+  async saveProductPricing(id: string): Promise<void> {
+    const recipe = this.recipes().find(item => item.id === id);
+    if (!recipe) return;
+    const salePrice = this.pricingEdits()[id]?.salePrice ?? this.money(recipe.price);
+    try {
+      await this.dataService.saveRecipe({ ...recipe, price: this.money(salePrice) });
+      this.pricingEdits.update(current => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      this.ledgerNotice.set('Precio de venta guardado. El margen se recalculó automáticamente.');
+    } catch (error) {
+      this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio de venta.');
+    }
+  }
 
   readonly activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
   readonly formOpen = signal<'purchase' | 'expense' | null>(null);
@@ -165,6 +203,10 @@ export class Finanzas {
   readonly ledgerError = signal('');
   readonly ledgerNotice = signal('');
   readonly pendingPanelOpen = signal(false);
+  readonly editBalancesOpen = signal(false);
+  readonly balanceSaving = signal(false);
+  readonly balanceError = signal('');
+  readonly balanceForm = signal<FinanceBalanceForm>(this.emptyBalanceForm());
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
@@ -317,6 +359,87 @@ export class Finanzas {
   private money(value: unknown): number {
     const parsed = typeof value === 'number' ? value : Number(value ?? 0);
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+  }
+
+  private emptyBalanceForm(): FinanceBalanceForm {
+    return { bankIngredients: 0, bankExpenses: 0, bankProfit: 0, fundIngredients: 0, fundExpenses: 0, fundBoxes: 0, fundProfit: 0, fundExtraProfit: 0 };
+  }
+
+  openBalanceEditor(): void {
+    const ledger = this.ledger();
+    this.balanceForm.set({
+      bankIngredients: ledger.bankBalances.ingredients,
+      bankExpenses: ledger.bankBalances.expenses,
+      bankProfit: ledger.bankBalances.profit,
+      fundIngredients: ledger.funds.ingredients.balance,
+      fundExpenses: ledger.funds.expenses.balance,
+      fundBoxes: ledger.funds.boxes.balance,
+      fundProfit: ledger.funds.profit.balance,
+      fundExtraProfit: ledger.funds.extraProfit.balance,
+    });
+    this.balanceError.set('');
+    this.editBalancesOpen.set(true);
+  }
+
+  updateBalanceField(field: keyof FinanceBalanceForm, value: string): void {
+    const amount = value.trim() === '' ? 0 : Number(value);
+    this.balanceForm.update(current => ({
+      ...current,
+      [field]: Number.isFinite(amount) ? Math.max(0, Math.round(amount * 100) / 100) : 0,
+    }));
+  }
+
+  async saveBalances(): Promise<void> {
+    if (this.balanceSaving()) return;
+    const values = this.balanceForm();
+    if (Object.values(values).some(value => !Number.isFinite(value) || value < 0)) {
+      this.balanceError.set('Ingresa montos válidos iguales o mayores que cero.');
+      return;
+    }
+    const current = this.ledger();
+    const state = this.dataService.rawState() ?? {};
+    const deliveredIds = (Array.isArray(state['orders']) ? state['orders'] : [])
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
+      .filter(order => {
+        const status = String(order['status'] ?? '').toLocaleLowerCase('es');
+        return status.includes('entreg') || status === 'delivered';
+      })
+      .map(order => String(order['id'] ?? order['code'] ?? ''))
+      .filter(Boolean);
+    const next: FinanceLedger = {
+      ...current,
+      processedOrderIds: Array.from(new Set([...current.processedOrderIds, ...deliveredIds])),
+      bankBalances: {
+        ingredients: this.money(values.bankIngredients),
+        expenses: this.money(values.bankExpenses),
+        profit: this.money(values.bankProfit),
+      },
+      funds: {
+        ingredients: { balance: this.money(values.fundIngredients), previousBalance: this.money(values.fundIngredients) },
+        expenses: { balance: this.money(values.fundExpenses), previousBalance: this.money(values.fundExpenses) },
+        boxes: { balance: this.money(values.fundBoxes), previousBalance: this.money(values.fundBoxes) },
+        profit: { balance: this.money(values.fundProfit), previousBalance: this.money(values.fundProfit) },
+        extraProfit: { balance: this.money(values.fundExtraProfit), previousBalance: this.money(values.fundExtraProfit) },
+      },
+      history: [{
+        id: crypto.randomUUID(),
+        description: 'Corrección manual de saldos iniciales',
+        amount: 0,
+        date: this.today(),
+        status: 'Saldos actualizados',
+      }, ...current.history],
+    };
+    this.balanceSaving.set(true);
+    this.balanceError.set('');
+    try {
+      await this.dataService.saveBusinessSetting('financeLedger', next);
+      this.editBalancesOpen.set(false);
+      this.ledgerNotice.set('Saldos actuales guardados. Las variaciones de los fondos parten de estos valores.');
+    } catch (error) {
+      this.balanceError.set(error instanceof Error ? error.message : 'No se pudieron guardar los saldos actuales.');
+    } finally {
+      this.balanceSaving.set(false);
+    }
   }
 
   private emptyLedgerActionForm(): LedgerActionForm {
