@@ -145,7 +145,7 @@ export class FirestoreBusinessRepository {
     const safeValue = this.removeUndefinedFields(value);
     const recordsRef = collection(
       this.firebase.firestore,
-      'businesses', 'starkies', 'collections', collectionKey, 'records',
+      collectionKey,
     );
     const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
     const matching = snapshot.docs.find((record) => {
@@ -181,7 +181,7 @@ export class FirestoreBusinessRepository {
 
     const recordsRef = collection(
       this.firebase.firestore,
-      'businesses', 'starkies', 'collections', collectionKey, 'records',
+      collectionKey,
     );
     const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
     const matching = snapshot.docs.find((record) => {
