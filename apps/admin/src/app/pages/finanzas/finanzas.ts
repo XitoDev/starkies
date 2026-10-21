@@ -31,6 +31,8 @@ interface FinanceLedger {
   processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
+type ProductPricing = { laborCost: number; boxesAllocation: number };
+type ProductPricingEdit = { laborCost: number; salePrice: number; boxesAllocation: number };
 type FinanceBalanceForm = {
   bankIngredients: number; bankExpenses: number; bankProfit: number;
   fundIngredients: number; fundExpenses: number; fundBoxes: number; fundProfit: number; fundExtraProfit: number;
@@ -57,14 +59,40 @@ export class Finanzas {
   readonly ingredients = this.dataService.ingredients;
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
-  readonly priceRows = computed(() => this.recipes().filter(recipe => !recipe.archived).map(recipe => {
-    const batchCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
-      const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
-      return sectionTotal + (ingredient?.costPerUnit ?? 0) * item.quantity;
-    }, 0), 0);
-    const unitCost = batchCost / Math.max(1, recipe.yield);
-    return { id: recipe.id, name: recipe.name, category: recipe.category, unitCost, currentPrice: recipe.price, suggestedPrice: unitCost * 3, extraProfit: recipe.price - unitCost * 3 };
-  }));
+  readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
+  readonly priceRows = computed(() => {
+    const rawPricing = this.dataService.rawState()?.['financeProductPricing'];
+    const saved = rawPricing && typeof rawPricing === 'object' && !Array.isArray(rawPricing) ? rawPricing as Record<string, unknown> : {};
+    return this.recipes().filter(recipe => !recipe.archived).map(recipe => {
+      const batchCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
+        const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
+        return sectionTotal + (ingredient?.costPerUnit ?? 0) * item.quantity;
+      }, 0), 0);
+      const ingredientCost = batchCost / Math.max(1, recipe.yield);
+      const raw = saved[recipe.id] && typeof saved[recipe.id] === 'object' ? saved[recipe.id] as Record<string, unknown> : {};
+      const laborCost = this.money(raw['laborCost'] ?? 0.05);
+      const elaborationCost = ingredientCost + laborCost;
+      const suggestedPrice = elaborationCost * 4;
+      const boxesAllocation = Math.min(elaborationCost, Math.max(0, this.money(raw['boxesAllocation'] ?? elaborationCost * 0.2)));
+      const expensesAllocation = Math.max(0, elaborationCost - boxesAllocation);
+      const currentPrice = this.money(recipe.price);
+      const edit = this.pricingEdits()[recipe.id];
+      const displayedLabor = edit?.laborCost ?? laborCost;
+      const displayedSalePrice = edit?.salePrice ?? currentPrice;
+      const displayedBoxes = Math.min(ingredientCost + displayedLabor, Math.max(0, edit?.boxesAllocation ?? boxesAllocation));
+      const displayedElaboration = ingredientCost + displayedLabor;
+      const displayedExpenses = Math.max(0, displayedElaboration - displayedBoxes);
+      return {
+        id: recipe.id, name: recipe.name, category: recipe.category, yield: recipe.yield,
+        ingredientCost, laborCost: displayedLabor, elaborationCost: displayedElaboration,
+        suggestedPrice: displayedElaboration * 4, currentPrice: displayedSalePrice,
+        expensesAllocation: displayedExpenses, boxesAllocation: displayedBoxes,
+        servicesAllocation: displayedElaboration,
+        profit: displayedSalePrice - displayedElaboration - displayedExpenses - displayedBoxes - displayedElaboration,
+        extraProfit: displayedSalePrice - displayedElaboration * 4,
+      };
+    });
+  });
 
   readonly activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
   readonly formOpen = signal<'purchase' | 'expense' | null>(null);
@@ -325,6 +353,50 @@ export class Finanzas {
   private money(value: unknown): number {
     const parsed = typeof value === 'number' ? value : Number(value ?? 0);
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
+  }
+
+  updatePricingField(id: string, field: keyof ProductPricingEdit, value: string): void {
+    const parsed = value.trim() === '' ? 0 : Number(value);
+    const amount = Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 10000) / 10000) : 0;
+    const row = this.priceRows().find(item => item.id === id);
+    if (!row) return;
+    this.pricingEdits.update(current => ({
+      ...current,
+      [id]: {
+        laborCost: current[id]?.laborCost ?? row.laborCost,
+        salePrice: current[id]?.salePrice ?? row.currentPrice,
+        boxesAllocation: current[id]?.boxesAllocation ?? row.boxesAllocation,
+        [field]: amount,
+      },
+    }));
+  }
+
+  async saveProductPricing(id: string): Promise<void> {
+    const row = this.priceRows().find(item => item.id === id);
+    const recipe = this.recipes().find(item => item.id === id);
+    if (!row || !recipe) return;
+    const edit = this.pricingEdits()[id] ?? { laborCost: row.laborCost, salePrice: row.currentPrice, boxesAllocation: row.boxesAllocation };
+    const elaborationCost = row.ingredientCost + edit.laborCost;
+    if (edit.laborCost < 0 || edit.salePrice < 0 || edit.boxesAllocation < 0 || edit.boxesAllocation > elaborationCost) {
+      this.ledgerNotice.set('Revisa los valores: no pueden ser negativos y la parte de cajas no puede superar el costo de elaboración.');
+      return;
+    }
+    const state = this.dataService.rawState() ?? {};
+    const raw = state['financeProductPricing'];
+    const pricing = raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+    pricing[id] = { laborCost: this.money(edit.laborCost), boxesAllocation: this.money(edit.boxesAllocation) };
+    try {
+      await this.dataService.saveBusinessSetting('financeProductPricing', pricing);
+      await this.dataService.saveRecipe({ ...recipe, price: this.money(edit.salePrice) });
+      this.pricingEdits.update(current => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      this.ledgerNotice.set('Precio y distribución de costos guardados.');
+    } catch (error) {
+      this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio y su distribución.');
+    }
   }
 
   private emptyBalanceForm(): FinanceBalanceForm {
