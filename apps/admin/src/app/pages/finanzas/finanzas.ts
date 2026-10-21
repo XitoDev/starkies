@@ -361,50 +361,6 @@ export class Finanzas {
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
   }
 
-  updatePricingField(id: string, field: keyof ProductPricingEdit, value: string): void {
-    const parsed = value.trim() === '' ? 0 : Number(value);
-    const amount = Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 10000) / 10000) : 0;
-    const row = this.priceRows().find(item => item.id === id);
-    if (!row) return;
-    this.pricingEdits.update(current => ({
-      ...current,
-      [id]: {
-        laborCost: current[id]?.laborCost ?? row.laborCost,
-        salePrice: current[id]?.salePrice ?? row.currentPrice,
-        boxesAllocation: current[id]?.boxesAllocation ?? row.boxesAllocation,
-        [field]: amount,
-      },
-    }));
-  }
-
-  async saveProductPricing(id: string): Promise<void> {
-    const row = this.priceRows().find(item => item.id === id);
-    const recipe = this.recipes().find(item => item.id === id);
-    if (!row || !recipe) return;
-    const edit = this.pricingEdits()[id] ?? { laborCost: row.laborCost, salePrice: row.currentPrice, boxesAllocation: row.boxesAllocation };
-    const elaborationCost = row.ingredientCost + edit.laborCost;
-    if (edit.laborCost < 0 || edit.salePrice < 0 || edit.boxesAllocation < 0 || edit.boxesAllocation > elaborationCost) {
-      this.ledgerNotice.set('Revisa los valores: no pueden ser negativos y la parte de cajas no puede superar el costo de elaboración.');
-      return;
-    }
-    const state = this.dataService.rawState() ?? {};
-    const raw = state['financeProductPricing'];
-    const pricing = raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
-    pricing[id] = { laborCost: this.money(edit.laborCost), boxesAllocation: this.money(edit.boxesAllocation) };
-    try {
-      await this.dataService.saveBusinessSetting('financeProductPricing', pricing);
-      await this.dataService.saveRecipe({ ...recipe, price: this.money(edit.salePrice) });
-      this.pricingEdits.update(current => {
-        const next = { ...current };
-        delete next[id];
-        return next;
-      });
-      this.ledgerNotice.set('Precio y distribución de costos guardados.');
-    } catch (error) {
-      this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio y su distribución.');
-    }
-  }
-
   private emptyBalanceForm(): FinanceBalanceForm {
     return { bankIngredients: 0, bankExpenses: 0, bankProfit: 0, fundIngredients: 0, fundExpenses: 0, fundBoxes: 0, fundProfit: 0, fundExtraProfit: 0 };
   }
