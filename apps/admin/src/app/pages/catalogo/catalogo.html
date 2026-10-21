@@ -18,9 +18,11 @@
         @for(item of catalogItems();track item.id){@if(item.category===category){
           <article class="product-card">
             <div class="image-wrap"><img [src]="getImageUrl(item.image)" [alt]="item.name" loading="lazy" (error)="onImageError($event)">
-              <button matIconButton class="dots" type="button" [attr.aria-label]="'Opciones de '+item.name" (click)="openMenuId.set(openMenuId()===item.id?null:item.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
+              <button matIconButton class="dots" type="button" [matMenuTriggerFor]="productMenu" [attr.aria-label]="'Opciones de '+item.name"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
+              <mat-menu #productMenu="matMenu">
+                <button mat-menu-item type="button" [routerLink]="['/catalogo/productos',item.id]"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon><span>Editar producto</span></button>
+              </mat-menu>
               <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="toggleVisibility(item)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ item.catalogVisible === false ? "visibility_off" : "visibility" }}</mat-icon></button>
-              @if(openMenuId()===item.id){<div class="menu"><a matButton="text" [routerLink]="['/catalogo/productos',item.id]" (click)="openMenuId.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar producto</a></div>}
             </div>
             <div class="product-copy"><h3>{{item.name}}</h3>@if(item.catalogLabel){<span class="label-chip" [style.background]="labelBackground(item.catalogLabelColor)" [style.color]="labelForeground(item.catalogLabelColor)">{{item.catalogLabel}}</span>}<strong>{{item.price|currency:'USD'}}</strong></div>
           </article>

@@ -1,5 +1,6 @@
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -10,7 +11,7 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
 @Component({
   selector: 'app-masas-base-list',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DecimalPipe, MatButtonModule, MatIconModule],
+  imports: [CommonModule, CurrencyPipe, DecimalPipe, MatButtonModule, MatIconModule, MatMenuModule],
   template: `
     <section class="base-list">
       <button matButton="elevated" class="primary" type="button" (click)="create()">Nueva masa base</button>
@@ -23,15 +24,13 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
             <article class="card">
               <header class="card-header">
                 <h2>{{ base.name || 'Masa base sin nombre' }}</h2>
-                <button matIconButton class="menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + base.name" [attr.aria-expanded]="openMenuId() === base.id" (click)="openMenuId.set(openMenuId() === base.id ? null : base.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
-                @if (openMenuId() === base.id) {
-                  <div class="menu">
-                    <button matButton="text" type="button" [disabled]="$index === 0" (click)="move(base, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_upward</mat-icon> <span>Subir</span></button>
-                    <button matButton="text" type="button" [disabled]="$index === bases().length - 1" (click)="move(base, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_downward</mat-icon> <span>Bajar</span></button>
-                    <button matButton="text" type="button" (click)="edit(base)">✎ <span>Editar</span></button>
-                    <button matButton="outlined" type="button" class="danger" (click)="remove(base)">▤ <span>Eliminar</span></button>
-                  </div>
-                }
+                <button matIconButton class="menu-trigger" type="button" [matMenuTriggerFor]="baseMenu" [attr.aria-label]="'Opciones de ' + base.name"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
+                <mat-menu #baseMenu="matMenu">
+                  <button mat-menu-item type="button" [disabled]="$index === 0" (click)="move(base, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_upward</mat-icon><span>Subir</span></button>
+                  <button mat-menu-item type="button" [disabled]="$index === bases().length - 1" (click)="move(base, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_downward</mat-icon><span>Bajar</span></button>
+                  <button mat-menu-item type="button" (click)="edit(base)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon><span>Editar</span></button>
+                  <button mat-menu-item type="button" class="danger" (click)="remove(base)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon><span>Eliminar</span></button>
+                </mat-menu>
               </header>
               <p class="weight"><strong>{{ base.weight | number:'1.0-2' }} g</strong> de masa por lote</p>
               <section class="yield">
@@ -58,7 +57,7 @@ import { DoughBaseRecord, DoughBaseService } from '../../services/dough-base.ser
   `,
   styles: [`
     :host{display:block;min-width:0;color:#30263a}.base-list{display:grid;gap:28px}.primary{justify-self:start;min-height:55px;padding:0 22px;border:0;border-radius:10px;background:#8056ad;color:#fff;font-size:13px;font-weight:750;cursor:pointer}.primary:hover{background:#704795}
-    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:stretch}.card{position:relative;min-width:0;padding:26px 28px;border:1px solid #dfcbe9;border-radius:20px;background:#f7f0f9;box-sizing:border-box}.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative}.card-header h2{margin:0;color:#74518b;font-size:17px;font-weight:500;line-height:1.45}.menu-trigger{flex:0 0 28px;width:28px;height:30px;padding:0;border:0;background:transparent;color:#79558f;font-size:25px;line-height:1;cursor:pointer}.menu{position:absolute;right:0;top:36px;z-index:10;min-width:185px;padding:8px;border:1px solid #e5d6ed;border-radius:12px;background:#fff;box-shadow:0 14px 28px rgb(48 38 58 / 14%)}.menu button{display:flex;align-items:center;gap:12px;width:100%;padding:11px 10px;border:0;border-radius:7px;background:#fff;color:#765388;text-align:left;font-size:13px;cursor:pointer}.menu button:hover:not(:disabled){background:#f7f0fa}.menu button:disabled{opacity:.45;cursor:not-allowed}.menu button.danger{color:#a14c5a}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:stretch}.card{position:relative;min-width:0;padding:26px 28px;border:1px solid #dfcbe9;border-radius:20px;background:#f7f0f9;box-sizing:border-box}.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative}.card-header h2{margin:0;color:#74518b;font-size:17px;font-weight:500;line-height:1.45}.menu-trigger{flex:0 0 28px;width:28px;height:30px;padding:0;border:0;background:transparent;color:#79558f;font-size:25px;line-height:1;cursor:pointer}.menu-trigger{width:32px!important;height:32px!important;padding:4px!important;flex:0 0 32px!important;border-radius:50%;}.menu-trigger mat-icon{width:20px;height:20px;font-size:20px;}.mat-mdc-menu-item.danger{color:#a14c5a;}.mat-mdc-menu-item.danger mat-icon{color:inherit;}
     .weight{margin:18px 0 24px;font-size:15px}.weight strong{font-weight:750}.yield{padding:20px 18px;border-radius:15px;background:#eee2f3;color:#765388}.yield h3{margin:0 0 18px;font-size:13px;font-weight:750}.yield-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.yield-grid>div{display:grid;gap:9px;min-width:0}.yield-grid span,.yield-grid small{color:#8b7199;font-size:12px;line-height:1.4}.yield-grid strong{color:#684578;font-size:23px;line-height:1.2}.yield-grid small{font-size:12px}.yield-note{margin:19px 0 0;color:#8b7199;font-size:12px;line-height:1.5}.meta{margin:24px 0 7px;color:#8b7199;font-size:13px;line-height:1.5}.ingredients{margin:0;padding-left:22px;color:#3c3343;font-size:14px;line-height:1.85}.notes{margin:12px 0 0;color:#8b7199;font-size:12px;white-space:pre-wrap}.empty{padding:28px;border:1px dashed #d9c6e5;border-radius:14px;color:#8b7199;font-size:13px}.notice{margin:0;color:#8056ad;font-size:12px}
     @media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.grid{grid-template-columns:minmax(0,1fr)}.card{padding:22px 18px}.yield-grid strong{font-size:20px}}
   `]

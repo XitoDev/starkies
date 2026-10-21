@@ -4,3 +4,25 @@
 .ingredients-browser{display:flex;flex-direction:column;gap:18px;min-width:0}.ingredients-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.search-box{position:relative;display:block;flex:1 1 260px;max-width:390px}.search-icon{position:absolute;left:13px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:#a397ad}.search-box input{width:100%;height:43px;padding:0 13px 0 39px;border:1px solid #e8e0ed;border-radius:9px;outline:none;background:#fff;color:#5b4d65;font-size:12px}.search-box input:focus{border-color:#b99ad4;box-shadow:0 0 0 3px rgb(128 86 173 / 9%)}.filter-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:0 13px;border:1px solid #e8e0ed;border-radius:9px;background:#fff;color:#8f8298;font-size:11px;cursor:pointer}.filter-button.active{border-color:#d8c2e9;background:#f0e7f7;color:#8056ad;font-weight:700}.filter-icon{width:15px;height:15px}.result-count{margin-left:auto;color:#95899d;font-size:11px;white-space:nowrap}
 .ingredient-category-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:3px}.ingredient-category-tabs button{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 13px;border:1px solid #eee7f2;border-radius:9px;background:#fff;color:#857790;font-size:11px;font-weight:600;cursor:pointer}.ingredient-category-tabs button.active{border-color:#d8c2e9;background:#f0e7f7;color:#8056ad}.ingredient-category-tabs button span{display:grid;place-items:center;min-width:19px;height:19px;padding:0 4px;border-radius:7px;background:#f7f3fa;color:#8d70a2;font-size:9px}.ingredient-group-section{display:flex;flex-direction:column;gap:13px}.ingredient-group-title{display:flex;align-items:center;gap:9px;margin:3px 0 0;color:#3a3042;font-size:17px;font-weight:600;letter-spacing:-.4px}.ingredient-group-title span{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:7px;background:#f0e7f7;color:#8056ad;font-size:10px}
 @media(max-width:1050px){.ingredients-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:1000px){.ingredients-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.page-container{gap:21px}.page-heading{align-items:flex-start;flex-direction:column}.summary-grid{grid-template-columns:1fr;gap:10px}.summary-card{padding:15px}.summary-value{font-size:21px}.ingredients-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ingredients-toolbar{align-items:stretch}.search-box{flex-basis:100%;max-width:none}.result-count{margin-left:0}.ingredient-category-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}.ingredient-category-tabs button{flex:0 0 auto}.ingredient-modal{padding:20px}}@media(max-width:460px){.ingredients-grid{grid-template-columns:1fr}.ingredient-form{grid-template-columns:1fr}.form-field-wide,.form-error,.modal-actions{grid-column:1}.modal-actions{flex-direction:column-reverse}.modal-actions button{width:100%}}
+
+
+/* Keep ingredient action triggers compact and consistent with Material menus. */
+.ingredient-menu-trigger {
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 32px !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 4px !important;
+  border-radius: 50% !important;
+  color: #8056ad;
+}
+.ingredient-menu-trigger mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+.mat-mdc-menu-item.delete-menu-action { color: #a44855; }
+.mat-mdc-menu-item.delete-menu-action mat-icon { color: inherit; }

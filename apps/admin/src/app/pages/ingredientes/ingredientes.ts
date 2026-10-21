@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
 import { DataService } from '../../services/data.service';
 import { Ingredient } from 'shared';
 
@@ -24,7 +25,7 @@ type IngredientForm = {
 @Component({
   selector: 'app-ingredientes',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule, MatMenuModule],
   templateUrl: './ingredientes.html',
   styleUrls: ['./ingredientes.css'],
 })

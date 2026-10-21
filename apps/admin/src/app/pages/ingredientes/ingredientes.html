@@ -67,14 +67,12 @@
             <article class="ingredient-card">
               <div class="ingredient-card-top">
                 <div class="ingredient-avatar"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
-                <button matIconButton class="ingredient-menu-trigger" type="button" [attr.aria-label]="'Opciones de ' + ingredient.name" [attr.aria-expanded]="openMenuId() === ingredient.id" (click)="openMenuId.set(openMenuId() === ingredient.id ? null : ingredient.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
-                @if (openMenuId() === ingredient.id) {
-                  <div class="ingredient-menu">
-                    <button matButton="text" type="button" (click)="openPurchase(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Comprar</button>
-                    <button matButton="text" type="button" (click)="openMenuId.set(null); openEditIngredient(ingredient)">✎ Editar</button>
-                    <button matButton="outlined" class="delete-menu-action" type="button" (click)="openMenuId.set(null); removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Eliminar</button>
-                  </div>
-                }
+                <button matIconButton class="ingredient-menu-trigger" type="button" [matMenuTriggerFor]="ingredientMenu" [attr.aria-label]="'Opciones de ' + ingredient.name"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
+                <mat-menu #ingredientMenu="matMenu">
+                  <button mat-menu-item type="button" (click)="openPurchase(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon><span>Comprar</span></button>
+                  <button mat-menu-item type="button" (click)="openEditIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon><span>Editar</span></button>
+                  <button mat-menu-item type="button" class="delete-menu-action" (click)="removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon><span>Eliminar</span></button>
+                </mat-menu>
               </div>
               <div class="ingredient-card-copy">
                 <p class="ingredient-card-group">{{ ingredient.supplyGroup ?? 'Secos' }}</p>
