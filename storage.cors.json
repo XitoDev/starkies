@@ -1,7 +1,8 @@
 [
   {
     "origin": [
-      "https://starkies.vercel.app"
+      "https://starkies.vercel.app",
+      "https://admin.starkies.lat"
     ],
     "method": [
       "GET",
