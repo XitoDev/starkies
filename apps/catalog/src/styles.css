@@ -1216,3 +1216,257 @@ app-catalog .footer-content {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* Final visual pass: consistent left edge, elegant star details, bold purple actions. */
+app-catalog .site-header,
+app-catalog main {
+  box-sizing: border-box !important;
+  width: min(calc(100% - 48px), 1240px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+app-catalog .site-header {
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+app-catalog .site-header .brand,
+app-catalog .site-header > .brand {
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+app-catalog .site-header .wordmark,
+app-catalog .site-header .brand-tagline {
+  margin-left: 0 !important;
+  text-align: left !important;
+}
+
+/* The hero follows the same left edge and uses even, balanced inner spacing. */
+app-catalog .hero {
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 260px !important;
+  margin: 18px 0 0 !important;
+  padding: clamp(32px, 4.2vw, 54px) clamp(24px, 3.2vw, 42px) !important;
+  overflow: hidden !important;
+  border: 1px solid #A091A3 !important;
+  border-radius: 24px !important;
+  background: #F7F3EA !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+app-catalog .hero-copy,
+app-catalog .hero-copy.hero-copy-clean {
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: min(100%, 690px) !important;
+  max-width: calc(100% - 230px) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  text-align: left !important;
+}
+app-catalog .hero-copy::before {
+  content: none !important;
+  display: none !important;
+}
+app-catalog .hero h1 {
+  margin: 0 !important;
+  text-align: left !important;
+  line-height: .92 !important;
+}
+app-catalog .hero-copy > p {
+  margin: 18px 0 18px !important;
+  text-align: left !important;
+}
+app-catalog .hero::before,
+app-catalog .hero::after {
+  z-index: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  background: none !important;
+  clip-path: none !important;
+  opacity: 1 !important;
+}
+app-catalog .hero::before {
+  content: "✦" !important;
+  position: absolute !important;
+  display: block !important;
+  top: 25% !important;
+  right: 24% !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: auto !important;
+  color: #B6C648 !important;
+  font-size: 34px !important;
+  line-height: 1 !important;
+  transform: rotate(9deg) !important;
+  text-shadow: 34px 70px 0 #A091A3, 104px -12px 0 #DFE6B0 !important;
+}
+app-catalog .hero::after {
+  content: "✧   ✦   ✧" !important;
+  position: absolute !important;
+  display: block !important;
+  top: 50% !important;
+  right: 38px !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: auto !important;
+  color: #A091A3 !important;
+  font-size: clamp(24px, 3vw, 38px) !important;
+  letter-spacing: 12px !important;
+  line-height: 1 !important;
+  transform: translateY(-50%) rotate(-5deg) !important;
+  text-shadow: 0 0 20px rgb(160 145 163 / 18%) !important;
+}
+
+/* Stronger saturated purple for Add, with the label truly centered. */
+app-catalog .buy .add-button,
+app-catalog .add-button {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 0 44px !important;
+  border: 1px solid #5B1688 !important;
+  border-radius: 999px !important;
+  background: #5B1688 !important;
+  color: #FFFFFF !important;
+  text-align: center !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+}
+app-catalog .buy .add-button .add-label,
+app-catalog .add-button .add-label {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  color: #FFFFFF !important;
+  font-size: .9rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+app-catalog .buy .add-button .add-icon,
+app-catalog .add-button .add-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 10px !important;
+  display: grid !important;
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: rgb(255 255 255 / 16%) !important;
+  color: #FFFFFF !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  transform: translateY(-50%) !important;
+}
+app-catalog .buy .add-button:hover:not(:disabled),
+app-catalog .add-button:hover:not(:disabled) {
+  background: #3D0C61 !important;
+  border-color: #3D0C61 !important;
+}
+app-catalog .buy .add-button:active:not(:disabled),
+app-catalog .add-button:active:not(:disabled) {
+  transform: scale(.985) !important;
+}
+
+/* Remove the colored tile/padding around cookie photos; blend pale source backdrops into cream. */
+app-catalog .product {
+  overflow: hidden !important;
+}
+app-catalog .photo {
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #F7F3EA !important;
+}
+app-catalog .photo img {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 270px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  object-fit: contain !important;
+  mix-blend-mode: multiply !important;
+}
+app-catalog .product-body {
+  margin-top: 0 !important;
+}
+
+/* Keep the same left alignment and readable spacing on phones. */
+@media (max-width: 640px) {
+  app-catalog .site-header,
+  app-catalog main {
+    width: calc(100% - 32px) !important;
+  }
+  app-catalog .hero {
+    min-height: 0 !important;
+    padding: 30px 22px 32px !important;
+    border-radius: 20px !important;
+  }
+  app-catalog .hero-copy,
+  app-catalog .hero-copy.hero-copy-clean {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  app-catalog .hero::before {
+    top: 16px !important;
+    right: 20px !important;
+    font-size: 24px !important;
+    text-shadow: 26px 50px 0 #A091A3, 70px -5px 0 #DFE6B0 !important;
+  }
+  app-catalog .hero::after {
+    top: auto !important;
+    right: 12px !important;
+    bottom: 14px !important;
+    font-size: 19px !important;
+    letter-spacing: 6px !important;
+    transform: none !important;
+  }
+  app-catalog .hero h1 {
+    max-width: 82% !important;
+    font-size: clamp(2.8rem, 11vw, 4rem) !important;
+  }
+  app-catalog .hero-copy > p {
+    max-width: 82% !important;
+  }
+  app-catalog .photo img {
+    max-height: 220px !important;
+  }
+}
