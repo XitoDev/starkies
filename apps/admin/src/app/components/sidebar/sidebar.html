@@ -4,17 +4,16 @@
   </div>
 
   <a
-    matButton="outlined"
+    matButton="filled"
     class="business-card"
     href="https://starkies.lat/"
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Ir a mi tienda (abre en una pestaña nueva)"
   >
-    <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">open_in_new</mat-icon>
+    <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
     <span class="business-copy">
-      <strong>Ir a mi tienda</strong>
-      <span>Ver catálogo público</span>
+      <strong>Mi tienda</strong>
     </span>
   </a>
 
@@ -29,18 +28,15 @@
         }
       </a>
     }
-  </nav>
-
-  <div class="sidebar-bottom">
     <button
       type="button"
       matButton="text"
-      class="settings-trigger"
+      class="settings-trigger nav-item"
       [matMenuTriggerFor]="settingsMenu"
       aria-label="Abrir configuración"
     >
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">settings</mat-icon>
-      <span>Configuración</span>
+      <mat-icon fontSet="material-symbols-rounded" class="nav-icon" aria-hidden="true">settings</mat-icon>
+      <span class="nav-label">Configuración</span>
     </button>
     <mat-menu #settingsMenu="matMenu" xPosition="after" yPosition="above">
       <button mat-menu-item type="button" (click)="exportBackup()">
@@ -55,5 +51,5 @@
         <div class="settings-error" role="status" aria-live="polite">{{ logoutMessage() }}</div>
       }
     </mat-menu>
-  </div>
+  </nav>
 </aside>
