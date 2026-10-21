@@ -1587,3 +1587,13 @@ app-catalog .footer-bottom .footer-brand .brand-tagline { color: #f7e8dc; }
 @media(max-width:380px) {
   app-catalog .product-body h3 { font-size: calc(1.15rem + 2px) !important; }
 }
+
+/* Footer layout for four contact columns and consistent mobile branding. */
+app-catalog .footer-content { grid-template-columns: 1.4fr repeat(3, minmax(0, .8fr)); }
+@media(max-width:700px) {
+  app-catalog .footer-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  app-catalog .footer-bottom { flex-wrap: wrap; align-items: center; }
+  app-catalog .footer-bottom .footer-brand { display: inline-flex; }
+  app-catalog .footer-bottom .footer-brand .wordmark { font-size: 1.9rem; }
+  app-catalog .footer-bottom .footer-brand .brand-tagline { font-size: .44rem; letter-spacing: .14em; }
+}
