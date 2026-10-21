@@ -36,7 +36,14 @@ export function rankCatalogProducts<T extends { id: string; tag?: string }>(
     const tag = isNew(product) ? 'Nuevo'
       : bestSeller?.id === product.id ? 'Más vendida'
       : previousBestSeller(product) ? undefined : product.tag;
-    return { product: { ...product, tag }, index };
+    // Firestore rejects undefined values. Remove a stale "Más vendida" tag
+    // instead of serializing an explicit tag: undefined during projection sync.
+    const { tag: _previousTag, ...productWithoutTag } = product;
+    const rankedProduct = {
+      ...productWithoutTag,
+      ...(tag === undefined ? {} : { tag }),
+    } as T;
+    return { product: rankedProduct, index };
   }).sort((a, b) => {
     const aNew = isNew(a.product), bNew = isNew(b.product);
     if (aNew !== bNew) return aNew ? -1 : 1;
