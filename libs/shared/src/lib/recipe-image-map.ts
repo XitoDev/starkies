@@ -3,7 +3,7 @@ export const LEGACY_RECIPE_IMAGE_FILES: Readonly<Record<string, string>> = {
   '202edec5-9b83-4e9b-a466-c32bd1a05d44': 'recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg',
   '85e499f3-37c9-4701-bf89-5176007ce546': 'recipe-85e499f3-37c9-4701-bf89-5176007ce546.png',
   '02885ca5-c58c-48a7-b116-cd614290c697': 'recipe-02885ca5-c58c-48a7-b116-cd614290c697.png',
-  'f126ae46-9eee-4ac2-8cff-d2f9543d3d74b4': 'recipe-f126ae46-9eee-4ac2-8cff-d2f9543d3d74b4.png',
+  'f126ae46-9eee-4ac2-8cff-d2f9543d708e9': 'recipe-f126ae46-9eee-4ac2-8cff-d2f9543d3d74b4.png',
   '5cbf3e5f-edb0-490b-b544-8741ba6cffe7': 'recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png',
   '99e32e0c-61fb-41b1-8018-fa18ef655750': 'recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png',
   '0794f338-588b-460d-b002-ee4e614826c9': 'recipe-0794f338-588b-460d-b002-ee4e614826c9.png',
