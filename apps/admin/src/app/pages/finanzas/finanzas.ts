@@ -76,6 +76,11 @@ export class Finanzas {
       id: recipe.id, name: recipe.name, category: recipe.category, yield: recipe.yield,
       ingredientCost, expenses, services, fixedProfit, suggestedPrice, salePrice, profit,
     };
+  }).sort((a, b) => {
+    const categoryOrder = (a.category || 'Sin categoría').localeCompare(
+      b.category || 'Sin categoría', 'es', { sensitivity: 'base' },
+    );
+    return categoryOrder || a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
   }));
 
   updateSalePrice(id: string, value: string): void {
