@@ -52,6 +52,27 @@ async function main() {
   const archives = await db.collection(oldBase + '/migrationArchives').get();
   for (const d of archives.docs) ops.push({source:d.ref.path,target:'migrationArchives/'+d.id,data:d.data()});
 
+  // Build a deterministic phone index so order creation never downloads all customers.
+  const phoneOwners = new Map();
+  for (const op of ops.filter(item => item.target.startsWith('customers/'))) {
+    const value = isObject(op.data.value) ? op.data.value : {};
+    const normalizedPhone = String(value.phone ?? '').replace(/\\D/g, '').replace(/^593/, '0');
+    if (normalizedPhone.length < 7) continue;
+    if (phoneOwners.has(normalizedPhone) && phoneOwners.get(normalizedPhone).customerId !== op.target.slice('customers/'.length)) {
+      throw new Error('Duplicate normalized customer phone found in ' + phoneOwners.get(normalizedPhone).source + ' and ' + op.source + '. Resolve duplicates before migrating; no writes made.');
+    }
+    const customerId = op.target.slice('customers/'.length);
+    phoneOwners.set(normalizedPhone, { customerId, source: op.source });
+  }
+  for (const [normalizedPhone, owner] of phoneOwners) {
+    const hash = createHash('sha256').update(normalizedPhone).digest('hex');
+    ops.push({
+      source: 'derived customer phone index for ' + owner.source,
+      target: 'customerPhoneLookup/' + hash,
+      data: { customerId: owner.customerId, normalizedPhone },
+    });
+  }
+
   const targetOwners = new Map();
   for (const op of ops) {
     if (targetOwners.has(op.target)) throw new Error('Duplicate target ID ' + op.target + ' from ' + targetOwners.get(op.target) + ' and ' + op.source + '. No writes made.');
