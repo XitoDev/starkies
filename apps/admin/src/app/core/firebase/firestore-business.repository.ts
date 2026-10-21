@@ -153,6 +153,7 @@ export class FirestoreBusinessRepository {
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
       await setDoc(matching.ref, { index, value });
+      this.invalidateStateCache();
       return;
     }
 
@@ -165,6 +166,7 @@ export class FirestoreBusinessRepository {
       index: nextIndex,
       value,
     });
+    this.invalidateStateCache();
   }
 
   async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
@@ -189,6 +191,7 @@ export class FirestoreBusinessRepository {
     }
 
     await deleteDoc(matching.ref);
+    this.invalidateStateCache();
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -211,6 +214,7 @@ export class FirestoreBusinessRepository {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
     }, { merge: true });
+    this.invalidateStateCache();
   }
 
   /**
@@ -219,8 +223,7 @@ export class FirestoreBusinessRepository {
    */
   async recordProduction(
     record: Record<string, unknown>,
-    deductions: {
-    this.invalidateStateCache(); ingredientId: string; quantity: number }[],
+    deductions: { ingredientId: string; quantity: number }[],
   ): Promise<void> {
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
