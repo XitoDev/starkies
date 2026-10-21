@@ -60,13 +60,13 @@ function numberValue(value: unknown, fallback = 0): number {
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   const recipesRef = db.collection('recipes');
-  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, ordersSnapshot] = await Promise.all([
+  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, salesStatsSnapshot] = await Promise.all([
     recipesRef.orderBy('index', 'asc').get(),
     db.doc('settings/deliveryZones').get(),
     db.doc('settings/catalogSettings').get(),
     db.collection('deliveryZones').orderBy('index', 'asc').get(),
     db.doc('system/stateMeta').get(),
-    db.collection('orders').get(),
+    db.collection('productSalesStats').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
