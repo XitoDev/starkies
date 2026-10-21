@@ -151,6 +151,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         updatedAt: createdAt,
       });
       transaction.set(customerRef, { index: Number(matchedCustomer?.data()['index'] ?? now), value: customerRecord });
+      transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
       transaction.set(orderRef, { index: now, value: orderRecord });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
