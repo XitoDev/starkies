@@ -15,7 +15,7 @@ describe('Finanzas', () => {
   let dataServiceStub: {
     rawState: WritableSignal<Record<string, unknown> | null>;
     ingredients: WritableSignal<Ingredient[]>;
-    recipes: WritableSignal<any[]>;
+    recipes: WritableSignal<Record<string, unknown>[]>;
     saveRecipe: ReturnType<typeof vi.fn>;
     recordCashMovement: typeof recordCashMovement;
     recordIngredientPurchase: typeof recordIngredientPurchase;
@@ -30,7 +30,7 @@ describe('Finanzas', () => {
       ingredients: signal<Ingredient[]>([
         { id: 'flour', name: 'Harina', unit: 'g', stock: 4000, costPerUnit: 0.0025, packageUnit: 'kg', packageQuantityGrams: 1, packagePrice: 2.5, minStock: 1000 },
       ]),
-      recipes: signal<any[]>([]),
+      recipes: signal<Record<string, unknown>[]>([]),
       saveRecipe: vi.fn().mockResolvedValue(undefined),
       recordCashMovement,
       recordIngredientPurchase,
