@@ -146,22 +146,13 @@ export class FirestoreBusinessRepository {
       throw new Error(this.firebase.configurationMessage);
     }
 
-    const recordsRef = collection(
-      this.firebase.firestore,
-      collectionKey,
-    );
-    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-    const matching = snapshot.docs.find((record) => {
-      const storedValue = record.data()['value'];
-      return this.isRecord(storedValue)
-        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
-    });
-
-    if (!matching) {
+    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
+    const matching = await getDoc(recordRef);
+    if (!matching.exists()) {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    await deleteDoc(matching.ref);
+    await deleteDoc(recordRef);
     this.invalidateStateCache();
   }
 
