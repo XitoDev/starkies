@@ -16,7 +16,7 @@
     @if(categoryFilter()==='Todos'||categoryFilter()===category){
       <section class="product-group"><h2>{{category}}</h2><div class="products-grid">
         @for(item of catalogItems();track item.id){@if(item.category===category){
-          <article class="product-card" tabindex="0" [attr.aria-label]="'Editar ' + item.name" (click)="openProduct(item)" (keydown.enter)="openProductFromKeyboard($any($event), item)" (keydown.space)="openProductFromKeyboard($event, item)">
+          <article class="product-card" tabindex="0" [attr.aria-label]="'Editar ' + item.name" (click)="openProduct(item)" (keydown.enter)="openProductFromKeyboard($any($event), item)" (keydown.space)="openProductFromKeyboard($any($event), item)">
             <div class="image-wrap"><img [src]="getImageUrl(item.image)" [alt]="item.name" loading="lazy" (error)="onImageError($event)">
               <button matIconButton class="visibility" type="button" [attr.aria-label]="item.catalogVisible===false?'Mostrar en catálogo':'Ocultar del catálogo'" (click)="$event.stopPropagation(); toggleVisibility(item)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ item.catalogVisible === false ? "visibility_off" : "visibility" }}</mat-icon></button>
             </div>
