@@ -70,15 +70,27 @@
   </section>
   } @else {
     <section class="price-section" aria-labelledby="prices-title">
-      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>Compara el costo unitario de elaboración con el precio actual y el precio sugerido (costo × 3).</p></div></div>
+      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>El precio sugerido es 4 veces el costo de elaboración por unidad. Edita el trabajo, el precio de venta y la parte destinada a cajas; gastos y ganancias se calculan automáticamente.</p></div></div>
       <div class="price-table-wrap">
         <table class="price-table">
-          <thead><tr><th>Producto</th><th>Categoría</th><th>Costo unitario</th><th>Precio actual</th><th>Precio sugerido</th><th>Diferencia</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Unid. / lote</th><th>Ingredientes / unidad</th><th>Trabajo y otros / unidad</th><th>Elaboración / unidad</th><th>Precio sugerido × 4</th><th>Precio de venta / unidad</th><th>Reposición de costos</th><th>Para gastos</th><th>Para cajas</th><th>Para servicios</th><th>Ganancia</th><th>Ganancia extra</th><th>Acciones</th></tr></thead>
           <tbody>
             @for (product of priceRows(); track product.id) {
-              <tr><td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.unitCost | currency:'USD' }}</td><td>{{ product.currentPrice | currency:'USD' }}</td><td>{{ product.suggestedPrice | currency:'USD' }}</td><td [class.amount-out]="product.extraProfit < 0">{{ product.extraProfit | currency:'USD' }}</td></tr>
+              <tr>
+                <td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.yield }}</td>
+                <td>{{ product.ingredientCost | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td><input class="price-edit-input" aria-label="Trabajo y otros por unidad" type="number" min="0" step="0.0001" [value]="product.laborCost" (input)="updatePricingField(product.id, 'laborCost', $any($event.target).value)" /></td>
+                <td>{{ product.elaborationCost | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td class="suggested-price-cell">{{ product.suggestedPrice | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td><input class="price-edit-input" aria-label="Precio de venta por unidad" type="number" min="0" step="0.01" [value]="product.currentPrice" (input)="updatePricingField(product.id, 'salePrice', $any($event.target).value)" /></td>
+                <td>{{ product.elaborationCost | currency:'USD':'symbol':'1.2-4' }}</td><td>{{ product.expensesAllocation | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td><input class="price-edit-input" aria-label="Parte para cajas por unidad" type="number" min="0" step="0.0001" [value]="product.boxesAllocation" (input)="updatePricingField(product.id, 'boxesAllocation', $any($event.target).value)" /></td>
+                <td>{{ product.servicesAllocation | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td [class.amount-out]="product.profit < 0">{{ product.profit | currency:'USD':'symbol':'1.2-4' }}</td><td [class.amount-out]="product.extraProfit < 0">{{ product.extraProfit | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td><button matButton="outlined" class="save-price-button" type="button" (click)="saveProductPricing(product.id)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar</button></td>
+              </tr>
             }
-            @if (priceRows().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>No hay productos para calcular</strong><p>Registra recetas e ingredientes con sus costos para ver los precios sugeridos.</p></div></td></tr> }
+            @if (priceRows().length === 0) { <tr><td colspan="15"><div class="empty-state"><strong>No hay recetas para calcular</strong><p>Registra recetas e insumos con sus costos para ver los precios sugeridos.</p></div></td></tr> }
           </tbody>
         </table>
       </div>
