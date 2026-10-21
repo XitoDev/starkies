@@ -1,4 +1,5 @@
 @import url('../../../libs/shared/src/lib/design-system/design-system.css');
+@import url('https://fonts.googleapis.com/css2?family=Shrikhand&display=swap');
 
 :root {
   color-scheme: light;
@@ -793,4 +794,35 @@ main { padding-bottom: 12px; }
   .dock-card { padding: 12px !important; }
   .dock-actions { gap: 8px !important; }
   .dock-actions button { min-width: 0; padding-inline: 12px !important; }
+}
+
+
+/* Catalog cleanup requested for StarKies. */
+app-catalog .wordmark,
+app-catalog .footer-wordmark {
+  font-family: 'Shrikhand', cursive !important;
+  font-style: normal !important;
+  letter-spacing: 0 !important;
+}
+app-catalog .hero {
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-height: 150px !important;
+  padding-block: 34px !important;
+}
+app-catalog .hero-copy-clean {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  text-align: center;
+}
+app-catalog .photo-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  background: #f7e4ed;
+}
+app-catalog .presentation-card {
+  gap: 0;
 }
