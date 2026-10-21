@@ -7,8 +7,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Recipe } from 'shared';
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
-import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { ImageCdnUploadService } from '../../services/image-cdn-upload.service';
 
 @Component({
   selector: 'app-catalogo-producto-editor',
@@ -53,7 +52,7 @@ export class CatalogoProductoEditor {
   private readonly data = inject(DataService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly firebase = inject(FirebaseClientService);
+  private readonly imageUpload = inject(ImageCdnUploadService);
   private readonly imageService = inject(RecipeImageService);
   readonly productId = signal(this.route.snapshot.paramMap.get('productId') ?? '');
   readonly recipe = computed(() => this.data.recipes().find(item => item.id === this.productId()) ?? null);
@@ -98,8 +97,8 @@ export class CatalogoProductoEditor {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      this.error.set('Elige una imagen JPG, PNG o WebP de hasta 5 MB.');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 3 * 1024 * 1024) {
+      this.error.set('Elige una imagen JPG, PNG o WebP de hasta 3 MB.');
       input.value = '';
       return;
     }
@@ -116,11 +115,7 @@ export class CatalogoProductoEditor {
   private async uploadCatalogImage(recipeId: string): Promise<string | undefined> {
     const file = this.catalogImageFile();
     if (!file) return this.catalogImageRemoved() ? undefined : this.recipe()?.catalogImage;
-    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-    const storageRef = ref(getStorage(this.firebase.app), 'catalog-images/' + recipeId + '/' + crypto.randomUUID() + '.' + extension);
-    const result = await uploadBytes(storageRef, file, { contentType: file.type });
-    return getDownloadURL(result.ref);
+    return this.imageUpload.upload(file, 'catalog', recipeId);
   }
   addLabel(): void {
     const value = this.newLabelName.trim();
