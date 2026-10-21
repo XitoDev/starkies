@@ -124,14 +124,18 @@ export class Finanzas {
     this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
   );
   readonly purchaseUnits = computed(() => {
-    const volume = this.selectedIngredient()?.unit === 'ml';
+    const selectedUnit = this.selectedIngredient()?.unit;
+    const dimension = selectedUnit === 'ml' ? 'volume' : selectedUnit === 'unidad' ? 'count' : 'mass';
     return [
       { value: 'g', label: 'Gramos (g)', dimension: 'mass' }, { value: 'kg', label: 'Kilogramos (kg)', dimension: 'mass' },
       { value: 'mg', label: 'Miligramos (mg)', dimension: 'mass' }, { value: 'lb', label: 'Libras (lb)', dimension: 'mass' },
       { value: 'oz', label: 'Onzas (oz)', dimension: 'mass' }, { value: 'ml', label: 'Mililitros (ml)', dimension: 'volume' },
       { value: 'l', label: 'Litros (l)', dimension: 'volume' }, { value: 'taza', label: 'Tazas (240 ml)', dimension: 'volume' },
       { value: 'cda', label: 'Cucharadas (15 ml)', dimension: 'volume' }, { value: 'cdta', label: 'Cucharaditas (5 ml)', dimension: 'volume' },
-    ].filter(unit => unit.dimension === (volume ? 'volume' : 'mass'));
+      { value: 'unidad', label: 'Unidades (u)', dimension: 'count' }, { value: 'pieza', label: 'Piezas (pza)', dimension: 'count' },
+      { value: 'par', label: 'Pares (2 unidades)', dimension: 'count' }, { value: 'media_docena', label: 'Media docena (6 unidades)', dimension: 'count' },
+      { value: 'docena', label: 'Docena (12 unidades)', dimension: 'count' },
+    ].filter(unit => unit.dimension === dimension);
   });
 
   readonly bankCards = computed(() => {
@@ -443,8 +447,8 @@ export class Finanzas {
       unitCost: ingredient?.costPerUnit ?? 0,
       brand: ingredient?.brand ?? '',
       packageQuantityGrams: ingredient?.packageQuantityGrams ?? 1000,
-      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : 'g'),
-      packagePrice: ingredient?.packagePrice ?? ((ingredient?.costPerUnit ?? 0) * (['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1 : 1000)),
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : ingredient?.unit === 'unidad' ? 'unidad' : 'g'),
+      packagePrice: ingredient?.packagePrice ?? ((ingredient?.costPerUnit ?? 0) * (ingredient?.unit === 'unidad' ? 1 : ['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1 : 1000)),
       date: this.today(),
       note: '',
     });
@@ -474,7 +478,7 @@ export class Finanzas {
       unitCost: ingredient?.costPerUnit ?? current.unitCost,
       brand: ingredient?.brand ?? current.brand,
       packageQuantityGrams: ingredient?.packageQuantityGrams ?? current.packageQuantityGrams,
-      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : 'g'),
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : ingredient?.unit === 'unidad' ? 'unidad' : 'g'),
       packagePrice: ingredient?.packagePrice ?? current.packagePrice,
     }));
   }
@@ -484,7 +488,7 @@ export class Finanzas {
     if (!next) return;
     const current = this.purchaseForm();
     const old = this.purchaseUnits().find(unit => unit.value === current.packageUnit);
-    const factors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    const factors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5, unidad: 1, pieza: 1, par: 2, media_docena: 6, docena: 12 };
     const quantity = old?.dimension === next.dimension
       ? current.packageQuantityGrams * factors[current.packageUnit] / factors[value]
       : current.packageQuantityGrams;
@@ -531,7 +535,7 @@ export class Finanzas {
     const date = this.normalizeDate(values.date);
     const packageGrams = values.packageQuantityGrams;
     const packagePrice = Math.round(values.packagePrice * 10000) / 10000;
-    const packageFactors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5 };
+    const packageFactors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5, unidad: 1, pieza: 1, par: 2, media_docena: 6, docena: 12 };
     const quantity = packageGrams * (packageFactors[values.packageUnit] ?? 1);
     const unitCost = packagePrice / Math.max(quantity, Number.EPSILON);
     const amount = Math.round(packagePrice * 100) / 100;
@@ -541,7 +545,7 @@ export class Finanzas {
       return;
     }
     if (!Number.isFinite(packageGrams) || packageGrams <= 0) {
-      this.formError.set('La cantidad del empaque en gramos debe ser mayor que cero.');
+      this.formError.set('La cantidad del empaque debe ser mayor que cero.');
       return;
     }
     if (!Number.isFinite(packagePrice) || packagePrice <= 0 || amount <= 0) {
