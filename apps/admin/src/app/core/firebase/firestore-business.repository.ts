@@ -456,6 +456,7 @@ export class FirestoreBusinessRepository {
         stock: nextStock,
         costPerUnit: latestPurchaseCost,
         packageQuantityGrams: Number(movement.packageQuantityGrams ?? stored['packageQuantityGrams'] ?? 0),
+        packageUnit: String(movement.packageUnit ?? stored['packageUnit'] ?? stored['unit'] ?? 'g'),
         packagePrice: Number(movement.packagePrice ?? stored['packagePrice'] ?? amount),
       };
       if (movement.brand?.trim()) updatedIngredient['brand'] = movement.brand.trim();
