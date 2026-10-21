@@ -1,7 +1,8 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-import { buildOrderPdf, StoredOrder } from './order-document.js';
+import { buildOrderPdf } from './order-document.js';
+import type { StoredOrder } from './order-document.js';
 
 interface ApiRequest { method?: string; url?: string; headers: Record<string, string | string[] | undefined>; }
 interface ApiResponse {
