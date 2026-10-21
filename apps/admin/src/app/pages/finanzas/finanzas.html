@@ -209,7 +209,7 @@
         <label class="form-field"><span>Ganancia (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundProfit" (input)="updateBalanceField('fundProfit', $any($event.target).value)" /></label>
         <label class="form-field"><span>Ganancia extra (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundExtraProfit" (input)="updateBalanceField('fundExtraProfit', $any($event.target).value)" /></label>
         @if (balanceError()) { <p class="form-error form-field-wide" role="alert">{{ balanceError() }}</p> }
-        <p class="form-help form-field-wide">Esto corrige el saldo base y pone la variación de los fondos en cero. Las nuevas ventas entregadas se seguirán contabilizando automáticamente.</p>
+        <p class="form-help form-field-wide">Esto establece tu saldo real como punto de partida y evita volver a sumar ventas entregadas antiguas. Las nuevas ventas entregadas se contabilizarán automáticamente.</p>
         <div class="modal-actions form-field-wide">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="balanceSaving()" (click)="editBalancesOpen.set(false)">Cancelar</button>
           <button matButton="elevated" class="btn-primary" type="submit" [disabled]="balanceSaving()">{{ balanceSaving() ? 'Guardando…' : 'Guardar saldos' }}</button>
