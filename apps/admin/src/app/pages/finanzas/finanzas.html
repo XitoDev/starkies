@@ -168,7 +168,7 @@
           }
           <div class="modal-actions form-field-wide">
             <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-            <button matButton="elevated" class="btn-primary" type="submit" [disabled]="saving()">
+            <button matButton="outlined" class="btn-primary" type="submit" [disabled]="saving()">
               {{ saving() ? 'Guardando…' : 'Guardar gasto' }}
             </button>
           </div>
