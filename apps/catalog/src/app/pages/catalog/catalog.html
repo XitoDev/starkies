@@ -55,7 +55,7 @@
                 </div>
                 <div class="product-body"><div class="product-category">{{ product.isNy ? 'NEW YORK STYLE' : 'CLÁSICA' }}</div><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
                   @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
-                  @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">La quiero en mi box</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
+                  @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
                   @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
                 </div></div>
               </article>
@@ -82,13 +82,17 @@
       <span class="footer-label">INSTAGRAM</span>
       <a class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>@starkies.ec</span></a>
     </div>
+    <div class="footer-social">
+      <span class="footer-label">TIKTOK</span>
+      <a class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Abrir TikTok de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>@starkies.ec</span></a>
+    </div>
 
   </div>
   <div class="footer-bottom">
     <small>© {{ currentYear }} StarKies. La estrella eres tú.</small>
-    <a class="footer-brand" href="#inicio" aria-label="StarKies, volver al inicio">
-      <img src="/starkies-icon.svg" alt="" width="34" height="34" loading="lazy">
-      <span class="footer-brand-wordmark">StarKies<span aria-hidden="true">✦</span></span>
+    <a class="footer-brand brand" href="#inicio" aria-label="StarKies, volver al inicio">
+      <span class="wordmark">StarKies<span class="wordmark-star" aria-hidden="true">✦</span></span>
+      <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
     </a>
     <a href="#inicio">Volver arriba ↑</a>
   </div>
