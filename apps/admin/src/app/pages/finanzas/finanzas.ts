@@ -31,7 +31,6 @@ interface FinanceLedger {
   processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
-type ProductPricing = { laborCost: number; boxesAllocation: number };
 type ProductPricingEdit = { laborCost: number; salePrice: number; boxesAllocation: number };
 type FinanceBalanceForm = {
   bankIngredients: number; bankExpenses: number; bankProfit: number;
