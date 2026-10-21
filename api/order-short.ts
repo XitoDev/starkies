@@ -17,7 +17,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const url = new URL(req.url ?? '/', 'https://starkies.lat');
     const code = url.searchParams.get('code') ?? '';
     if (!/^[A-Za-z0-9_-]{8}$/.test(code)) { res.status(404).send('No encontramos este enlace de pedido.'); return; }
-    const matches = await getDatabase().collection('businesses/starkies/collections/orders/records')
+    const matches = await getDatabase().collection('orders')
       .where('value.documentShortCode', '==', code).limit(1).get();
     if (matches.empty) { res.status(404).send('No encontramos este enlace de pedido.'); return; }
     const doc = matches.docs[0];
