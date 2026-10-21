@@ -284,7 +284,7 @@ export class DataService {
     const nextOrders = [...rawOrders];
     nextOrders[orderIndex] = updatedOrder;
     const nextState = { ...state, orders: nextOrders };
-    await this.applyOptimisticState(state, nextState, () => this.repository.updateOrderStatus(orderId, currentOrder, updatedOrder));
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord("orders", orderId, updatedOrder));
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
