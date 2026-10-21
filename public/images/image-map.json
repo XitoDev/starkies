@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-21T23:03:35.558Z",
+  "updatedAt": "2026-10-21T23:32:57.713Z",
   "images": {
     "recipe:6539b2bd-5e58-4485-8ff9-b625d1aa6147": {
       "fileName": "recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
@@ -51,6 +51,13 @@
       "fileName": "recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
       "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
       "legacy": true
+    },
+    "recipe:0a783c0b-8993-41a0-b986-b03b57674ca9": {
+      "fileName": "recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-d5d8d5a1-6607-4675-9912-2c90047da608.png",
+      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@04da26cbeb7c76a97a57844f98796259f803ed94/public/images/recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-d5d8d5a1-6607-4675-9912-2c90047da608.png",
+      "commitSha": "04da26cbeb7c76a97a57844f98796259f803ed94",
+      "contentType": "image/png",
+      "size": 2656743
     }
   }
 }
