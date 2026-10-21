@@ -217,22 +217,14 @@ export class FirestoreBusinessRepository {
       totals.set(deduction.ingredientId, (totals.get(deduction.ingredientId) ?? 0) + deduction.quantity);
     }
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'ingredients',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
-    const ingredientDocs: { ingredientId: string; quantity: number; ref: (typeof ingredientSnapshot.docs)[number] }[] = [];
-
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: ReturnType<typeof doc> }[] = [];
     for (const [ingredientId, quantity] of totals.entries()) {
-      const matching = ingredientSnapshot.docs.find((snapshot) => {
-        const stored = snapshot.data()['value'];
-        return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-      });
-      if (!matching) {
+      const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+      const matching = await getDoc(ingredientRef);
+      if (!matching.exists()) {
         throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
       }
-      ingredientDocs.push({ ingredientId, quantity, ref: matching });
+      ingredientDocs.push({ ingredientId, quantity, ref: ingredientRef });
     }
 
     const productionRef = collection(
@@ -249,14 +241,14 @@ export class FirestoreBusinessRepository {
 
       const currentIngredientSnapshots: DocumentSnapshot[] = [];
       for (const ingredientDoc of ingredientDocs) {
-        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref.ref));
+        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref));
       }
       const existingProductionSnapshot = await transaction.get(newProductionRef);
       if (existingProductionSnapshot.exists()) {
         throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
       }
 
-      const updates: { ref: (typeof ingredientDocs)[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
+      const updates: { ref: (typeof ingredientDocs)[number]['ref']; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
         const snapshot = currentIngredientSnapshots[index];
         if (!snapshot.exists()) {
@@ -275,7 +267,7 @@ export class FirestoreBusinessRepository {
         }
 
         updates.push({
-          ref: ingredientDoc.ref.ref,
+          ref: ingredientDoc.ref,
           index: Number(data['index'] ?? 0),
           value: { ...stored, stock: currentStock - ingredientDoc.quantity },
         });
