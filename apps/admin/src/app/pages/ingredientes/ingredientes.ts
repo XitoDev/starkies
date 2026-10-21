@@ -153,7 +153,7 @@ type InventoryDraft = { stock: number; minStock: number };
   template: `
     <div class="page-container inventory-page">
       <div class="page-heading">
-        <div><p class="eyebrow">Mi negocio / Compras e inventario</p><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient(ingredients()[0])" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
+        <div><p class="eyebrow">Mi negocio / Compras e inventario</p><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient()" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
       </div>
       @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
       <div class="inventory-table-wrap">
@@ -187,7 +187,7 @@ export class Inventario {
   readonly savingId = signal<string | null>(null);
   readonly notice = signal('');
 
-  buyIngredient(item: Ingredient): void { void this.router.navigate(['/finanzas'], { queryParams: { action: 'purchase', ingredientId: item.id } }); }
+  buyIngredient(item?: Ingredient): void { void this.router.navigate(['/finanzas'], { queryParams: item ? { action: 'purchase', ingredientId: item.id } : { action: 'purchase' } }); }
   draft(item: Ingredient): InventoryDraft { return this.drafts()[item.id] ?? { stock: item.stock, minStock: item.minStock ?? 0 }; }
   shortage(item: Ingredient): number { const draft = this.draft(item); return Math.max(0, draft.minStock - draft.stock); }
   updateDraft(item: Ingredient, field: 'stock' | 'minStock', value: string): void {
