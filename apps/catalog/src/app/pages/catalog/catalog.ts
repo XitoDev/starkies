@@ -1,5 +1,5 @@
 import { MatIconModule } from '@angular/material/icon';
-import { siInstagram, siTiktok, siWhatsapp } from 'simple-icons';
+import { siInstagram, siWhatsapp } from 'simple-icons';
 import { MatBottomSheet, MatBottomSheetModule, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { CatalogOrderSheetComponent } from './catalog-order-sheet';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,7 +17,7 @@ interface OrderConfirmation { id: string; total: number; documentUrl: string; wh
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatBottomSheetModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   readonly currentYear = new Date().getFullYear();
-  readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
+  readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram };
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
   zones: DeliveryZone[] = [];

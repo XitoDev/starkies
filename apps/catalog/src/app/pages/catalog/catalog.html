@@ -18,13 +18,9 @@
       <button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
     </section>
   }
-  <section class="hero" id="inicio-contenido" aria-labelledby="hero-title">
+  <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
     <div class="hero-copy">
-      <span class="eyebrow hero-eyebrow"><span aria-hidden="true">✦</span> GALLETAS HECHAS PARA TI</span>
-      <h1 id="hero-title">La estrella<br><em>eres tú.</em></h1>
-      <p>Elige tus sabores favoritos y crea una caja muy tuya.</p>
       <a matButton="elevated" class="hero-cta" href="#presentaciones">Arma tu caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
-      <span class="hero-note"><span aria-hidden="true">♡</span> Un antojo con tu propio brillo</span>
     </div>
     <div class="hero-art" aria-label="Ilustración de las mascotas de StarKies">
       <div class="hero-image-frame">
@@ -47,7 +43,7 @@
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id; let i = $index) {
         <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-          <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '✓' : '+' }}</span></span>
+          <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
           <span class="presentation-illustration" aria-hidden="true"><span class="cookie-dot cookie-dot-a"></span><span class="cookie-dot cookie-dot-b"></span><span class="cookie-dot cookie-dot-c"></span><span class="cookie-dot cookie-dot-d"></span><span class="cookie-dot cookie-dot-e"></span></span>
           <strong>@if (p.id === 'clasicas') { Solo clásicas } @else if (p.id === 'ny') { Solo New York } @else { Caja mixta }</strong>
           <span class="presentation-description">@if (p.id === 'clasicas') { 10 galletas } @else if (p.id === 'ny') { 6 galletas } @else { 4 clásicas + 4 New York }</span>
@@ -93,32 +89,40 @@
     </div>
   </section>
 </main>
-<footer class="site-footer" aria-label="Información y redes sociales de StarKies">
+<footer class="site-footer" aria-label="Información y contacto de StarKies">
   <div class="footer-brush" aria-hidden="true"></div>
-  <div class="footer-content">
-    <a href="#inicio" class="brand footer-brand" aria-label="StarKies, volver al inicio"><span class="wordmark">StarKies<span class="wordmark-star">✦</span></span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span><span class="footer-note">Galletitas con un brillo especial.</span></a>
-    <nav class="footer-links" aria-label="Enlaces de navegación"><span class="footer-label">EXPLORA</span><a href="#inicio-contenido">Inicio</a><a href="#presentaciones">Presentaciones</a><a href="#sabores">Sabores</a><a href="#como-pedir">Cómo pedir</a></nav>
-    <nav class="footer-social" aria-label="Redes sociales y contacto">
-      <span class="footer-label">SÍGUENOS</span>
-      <a matButton="text" class="footer-social-link" href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>WhatsApp</span></a>
-      <a matButton="text" class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en Instagram"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>Instagram</span></a>
-      <a matButton="text" class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en TikTok"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>TikTok</span></a>
-    </nav>
+  <div class="footer-content footer-contact-content">
+    <a href="#inicio" class="brand footer-brand" aria-label="StarKies, volver al inicio"><span class="wordmark">StarKies<span class="wordmark-star">✦</span></span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
+    <div class="footer-social">
+      <span class="footer-label">REDES SOCIALES</span>
+      <a class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>@starkies.ec</span></a>
+    </div>
+    <div class="footer-social">
+      <span class="footer-label">WHATSAPP</span>
+      <a class="footer-social-link" href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp al 0979075202"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>0979075202</span></a>
+    </div>
   </div>
-  <div class="footer-bottom"><small>© {{ currentYear }} StarKies. Todos los derechos reservados.</small><a href="#inicio">Volver arriba ↑</a></div>
+  <div class="footer-bottom"><small>© {{ currentYear }} StarKies. La estrella eres tú.</small><a href="#inicio">Volver arriba ↑</a></div>
 </footer>
 @if (totalBoxCurrent() > 0 || completedBoxes().length > 0) {
-  <aside class="cart-dock" aria-label="Resumen de tu caja">
+  <aside class="cart-dock" aria-label="Resumen de cajas y progreso">
     <div class="dock-card">
-      <div class="dock-progress">
-        <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
-        <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
-        <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
-        @if (!isBoxComplete()) { <small class="remaining-message">@if (selectedPresentation().reqClasicas > currentClasicasCount() && selectedPresentation().reqNY > currentNYCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} clásicas y {{ selectedPresentation().reqNY - currentNYCount() }} New York para completar tu caja. } @else if (selectedPresentation().reqClasicas > currentClasicasCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} galletas clásicas para completar tu caja. } @else { Te faltan {{ selectedPresentation().reqNY - currentNYCount() }} galletas New York para completar tu caja. }</small> }
+      @if (totalBoxCurrent() > 0) {
+        <div class="dock-progress current-box-progress">
+          <div class="dock-title"><strong>Caja actual</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ formatPresentationPrice(selectedPresentation().price) }}</span></div>
+          <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
+          <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
+          @if (!isBoxComplete()) { <small class="remaining-message">@if (selectedPresentation().reqClasicas > currentClasicasCount() && selectedPresentation().reqNY > currentNYCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} clásicas y {{ selectedPresentation().reqNY - currentNYCount() }} New York para completar tu caja. } @else if (selectedPresentation().reqClasicas > currentClasicasCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} galletas clásicas para completar tu caja. } @else { Te faltan {{ selectedPresentation().reqNY - currentNYCount() }} galletas New York para completar tu caja. }</small> }
+        </div>
+      }
+      @if (completedBoxes().length > 0) {
+        <div class="dock-saved-count"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja guardada' : 'cajas guardadas' }}</strong><span>Total: {{ formatPresentationPrice(boxesTotalSum()) }}</span></div>
+      }
+      <div class="dock-actions">
+        @if (isBoxComplete()) { <button matButton="elevated" type="button" class="dock-continue" (click)="finishBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : 'Añadir caja' }}</button> }
+        @else if (totalBoxCurrent() > 0 && completedBoxes().length === 0) { <button matButton="elevated" type="button" class="dock-continue" disabled>Completa tu caja</button> }
+        @if (completedBoxes().length > 0) { <button matButton="elevated" type="button" class="dock-order" (click)="openOrderSheet()">Ver mi pedido ({{ completedBoxes().length }})</button> }
       </div>
-      @if (isBoxComplete()) { <button matButton="elevated" type="button" class="dock-continue" (click)="finishBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : completedBoxes().length > 0 ? 'Añadir caja' : 'Continuar' }}</button> }
-      @else if (completedBoxes().length > 0) { <button matButton="elevated" type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
-      @else { <button matButton="elevated" type="button" class="dock-continue" disabled>Completa tu caja</button> }
     </div>
   </aside>
 }
