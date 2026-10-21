@@ -91,7 +91,7 @@
         </div>
         <div class="recipe-form-grid">
           <label class="recipe-field"><span>Nombre del sabor</span><input matInput required maxlength="100" [value]="form().name" (input)="setFormText('name', $any($event.target).value)" placeholder="Ej. Brownie" /></label>
-          <label class="recipe-field"><span>Categoría</span><select matNativeControl required [value]="form().category" (change)="setFormText('category', $any($event.target).value)"><option value="" disabled>Selecciona una categoría</option>@for (category of categories(); track category) { <option [value]="category">{{ category }}</option> }</select></label>
+          <label class="recipe-field"><span>Categoría</span><input matInput required maxlength="80" list="recipe-category-options" [value]="form().category" (input)="setFormText('category', $any($event.target).value)" placeholder="Ej. Galletas clásicas" /><datalist id="recipe-category-options">@for (category of categories(); track category) { <option [value]="category"></option> }</datalist></label>
           <p class="form-hint form-field-full">Selecciona una de las categorías existentes del negocio.</p>
           <label class="recipe-field"><span>Peso de venta por galleta (g) · opcional</span><input matInput type="number" min="1" max="1000" step="1" [value]="form().gramsPerCookie ?? ''" (input)="setFormNumber('gramsPerCookie', $any($event.target).value)" placeholder="Ej. 30 o 60" /></label>
           <label class="recipe-field"><span>Tipo de receta</span><select matNativeControl [value]="form().kind" (change)="setRecipeKind($any($event.target).value)"><option value="own">Receta única · masa propia</option><option value="base">Con masa base</option></select></label>
