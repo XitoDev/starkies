@@ -151,8 +151,13 @@ export class FirestoreBusinessRepository {
     // Updating an existing recipe/product must not download the entire
     // collection. Query its indexed ID first; the full ordered snapshot is
     // needed only when appending a brand-new record to preserve its index.
-    const matchingSnapshot = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
-    const matching = matchingSnapshot.docs[0];
+    const matchingById = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
+    // Some legacy records (for example imported ingredients) are keyed by code.
+    // Preserve the old id-or-code matching semantics without downloading the whole collection.
+    const matchingByCode = matchingById.empty
+      ? await getDocs(query(recordsRef, where('value.code', '==', recordId)))
+      : null;
+    const matching = matchingById.docs[0] ?? matchingByCode?.docs[0];
 
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
