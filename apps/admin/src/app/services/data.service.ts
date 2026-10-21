@@ -491,11 +491,24 @@ export class DataService {
             qty: line['qty'],
             price: line['price'] ?? 0,
           })));
+      const zone = this.asOptionalString(item['zone'] ?? item['deliveryZone'] ?? item['deliveryArea']);
+      const shippingLine = lines.find(line => this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase() === 'shipping'
+        || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
+      const shippingFee = this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? shippingLine?.['price'] ?? 0);
+      const rawAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
+      const addressPrefix = zone ? zone + ' — ' : '';
+      const deliveryAddress = rawAddress?.startsWith(addressPrefix) && addressPrefix
+        ? rawAddress.slice(addressPrefix.length)
+        : rawAddress;
+      const cookieLines = lines.filter(line => {
+        const id = this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase();
+        return id !== 'shipping' && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío');
+      });
 
       return {
         id: this.asString(item['id'] ?? item['code']),
         customerId: customerKey,
-        items: lines.map((line) => ({
+        items: cookieLines.map((line) => ({
           recipeId: this.asString(line['id'] ?? line['recipeId']),
           name: this.asOptionalString(line['name']),
           quantity: this.asNumber(line['qty'] ?? line['quantity']),
@@ -505,13 +518,14 @@ export class DataService {
         status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
         createdAt: this.asString(item['createdAt'] ?? item['created'] ?? item['date']),
         deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['scheduledDeliveryDate'] ?? item['date']),
-        deliveryMethod: this.asOptionalString(item['deliveryMethod'] ?? item['deliveryType'] ?? item['deliveryOption']),
-        deliveryAddress: this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']),
+        deliveryMethod: this.asOptionalString(item['deliveryMethod'] ?? item['deliveryType'] ?? item['deliveryOption'])
+          ?? (zone?.toLocaleLowerCase() === 'retiro en tienda' ? 'Retiro en tienda' : zone ? 'Entrega a domicilio' : undefined),
+        deliveryAddress,
         deliveryTime: this.asOptionalString(item['deliveryTime'] ?? item['deliverySlot']),
-        zone: this.asOptionalString(item['zone'] ?? item['deliveryZone'] ?? item['deliveryArea']),
+        zone,
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
-        shippingFee: this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? 0),
+        shippingFee,
         isPaid: item['isPaid'] === true || item['paymentStatus'] === 'PAID' || item['paymentStatus'] === 'paid',
         paymentMethod: this.normalizePaymentMethod(this.asString(item['paymentMethod'] ?? item['paymentType'])),
       };
