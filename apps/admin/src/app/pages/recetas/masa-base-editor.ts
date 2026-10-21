@@ -61,7 +61,7 @@ type BaseRow = { ingredientId: string; quantity: number | null };
         <label class="field">Notas de la base
           <textarea rows="3" maxlength="1500" name="notes" [(ngModel)]="notes"></textarea>
         </label>
-        <footer><a matButton="outlined" class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cancelar</a><button matButton="outlined" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button></footer>
+        <footer><a matButton="outlined" class="secondary" routerLink="/recetas" [queryParams]="{vista:'masas-base'}">Cancelar</a><button matButton="elevated" class="primary" type="submit" [disabled]="saving() || (editing() && !base())">{{ saving() ? 'Guardando…' : 'Guardar masa base' }}</button></footer>
       </form>
     </section>
   `,
