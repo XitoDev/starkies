@@ -59,7 +59,6 @@
                   <div><span>Precio / unidad</span><strong>{{ recipe.price | currency:'USD' }}</strong></div>
                 </div>
                 <div class="profit-line"><span>Ganancia / unidad</span><strong [class.negative]="recipe.price < currentRecipeCost(recipe)">{{ (recipe.price - currentRecipeCost(recipe)) | currency:'USD' }}</strong></div>
-                <p class="margin-line">Margen sobre venta: {{ recipe.price > 0 ? (((recipe.price - currentRecipeCost(recipe)) / recipe.price) * 100 | number:'1.0-1') : '0' }} %</p>
               </div>
             </article>
           }

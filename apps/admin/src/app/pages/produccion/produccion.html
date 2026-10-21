@@ -96,7 +96,7 @@
 
       <div class="production-form">
         <label class="form-field form-field-wide">
-          <span>Receta *</span>
+          <span>Receta</span>
           <select matNativeControl [value]="selectedRecipeId()" (change)="selectedRecipeId.set($any($event.target).value)">
             @for (recipe of activeRecipes(); track recipe.id) {
               <option [value]="recipe.id">{{ recipe.name }} · {{ recipe.yield }} uds por lote</option>
