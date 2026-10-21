@@ -89,7 +89,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       deliveryDate: order.deliveryDate,
       created: createdAt,
       createdAt,
-      cookieName: order.cookieName || order.name,
+      cookieName: order.cookieName || 'N/A',
       notes: order.notes,
       status: 'PENDING',
       total: order.total,
@@ -157,7 +157,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }, { merge: true });
     });
 
-    res.status(201).json({ ok: true, orderId, total: order.total, documentToken, documentExpiresAt });
+    res.status(201).json({ ok: true, orderId, total: order.total });
   } catch (error) {
     if (error instanceof HttpError) {
       res.status(error.statusCode).json({ message: error.message });
