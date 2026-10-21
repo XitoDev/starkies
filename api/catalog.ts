@@ -1,6 +1,6 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { readPublicCatalog, syncPublicCatalogProjection } from './catalog-data.js';
+import { readPublicCatalog } from './catalog-data.js';
 
 interface ApiRequest { method?: string; }
 interface ApiResponse {
@@ -20,7 +20,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   try {
     const db = getDatabase();
     const catalog = await readPublicCatalog(db);
-    await syncPublicCatalogProjection(db, catalog);
     res.status(200).json(catalog);
   } catch (error) {
     console.error('Public catalog synchronization failed:', error);
