@@ -185,6 +185,16 @@ export class FirestoreBusinessRepository {
           if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
         }
       }
+      if (quantities.size === 0) {
+        const lineItems = Array.isArray(previousOrder['lines']) ? previousOrder['lines']
+          : Array.isArray(previousOrder['items']) ? previousOrder['items'] : [];
+        for (const rawItem of lineItems) {
+          if (!this.isRecord(rawItem)) continue;
+          const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
+          const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
+          if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
+        }
+      }
     }
     const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
     await runTransaction(this.firebase.firestore, async transaction => {
