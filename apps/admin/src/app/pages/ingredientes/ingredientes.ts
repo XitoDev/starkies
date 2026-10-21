@@ -36,6 +36,7 @@ export class Ingredientes {
   readonly formError = signal('');
   readonly notice = signal('');
   readonly form = signal<IngredientForm>(this.emptyForm());
+  readonly brands = computed(() => Array.from(new Set(this.ingredients().map(item => item.brand?.trim()).filter((brand): brand is string => Boolean(brand)))).sort((a, b) => a.localeCompare(b, 'es')));
 
   readonly filteredIngredients = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('es');
@@ -80,6 +81,7 @@ export class Ingredientes {
 
   closeForm(): void { if (!this.saving()) { this.formOpen.set(false); this.formError.set(''); } }
   updateTextField(field: 'name' | 'brand', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
+  selectBrand(value: string): void { this.form.update(current => ({ ...current, brand: value })); }
   updateNumberField(field: 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.form.update(current => ({ ...current, [field]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
