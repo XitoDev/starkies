@@ -17,7 +17,7 @@ interface ApiResponse {
 interface OrderLine { id?: unknown; name?: unknown; qty?: unknown; quantity?: unknown; price?: unknown; }
 interface OrderBoxItem { name?: unknown; quantity?: unknown; }
 interface OrderBox { presentationName?: unknown; title?: unknown; price?: unknown; items?: unknown; }
-interface StoredOrder {
+export interface StoredOrder {
   id?: unknown;
   code?: unknown;
   customer?: unknown;
@@ -105,7 +105,7 @@ function verifyToken(token: string, signingKey: string): { orderId: string } | n
   const [orderId, expiryRaw, suppliedSignature] = parts;
   if (!/^SK-\d{8}-[A-F0-9]{6}$/.test(orderId) || !/^\d{13}$/.test(expiryRaw) || !/^[a-f0-9]{64}$/.test(suppliedSignature)) return null;
   const expiry = Number(expiryRaw);
-  if (!Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + 8 * 24 * 60 * 60 * 1000) return null;
+  if (!Number.isSafeInteger(expiry) || expiry <= Date.now() || expiry > Date.now() + 3 * 24 * 60 * 60 * 1000) return null;
   const payload = orderId + '.' + expiryRaw;
   const expected = createHmac('sha256', signingKey).update(payload).digest();
   const supplied = Buffer.from(suppliedSignature, 'hex');
@@ -129,7 +129,7 @@ function getDatabase() {
   return getFirestore(app);
 }
 
-function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
+export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   const commands: string[] = [];
   const purple = '0.47 0.35 0.67';
   const dark = '0.20 0.18 0.25';
@@ -150,6 +150,7 @@ function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   rect(0, 690, 595, 152, pale);
   rect(0, 690, 8, 152, purple);
   drawText('StarKies.', 42, 800, 23, 'F2', purple);
+  drawText('L A   E S T R E L L A   E R E S   T Ú', 43, 784, 6, 'F1', muted);
   drawText(formatDate(order.createdAt ?? order.created ?? safeDate), 440, 803, 9, 'F1', muted);
   drawText('PEDIDO', 42, 758, 17, 'F2', dark);
   rect(385, 747, 168, 27, '0.90 0.86 0.95');
@@ -161,7 +162,7 @@ function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   drawText('Cliente', 56, 675, 8, 'F2', muted);
   drawText(order.customer, 56, 658, 10, 'F2');
   drawText('En la caja', 310, 675, 8, 'F2', muted);
-  drawText(order.cookieName ?? order.customer, 310, 658, 10);
+  drawText(order.cookieName || 'N/A', 310, 658, 10);
   drawText('Teléfono', 56, 631, 8, 'F2', muted);
   drawText(order.phone, 56, 614, 10);
   drawText('Sector / punto', 310, 631, 8, 'F2', muted);

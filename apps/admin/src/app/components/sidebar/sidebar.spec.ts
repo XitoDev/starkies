@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -9,15 +10,17 @@ describe('Sidebar', () => {
   let component: Sidebar;
   let fixture: ComponentFixture<Sidebar>;
   let signOutSpy: ReturnType<typeof vi.fn>;
+  let ordersSignal: ReturnType<typeof signal<{ status: string }[]>>;
 
   beforeEach(async () => {
     signOutSpy = vi.fn().mockResolvedValue(undefined);
+    ordersSignal = signal([{ status: 'PENDING' }]);
     await TestBed.configureTestingModule({
       imports: [Sidebar],
       providers: [
         provideRouter([]),
         { provide: FirebaseClientService, useValue: { signOut: signOutSpy } },
-        { provide: DataService, useValue: { exportBackup: vi.fn() } },
+        { provide: DataService, useValue: { exportBackup: vi.fn(), orders: ordersSignal } },
       ],
     }).compileComponents();
 
@@ -46,6 +49,18 @@ describe('Sidebar', () => {
     expect(storeLink.textContent).toContain('Mi tienda');
     expect(storeLink.textContent).not.toContain('Ver catálogo público');
     expect(storeLink.querySelector('mat-icon')?.textContent?.trim()).toBe('shopping_cart');
+  });
+
+
+  it('shows the pending order count and hides the badge when the count reaches zero', () => {
+    let badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
+    expect(badge.textContent?.trim()).toBe('1');
+    expect(badge.getAttribute('aria-label')).toBe('1 pedidos pendientes');
+
+    ordersSignal.set([]);
+    fixture.detectChanges();
+    badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
+    expect(badge).toBeNull();
   });
 
   it('signs out of Firebase and navigates to login', async () => {

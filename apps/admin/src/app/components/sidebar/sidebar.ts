@@ -1,5 +1,5 @@
 import { MatButtonModule } from '@angular/material/button';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,6 +19,7 @@ export class Sidebar {
   private router = inject(Router);
   private firebase = inject(FirebaseClientService);
 
+  readonly pendingOrderCount = computed(() => this.dataService.orders().filter(order => order.status === 'PENDING').length);
   readonly loggingOut = signal(false);
   readonly logoutMessage = signal('');
   navItems = [

@@ -5,5 +5,11 @@
   "outputDirectory": "dist/catalog/browser",
   "git": {
     "deploymentEnabled": false
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/p/:code",
+      "destination": "/api/order-short?code=:code"
+    }
+  ]
 }
