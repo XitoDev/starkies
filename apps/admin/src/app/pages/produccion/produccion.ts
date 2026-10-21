@@ -317,6 +317,10 @@ export class Produccion {
       batches,
       totalYield: this.estimatedYield(),
       calculatedCost: this.estimatedCost(),
+      baseInventoryId: recipe?.baseId ? `base:${recipe.baseId}` : '',
+      baseGramsConsumed: recipe?.baseId
+        ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * Math.max(1, recipe.yield) * batches
+        : 0,
       status: 'COMPLETED',
     };
     const deductions = this.requirements().map(({ ingredientId, quantity }) => ({ ingredientId, quantity }));
@@ -326,20 +330,6 @@ export class Produccion {
     this.notice.set('');
     try {
       await this.dataService.recordProduction(record, deductions);
-      const state = this.dataService.rawState();
-      const rawInventory = state?.['finishedProductInventory'];
-      const inventoryRows = Array.isArray(rawInventory) ? rawInventory.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
-      const inventoryMap = new Map(inventoryRows.map(item => [String(item['id'] ?? item['recipeId'] ?? ''), this.asNumber(item['quantity'])]));
-      inventoryMap.set(outputId, (inventoryMap.get(outputId) ?? 0) + this.estimatedYield());
-      const baseGramsConsumed = recipe?.baseId
-        ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * Math.max(1, recipe.yield) * batches
-        : 0;
-      if (recipe?.baseId && baseGramsConsumed > 0) {
-        const baseStockId = `base:${recipe.baseId}`;
-        inventoryMap.set(baseStockId, (inventoryMap.get(baseStockId) ?? 0) - baseGramsConsumed);
-      }
-      const nextInventory = Array.from(inventoryMap.entries()).map(([id, quantity]) => ({ id, quantity, updatedAt: new Date().toISOString() }));
-      await this.dataService.saveBusinessSetting('finishedProductInventory', nextInventory);
       this.formOpen.set(false);
       this.notice.set('Producción registrada. Se actualizaron las existencias y los insumos se descontaron incluso si quedan negativos.');
     } catch (error) {
