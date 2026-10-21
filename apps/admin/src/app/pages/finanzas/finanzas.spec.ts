@@ -1,6 +1,8 @@
 import { signal, WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { of } from 'rxjs';
 import { Ingredient } from 'shared';
 import { DataService } from '../../services/data.service';
 import { Finanzas } from './finanzas';
@@ -33,7 +35,11 @@ describe('Finanzas', () => {
 
     await TestBed.configureTestingModule({
       imports: [Finanzas],
-      providers: [{ provide: DataService, useValue: dataServiceStub }],
+      providers: [
+        { provide: DataService, useValue: dataServiceStub },
+        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
+        { provide: Router, useValue: { navigate: vi.fn().mockResolvedValue(true) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Finanzas);

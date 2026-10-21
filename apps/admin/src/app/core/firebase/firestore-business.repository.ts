@@ -139,6 +139,10 @@ export class FirestoreBusinessRepository {
       throw new Error(this.firebase.configurationMessage);
     }
 
+    // Firestore rejects undefined anywhere in a document. Optional UI/model fields
+    // can explicitly be undefined (for example packageQuantityGrams or notes),
+    // so normalize the payload once at the persistence boundary.
+    const safeValue = this.removeUndefinedFields(value);
     const recordsRef = collection(
       this.firebase.firestore,
       'businesses', 'starkies', 'collections', collectionKey, 'records',
@@ -152,7 +156,7 @@ export class FirestoreBusinessRepository {
 
     if (matching) {
       const index = Number(matching.data()['index'] ?? 0);
-      await setDoc(matching.ref, { index, value });
+      await setDoc(matching.ref, { index, value: safeValue });
       this.invalidateStateCache();
       return;
     }
@@ -164,7 +168,7 @@ export class FirestoreBusinessRepository {
     const nextIndex = maxIndex + 1;
     await setDoc(doc(recordsRef, String(nextIndex).padStart(6, '0')), {
       index: nextIndex,
-      value,
+      value: safeValue,
     });
     this.invalidateStateCache();
   }
@@ -629,6 +633,26 @@ export class FirestoreBusinessRepository {
     if (conflicts.length) {
       throw new Error(`Ya hay datos en Firebase (${conflicts.slice(0, 5).join(', ')}). Se canceló la importación para no sobrescribirlos.`);
     }
+  }
+
+  /**
+   * Recursively removes undefined object properties before sending values to
+   * Firestore. Undefined array slots become null to preserve array positions.
+   * Non-plain objects (Date, Firestore Timestamp, etc.) are preserved.
+   */
+  private removeUndefinedFields<T>(value: T): T {
+    if (Array.isArray(value)) {
+      return value.map((item) => item === undefined ? null : this.removeUndefinedFields(item)) as T;
+    }
+    if (value === null || typeof value !== 'object') return value;
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) return value;
+
+    const result: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      if (child !== undefined) result[key] = this.removeUndefinedFields(child);
+    }
+    return result as T;
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {

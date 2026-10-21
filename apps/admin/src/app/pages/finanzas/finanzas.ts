@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -43,6 +44,8 @@ type LedgerActionForm = { amount: number; description: string; date: string; fro
 })
 export class Finanzas {
   private readonly dataService = inject(DataService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly ingredients = this.dataService.ingredients;
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
@@ -147,6 +150,13 @@ export class Finanzas {
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
+    this.route.queryParamMap.subscribe(params => {
+      if (params.get('action') !== 'purchase') return;
+      const ingredientId = params.get('ingredientId') ?? '';
+      this.openPurchaseForm();
+      this.purchaseForm.update(current => ({ ...current, ingredientId }));
+      void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    });
     effect(() => {
       const state = this.dataService.rawState();
       if (!state || this.salesSyncInProgress()) return;

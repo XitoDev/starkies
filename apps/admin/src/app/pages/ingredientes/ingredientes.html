@@ -31,11 +31,11 @@
               <td><strong>{{ ingredient.name }}</strong></td>
               <td>{{ ingredient.brand || '—' }}</td>
               <td>{{ packageQuantity(ingredient) | number:'1.0-3' }} g</td>
-              <td>{{ packagePrice(ingredient) | currency:'USD' }}</td>
-              <td><strong class="cost-per-gram">{{ costPerGram(ingredient) | currency:'USD' }}/g</strong></td>
+              <td>{{ packagePrice(ingredient) | currency:'USD':'symbol':'1.4-6' }}</td>
+              <td><strong class="cost-per-gram">{{ costPerGram(ingredient) | currency:'USD':'symbol':'1.4-6' }}/g</strong></td>
               <td class="supply-actions">
-                <button matIconButton type="button" aria-label="Editar insumo" (click)="openEditIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">edit</mat-icon></button>
-                <button matIconButton type="button" class="delete-menu-action" aria-label="Eliminar insumo" (click)="removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">delete</mat-icon></button>
+                <button matIconButton class="ingredient-action-button" type="button" aria-label="Editar insumo" (click)="openEditIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">edit</mat-icon></button>
+                <button matIconButton class="ingredient-action-button delete-menu-action" type="button" aria-label="Eliminar insumo" (click)="removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">delete</mat-icon></button>
               </td>
             </tr>
           }
@@ -56,10 +56,10 @@
       </div>
       <form class="ingredient-form" (submit)="submitForm($event)">
         <label class="form-field form-field-wide"><span>Ingrediente</span><input matInput required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" /></label>
-        <label class="form-field form-field-wide"><span>Marca</span><input matInput maxlength="120" [value]="form().brand" (input)="updateTextField('brand', $any($event.target).value)" placeholder="Ej. Marca del fabricante" /></label>
+        <label class="form-field form-field-wide"><span>Marca</span><input matInput list="ingredient-brand-options" maxlength="120" [value]="form().brand" (input)="updateTextField('brand', $any($event.target).value)" placeholder="Elige una marca o escribe una nueva" /><datalist id="ingredient-brand-options">@for (brand of brands(); track brand) { <option [value]="brand"></option> }</datalist></label>
         <label class="form-field"><span>Cantidad del empaque (gramos)</span><input matInput required type="number" min="0.001" step="any" [value]="form().packageQuantityGrams" (input)="updateNumberField('packageQuantityGrams', $any($event.target).value)" placeholder="Ej. 1000" /></label>
         <label class="form-field"><span>Precio del empaque (USD)</span><input matInput required type="number" min="0" step="0.0001" [value]="form().packagePrice" (input)="updateNumberField('packagePrice', $any($event.target).value)" placeholder="Ej. 2.50" /></label>
-        <div class="cost-preview form-field-wide"><span>Costo calculado por gramo</span><strong>{{ costPerGramFromForm() | currency:'USD' }}/g</strong></div>
+        <div class="cost-preview form-field-wide"><span>Costo calculado por gramo</span><strong>{{ costPerGramFromForm() | currency:'USD':'symbol':'1.4-6' }}/g</strong></div>
         @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
         <div class="modal-actions">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>

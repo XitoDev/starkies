@@ -31,3 +31,12 @@
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
 
 .modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}
+
+/* Ingredient row actions: compact Material icon buttons with subtle hover feedback. */
+.supply-actions{white-space:nowrap;display:flex;align-items:center;justify-content:flex-end;gap:3px}
+.supply-actions .ingredient-action-button{width:30px;height:30px;min-width:30px;padding:5px;border-radius:9px;color:#806b91}
+.supply-actions .ingredient-action-button mat-icon{width:17px;height:17px;font-size:17px;line-height:17px}
+.supply-actions .ingredient-action-button:hover{background:#f0e7f7;color:#704795}
+.supply-actions .ingredient-action-button.delete-menu-action{color:#a45b64}
+.supply-actions .ingredient-action-button.delete-menu-action:hover{background:#fff0f0;color:#a13443}
+.cost-per-gram{font-variant-numeric:tabular-nums;white-space:nowrap}
