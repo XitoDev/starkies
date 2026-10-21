@@ -73,6 +73,20 @@
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.business-card.mat-mdc-unelevated-button {
+  min-width: 0;
+  padding: 0 15px;
+  justify-content: flex-start;
+}
+
+.business-card.mat-mdc-unelevated-button .mdc-button__label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 13px;
+  width: 100%;
+}
+
 .business-card:hover {
   border-color: #6d4697;
   background: #6d4697;
@@ -201,13 +215,40 @@
   cursor: pointer;
 }
 
+.settings-trigger.mat-mdc-button {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 15px;
+  justify-content: flex-start;
+  text-align: left;
+  color: #8d8295;
+  --mdc-text-button-label-text-color: #8d8295;
+  --mat-text-button-state-layer-color: #8d8295;
+}
+
+.settings-trigger.mat-mdc-button .mdc-button__label {
+  display: flex;
+  color: #8d8295;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 13px;
+  width: 100%;
+}
+
 .settings-trigger:hover,
 .settings-trigger.mat-mdc-button:hover {
   background: #faf7fc;
-  color: #7951a5;
+  color: #8d8295;
+}
+
+.settings-trigger.mat-mdc-button:hover .mdc-button__label,
+.settings-trigger.mat-mdc-button:hover > mat-icon:first-child {
+  color: #8d8295;
 }
 
 .settings-trigger > mat-icon:first-child {
+  color: #8d8295;
   flex: 0 0 20px;
   width: 20px;
   height: 20px;
@@ -268,11 +309,22 @@
     justify-content: center;
   }
 
+  .business-card.mat-mdc-unelevated-button {
+    padding: 0;
+  }
+
+  .business-card.mat-mdc-unelevated-button .mdc-button__label {
+    justify-content: center;
+    width: auto;
+  }
+
   .business-external { display: block; }
 
   .sidebar-nav { width: 100%; }
   .nav-item { justify-content: center; padding: 0; }
   .nav-icon { flex-basis: 22px; width: 22px; height: 22px; }
-  .settings-trigger { justify-content: center; padding: 0; }
+  .settings-trigger,
+  .settings-trigger.mat-mdc-button { justify-content: center; padding: 0; }
+  .settings-trigger.mat-mdc-button .mdc-button__label { justify-content: center; }
   .settings-trigger > mat-icon:first-child { margin: 0; }
 }
