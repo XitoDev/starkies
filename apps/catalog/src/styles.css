@@ -565,3 +565,5 @@ app-catalog .main-nav a[matButton], app-catalog .main-nav button[matButton] { mi
   app-catalog .dock-actions { grid-template-columns: 1fr; }
   app-catalog main { padding-bottom: 170px; }
 }
+
+@media (max-width: 700px) { app-catalog .site-footer { padding-bottom: calc(105px + env(safe-area-inset-bottom)); } app-catalog .dock-actions:has(.dock-order:only-child) { grid-template-columns: 1fr; } }
