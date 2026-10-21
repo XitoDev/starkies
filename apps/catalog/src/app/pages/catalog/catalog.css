@@ -50,6 +50,7 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .presentation-top svg { color:#715579; }
 .presentation-check { position:absolute; top:12px; right:12px; display:grid; width:24px; height:24px; place-items:center; color:transparent; border:0; border-radius:50%; font-size:14px; font-weight:800; }
 .box-presentations button.active .presentation-check { color:#fff; background:#795381; }
+.box-presentations .presentation-check:empty { display:none; }
 .box-presentations button { position:relative; text-align:center; }
 .box-presentations button strong,.box-presentations .presentation-description,.box-presentations .box-price { padding-inline:8px; }
 .box-presentations strong { display:block; font-size:13px; line-height:1.4; }
@@ -74,9 +75,9 @@ main { padding-bottom:170px; position:relative; z-index:1; }
 .product-body p { min-height:42px; margin:0 0 16px; color:#7b7180; font-size:11px; line-height:1.65; }
 .buy { display:flex; align-items:center; gap:10px; margin-top:auto; }
 .buy button { width:100%; min-height:42px; padding:8px 12px; color:#68416f; border:0; border-radius:10px; background:#ead9ed; font-size:11px; font-weight:700; }
-.buy button.add-button { display:flex; flex-direction:row-reverse; align-items:center; justify-content:space-between; gap:10px; color:#68416f; border:0; background:#ead9ed; }
+.buy button.add-button { display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:10px; color:#68416f; border:0; background:#ead9ed; }
 .add-button .add-icon { display:grid; width:24px; height:24px; place-items:center; margin:0; border-radius:50%; color:#68416f; background:transparent; }
-.add-button .add-label { margin-left:auto; text-align:left; }
+.add-button .add-label { margin-right:auto; text-align:left; }
 .buy .quantity { min-height:42px; padding:3px; border:0; background:#ead9ed; }
 .buy .quantity button { display:grid; width:32px; min-height:32px; place-items:center; padding:0; border:0; border-radius:8px; background:#f8eff9; }
 .buy .quantity b { min-width:20px; text-align:center; }
