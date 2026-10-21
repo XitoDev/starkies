@@ -1054,3 +1054,6 @@ app-catalog .sheet-close{background:#DFE6B0;color:#543A55}
   app-catalog main{padding-bottom:180px}
 }
 @media(max-width:380px){app-catalog .products,app-catalog .footer-content{grid-template-columns:1fr}app-catalog .hero h1{font-size:2.9rem}}
+
+/* Prevent the legacy category divider pseudo-element from duplicating the new heading rule. */
+app-catalog .category-title::after { content: none !important; display: none !important; }
