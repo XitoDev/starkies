@@ -217,9 +217,21 @@ export class Produccion {
     this.requirements().filter(item => !item.ingredient || item.ingredient.stock < item.quantity),
   );
 
-  readonly estimatedCost = computed(() =>
-    this.requirements().reduce((total, item) => total + (item.ingredient?.costPerUnit ?? 0) * item.quantity, 0),
-  );
+  readonly estimatedCost = computed(() => {
+    const additionsCost = this.requirements().reduce((total, item) => total + (item.ingredient?.costPerUnit ?? 0) * item.quantity, 0);
+    const recipe = this.selectedRecipe();
+    if (!recipe?.baseId) return additionsCost;
+    const base = this.doughBases().find(item => item.id === recipe.baseId);
+    if (!base || base.weight <= 0) return additionsCost;
+    const baseItems = base.ingredients ?? base.items ?? [];
+    const baseBatchCost = baseItems.reduce((total, item) => {
+      const ingredientId = String(item['ingredientId'] ?? item['id'] ?? '');
+      const ingredient = this.ingredients().find(entry => entry.id === ingredientId);
+      return total + (ingredient?.costPerUnit ?? 0) * this.asNumber(item['quantity'] ?? item['qty']);
+    }, 0);
+    const gramsNeeded = this.asNumber(recipe.baseGramsPerCookie) * Math.max(1, recipe.yield) * this.batchCount();
+    return additionsCost + (baseBatchCost / base.weight) * gramsNeeded;
+  });
 
   readonly estimatedYield = computed(() => this.productionType() === 'base'
     ? (this.selectedBase()?.weight ?? 0) * this.batchCount()
