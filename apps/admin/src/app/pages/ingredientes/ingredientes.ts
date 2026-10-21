@@ -97,7 +97,7 @@ export class Ingredientes {
       const sameDimension = oldOption?.dimension === option.dimension;
       const convertedQuantity = sameDimension
         ? current.packageQuantityGrams * this.packageUnitFactor(current.packageUnit) / this.packageUnitFactor(option.value)
-        : current.packageQuantityGrams;
+        : 1;
       return { ...current, packageQuantityGrams: convertedQuantity, unit: nextBaseUnit, packageUnit: option.value };
     });
   }
