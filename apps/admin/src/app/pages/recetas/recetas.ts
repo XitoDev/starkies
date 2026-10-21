@@ -8,11 +8,10 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { getDownloadURL, getStorage, ref, uploadBytesResumable } from 'firebase/storage';
 import { DataService } from '../../services/data.service';
 import { Recipe, RecipeSection, Ingredient } from 'shared';
 import { RecipeImageService } from '../../services/recipe-image.service';
-import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
+import { ImageCdnUploadService } from '../../services/image-cdn-upload.service';
 import { MasasBaseList } from './masas-base-list';
 
 type RecipeSort = 'nameAsc' | 'nameDesc' | 'yieldDesc' | 'priceDesc';
@@ -36,7 +35,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 export class Recetas {
   private readonly dataService = inject(DataService);
   private readonly recipeImageService = inject(RecipeImageService);
-  private readonly firebase = inject(FirebaseClientService);
+  private readonly imageUpload = inject(ImageCdnUploadService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -245,8 +244,8 @@ export class Recetas {
   async onPhotoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement, file = input.files?.[0];
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      this.formError.set('Elige una imagen JPG, PNG o WebP de hasta 5 MB.'); input.value = ''; return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 3 * 1024 * 1024) {
+      this.formError.set('Elige una imagen JPG, PNG o WebP de hasta 3 MB.'); input.value = ''; return;
     }
     this.selectedFile.set(file); this.imagePreview.set(URL.createObjectURL(file)); this.formError.set('');
   }
@@ -254,31 +253,12 @@ export class Recetas {
   async uploadPhoto(recipeId: string): Promise<string> {
     const file = this.selectedFile();
     if (!file) return this.form().image;
-    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     this.uploadingImage.set(true);
     try {
-      const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-      const storageRef = ref(getStorage(this.firebase.app), 'recipe-images/' + recipeId + '/' + crypto.randomUUID() + '.' + extension);
-      const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
-      const result = await new Promise<import('firebase/storage').UploadTaskSnapshot>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          task.cancel();
-          reject(new Error('La carga de la foto tardó demasiado. Revisa la configuración CORS de Firebase Storage y vuelve a intentarlo.'));
-        }, 20000);
-        task.then(snapshot => { clearTimeout(timeout); resolve(snapshot); })
-          .catch(error => { clearTimeout(timeout); reject(error); });
-      });
-      return await getDownloadURL(result.ref);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error ?? '');
-      if (/storage\/unauthorized|permission/i.test(message)) {
-        throw new Error('Firebase Storage rechazó la foto. Comprueba que hayas iniciado sesión con una cuenta administradora autorizada.');
-      }
-      if (/cors|preflight|network|failed to fetch/i.test(message)) {
-        throw new Error('No se pudo subir la foto por un error de red/CORS de Firebase Storage. La receta no se guardó. Revisa la configuración CORS del bucket starkies.firebasestorage.app.');
-      }
-      throw error;
-    } finally { this.uploadingImage.set(false); }
+      return await this.imageUpload.upload(file, 'recipe', recipeId);
+    } finally {
+      this.uploadingImage.set(false);
+    }
   }
   async saveRecipe(): Promise<void> {
     const form = this.form();
@@ -332,7 +312,7 @@ export class Recetas {
       await Promise.race([
         this.dataService.saveRecipe(recipe),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error(
-          'Firebase no respondió después de 25 segundos. El resultado del guardado es incierto: comprueba si la receta cambió antes de volver a guardar. Si ves ERR_BLOCKED_BY_CLIENT, prueba sin extensiones de bloqueo; si aparece CORS, corrige la configuración del bucket de Firebase Storage.'
+          'Firestore no respondió después de 25 segundos. Comprueba si la receta se guardó antes de volver a intentarlo. Las fotografías nuevas se publican mediante el CDN, no mediante Firebase Storage.'
         )), 25000)),
       ]);
       this.editorOpen.set(false); this.notice.set(this.editingId() ? 'Receta actualizada correctamente.' : 'Receta creada correctamente.');
