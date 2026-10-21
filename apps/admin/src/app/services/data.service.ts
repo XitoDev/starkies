@@ -396,13 +396,19 @@ export class DataService {
 
       const rawSections = this.asArray(item['sections']);
       const sections = rawSections.length
-        ? rawSections.map((section) => ({
-            name: this.asString(section['name'], 'masa'),
-            ingredients: this.asArray(section['ingredients']).map((ingredient) => ({
-              ingredientId: this.asString(ingredient['ingredientId']),
-              quantity: this.asNumber(ingredient['quantity']),
-            })),
-          }))
+        ? rawSections.map((section) => {
+            const name = this.asString(section['name'], 'masa');
+            const storedIngredients = this.asArray(section['ingredients']).map((ingredient) => ({
+              ingredientId: this.asString(ingredient['ingredientId'] ?? ingredient['id']),
+              quantity: this.asNumber(ingredient['quantity'] ?? ingredient['qty']),
+            })).filter(ingredient => ingredient.ingredientId && ingredient.quantity > 0);
+            // Older recipes may have empty section shells while the formula
+            // still lives in the flattened items array. Restore those rows.
+            const legacyIngredients = Array.from(grouped.entries())
+              .filter(([legacyName]) => legacyName.trim().toLocaleLowerCase('es') === name.trim().toLocaleLowerCase('es'))
+              .flatMap(([, ingredients]) => ingredients);
+            return { name, ingredients: storedIngredients.length ? storedIngredients : legacyIngredients };
+          })
         : Array.from(grouped.entries()).map(([name, ingredients]) => ({ name, ingredients }));
 
       return {
