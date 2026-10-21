@@ -153,7 +153,7 @@ type InventoryDraft = { stock: number; minStock: number };
   template: `
     <div class="page-container inventory-page">
       <div class="page-heading">
-        <div><p class="eyebrow">Mi negocio / Existencias</p><h1 class="page-title">Inventario</h1><p class="page-subtitle">Controla las cantidades disponibles y cuánto falta para alcanzar el stock mínimo.</p></div>
+        <div><p class="eyebrow">Mi negocio / Compras e inventario</p><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient(ingredients()[0])" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
       </div>
       @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
       <div class="inventory-table-wrap">
@@ -162,7 +162,7 @@ type InventoryDraft = { stock: number; minStock: number };
           <tbody>
             @for (item of ingredients(); track item.id) {
               <tr>
-                <td><strong>{{ item.name }}</strong><small>{{ item.brand || 'Sin marca registrada' }}</small></td>
+                <td><strong>{{ item.name }}</strong><small>{{ item.supplyGroup || 'Otros' }}</small></td>
                 <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Existencias de ' + item.name" [value]="draft(item).stock" (input)="updateDraft(item, 'stock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Stock mínimo de ' + item.name" [value]="draft(item).minStock" (input)="updateDraft(item, 'minStock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><span class="shortage-pill" [class.has-shortage]="shortage(item) > 0">{{ shortage(item) | number:'1.0-3' }} {{ item.unit }}</span></td>
