@@ -56,7 +56,7 @@ describe('Finanzas', () => {
     component.openPurchaseForm();
     expect(component.formOpen()).toBe('purchase');
     expect(component.purchaseForm().ingredientId).toBe('flour');
-    expect(component.purchaseForm().unitCost).toBe(2.5);
+    expect(component.purchaseForm().unitCost).toBe(0.0025);
   });
 
   it('persists an expense as an outgoing cash movement', async () => {
