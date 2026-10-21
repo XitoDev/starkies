@@ -75,27 +75,8 @@
 .modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}
 
 
-.heading-actions{display:flex;gap:10px;flex-wrap:wrap}
-.production-tabs{display:flex;gap:8px;border-bottom:1px solid #eee7f2;padding-bottom:8px;overflow:auto}
-.production-tabs button{display:flex;align-items:center;gap:7px;white-space:nowrap}
-.production-tabs button.active{background:#f0e7f7;color:#68418d;font-weight:700}
-.tab-count{padding:3px 7px;border-radius:10px;background:#fff}
-.section-block{display:flex;flex-direction:column;gap:14px;min-width:0}
-.section-heading{display:flex;justify-content:space-between;gap:14px;align-items:flex-end}
-.section-heading h2{margin:0;color:#30263a;font-size:20px}
-.section-heading p{margin:7px 0 0;color:#95899d;font-size:12px;line-height:1.5}
-.inventory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.inventory-card,.dough-plan-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:15px;border:1px solid #eee7f2;border-radius:12px;background:#fff}
-.inventory-card-heading{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.inventory-card-heading h3{margin:0;font-size:13px;color:#382d41}
-.stock-state,.command-status{padding:4px 7px;border-radius:6px;background:#edf7ef;color:#33764b;font-size:9px;font-weight:700;white-space:nowrap}
-.stock-zero{background:#f5f2f6;color:#8a7d91}.stock-negative{color:#a44855!important;background:#fff0f0}
-.inventory-current{display:flex;align-items:baseline;gap:7px;margin:0}.inventory-current strong{font-size:25px;color:#30263a}.inventory-current span,.inventory-edit span{font-size:10px;color:#95899d}
-.inventory-edit{display:grid;gap:6px;font-weight:700}.inventory-edit input{width:100%;height:38px;padding:0 9px;border:1px solid #e8e0ed;border-radius:8px}
-.inventory-save{width:100%;min-height:36px!important;font-size:11px!important}
-.commands-list{display:grid;gap:8px}.command-line{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:13px;border:1px solid #eee7f2;border-radius:10px;background:#fff;cursor:pointer}
-.command-line>input{width:17px;height:17px;accent-color:#8056ad}.command-product{display:grid;gap:4px}.command-product strong{font-size:12px;color:#382d41}.command-product small,.command-quantity small{font-size:10px;color:#95899d}.command-quantity{font-weight:800}.command-status{background:#fff4e5;color:#9b641f}.command-ready{background:#fbfefb;border-color:#dcefe0}
-.dough-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dough-plan-card span{font-size:12px;font-weight:700}.dough-plan-card strong{font-size:22px}.dough-plan-card small,.muted-empty{font-size:10px;color:#95899d;line-height:1.5}
-@media(max-width:1100px){.inventory-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:800px){.inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-heading{align-items:flex-start;flex-direction:column}.dough-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.heading-actions{width:100%}.heading-actions button{flex:1}.inventory-grid,.dough-plan-grid{grid-template-columns:1fr}.command-line{grid-template-columns:20px minmax(0,1fr) auto}.command-status{grid-column:2/-1;justify-self:start}}
+.heading-actions{display:flex;gap:8px;flex-wrap:wrap}.production-tabs{display:flex;gap:8px;overflow:auto;border-bottom:1px solid #eee7f2;padding-bottom:8px}.production-tabs button{display:flex;align-items:center;gap:6px;white-space:nowrap}.production-tabs button.active{background:#f0e7f7;color:#68418d;font-weight:700}.tab-count{padding:3px 6px;border-radius:10px;background:#fff}
+.section-block{display:flex;flex-direction:column;gap:14px;min-width:0}.section-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}.section-heading h2{margin:0;font-size:20px;color:#30263a}.section-heading p{margin:6px 0 0;color:#95899d;font-size:12px}
+.inventory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.inventory-card,.dough-plan-card{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #eee7f2;border-radius:12px;background:#fff;min-width:0}.inventory-card-heading{display:flex;justify-content:space-between;gap:7px}.inventory-card-heading h3{margin:0;font-size:13px}.stock-state,.command-status{padding:4px 6px;border-radius:6px;background:#edf7ef;color:#33764b;font-size:9px;white-space:nowrap}.stock-zero{background:#f5f2f6;color:#8a7d91}.stock-negative{color:#a44855!important;background:#fff0f0}.inventory-current{display:flex;align-items:baseline;gap:7px;margin:0}.inventory-current strong{font-size:24px}.inventory-current span,.inventory-edit span{font-size:10px;color:#95899d}.inventory-edit{display:grid;gap:6px}.inventory-edit input{height:36px;width:100%;border:1px solid #e8e0ed;border-radius:8px;padding:0 8px}.inventory-save{width:100%;min-height:36px!important;font-size:11px!important}
+.commands-list{display:grid;gap:8px}.command-line{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:12px;border:1px solid #eee7f2;border-radius:10px;cursor:pointer}.command-line>input{width:17px;height:17px;accent-color:#8056ad}.command-product{display:grid;gap:4px}.command-product strong{font-size:12px}.command-product small,.command-quantity small,.dough-plan-card small,.muted-empty{font-size:10px;color:#95899d}.command-status{background:#fff4e5;color:#9b641f}.command-ready{background:#fbfefb}.dough-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dough-plan-card strong{font-size:22px}
+@media(max-width:900px){.inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-heading{align-items:flex-start;flex-direction:column}.dough-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.heading-actions{width:100%}.heading-actions button{flex:1}.inventory-grid,.dough-plan-grid{grid-template-columns:1fr}.command-line{grid-template-columns:20px minmax(0,1fr) auto}.command-status{grid-column:2/-1;justify-self:start}}
