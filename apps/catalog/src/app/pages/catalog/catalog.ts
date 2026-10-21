@@ -257,8 +257,9 @@ export class Catalog {
       const result: unknown = await response.json().catch(() => null);
       if (!response.ok) { const record = this.asRecord(result); throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.'); }
       const record = this.asRecord(result), orderId = typeof record['orderId'] === 'string' && record['orderId'] ? record['orderId'] : 'recibido';
-      const pdfUrl = orderId !== 'recibido'
-        ? new URL('/p/' + encodeURIComponent(orderId), window.location.origin).toString()
+      const documentToken = typeof record['documentToken'] === 'string' ? record['documentToken'] : '';
+      const pdfUrl = documentToken
+        ? new URL('/p?token=' + encodeURIComponent(documentToken), window.location.origin).toString()
         : '';
       const message = 'Hola StarKies, quiero confirmar mi pedido ' + orderId + '.\n\n'
         + (pdfUrl ? 'Mi pedido en PDF:\n' + pdfUrl + '\n\n' : '')
