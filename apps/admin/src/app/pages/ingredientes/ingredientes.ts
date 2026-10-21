@@ -68,7 +68,6 @@ export class Ingredientes {
   packageUnit(item: Ingredient): string { return item.packageUnit ?? item.unit; }
   unitLabel(unit: string): string { return unit === 'ml' ? 'ml' : unit === 'unidad' ? 'u' : 'g'; }
   packageUnitLabel(unit: string): string { return this.packageUnits.find(option => option.value === unit)?.label ?? unit; }
-  private unitDimension(unit: string): string { return unit === 'ml' || unit === 'l' || unit === 'taza' || unit === 'cda' || unit === 'cdta' ? 'volume' : ['unidad', 'pieza', 'par', 'media_docena', 'docena'].includes(unit) ? 'count' : 'mass'; }
   updateUnit(value: string): void {
     const option = this.packageUnits.find(item => item.value === value);
     if (!option) return;
