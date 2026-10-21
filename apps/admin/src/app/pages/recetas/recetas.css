@@ -24,3 +24,8 @@
 }
 .mat-mdc-menu-item.delete-menu-action { color: #a44855; }
 .mat-mdc-menu-item.delete-menu-action mat-icon { color: inherit; }
+
+.recipe-form-footer{display:flex;justify-content:flex-end;gap:10px;}
+.recipe-form-footer .btn-primary{border:1px solid #d9c4e8;background:#fff;color:#8056ad;}
+.recipe-form-footer .btn-secondary{border:1px solid #e8e0ed;background:#fff;color:#65586d;}
+@media(max-width:620px){.recipe-form-footer{flex-direction:column-reverse;align-items:stretch}.recipe-form-footer>*{width:100%;}}
