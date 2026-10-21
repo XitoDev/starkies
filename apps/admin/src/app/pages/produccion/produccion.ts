@@ -14,6 +14,7 @@ type ProductionEntry = {
   recipeName: string;
   batches: number;
   totalYield: number;
+  outputUnit?: string;
   calculatedCost: number;
   status: string;
 };
@@ -23,6 +24,11 @@ type IngredientRequirement = {
   quantity: number;
   ingredient?: Ingredient;
 };
+type DoughBase = { id: string; name: string; weight: number; ingredients?: Record<string, unknown>[]; items?: Record<string, unknown>[] };
+type InventoryRow = { id: string; name: string; quantity: number; unit: string };
+type CommandLine = { key: string; orderId: string; recipeId: string; recipeName: string; quantity: number };
+type PlannedRecipe = { recipeId: string; recipeName: string; requested: number; markedReady: number; remaining: number; stock: number; toBake: number; baseId?: string; baseName?: string; doughGrams: number };
+type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; availableGrams: number; gramsToPrepare: number; batchWeight: number; batchesNeeded: number };
 
 @Component({
   selector: 'app-produccion',
@@ -42,9 +48,97 @@ export class Produccion {
   readonly formError = signal('');
   readonly notice = signal('');
   readonly selectedRecipeId = signal('');
+  readonly selectedBaseId = signal('');
+  readonly productionType = signal<'recipe' | 'base'>('recipe');
   readonly batchCount = signal(1);
-
+  readonly activeTab = signal<'inventory' | 'commands' | 'history'>('inventory');
+  readonly inventoryEdits = signal<Record<string, string>>({});
   readonly activeRecipes = computed(() => this.recipes().filter(recipe => !recipe.archived));
+  readonly orders = this.dataService.orders;
+  readonly doughBases = computed<DoughBase[]>(() => {
+    const value = this.dataService.rawState()?.['doughBases'];
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item))
+      .map((item, index) => ({
+        id: String(item['id'] ?? `base-${index}`),
+        name: String(item['name'] ?? 'Masa base sin nombre'),
+        weight: this.asNumber(item['weight']),
+        ingredients: Array.isArray(item['ingredients']) ? item['ingredients'] as Record<string, unknown>[] : undefined,
+        items: Array.isArray(item['items']) ? item['items'] as Record<string, unknown>[] : undefined,
+      }));
+  });
+  readonly finishedInventory = computed<InventoryRow[]>(() => {
+    const raw = this.dataService.rawState()?.['finishedProductInventory'];
+    const records = Array.isArray(raw) ? raw.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
+    const quantities = new Map(records.map(item => [String(item['id'] ?? item['recipeId'] ?? ''), this.asNumber(item['quantity'])]));
+    return this.activeRecipes().map(recipe => ({
+      id: recipe.id, name: recipe.name, quantity: quantities.get(recipe.id) ?? 0, unit: 'galletas',
+    }));
+  });
+  readonly doughInventory = computed<InventoryRow[]>(() => {
+    const raw = this.dataService.rawState()?.['finishedProductInventory'];
+    const records = Array.isArray(raw) ? raw.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
+    const quantities = new Map(records.map(item => [String(item['id'] ?? item['recipeId'] ?? ''), this.asNumber(item['quantity'])]));
+    return this.doughBases().map(base => ({
+      id: `base:${base.id}`, name: base.name, quantity: quantities.get(`base:${base.id}`) ?? 0, unit: 'g',
+    }));
+  });
+  readonly commandLines = computed<CommandLine[]>(() => {
+    const ready = new Set(this.readyCommandLines());
+    const recipes = this.activeRecipes();
+    return this.orders().filter(order => order.status === 'PENDING').flatMap(order => order.items.flatMap(item => {
+      const recipe = recipes.find(entry => entry.id === item.recipeId)
+        ?? recipes.find(entry => entry.name.trim().toLocaleLowerCase('es') === (item.name ?? '').trim().toLocaleLowerCase('es'));
+      if (!recipe || item.quantity <= 0) return [];
+      return [{
+        key: `${order.id}:${recipe.id}`, orderId: order.id, recipeId: recipe.id,
+        recipeName: recipe.name, quantity: item.quantity,
+      }];
+    }));
+  });
+  readonly readyCommandLines = computed<string[]>(() => {
+    const value = this.dataService.rawState()?.['productionReadyLines'];
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  });
+  readonly commandPlan = computed<PlannedRecipe[]>(() => {
+    const ready = new Set(this.readyCommandLines());
+    const inventory = new Map(this.finishedInventory().map(item => [item.id, item.quantity]));
+    const grouped = new Map<string, { recipeName: string; requested: number; markedReady: number }>();
+    for (const line of this.commandLines()) {
+      const row = grouped.get(line.recipeId) ?? { recipeName: line.recipeName, requested: 0, markedReady: 0 };
+      row.requested += line.quantity;
+      if (ready.has(line.key)) row.markedReady += line.quantity;
+      grouped.set(line.recipeId, row);
+    }
+    return Array.from(grouped.entries()).map(([recipeId, row]) => {
+      const recipe = this.activeRecipes().find(item => item.id === recipeId);
+      const remaining = Math.max(0, row.requested - row.markedReady);
+      const stock = inventory.get(recipeId) ?? 0;
+      const toBake = Math.max(0, remaining - Math.max(0, stock));
+      const base = recipe?.baseId ? this.doughBases().find(item => item.id === recipe.baseId) : undefined;
+      const doughGrams = base && recipe ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * toBake : 0;
+      return { recipeId, recipeName: row.recipeName, requested: row.requested, markedReady: row.markedReady, remaining, stock, toBake, baseId: base?.id, baseName: base?.name, doughGrams };
+    }).sort((a, b) => a.recipeName.localeCompare(b.recipeName, 'es'));
+  });
+  readonly doughPlan = computed<DoughPlan[]>(() => {
+    const grouped = new Map<string, { name: string; grams: number; weight: number }>();
+    for (const item of this.commandPlan()) {
+      if (!item.baseId || !item.baseName || item.doughGrams <= 0) continue;
+      const base = this.doughBases().find(entry => entry.id === item.baseId);
+      const current = grouped.get(item.baseId) ?? { name: item.baseName, grams: 0, weight: base?.weight ?? 0 };
+      current.grams += item.doughGrams;
+      grouped.set(item.baseId, current);
+    }
+    return Array.from(grouped.entries()).map(([baseId, item]) => {
+      const availableGrams = this.doughInventory().find(row => row.id === `base:${baseId}`)?.quantity ?? 0;
+      const gramsToPrepare = Math.max(0, item.grams - Math.max(0, availableGrams));
+      return {
+        baseId, baseName: item.name, gramsNeeded: item.grams, availableGrams, gramsToPrepare,
+        batchWeight: item.weight,
+        batchesNeeded: item.weight > 0 ? Math.ceil(gramsToPrepare / item.weight) : 0,
+      };
+    });
+  });
 
   readonly productionHistory = computed<ProductionEntry[]>(() => {
     const value = this.dataService.rawState()?.['productionHistory'];
@@ -58,6 +152,7 @@ export class Produccion {
         recipeName: this.asString(item['recipeName'], 'Receta sin nombre'),
         batches: this.asNumber(item['batches']),
         totalYield: this.asNumber(item['totalYield']),
+        outputUnit: this.asString(item['outputUnit'], 'uds'),
         calculatedCost: this.asNumber(item['calculatedCost']),
         status: this.asString(item['status'], 'COMPLETED'),
       }))
@@ -75,38 +170,38 @@ export class Produccion {
   });
 
   readonly totalBatches = computed(() => this.productionHistory().reduce((total, item) => total + item.batches, 0));
-  readonly totalUnits = computed(() => this.productionHistory().reduce((total, item) => total + item.totalYield, 0));
+  readonly totalUnits = computed(() => this.productionHistory().reduce((total, item) => total + (item.outputUnit === 'g' ? 0 : item.totalYield), 0));
   readonly totalProductionCost = computed(() => this.productionHistory().reduce((total, item) => total + item.calculatedCost, 0));
 
   readonly selectedRecipe = computed(() =>
     this.activeRecipes().find(recipe => recipe.id === this.selectedRecipeId()) ?? null,
   );
-
+  readonly selectedBase = computed(() => this.doughBases().find(base => base.id === this.selectedBaseId()) ?? null);
+  readonly selectedProductionName = computed(() => this.productionType() === 'base' ? this.selectedBase()?.name ?? '' : this.selectedRecipe()?.name ?? '');
   readonly requirements = computed<IngredientRequirement[]>(() => {
     const recipe = this.selectedRecipe();
+    const selectedBase = this.selectedBase();
+    if (this.productionType() === 'base' && selectedBase) {
+      const baseItems = selectedBase.ingredients ?? selectedBase.items ?? [];
+      const totals = new Map<string, number>();
+      for (const rawItem of baseItems) {
+        const ingredientId = String(rawItem['ingredientId'] ?? rawItem['id'] ?? '');
+        const quantity = this.asNumber(rawItem['quantity'] ?? rawItem['qty']) * this.batchCount();
+        if (ingredientId && quantity !== 0) totals.set(ingredientId, (totals.get(ingredientId) ?? 0) + quantity);
+      }
+      return Array.from(totals.entries()).map(([ingredientId, quantity]) => ({
+        ingredientId, quantity, ingredient: this.ingredients().find(item => item.id === ingredientId),
+      }));
+    }
     if (!recipe) return [];
     const totals = new Map<string, number>();
     const batches = this.batchCount();
-    if (recipe.baseId) {
-      const rawBases = this.dataService.rawState()?.['doughBases'];
-      const bases = Array.isArray(rawBases) ? rawBases as Record<string, unknown>[] : [];
-      const base = bases.find(item => String(item['id'] ?? '') === recipe.baseId);
-      const baseItems = Array.isArray(base?.['ingredients']) ? base['ingredients']
-        : Array.isArray(base?.['items']) ? base['items'] : [];
-      const baseWeight = Number(base?.['weight'] ?? 0);
-      const gramsNeeded = Number(recipe.baseGramsPerCookie ?? 0) * Math.max(1, recipe.yield);
-      const baseScale = baseWeight > 0 && gramsNeeded > 0 ? gramsNeeded / baseWeight : 1;
-      for (const rawItem of baseItems) {
-        if (typeof rawItem !== 'object' || rawItem === null) continue;
-        const item = rawItem as Record<string, unknown>;
-        const ingredientId = String(item['ingredientId'] ?? item['id'] ?? '');
-        const quantity = Number(item['quantity'] ?? item['qty'] ?? 0) * baseScale * batches;
-        if (ingredientId && quantity > 0) totals.set(ingredientId, (totals.get(ingredientId) ?? 0) + quantity);
-      }
-    }
     for (const section of recipe.sections) {
       const sectionName = section.name.toLocaleLowerCase('es');
-      const quantityScale = recipe.baseId && sectionName !== 'masa' ? Math.max(1, recipe.yield) : 1;
+      // A recipe based on a dough base consumes the prepared dough stock.
+      // Its "masa" ingredients were already deducted when that base was made.
+      if (recipe.baseId && sectionName === 'masa') continue;
+      const quantityScale = recipe.baseId ? Math.max(1, recipe.yield) : 1;
       for (const item of section.ingredients) {
         totals.set(item.ingredientId, (totals.get(item.ingredientId) ?? 0) + item.quantity * quantityScale * batches);
       }
@@ -122,14 +217,33 @@ export class Produccion {
     this.requirements().filter(item => !item.ingredient || item.ingredient.stock < item.quantity),
   );
 
-  readonly estimatedCost = computed(() =>
-    this.requirements().reduce((total, item) => total + (item.ingredient?.costPerUnit ?? 0) * item.quantity, 0),
-  );
+  readonly estimatedCost = computed(() => {
+    const additionsCost = this.requirements().reduce((total, item) => total + (item.ingredient?.costPerUnit ?? 0) * item.quantity, 0);
+    const recipe = this.selectedRecipe();
+    if (!recipe?.baseId) return additionsCost;
+    const base = this.doughBases().find(item => item.id === recipe.baseId);
+    if (!base || base.weight <= 0) return additionsCost;
+    const baseItems = base.ingredients ?? base.items ?? [];
+    const baseBatchCost = baseItems.reduce((total, item) => {
+      const ingredientId = String(item['ingredientId'] ?? item['id'] ?? '');
+      const ingredient = this.ingredients().find(entry => entry.id === ingredientId);
+      return total + (ingredient?.costPerUnit ?? 0) * this.asNumber(item['quantity'] ?? item['qty']);
+    }, 0);
+    const gramsNeeded = this.asNumber(recipe.baseGramsPerCookie) * Math.max(1, recipe.yield) * this.batchCount();
+    return additionsCost + (baseBatchCost / base.weight) * gramsNeeded;
+  });
 
-  readonly estimatedYield = computed(() => (this.selectedRecipe()?.yield ?? 0) * this.batchCount());
+  readonly estimatedYield = computed(() => this.productionType() === 'base'
+    ? (this.selectedBase()?.weight ?? 0) * this.batchCount()
+    : (this.selectedRecipe()?.yield ?? 0) * this.batchCount());
+  readonly estimatedYieldUnit = computed(() => this.productionType() === 'base' ? 'g de masa' : 'galletas');
 
   onSearch(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  updateInventoryEdit(id: string, value: string): void {
+    this.inventoryEdits.update(edits => ({ ...edits, [id]: value }));
   }
 
   setBatchCount(value: string): void {
@@ -137,8 +251,10 @@ export class Produccion {
     this.batchCount.set(Number.isFinite(parsed) ? Math.min(1000, Math.max(1, parsed)) : 1);
   }
 
-  openNewBatch(): void {
+  openNewBatch(type: 'recipe' | 'base' = 'recipe'): void {
+    this.productionType.set(type);
     this.selectedRecipeId.set(this.activeRecipes()[0]?.id ?? '');
+    this.selectedBaseId.set(this.doughBases()[0]?.id ?? '');
     this.batchCount.set(1);
     this.formError.set('');
     this.notice.set('');
@@ -151,37 +267,72 @@ export class Produccion {
     this.formError.set('');
   }
 
+  async saveInventoryCount(id: string, rawValue: string): Promise<void> {
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) {
+      this.formError.set('Ingresa una cantidad válida, también puede ser negativa.');
+      return;
+    }
+    const current = this.dataService.rawState()?.['finishedProductInventory'];
+    const rows = Array.isArray(current) ? current.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
+    const next = rows.filter(item => String(item['id'] ?? item['recipeId'] ?? '') !== id)
+      .concat([{ id, quantity: parsed, updatedAt: new Date().toISOString() }]);
+    try {
+      await this.dataService.saveBusinessSetting('finishedProductInventory', next);
+      this.inventoryEdits.update(edits => { const copy = { ...edits }; delete copy[id]; return copy; });
+      this.notice.set('Existencias actualizadas.');
+      this.formError.set('');
+    } catch (error) {
+      this.formError.set(error instanceof Error ? error.message : 'No se pudieron guardar las existencias.');
+    }
+  }
+
+  async toggleCommandReady(key: string, checked: boolean): Promise<void> {
+    const current = this.readyCommandLines();
+    const next = checked ? Array.from(new Set([...current, key])) : current.filter(item => item !== key);
+    try {
+      await this.dataService.saveBusinessSetting('productionReadyLines', next);
+    } catch (error) {
+      this.formError.set(error instanceof Error ? error.message : 'No se pudo actualizar la comanda.');
+    }
+  }
+
   async createProduction(): Promise<void> {
-    const recipe = this.selectedRecipe();
+    const recipe = this.productionType() === 'recipe' ? this.selectedRecipe() : null;
+    const base = this.productionType() === 'base' ? this.selectedBase() : null;
     const batches = this.batchCount();
-    if (!recipe) {
-      this.formError.set('Selecciona una receta activa para registrar la producción.');
+    if (!recipe && !base) {
+      this.formError.set(this.productionType() === 'base'
+        ? 'Selecciona una masa base para registrar su producción.'
+        : 'Selecciona una receta activa para registrar la producción.');
       return;
     }
     if (!Number.isInteger(batches) || batches < 1) {
       this.formError.set('La cantidad de lotes debe ser un entero mayor que cero.');
       return;
     }
-    if (this.requirements().length === 0) {
-      this.formError.set('Esta receta no tiene ingredientes vinculados. Completa su fórmula antes de registrar producción.');
-      return;
-    }
-    if (this.stockShortages().length > 0) {
-      const first = this.stockShortages()[0];
-      this.formError.set(first.ingredient
-        ? `Stock insuficiente de "${first.ingredient.name}". Revisa las cantidades o repón el inventario.`
-        : 'Hay ingredientes de la fórmula que ya no existen en el inventario. Corrige la receta antes de producir.');
+    const consumesPreparedBase = Boolean(recipe?.baseId && this.asNumber(recipe.baseGramsPerCookie) > 0);
+    if (this.requirements().length === 0 && !consumesPreparedBase) {
+      this.formError.set('Esta fórmula no tiene insumos vinculados. Completa sus ingredientes antes de registrar producción.');
       return;
     }
 
+    const outputId = recipe?.id ?? `base:${base?.id}`;
+    const outputName = recipe?.name ?? base?.name ?? 'Masa base';
+    const outputUnit = recipe ? 'galletas' : 'g';
     const record: Record<string, unknown> = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
-      recipeId: recipe.id,
-      recipeName: recipe.name,
+      recipeId: outputId,
+      recipeName: outputName,
+      outputUnit,
       batches,
-      totalYield: recipe.yield * batches,
+      totalYield: this.estimatedYield(),
       calculatedCost: this.estimatedCost(),
+      baseInventoryId: recipe?.baseId ? `base:${recipe.baseId}` : '',
+      baseGramsConsumed: recipe?.baseId
+        ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * Math.max(1, recipe.yield) * batches
+        : 0,
       status: 'COMPLETED',
     };
     const deductions = this.requirements().map(({ ingredientId, quantity }) => ({ ingredientId, quantity }));
@@ -192,7 +343,7 @@ export class Produccion {
     try {
       await this.dataService.recordProduction(record, deductions);
       this.formOpen.set(false);
-      this.notice.set('Producción registrada y stock de ingredientes actualizado.');
+      this.notice.set('Producción registrada. Se actualizaron las existencias y los insumos se descontaron incluso si quedan negativos.');
     } catch (error) {
       this.formError.set(error instanceof Error ? error.message : 'No se pudo registrar la producción.');
     } finally {

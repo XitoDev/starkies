@@ -288,6 +288,8 @@ export class FirestoreBusinessRepository {
       if (existingProductionSnapshot.exists()) {
         throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
       }
+      const finishedInventoryRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', 'finishedProductInventory');
+      const finishedInventorySnapshot = await transaction.get(finishedInventoryRef);
 
       const updates: { ref: (typeof ingredientDocs)[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
@@ -302,11 +304,13 @@ export class FirestoreBusinessRepository {
         }
 
         const currentStock = Number(stored['stock'] ?? 0);
-        if (!Number.isFinite(currentStock) || currentStock < ingredientDoc.quantity) {
+        if (!Number.isFinite(currentStock)) {
           const ingredientName = String(stored['name'] ?? ingredientDoc.ingredientId);
-          throw new Error(`Stock insuficiente de "${ingredientName}". Se necesitan ${ingredientDoc.quantity} y hay ${currentStock}.`);
+          throw new Error(`El stock de "${ingredientName}" no es un número válido. Corrige el inventario antes de producir.`);
         }
 
+        // Production is allowed to reveal a real stock deficit: negative balances
+        // remain visible until the next physical count corrects them.
         updates.push({
           ref: ingredientDoc.ref.ref,
           index: Number(data['index'] ?? 0),
@@ -316,8 +320,32 @@ export class FirestoreBusinessRepository {
 
       const metadata = currentMetadataSnapshot.data() as StateMetadata;
       const arrayKeys = Array.from(new Set([...(metadata.arrayKeys ?? []), 'productionHistory']));
-      const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory']));
+      const settingKeys = Array.from(new Set([...(metadata.settingKeys ?? []), 'finishedProductInventory']));
+      const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory', 'finishedProductInventory']));
       const counts = metadata.recordCounts ?? {};
+
+      const rawInventory = finishedInventorySnapshot.exists() ? finishedInventorySnapshot.data()['value'] : [];
+      const inventoryRows = Array.isArray(rawInventory)
+        ? rawInventory.filter((item): item is Record<string, unknown> => this.isRecord(item))
+        : [];
+      const inventoryMap = new Map(inventoryRows.map(item => [
+        String(item['id'] ?? item['recipeId'] ?? ''),
+        Number.isFinite(Number(item['quantity'])) ? Number(item['quantity']) : 0,
+      ]));
+      const outputId = String(record['recipeId'] ?? '').trim();
+      const outputQuantity = Number(record['totalYield'] ?? 0);
+      if (!outputId || !Number.isFinite(outputQuantity) || outputQuantity < 0) {
+        throw new Error('La producción necesita un producto y una cantidad válida.');
+      }
+      inventoryMap.set(outputId, (inventoryMap.get(outputId) ?? 0) + outputQuantity);
+      const baseInventoryId = String(record['baseInventoryId'] ?? '').trim();
+      const baseGramsConsumed = Number(record['baseGramsConsumed'] ?? 0);
+      if (baseInventoryId && Number.isFinite(baseGramsConsumed) && baseGramsConsumed > 0) {
+        inventoryMap.set(baseInventoryId, (inventoryMap.get(baseInventoryId) ?? 0) - baseGramsConsumed);
+      }
+      const nextInventory = Array.from(inventoryMap.entries()).map(([id, quantity]) => ({
+        id, quantity, updatedAt: new Date().toISOString(),
+      }));
 
       for (const update of updates) {
         transaction.set(update.ref, { index: update.index, value: update.value });
@@ -326,8 +354,10 @@ export class FirestoreBusinessRepository {
         index: Date.now(),
         value: record,
       });
+      transaction.set(finishedInventoryRef, { value: nextInventory }, { merge: true });
       transaction.set(metadataRef, {
         arrayKeys,
+        settingKeys,
         stateKeys,
         recordCounts: {
           ...counts,

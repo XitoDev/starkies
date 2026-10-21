@@ -3,149 +3,157 @@
     <div>
       <p class="eyebrow">Mi negocio / Operaciones</p>
       <h1 class="page-title">Producción</h1>
-      <p class="page-subtitle">Registra lotes horneados, calcula su rendimiento y descuenta automáticamente los insumos de la fórmula.</p>
+      <p class="page-subtitle">Controla las existencias de galletas, prepara las comandas pendientes y calcula las masas base necesarias.</p>
     </div>
-    <button matButton="elevated" class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch()">
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="btn-icon">add</mat-icon>
-      Nuevo lote
-    </button>
+    <div class="heading-actions">
+      <button matButton="outlined" class="btn-secondary" type="button" (click)="openNewBatch('base')" [disabled]="doughBases().length === 0">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">scale</mat-icon> Producir masa base
+      </button>
+      <button matButton="elevated" class="btn-primary" type="button" [disabled]="activeRecipes().length === 0" (click)="openNewBatch('recipe')">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="btn-icon">add</mat-icon> Nueva producción
+      </button>
+    </div>
   </div>
 
-  @if (notice()) {
-    <div class="notice" role="status">{{ notice() }}</div>
+  @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
+  @if (formError() && !formOpen()) { <div class="form-error" role="alert">{{ formError() }}</div> }
+
+  <nav class="production-tabs" aria-label="Secciones de producción">
+    <button matButton="text" type="button" [class.active]="activeTab() === 'inventory'" [attr.aria-pressed]="activeTab() === 'inventory'" (click)="activeTab.set('inventory')">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon> Existencias
+    </button>
+    <button matButton="text" type="button" [class.active]="activeTab() === 'commands'" [attr.aria-pressed]="activeTab() === 'commands'" (click)="activeTab.set('commands')">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">checklist</mat-icon> Comandas <span class="tab-count">{{ commandLines().length }}</span>
+    </button>
+    <button matButton="text" type="button" [class.active]="activeTab() === 'history'" [attr.aria-pressed]="activeTab() === 'history'" (click)="activeTab.set('history')">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">history</mat-icon> Historial
+    </button>
+  </nav>
+
+  @if (activeTab() === 'inventory') {
+    <section class="section-block">
+      <div class="section-heading">
+        <div><h2>Existencias de productos</h2><p>Registra el conteo físico inicial y actualízalo cuando hagas un conteo. Se permiten cantidades negativas.</p></div>
+        <span class="result-count">{{ finishedInventory().length }} productos</span>
+      </div>
+      <div class="inventory-grid">
+        @for (row of finishedInventory(); track row.id) {
+          <article class="inventory-card">
+            <div class="inventory-card-heading"><h3>{{ row.name }}</h3><span class="stock-state" [class.stock-negative]="row.quantity < 0" [class.stock-zero]="row.quantity === 0">{{ row.quantity < 0 ? 'Negativo' : row.quantity === 0 ? 'Sin existencias' : 'En existencia' }}</span></div>
+            <p class="inventory-current"><strong>{{ row.quantity | number:'1.0-2' }}</strong><span>galletas disponibles</span></p>
+            <label class="inventory-edit"><span>Conteo manual</span><input type="number" step="1" [attr.aria-label]="'Existencias de ' + row.name" [value]="inventoryEdits()[row.id] ?? row.quantity" (input)="updateInventoryEdit(row.id, $any($event.target).value)"></label>
+            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? row.quantity.toString())">
+              <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar conteo
+            </button>
+          </article>
+        }
+        @if (finishedInventory().length === 0) { <div class="empty-state"><strong>No hay recetas activas</strong><p>Crea una receta para empezar a registrar las existencias de galletas.</p></div> }
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading"><div><h2>Existencias de masas base</h2><p>Las cantidades se registran en gramos y pueden ser negativas hasta corregir el conteo.</p></div></div>
+      <div class="inventory-grid">
+        @for (row of doughInventory(); track row.id) {
+          <article class="inventory-card">
+            <div class="inventory-card-heading"><h3>{{ row.name }}</h3><span class="stock-state" [class.stock-negative]="row.quantity < 0" [class.stock-zero]="row.quantity === 0">{{ row.quantity < 0 ? 'Negativo' : row.quantity === 0 ? 'Sin existencias' : 'En existencia' }}</span></div>
+            <p class="inventory-current"><strong>{{ row.quantity | number:'1.0-2' }}</strong><span>gramos disponibles</span></p>
+            <label class="inventory-edit"><span>Conteo manual (g)</span><input type="number" step="any" [attr.aria-label]="'Existencias de masa ' + row.name" [value]="inventoryEdits()[row.id] ?? row.quantity" (input)="updateInventoryEdit(row.id, $any($event.target).value)"></label>
+            <button matButton="outlined" class="btn-secondary inventory-save" type="button" (click)="saveInventoryCount(row.id, inventoryEdits()[row.id] ?? row.quantity.toString())"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">save</mat-icon> Guardar conteo</button>
+          </article>
+        }
+        @if (doughInventory().length === 0) { <div class="empty-state"><strong>No hay masas base</strong><p>Crea una masa base desde Recetas para registrar su inventario.</p></div> }
+      </div>
+    </section>
   }
 
-  <section class="summary-grid" aria-label="Resumen de producción">
-    <article class="summary-card">
-      <div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">precision_manufacturing</mat-icon></div>
-      <div><p class="summary-label">Lotes registrados</p><p class="summary-value">{{ totalBatches() }}</p></div>
-    </article>
-    <article class="summary-card">
-      <div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
-      <div><p class="summary-label">Unidades producidas</p><p class="summary-value">{{ totalUnits() | number:'1.0-0' }}</p></div>
-    </article>
-    <article class="summary-card">
-      <div class="summary-icon"><span class="currency-symbol">$</span></div>
-      <div><p class="summary-label">Costo de producción registrado</p><p class="summary-value">{{ totalProductionCost() | currency:'USD' }}</p></div>
-    </article>
-  </section>
+  @if (activeTab() === 'commands') {
+    <section class="section-block">
+      <div class="section-heading"><div><h2>Comandas pendientes</h2><p>Marca cada producto cuando ya esté listo. La planificación descuenta las existencias disponibles para estimar qué falta hornear.</p></div><span class="result-count">{{ commandLines().length }} líneas de pedido</span></div>
+      @if (commandLines().length > 0) {
+        <div class="commands-list">
+          @for (line of commandLines(); track line.key) {
+            <label class="command-line" [class.command-ready]="readyCommandLines().includes(line.key)">
+              <input type="checkbox" [checked]="readyCommandLines().includes(line.key)" (change)="toggleCommandReady(line.key, $any($event.target).checked)">
+              <span class="command-product"><strong>{{ line.recipeName }}</strong><small>Pedido #{{ line.orderId }}</small></span>
+              <span class="command-quantity">{{ line.quantity }} <small>galletas</small></span>
+              <span class="command-status">{{ readyCommandLines().includes(line.key) ? 'Listo' : 'Pendiente' }}</span>
+            </label>
+          }
+        </div>
+      } @else {
+        <div class="empty-state"><strong>No hay comandas pendientes</strong><p>Los pedidos pendientes con recetas activas aparecerán aquí automáticamente.</p></div>
+      }
+    </section>
 
-  <section class="table-card">
-    <div class="table-toolbar">
-      <label class="search-box">
-        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
-        <input matInput type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)" />
-      </label>
-      <span class="result-count">{{ filteredHistory().length }} registros</span>
-    </div>
+    <section class="section-block">
+      <div class="section-heading"><div><h2>Plan de elaboración</h2><p>La cantidad por hornear considera las comandas que aún no están listas y las existencias positivas disponibles.</p></div></div>
+      <div class="table-card"><div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Producto</th><th>Solicitadas</th><th>Listas</th><th>En existencias</th><th>Faltan hornear</th><th>Masa base</th></tr></thead>
+        <tbody>
+          @for (plan of commandPlan(); track plan.recipeId) {
+            <tr><td><strong class="primary-cell">{{ plan.recipeName }}</strong></td><td>{{ plan.requested }}</td><td>{{ plan.markedReady }}</td><td>{{ plan.stock }}</td><td><strong [class.stock-negative]="plan.toBake > 0">{{ plan.toBake }}</strong></td><td>{{ plan.baseName ? (plan.doughGrams | number:'1.0-2') + ' g · ' + plan.baseName : 'Receta propia' }}</td></tr>
+          }
+          @if (commandPlan().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>Sin productos por planificar</strong><p>Cuando haya pedidos pendientes, aquí se calcularán las cantidades.</p></div></td></tr> }
+        </tbody>
+      </table></div></div>
+    </section>
 
-    <div class="table-responsive">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Receta</th>
-            <th>Lotes</th>
-            <th>Rendimiento total</th>
-            <th>Costo calculado</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
+    <section class="section-block">
+      <div class="section-heading"><div><h2>Masas base necesarias</h2><p>Se suman los gramos requeridos por todas las recetas y se calcula cuántos lotes completos hacen falta.</p></div></div>
+      <div class="dough-plan-grid">
+        @for (base of doughPlan(); track base.baseId) {
+          <article class="dough-plan-card"><span>{{ base.baseName }}</span><strong>{{ base.gramsToPrepare | number:'1.0-2' }} g por preparar</strong><small>{{ base.gramsNeeded | number:'1.0-2' }} g requeridos · {{ base.availableGrams | number:'1.0-2' }} g disponibles · {{ base.batchesNeeded }} lotes</small></article>
+        }
+        @if (doughPlan().length === 0) { <p class="muted-empty">No hay masas base necesarias para las comandas abiertas.</p> }
+      </div>
+    </section>
+  }
+
+  @if (activeTab() === 'history') {
+    <section class="summary-grid" aria-label="Resumen de producción">
+      <article class="summary-card"><div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">precision_manufacturing</mat-icon></div><div><p class="summary-label">Lotes registrados</p><p class="summary-value">{{ totalBatches() }}</p></div></article>
+      <article class="summary-card"><div class="summary-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div><div><p class="summary-label">Unidades producidas</p><p class="summary-value">{{ totalUnits() | number:'1.0-0' }}</p></div></article>
+      <article class="summary-card"><div class="summary-icon"><span class="currency-symbol">$</span></div><div><p class="summary-label">Costo registrado</p><p class="summary-value">{{ totalProductionCost() | currency:'USD' }}</p></div></article>
+    </section>
+    <section class="table-card">
+      <div class="table-toolbar"><label class="search-box"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon><input matInput type="search" placeholder="Buscar por fecha, lote o receta..." [value]="searchTerm()" (input)="onSearch($event)"></label><span class="result-count">{{ filteredHistory().length }} registros</span></div>
+      <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Fecha</th><th>Producto / masa</th><th>Lotes</th><th>Rendimiento total</th><th>Costo calculado</th><th>Estado</th></tr></thead>
         <tbody>
           @for (production of filteredHistory(); track production.id) {
-            <tr>
-              <td>{{ production.date ? (production.date | date:'mediumDate') : '—' }}</td>
-              <td><strong class="primary-cell">{{ production.recipeName }}</strong></td>
-              <td>{{ production.batches }}</td>
-              <td>{{ production.totalYield | number:'1.0-0' }} uds</td>
-              <td>{{ production.calculatedCost | currency:'USD' }}</td>
-              <td><span class="status-pill"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">check_circle</mat-icon> Registrado</span></td>
-            </tr>
+            <tr><td>{{ production.date ? (production.date | date:'mediumDate') : '—' }}</td><td><strong class="primary-cell">{{ production.recipeName }}</strong></td><td>{{ production.batches }}</td><td>{{ production.totalYield | number:'1.0-0' }} {{ production.outputUnit }}</td><td>{{ production.calculatedCost | currency:'USD' }}</td><td><span class="status-pill"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">check_circle</mat-icon> Registrado</span></td></tr>
           }
-
-          @if (filteredHistory().length === 0) {
-            <tr>
-              <td colspan="6">
-                <div class="empty-state">
-                  <span class="empty-mark"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">precision_manufacturing</mat-icon></span>
-                  <strong>{{ productionHistory().length === 0 ? 'Aún no hay lotes de producción' : 'No encontramos resultados' }}</strong>
-                  <p>{{ productionHistory().length === 0 ? 'Cuando registres el primer lote, aquí quedarán su rendimiento, costo y fecha.' : 'Prueba con otra fecha o nombre de receta.' }}</p>
-                  @if (productionHistory().length === 0 && activeRecipes().length > 0) {
-                    <button matButton="outlined" class="btn-secondary" type="button" (click)="openNewBatch()">Registrar primer lote</button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
+          @if (filteredHistory().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>Aún no hay producción registrada</strong><p>Cuando registres un lote, aparecerá aquí su rendimiento y costo.</p></div></td></tr> }
         </tbody>
-      </table>
-    </div>
-  </section>
+      </table></div>
+    </section>
+  }
 </div>
 
 @if (formOpen()) {
   <div class="modal-backdrop" (click)="closeForm()">
     <section class="production-modal" role="dialog" aria-modal="true" aria-labelledby="production-modal-title" (click)="$event.stopPropagation()">
-      <div class="modal-heading">
-        <div>
-          <p class="eyebrow">Registro de producción</p>
-          <h2 id="production-modal-title">Preparar un lote</h2>
-          <p>Al confirmar, se registrará el lote y se descontarán sus ingredientes del inventario.</p>
-        </div>
-      </div>
-
+      <div class="modal-heading"><div><p class="eyebrow">Registro de producción</p><h2 id="production-modal-title">{{ productionType() === 'base' ? 'Producir masa base' : 'Nueva producción' }}</h2><p>Al confirmar, se registrará la producción, se sumarán las existencias del producto y los insumos podrán quedar negativos si falta inventario.</p></div></div>
       <div class="production-form">
-        <label class="form-field form-field-wide">
-          <span>Receta</span>
-          <select matNativeControl [value]="selectedRecipeId()" (change)="selectedRecipeId.set($any($event.target).value)">
-            @for (recipe of activeRecipes(); track recipe.id) {
-              <option [value]="recipe.id">{{ recipe.name }} · {{ recipe.yield }} uds por lote</option>
-            }
-          </select>
-        </label>
-
-        <label class="form-field">
-          <span>Cantidad de lotes</span>
-          <input matInput type="number" min="1" max="1000" step="1" [value]="batchCount()" (input)="setBatchCount($any($event.target).value)" />
-        </label>
-
-        <div class="estimate-card">
-          <span>Rendimiento estimado</span>
-          <strong>{{ estimatedYield() | number:'1.0-0' }} unidades</strong>
-        </div>
-        <div class="estimate-card">
-          <span>Costo estimado</span>
-          <strong>{{ estimatedCost() | currency:'USD' }}</strong>
-        </div>
-
-        <div class="requirements-panel">
-          <div class="requirements-heading">
-            <strong>Consumo de insumos</strong>
-            <span>{{ requirements().length }} ingredientes</span>
-          </div>
-          @for (item of requirements(); track item.ingredientId) {
-            <div class="requirement-row">
-              <span>{{ item.ingredient?.name ?? 'Ingrediente no registrado' }}</span>
-              <span [class.shortage]="!item.ingredient || item.ingredient.stock < item.quantity">
-                {{ item.quantity | number:'1.0-3' }} {{ item.ingredient?.unit ?? '' }}
-              </span>
-            </div>
-          }
-          @if (stockShortages().length > 0) {
-            <p class="stock-warning"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">warning</mat-icon> Hay ingredientes faltantes o con stock insuficiente.</p>
-          }
-        </div>
-
-        @if (formError()) {
-          <p class="form-error" role="alert">{{ formError() }}</p>
+        <label class="form-field form-field-wide"><span>Tipo de producción</span><select [value]="productionType()" (change)="productionType.set($any($event.target).value)"><option value="recipe">Galletas / receta</option><option value="base">Masa base</option></select></label>
+        @if (productionType() === 'recipe') {
+          <label class="form-field form-field-wide"><span>Receta</span><select [value]="selectedRecipeId()" (change)="selectedRecipeId.set($any($event.target).value)">@for (recipe of activeRecipes(); track recipe.id) { <option [value]="recipe.id">{{ recipe.name }} · {{ recipe.yield }} uds por lote</option> }</select></label>
+        } @else {
+          <label class="form-field form-field-wide"><span>Masa base</span><select [value]="selectedBaseId()" (change)="selectedBaseId.set($any($event.target).value)">@for (base of doughBases(); track base.id) { <option [value]="base.id">{{ base.name }} · {{ base.weight }} g por lote</option> }</select></label>
         }
-
-        <div class="modal-actions">
-          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
-          <button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">
-            {{ saving() ? 'Registrando…' : 'Registrar producción' }}
-          </button>
+        <label class="form-field"><span>Cantidad de lotes</span><input matInput type="number" min="1" max="1000" step="1" [value]="batchCount()" (input)="setBatchCount($any($event.target).value)"></label>
+        <div class="estimate-card"><span>Rendimiento estimado</span><strong>{{ estimatedYield() | number:'1.0-2' }} {{ estimatedYieldUnit() }}</strong></div>
+        <div class="estimate-card"><span>Costo estimado</span><strong>{{ estimatedCost() | currency:'USD' }}</strong></div>
+        <div class="requirements-panel">
+          <div class="requirements-heading"><strong>Consumo de insumos</strong><span>{{ requirements().length }} insumos</span></div>
+          @for (item of requirements(); track item.ingredientId) {
+            <div class="requirement-row"><span>{{ item.ingredient?.name ?? 'Insumo no registrado' }}</span><span [class.shortage]="!item.ingredient || item.ingredient.stock < item.quantity">{{ item.quantity | number:'1.0-3' }} {{ item.ingredient?.unit ?? '' }} · disponible: {{ item.ingredient?.stock ?? 0 }}</span></div>
+          }
+          @if (stockShortages().length > 0) { <p class="stock-warning"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">warning</mat-icon> Algunos insumos quedarán con existencias negativas después de producir. Puedes registrar la producción y corregir el conteo después.</p> }
         </div>
+        @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
+        <div class="modal-actions"><button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button><button matButton="elevated" class="btn-primary" type="button" [disabled]="saving()" (click)="createProduction()">{{ saving() ? 'Registrando…' : 'Registrar producción' }}</button></div>
       </div>
     </section>
   </div>
