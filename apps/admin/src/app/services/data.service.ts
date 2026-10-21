@@ -239,6 +239,9 @@ export class DataService {
 
   async saveOrderDetails(orderId: string, changes: {
     deliveryDate?: string;
+    deliveryMethod?: string;
+    deliveryAddress?: string;
+    deliveryTime?: string;
     zone?: string;
     notes?: string;
     status?: Order['status'];
@@ -270,6 +273,9 @@ export class DataService {
       ...changes,
       deliveryDate,
       date: deliveryDate || current['date'],
+      deliveryMethod: changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption']),
+      deliveryAddress: changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address']),
+      deliveryTime: changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot']),
       zone: changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']),
       shippingFee,
       total: rawLines.length ? Math.round((subtotal + shippingFee) * 100) / 100 : this.asNumber(current['total']),
@@ -498,7 +504,10 @@ export class DataService {
         total: this.asNumber(item['total']),
         status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
         createdAt: this.asString(item['createdAt'] ?? item['created'] ?? item['date']),
-        deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['date']),
+        deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['scheduledDeliveryDate'] ?? item['date']),
+        deliveryMethod: this.asOptionalString(item['deliveryMethod'] ?? item['deliveryType'] ?? item['deliveryOption']),
+        deliveryAddress: this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']),
+        deliveryTime: this.asOptionalString(item['deliveryTime'] ?? item['deliverySlot']),
         zone: this.asOptionalString(item['zone'] ?? item['deliveryZone'] ?? item['deliveryArea']),
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
