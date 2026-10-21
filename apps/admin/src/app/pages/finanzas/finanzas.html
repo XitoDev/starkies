@@ -113,7 +113,7 @@
           <label class="form-field">
             <span>Unidad del empaque</span>
             <select matNativeControl required [value]="purchaseForm().packageUnit" (change)="updatePurchaseUnit($any($event.target).value)">
-              <option value="g">Gramos (g)</option><option value="kg">Kilogramos (kg)</option><option value="mg">Miligramos (mg)</option><option value="lb">Libras (lb)</option><option value="oz">Onzas (oz)</option><option value="ml">Mililitros (ml)</option><option value="l">Litros (l)</option><option value="taza">Tazas (240 ml)</option><option value="cda">Cucharadas (15 ml)</option><option value="cdta">Cucharaditas (5 ml)</option><option value="unidad">Unidades (u)</option><option value="pieza">Piezas (pza)</option><option value="par">Pares (2 unidades)</option><option value="media_docena">Media docena (6 unidades)</option><option value="docena">Docena (12 unidades)</option>
+              @for (unit of purchaseUnits(); track unit.value) { <option [value]="unit.value">{{ unit.label }}</option> }
             </select>
           </label>
           <label class="form-field">
