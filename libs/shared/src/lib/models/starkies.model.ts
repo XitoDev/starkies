@@ -81,6 +81,9 @@ export interface CashMovement {
   ingredientUnit?: string;
   quantity?: number;
   unitCost?: number;
+  brand?: string;
+  packageQuantityGrams?: number;
+  packagePrice?: number;
 }
 
 export interface StarkiesBackup {

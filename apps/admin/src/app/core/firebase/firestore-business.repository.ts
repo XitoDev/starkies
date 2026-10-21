@@ -450,15 +450,18 @@ export class FirestoreBusinessRepository {
       }
 
       const nextStock = currentStock + quantity;
-      const weightedAverageCost = (currentStock * currentUnitCost + quantity * unitCost) / nextStock;
+      const latestPurchaseCost = unitCost;
       const updatedIngredient: Record<string, unknown> = {
         ...stored,
         stock: nextStock,
-        costPerUnit: weightedAverageCost,
+        costPerUnit: latestPurchaseCost,
+        packageQuantityGrams: Number(movement.packageQuantityGrams ?? stored['packageQuantityGrams'] ?? 0),
+        packagePrice: Number(movement.packagePrice ?? stored['packagePrice'] ?? amount),
       };
+      if (movement.brand?.trim()) updatedIngredient['brand'] = movement.brand.trim();
       // Preserve compatibility with backups whose original field was named "cost".
       if (Object.prototype.hasOwnProperty.call(stored, 'cost')) {
-        updatedIngredient['cost'] = weightedAverageCost;
+        updatedIngredient['cost'] = latestPurchaseCost;
       }
 
       const metadata = metadataSnapshot.data() as StateMetadata;

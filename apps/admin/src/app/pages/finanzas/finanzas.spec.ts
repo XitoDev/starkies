@@ -77,8 +77,9 @@ describe('Finanzas', () => {
 
   it('persists a purchase with stock and cash-flow details', async () => {
     component.openPurchaseForm();
-    component.updatePurchaseNumber('quantity', '2');
-    component.updatePurchaseNumber('unitCost', '3.5');
+    component.updatePurchaseNumber('packageQuantityGrams', '2000');
+    component.updatePurchaseNumber('packagePrice', '7');
+    component.updatePurchaseText('brand', 'Molino');
 
     await component.savePurchase();
 
@@ -86,6 +87,9 @@ describe('Finanzas', () => {
       ingredientId: 'flour',
       quantity: 2,
       unitCost: 3.5,
+      brand: 'Molino',
+      packageQuantityGrams: 2000,
+      packagePrice: 7,
       amount: 7,
       type: 'OUT',
       category: 'compra_insumo',

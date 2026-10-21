@@ -111,12 +111,16 @@
             <p class="form-help form-field-wide">Primero registra un insumo en Inventario para poder cargar una compra.</p>
           }
           <label class="form-field">
-            <span>Cantidad comprada</span>
-            <input matInput type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
+            <span>Cantidad del empaque (gramos)</span>
+            <input matInput type="number" min="0.001" step="any" required [value]="purchaseForm().packageQuantityGrams" (input)="updatePurchaseNumber('packageQuantityGrams', $any($event.target).value)" />
           </label>
           <label class="form-field">
-            <span>Costo por {{ selectedIngredient()?.unit || 'unidad' }} (USD)</span>
-            <input matInput type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
+            <span>Precio del empaque (USD)</span>
+            <input matInput type="number" min="0.0001" step="any" required [value]="purchaseForm().packagePrice" (input)="updatePurchaseNumber('packagePrice', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Marca comprada</span>
+            <input matInput maxlength="120" required [value]="purchaseForm().brand" (input)="updatePurchaseText('brand', $any($event.target).value)" placeholder="Marca del proveedor" />
           </label>
           <label class="form-field">
             <span>Fecha de compra</span>

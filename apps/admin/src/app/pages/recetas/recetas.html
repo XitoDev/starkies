@@ -3,8 +3,8 @@
   <div class="page-heading">
     <div>
       <p class="eyebrow">Starkies / Mi negocio</p>
-      <h1 class="page-title">{{ view() === 'recipes' ? 'Productos' : 'Masas base' }}</h1>
-      <p class="page-subtitle">{{ view() === 'recipes' ? 'Administra tus productos, recetas, costos y precios.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
+      <h1 class="page-title">{{ view() === 'recipes' ? 'Recetas' : 'Masas base' }}</h1>
+      <p class="page-subtitle">{{ view() === 'recipes' ? 'Administra tus recetas, recetas, costos y precios.' : 'Administra las fórmulas base que utilizan tus recetas.' }}</p>
     </div>
     @if (view() === 'recipes') {
       <button matButton="elevated" class="btn-primary" type="button" (click)="openNewRecipe()"><mat-icon class="plus-sign" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Nueva receta</button>
@@ -13,7 +13,7 @@
   @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
   <div class="view-and-status-row">
     <div class="view-tabs" role="tablist" aria-label="Tipo de receta">
-      <button matButton="text" type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Productos</button>
+      <button matButton="text" type="button" role="tab" [attr.aria-selected]="view() === 'recipes'" [class.active]="view() === 'recipes'" (click)="setView('recipes')">Recetas</button>
       <button matButton="text" type="button" role="tab" [attr.aria-selected]="view() === 'bases'" [class.active]="view() === 'bases'" (click)="setView('bases')">Masas base</button>
     </div>
     @if (view() === 'recipes') {
@@ -46,8 +46,8 @@
                 <button matIconButton class="card-menu-button" type="button" [matMenuTriggerFor]="recipeMenu" [attr.aria-label]="'Opciones de ' + recipe.name" (click)="$event.stopPropagation()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon></button>
                 <mat-menu #recipeMenu="matMenu">
                   <button mat-menu-item type="button" (click)="duplicateRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">content_copy</mat-icon><span>Duplicar receta</span></button>
-                  <button mat-menu-item type="button" (click)="archiveRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ recipe.archived ? 'unarchive' : 'inventory_2' }}</mat-icon><span>{{ recipe.archived ? 'Restaurar producto' : 'Archivar producto' }}</span></button>
-                  <button mat-menu-item type="button" class="delete-menu-action" (click)="deleteRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon><span>Eliminar producto</span></button>
+                  <button mat-menu-item type="button" (click)="archiveRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{ recipe.archived ? 'unarchive' : 'inventory_2' }}</mat-icon><span>{{ recipe.archived ? 'Restaurar receta' : 'Archivar receta' }}</span></button>
+                  <button mat-menu-item type="button" class="delete-menu-action" (click)="deleteRecipe(recipe)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon><span>Eliminar receta</span></button>
                 </mat-menu>
               </div>
               <div class="card-content">

@@ -40,3 +40,5 @@
 .supply-actions .ingredient-action-button.delete-menu-action{color:#a45b64}
 .supply-actions .ingredient-action-button.delete-menu-action:hover{background:#fff0f0;color:#a13443}
 .cost-per-gram{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.inventory-page .page-heading{align-items:center}.inventory-page .page-heading>button{flex-shrink:0}.inventory-page .page-heading>button mat-icon{margin-right:6px}

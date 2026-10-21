@@ -9,7 +9,6 @@ import { Ingredient } from 'shared';
 
 type IngredientForm = {
   name: string;
-  brand: string;
   packageQuantityGrams: number;
   packagePrice: number;
   unit: string;
@@ -37,12 +36,12 @@ export class Ingredientes {
   readonly formError = signal('');
   readonly notice = signal('');
   readonly form = signal<IngredientForm>(this.emptyForm());
-  readonly brands = computed(() => Array.from(new Set(this.ingredients().map(item => item.brand?.trim()).filter((brand): brand is string => Boolean(brand)))).sort((a, b) => a.localeCompare(b, 'es')));
+
 
   readonly filteredIngredients = computed(() => {
     const term = this.searchTerm().trim().toLocaleLowerCase('es');
     return this.ingredients()
-      .filter(item => !term || item.name.toLocaleLowerCase('es').includes(term) || (item.brand ?? '').toLocaleLowerCase('es').includes(term))
+      .filter(item => !term || item.name.toLocaleLowerCase('es').includes(term) || (item.supplyGroup ?? '').toLocaleLowerCase('es').includes(term))
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   });
 
@@ -65,7 +64,6 @@ export class Ingredientes {
     const grams = item.packageQuantityGrams ?? this.gramsPerUnit(item.unit);
     this.form.set({
       name: item.name,
-      brand: item.brand ?? '',
       packageQuantityGrams: grams,
       packagePrice: item.packagePrice ?? item.costPerUnit,
       unit: item.unit || 'g',
@@ -81,8 +79,8 @@ export class Ingredientes {
   }
 
   closeForm(): void { if (!this.saving()) { this.formOpen.set(false); this.formError.set(''); } }
-  updateTextField(field: 'name' | 'brand', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
-  selectBrand(value: string): void { this.form.update(current => ({ ...current, brand: value })); }
+  updateTextField(field: 'name', value: string): void { this.form.update(current => ({ ...current, [field]: value })); }
+  updateSupplyType(value: string): void { this.form.update(current => ({ ...current, supplyGroup: value })); }
   updateNumberField(field: 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.form.update(current => ({ ...current, [field]: Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
@@ -106,7 +104,6 @@ export class Ingredientes {
       const item: Ingredient = {
         id: this.editingId() ?? crypto.randomUUID(),
         name,
-        brand: values.brand.trim() || undefined,
         packageQuantityGrams: values.packageQuantityGrams,
         packagePrice: values.packagePrice,
         unit: values.unit || 'g',
@@ -143,7 +140,7 @@ export class Ingredientes {
     return 0;
   }
   private emptyForm(): IngredientForm {
-    return { name: '', brand: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
+    return { name: '', packageQuantityGrams: 1000, packagePrice: 0, unit: 'g', stock: 0, minStock: 0, supplyGroup: 'Secos', foodGroup: 'No aplica', ingredientGroup: '' };
   }
 }
 
@@ -156,7 +153,7 @@ type InventoryDraft = { stock: number; minStock: number };
   template: `
     <div class="page-container inventory-page">
       <div class="page-heading">
-        <div><p class="eyebrow">Mi negocio / Existencias</p><h1 class="page-title">Inventario</h1><p class="page-subtitle">Controla las cantidades disponibles y cuánto falta para alcanzar el stock mínimo.</p></div>
+        <div><p class="eyebrow">Mi negocio / Compras e inventario</p><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient()" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
       </div>
       @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
       <div class="inventory-table-wrap">
@@ -165,7 +162,7 @@ type InventoryDraft = { stock: number; minStock: number };
           <tbody>
             @for (item of ingredients(); track item.id) {
               <tr>
-                <td><strong>{{ item.name }}</strong><small>{{ item.brand || 'Sin marca registrada' }}</small></td>
+                <td><strong>{{ item.name }}</strong><small>{{ item.supplyGroup || 'Otros' }}</small></td>
                 <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Existencias de ' + item.name" [value]="draft(item).stock" (input)="updateDraft(item, 'stock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><label class="inventory-input"><input type="number" min="0" step="any" [attr.aria-label]="'Stock mínimo de ' + item.name" [value]="draft(item).minStock" (input)="updateDraft(item, 'minStock', $any($event.target).value)"><span>{{ item.unit }}</span></label></td>
                 <td><span class="shortage-pill" [class.has-shortage]="shortage(item) > 0">{{ shortage(item) | number:'1.0-3' }} {{ item.unit }}</span></td>
@@ -190,7 +187,7 @@ export class Inventario {
   readonly savingId = signal<string | null>(null);
   readonly notice = signal('');
 
-  buyIngredient(item: Ingredient): void { void this.router.navigate(['/finanzas'], { queryParams: { action: 'purchase', ingredientId: item.id } }); }
+  buyIngredient(item?: Ingredient): void { void this.router.navigate(['/finanzas'], { queryParams: item ? { action: 'purchase', ingredientId: item.id } : { action: 'purchase' } }); }
   draft(item: Ingredient): InventoryDraft { return this.drafts()[item.id] ?? { stock: item.stock, minStock: item.minStock ?? 0 }; }
   shortage(item: Ingredient): number { const draft = this.draft(item); return Math.max(0, draft.minStock - draft.stock); }
   updateDraft(item: Ingredient, field: 'stock' | 'minStock', value: string): void {
