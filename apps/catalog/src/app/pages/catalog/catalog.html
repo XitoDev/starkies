@@ -14,6 +14,8 @@
   }
   <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
     <div class="hero-copy hero-copy-clean">
+      <h1>La estrella<br><em>eres tú.</em></h1>
+      <p>Elige tus galletas favoritas y crea una caja muy tuya.</p>
       <a matButton="elevated" class="hero-cta" href="#presentaciones">Arma tu caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
     </div>
 
@@ -21,7 +23,7 @@
 
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
     <div class="section-title">
-      <div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Escoge tu presentación y combina los sabores que más te gustan.</p></div>
+      <div><div class="eyebrow">TU CAJA, TU ESTILO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación perfecta para cada antojo. Tú eliges los sabores.</p></div>
       <div class="search-field"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Busca tu sabor favorito"></div>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
@@ -38,10 +40,10 @@
     </div>
     <div class="catalog-hint"><span class="hint-icon" aria-hidden="true">✦</span><p>Tu caja actual: <strong>{{ selectedPresentation().name }}</strong>. Agrega tus sabores hasta completar las cantidades indicadas y después podrás guardar la caja en tu pedido.</p></div>
 
-    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">ENCUENTRA TU FAVORITA</div><h2>Sabores para brillar</h2></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
+    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">NUESTRAS</div><h2>Galletas</h2></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
-        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-sparkle" aria-hidden="true">✦</span>{{ cat }}</h3><div class="products">
+        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-eyebrow">NUESTRAS</span><span class="category-heading">{{ cat }}</span></h3><div class="products">
           @for (product of filteredProducts(); track product.id) {
             @if (product.category === cat) {
               <article class="product" [class.sold-out]="!product.stock">
