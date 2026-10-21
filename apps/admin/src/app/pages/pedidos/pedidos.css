@@ -14,3 +14,5 @@
 .dots mat-icon { width: 20px; height: 20px; font-size: 20px; }
 .mat-mdc-menu-item.delete-action { color: #a44855; }
 .mat-mdc-menu-item.delete-action mat-icon { color: inherit; }
+
+.order-open-link{display:inline-block;color:inherit;text-decoration:none}.order-open-link:hover strong{color:#8056ad;text-decoration:underline}.status.preparing{background:#f1eafa;color:#8056ad}.status.ready{background:#e8f3ff;color:#356a9b}
