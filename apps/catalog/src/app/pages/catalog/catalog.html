@@ -13,18 +13,10 @@
     </section>
   }
   <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
-    <div class="hero-copy">
+    <div class="hero-copy hero-copy-clean">
       <a matButton="elevated" class="hero-cta" href="#presentaciones">Arma tu caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
     </div>
-    <div class="hero-art" aria-label="Ilustración de las mascotas de StarKies">
-      <div class="hero-image-frame">
-        <div class="hero-cookie-photo" aria-hidden="true">@if (products()[0]?.image; as heroImage) { <img [ngSrc]="heroImage" alt="" width="240" height="240"> }</div>
-        <img class="hero-sketch" src="/starkies-sketch.webp" alt="Las mascotas originales de StarKies acompañan la colección de galletas" width="900" height="420" fetchpriority="high">
-      </div>
-      <span class="hero-sticker sticker-one" aria-hidden="true">hecho con<br>cariño <span>♡</span></span>
-      <span class="hero-star hero-star-one" aria-hidden="true">✧</span><span class="hero-star hero-star-two" aria-hidden="true">✦</span>
-    </div>
-    <div class="hero-brush" aria-hidden="true"></div>
+
   </section>
 
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
@@ -38,7 +30,6 @@
       @for (p of presentations; track p.id; let i = $index) {
         <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
           <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
-          <span class="presentation-illustration" aria-hidden="true"><span class="cookie-dot cookie-dot-a"></span><span class="cookie-dot cookie-dot-b"></span><span class="cookie-dot cookie-dot-c"></span><span class="cookie-dot cookie-dot-d"></span><span class="cookie-dot cookie-dot-e"></span></span>
           <strong>{{ p.name }}</strong>
           <span class="presentation-description">{{ p.desc }}</span>
           <span class="presentation-bottom"><b class="box-price">{{ formatPresentationPrice(p.price) }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
@@ -56,7 +47,7 @@
               <article class="product" [class.sold-out]="!product.stock">
                 <div class="photo" [class.photo-sold-out]="!product.stock">
                   @if (product.image) { <img [ngSrc]="product.image" [alt]="product.name" width="320" height="320" [priority]="product.id === '1' || product.id === '6'"> }
-                  @else { <span class="cookie-illustration" [class.cookie-ny]="product.isNy" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span> }
+                  @else { <span class="photo-placeholder" aria-hidden="true"></span> }
                   @if (product.tag && product.stock) { <span class="product-tag">{{ product.tag }}</span> }
                   @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
                 </div>
@@ -74,14 +65,6 @@
     @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>No encontramos ese sabor</h3><p>Prueba con otro nombre o cambia tu búsqueda.</p></div> }
   </section>
 
-  <section class="how-to" id="como-pedir" aria-labelledby="how-title">
-    <div class="how-heading"><div class="eyebrow">ASÍ DE FÁCIL</div><h2 id="how-title">Tu caja, a tu manera</h2><p>Solo tres pasos para preparar tu selección.</p></div>
-    <div class="steps">
-      <article class="step"><span class="step-number">01</span><span class="step-icon" aria-hidden="true">✦</span><h3>Elige tu caja</h3><p>Selecciona la presentación que va contigo.</p></article>
-      <article class="step"><span class="step-number">02</span><span class="step-icon" aria-hidden="true">♡</span><h3>Combina sabores</h3><p>Agrega tus galletas favoritas hasta completar tu caja.</p></article>
-      <article class="step"><span class="step-number">03</span><span class="step-icon" aria-hidden="true">↗</span><h3>Revisa tu pedido</h3><p>Guarda tus cajas y revisa los detalles antes de confirmar.</p></article>
-    </div>
-  </section>
 </main>
 <footer class="site-footer" aria-label="Información y contacto de StarKies">
   <div class="footer-brush" aria-hidden="true"></div>
