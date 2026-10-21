@@ -98,7 +98,7 @@ export class Finanzas {
     } catch (error) {
       this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio de venta.');
     }
-  });
+  }
 
   readonly activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
   readonly formOpen = signal<'purchase' | 'expense' | null>(null);
