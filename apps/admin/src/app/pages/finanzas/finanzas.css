@@ -6,3 +6,11 @@
 .balance-editor-form{grid-template-columns:repeat(2,minmax(0,1fr))}
 .balance-group-title{margin:8px 0 0;padding-bottom:9px;border-bottom:1px solid #eeeeee;color:#514b55;font-size:12px;font-weight:750}
 @media(max-width:600px){.edit-balances-button{margin-left:0}.balance-editor-form{grid-template-columns:1fr}.balance-group-title{grid-column:auto}}
+
+.price-table{min-width:1700px}
+.price-table th,.price-table td{min-width:92px}
+.price-edit-input{width:96px;min-width:80px;height:34px;padding:0 8px;border:1px solid #dedede;border-radius:6px;background:#fff;color:#51445b;font:inherit;font-variant-numeric:tabular-nums}
+.price-edit-input:focus{outline:2px solid #d8d8d8;outline-offset:1px;border-color:#bdbdbd}
+.suggested-price-cell{font-weight:750;color:#51445b;background:#f8f8f8}
+.save-price-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.save-price-button mat-icon{font-size:17px;width:17px;height:17px}
