@@ -55,6 +55,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const orderId = 'SK-' + todayInEcuador().replaceAll('-', '') + '-' + randomBytes(3).toString('hex').toUpperCase();
     const documentExpiresAt = now + 3 * 24 * 60 * 60 * 1000;
     const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
+    const documentShortCode = randomBytes(6).toString('base64url');
     const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
     const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
@@ -90,6 +91,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       created: createdAt,
       createdAt,
       cookieName: order.cookieName || 'N/A',
+      documentShortCode,
+      documentToken,
+      documentExpiresAt,
       notes: order.notes,
       status: 'PENDING',
       total: order.total,
@@ -157,7 +161,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }, { merge: true });
     });
 
-    res.status(201).json({ ok: true, orderId, total: order.total, documentToken, documentExpiresAt });
+    res.status(201).json({ ok: true, orderId, total: order.total, documentShortCode, documentExpiresAt });
   } catch (error) {
     if (error instanceof HttpError) {
       res.status(error.statusCode).json({ message: error.message });
