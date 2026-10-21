@@ -12,6 +12,9 @@ type PurchaseForm = {
   ingredientId: string;
   quantity: number;
   unitCost: number;
+  brand: string;
+  packageQuantityGrams: number;
+  packagePrice: number;
   date: string;
   note: string;
 };
@@ -115,7 +118,7 @@ export class Finanzas {
   readonly expenseTotal = computed(() => this.cashMovements().filter(item => item.type === 'OUT').reduce((sum, item) => sum + item.amount, 0));
   readonly availableCash = computed(() => this.incomeTotal() - this.expenseTotal());
   readonly inventoryValue = computed(() => this.dataService.ingredients().reduce((sum, item) => sum + item.stock * item.costPerUnit, 0));
-  readonly purchaseTotal = computed(() => Math.round(this.purchaseForm().quantity * this.purchaseForm().unitCost * 100) / 100);
+  readonly purchaseTotal = computed(() => Math.round(this.purchaseForm().packagePrice * 100) / 100);
   readonly selectedIngredient = computed(() =>
     this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
   );
@@ -454,14 +457,17 @@ export class Finanzas {
       ...current,
       ingredientId,
       unitCost: ingredient?.costPerUnit ?? current.unitCost,
+      brand: ingredient?.brand ?? current.brand,
+      packageQuantityGrams: ingredient?.packageQuantityGrams ?? current.packageQuantityGrams,
+      packagePrice: ingredient?.packagePrice ?? current.packagePrice,
     }));
   }
 
-  updatePurchaseText(field: 'date' | 'note', value: string): void {
+  updatePurchaseText(field: 'date' | 'note' | 'brand', value: string): void {
     this.purchaseForm.update(current => ({ ...current, [field]: value }));
   }
 
-  updatePurchaseNumber(field: 'quantity' | 'unitCost', value: string): void {
+  updatePurchaseNumber(field: 'quantity' | 'unitCost' | 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.purchaseForm.update(current => ({
       ...current,
@@ -495,18 +501,23 @@ export class Finanzas {
     const values = this.purchaseForm();
     const ingredient = this.dataService.ingredients().find(item => item.id === values.ingredientId);
     const date = this.normalizeDate(values.date);
-    const amount = Math.round(values.quantity * values.unitCost * 100) / 100;
+    const packageGrams = values.packageQuantityGrams;
+    const packagePrice = Math.round(values.packagePrice * 10000) / 10000;
+    const unitFactor = ['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1000 : 1;
+    const quantity = packageGrams / unitFactor;
+    const unitCost = packagePrice / Math.max(quantity, Number.EPSILON);
+    const amount = Math.round(packagePrice * 100) / 100;
 
     if (!ingredient) {
       this.formError.set('Selecciona un insumo registrado antes de guardar la compra.');
       return;
     }
-    if (!Number.isFinite(values.quantity) || values.quantity <= 0) {
-      this.formError.set('La cantidad comprada debe ser mayor que cero.');
+    if (!Number.isFinite(packageGrams) || packageGrams <= 0) {
+      this.formError.set('La cantidad del empaque en gramos debe ser mayor que cero.');
       return;
     }
-    if (!Number.isFinite(values.unitCost) || values.unitCost <= 0 || amount <= 0) {
-      this.formError.set('El costo por unidad debe ser mayor que cero.');
+    if (!Number.isFinite(packagePrice) || packagePrice <= 0 || amount <= 0) {
+      this.formError.set('El precio del empaque debe ser mayor que cero.');
       return;
     }
     if (!date) {
@@ -526,8 +537,11 @@ export class Finanzas {
       ingredientId: ingredient.id,
       ingredientName: ingredient.name,
       ingredientUnit: ingredient.unit,
-      quantity: values.quantity,
-      unitCost: values.unitCost,
+      quantity,
+      unitCost,
+      brand: values.brand.trim(),
+      packageQuantityGrams: packageGrams,
+      packagePrice,
     };
 
     this.saving.set(true);
@@ -592,7 +606,7 @@ export class Finanzas {
   }
 
   private emptyPurchaseForm(): PurchaseForm {
-    return { ingredientId: '', quantity: 1, unitCost: 0, date: this.today(), note: '' };
+    return { ingredientId: '', quantity: 1, unitCost: 0, brand: '', packageQuantityGrams: 1000, packagePrice: 0, date: this.today(), note: '' };
   }
 
   private emptyExpenseForm(): ExpenseForm {
