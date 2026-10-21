@@ -86,3 +86,7 @@ export class PedidoRuta {
     catch (error) { this.error.set(error instanceof Error ? error.message : 'No se pudo eliminar el pedido.'); }
   }
 }
+/* All order action groups use outlined buttons; main action remains at the far right. */
+.primary,.secondary,.danger{border:1px solid #d9c4e8;background:#fff;color:#8056ad;}
+.secondary{border-color:#e8e0ed;color:#65586d;}
+.danger{border-color:#f0d6d9;background:#fff;color:#a44855;}
