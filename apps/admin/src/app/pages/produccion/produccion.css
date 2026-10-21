@@ -71,5 +71,5 @@
 @media (max-width: 460px) { .production-form { grid-template-columns: 1fr; } .form-field-wide, .requirements-panel, .form-error, .modal-actions { grid-column: 1; } .modal-actions { flex-direction: column-reverse; } .modal-actions button { width: 100%; } }
 /* Dialog actions use outlined buttons, with the main action last on the right. */
 .modal-actions{justify-content:flex-end;}
-.modal-actions .btn-primary{border-color:#d9c4e8;background:#fff;color:#8056ad;}
+
 .modal-actions .btn-secondary{border-color:#e8e0ed;background:#fff;color:#65586d;}
