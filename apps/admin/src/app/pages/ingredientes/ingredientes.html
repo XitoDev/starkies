@@ -24,15 +24,15 @@
 
     <div class="supply-table-wrap">
       <table class="supply-table">
-        <thead><tr><th>Ingrediente</th><th>Tipo</th><th>Cantidad del empaque (g)</th><th>Precio del empaque</th><th>Costo por gramo</th><th aria-label="Acciones"></th></tr></thead>
+        <thead><tr><th>Ingrediente</th><th>Tipo</th><th>Cantidad del empaque</th><th>Precio del empaque</th><th>Costo por gramo</th><th aria-label="Acciones"></th></tr></thead>
         <tbody>
           @for (ingredient of filteredIngredients(); track ingredient.id) {
             <tr>
               <td><strong>{{ ingredient.name }}</strong></td>
               <td>{{ ingredient.supplyGroup || 'Otros' }}</td>
-              <td>{{ packageQuantity(ingredient) | number:'1.0-3' }} g</td>
+              <td>{{ packageQuantity(ingredient) | number:'1.0-3' }} {{ unitLabel(ingredient.unit) }}</td>
               <td>{{ packagePrice(ingredient) | currency:'USD':'symbol':'1.4-6' }}</td>
-              <td><strong class="cost-per-gram">{{ costPerGram(ingredient) | currency:'USD':'symbol':'1.4-6' }}/g</strong></td>
+              <td><strong class="cost-per-gram">{{ costPerGram(ingredient) | currency:'USD':'symbol':'1.4-6' }}{{ form().unit === 'ml' ? '/ml' : '/g' }}</strong></td>
               <td class="supply-actions">
                 <button matIconButton class="ingredient-action-button" type="button" aria-label="Editar insumo" (click)="openEditIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">edit</mat-icon></button>
                 <button matIconButton class="ingredient-action-button delete-menu-action" type="button" aria-label="Eliminar insumo" (click)="removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">delete</mat-icon></button>
@@ -52,14 +52,15 @@
   <div class="modal-backdrop" (click)="closeForm()">
     <section class="ingredient-modal" role="dialog" aria-modal="true" aria-labelledby="ingredient-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">
-        <div><p class="eyebrow">Costos de compra</p><h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2><p>El costo por gramo se calcula con el precio y el peso del empaque.</p></div>
+        <div><p class="eyebrow">Costos de compra</p><h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2><p>El costo por gramo o mililitro se calcula con el precio y la cantidad del empaque.</p></div>
       </div>
       <form class="ingredient-form" (submit)="submitForm($event)">
         <label class="form-field form-field-wide"><span>Ingrediente</span><input matInput required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" /></label>
         <label class="form-field form-field-wide"><span>Tipo</span><select matNativeControl required [value]="form().supplyGroup" (change)="updateSupplyType($any($event.target).value)"><option value="Secos">Secos</option><option value="Húmedos">Húmedos</option><option value="Decoración y relleno">Decoración y relleno</option><option value="Empaques">Empaques</option><option value="Utensilios y protección">Utensilios y protección</option><option value="Otros">Otros</option></select></label>
-        <label class="form-field"><span>Cantidad del empaque (gramos)</span><input matInput required type="number" min="0.001" step="any" [value]="form().packageQuantityGrams" (input)="updateNumberField('packageQuantityGrams', $any($event.target).value)" placeholder="Ej. 1000" /></label>
+        <label class="form-field form-field-wide"><span>Unidad</span><select matNativeControl required [value]="form().unit" (change)="updateUnit($any($event.target).value)"><option value="g">Gramos (g)</option><option value="ml">Mililitros (ml)</option></select></label>
+        <label class="form-field"><span>Cantidad del empaque ({{ form().unit === 'ml' ? 'mililitros' : 'gramos' }})</span><input matInput required type="number" min="0.001" step="any" [value]="form().packageQuantityGrams" (input)="updateNumberField('packageQuantityGrams', $any($event.target).value)" placeholder="Ej. 1000" /></label>
         <label class="form-field"><span>Precio del empaque (USD)</span><input matInput required type="number" min="0" step="0.0001" [value]="form().packagePrice" (input)="updateNumberField('packagePrice', $any($event.target).value)" placeholder="Ej. 2.50" /></label>
-        <div class="cost-preview form-field-wide"><span>Costo calculado por gramo</span><strong>{{ costPerGramFromForm() | currency:'USD':'symbol':'1.4-6' }}/g</strong></div>
+        <div class="cost-preview form-field-wide"><span>Costo calculado por {{ form().unit === 'ml' ? 'mililitro' : 'gramo' }}</span><strong>{{ costPerGramFromForm() | currency:'USD':'symbol':'1.4-6' }}/g</strong></div>
         @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
         <div class="modal-actions">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>
