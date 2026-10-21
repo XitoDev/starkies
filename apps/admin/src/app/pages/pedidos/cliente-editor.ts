@@ -22,7 +22,7 @@ import { DataService } from '../../services/data.service';
         <label>Nombre<input required maxlength="100" [(ngModel)]="name" name="name" autocomplete="name"></label>
         <label>Teléfono<input maxlength="32" [(ngModel)]="phone" name="phone" autocomplete="tel"></label>
         <label>Dirección<textarea rows="3" maxlength="250" [(ngModel)]="address" name="address" autocomplete="street-address"></textarea></label>
-        <footer><a matButton="outlined" class="secondary" routerLink="/pedidos">Cancelar</a><button matButton="outlined" type="submit" [disabled]="saving() || !customer()">{{ saving() ? 'Guardando…' : 'Guardar cliente' }}</button></footer>
+        <footer><a matButton="outlined" class="secondary" routerLink="/pedidos">Cancelar</a><button matButton="elevated" type="submit" [disabled]="saving() || !customer()">{{ saving() ? 'Guardando…' : 'Guardar cliente' }}</button></footer>
       </form>
     </section>
   `,
