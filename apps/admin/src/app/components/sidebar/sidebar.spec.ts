@@ -10,15 +10,17 @@ describe('Sidebar', () => {
   let component: Sidebar;
   let fixture: ComponentFixture<Sidebar>;
   let signOutSpy: ReturnType<typeof vi.fn>;
+  let ordersSignal: ReturnType<typeof signal<{ status: string }[]>>;
 
   beforeEach(async () => {
     signOutSpy = vi.fn().mockResolvedValue(undefined);
+    ordersSignal = signal([{ status: 'PENDING' }]);
     await TestBed.configureTestingModule({
       imports: [Sidebar],
       providers: [
         provideRouter([]),
         { provide: FirebaseClientService, useValue: { signOut: signOutSpy } },
-        { provide: DataService, useValue: { exportBackup: vi.fn(), orders: signal([{ status: 'PENDING' }]) } },
+        { provide: DataService, useValue: { exportBackup: vi.fn(), orders: ordersSignal } },
       ],
     }).compileComponents();
 
@@ -50,10 +52,15 @@ describe('Sidebar', () => {
   });
 
 
-  it('shows the number of pending orders and hides the badge when there are none', () => {
-    const badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
+  it('shows the pending order count and hides the badge when the count reaches zero', () => {
+    let badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
     expect(badge.textContent?.trim()).toBe('1');
     expect(badge.getAttribute('aria-label')).toBe('1 pedidos pendientes');
+
+    ordersSignal.set([]);
+    fixture.detectChanges();
+    badge = fixture.nativeElement.querySelector('.nav-badge') as HTMLElement;
+    expect(badge).toBeNull();
   });
 
   it('signs out of Firebase and navigates to login', async () => {
