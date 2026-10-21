@@ -84,5 +84,11 @@ export class Catalogo {
     void this.router.navigate(['/catalogo/productos', item.id]);
   }
 
+  openProductFromKeyboard(event: KeyboardEvent, item: Recipe): void {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === ' ') event.preventDefault();
+    this.openProduct(item);
+  }
+
   async syncCatalog():Promise<void>{this.notice.set('');this.error.set('');await this.dataService.loadFromCloud();if(this.dataService.error())this.error.set(this.dataService.error());else this.notice.set('Catálogo sincronizado con los datos guardados.');}
 }
