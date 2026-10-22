@@ -295,7 +295,7 @@ export class Finanzas {
       const order = value as Record<string, unknown>;
       const status = String(order['status'] ?? '').toLocaleLowerCase('es');
       const id = String(order['id'] ?? order['code'] ?? '');
-      return Boolean(id && !processed.has(id) && (status.includes('entreg') || status === 'delivered'));
+      return Boolean(id && !processed.has(id) && (status.includes('entreg') || status === 'delivered' || status === 'completed' || status === 'complete'));
     });
   }
 
@@ -429,7 +429,7 @@ export class Finanzas {
       .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
       .filter(order => {
         const status = String(order['status'] ?? '').toLocaleLowerCase('es');
-        return status.includes('entreg') || status === 'delivered';
+        return status.includes('entreg') || status === 'delivered' || status === 'completed' || status === 'complete';
       })
       .map(order => String(order['id'] ?? order['code'] ?? ''))
       .filter(Boolean);
