@@ -1,11 +1,10 @@
 import { MatButtonModule } from '@angular/material/button';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
-import { DataService } from '../../services/data.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,11 +14,9 @@ import { DataService } from '../../services/data.service';
   styleUrl: './sidebar.css'
 })
 export class Sidebar {
-  private dataService = inject(DataService);
   private router = inject(Router);
   private firebase = inject(FirebaseClientService);
 
-  readonly pendingOrderCount = computed(() => this.dataService.orders().filter(order => order.status === 'PENDING').length);
   readonly loggingOut = signal(false);
   readonly logoutMessage = signal('');
   navItems = [
@@ -32,10 +29,6 @@ export class Sidebar {
     { label: 'Pedidos', path: '/pedidos', icon: 'shopping_bag' },
     { label: 'Finanzas', path: '/finanzas', icon: 'payments' }
   ];
-
-  exportBackup(): void {
-    this.dataService.exportBackup();
-  }
 
   async logout(): Promise<void> {
     if (this.loggingOut()) return;
