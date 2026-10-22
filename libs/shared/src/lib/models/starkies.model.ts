@@ -101,4 +101,12 @@ export interface CashMovement {
   packagePrice?: number;
 }
 
-
+export interface StarkiesBackup {
+  ingredients: Ingredient[];
+  recipes: Recipe[];
+  customers: Customer[];
+  orders: Order[];
+  cashMovements?: CashMovement[];
+  inventoryAdjustments?: any[];
+  catalogSettings?: any;
+}
