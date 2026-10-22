@@ -80,6 +80,34 @@ export class DataService implements OnDestroy {
     }
   }
 
+  private readonly searchCache = new Map<string, { revision: number; items: RawRecord[] }>();
+
+  async searchOrders(term: string, statusFilter: string): Promise<Order[]> {
+    const normalized = this.normalizeSearchTerm(term);
+    if (normalized.length < 2) return [];
+    const key = 'orders|' + statusFilter + '|' + normalized;
+    const cached = this.searchCache.get(key);
+    if (cached && cached.revision === this.cloudRevision) return cached.items as unknown as Order[];
+    const items = await this.repository.searchCollection<RawRecord>('orders', normalized, { limit: 50, status: statusFilter });
+    this.searchCache.set(key, { revision: this.cloudRevision, items });
+    return items as unknown as Order[];
+  }
+
+  async searchCustomers(term: string): Promise<Customer[]> {
+    const normalized = this.normalizeSearchTerm(term);
+    if (normalized.length < 2) return [];
+    const key = 'customers|ALL|' + normalized;
+    const cached = this.searchCache.get(key);
+    if (cached && cached.revision === this.cloudRevision) return cached.items as unknown as Customer[];
+    const items = await this.repository.searchCollection<RawRecord>('customers', normalized, { limit: 50 });
+    this.searchCache.set(key, { revision: this.cloudRevision, items });
+    return items as unknown as Customer[];
+  }
+
+  private normalizeSearchTerm(term: string): string {
+    return term.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+  }
+
   /** Server-side count for the summary; avoids downloading all pending orders. */
   async refreshPendingOrderCount(): Promise<number> {
     const count = await this.repository.countCollection('orders', [
