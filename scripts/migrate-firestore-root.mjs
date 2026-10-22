@@ -382,6 +382,8 @@ async function main() {
     recordCounts: { ...counts },
     migratedFrom: metaPath,
     migratedAt: new Date().toISOString(),
+    revision: Number(legacyMeta.revision ?? 0) + 1,
+    changedKeys: [...new Set([...collectionKeys, ...settingKeys, 'stats:sales', 'stats:demand', 'stats:production'])],
     migrationTool: 'scripts/migrate-firestore-root.mjs',
   }, { merge: true });
   await batch.commit();
