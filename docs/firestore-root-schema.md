@@ -29,6 +29,7 @@ Collection records are stored as their native fields. There is no `value` envelo
 | Delivery zones | `deliveryZones/{zoneId}` | Native fields plus `sortIndex` |
 | Settings | `settings/{key}` | `data` holds the setting payload |
 | Metadata | `system/stateMeta` | Schema version and migration status |
+| Internal legacy catalog data | `catalog/{recordId}` | Migrated privately; never publicly readable |
 | Public catalog projection | `publicCatalog/{productId}` | Public, published product fields only |
 | Customer phone index | `customerPhoneLookup/{sha256(normalizedPhone)}` | Stable customer ID lookup |
 | Order phone index | `orderPhoneLookup/{sha256(normalizedPhone)}` | Most recent order ID lookup |
@@ -36,7 +37,7 @@ Collection records are stored as their native fields. There is no `value` envelo
 | Rate limits | `publicOrderRateLimits/{key}` | Server-maintained abuse protection |
 | Migration archive | `migrationArchives/{archiveId}` | Original backup archive |
 
-The public catalog is a projection, not the source of truth. Only explicitly published catalog data is public. Phone indexes and rate-limit records are server-only. Firestore rules default-deny access and require approved admin authentication for private root collections.
+The public catalog is a projection, not the source of truth. Legacy `catalog` records stay private and are not copied into the public projection. Only explicitly published catalog data is public. Phone indexes and rate-limit records are server-only. Firestore rules default-deny access and require approved admin authentication for private root collections.
 
 ## Migration
 
