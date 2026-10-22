@@ -348,6 +348,7 @@ async function main() {
     destinationMeta: 'system/stateMeta',
     schemaVersion: 3,
     counts,
+    destinationCounts: destinationRecordCounts,
     operations: operations.length,
     actions,
     conflicts: conflicts.map(operation => ({ source: operation.source, target: operation.target })),
