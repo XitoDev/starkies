@@ -70,7 +70,7 @@ export class Pedidos {
       } finally {
         if (requestId === this.searchRequestId) this.searchPending.set(false);
       }
-    }, 300);
+    }, 1000);
   }
   setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.setSearchTerm('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true,this.statusFilter());}
   setStatusFilter(value: string): void { this.statusFilter.set(value as 'ALL' | Order['status']); const term=this.searchTerm().trim(); if(term.length>=2) this.setSearchTerm(term); else void this.data.loadOrdersPage(true, this.statusFilter()); }
