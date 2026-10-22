@@ -24,6 +24,8 @@ export class DataService implements OnDestroy {
     // One lightweight metadata listener invalidates shared collection caches when another session writes.
     this.stopMetadataWatch = this.repository.watchStateMeta(() => {
       this.cloudRevision += 1;
+      this.searchCache.clear();
+      this.ordersPageCache.clear();
       this.repository.invalidateStateCache();
     }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
