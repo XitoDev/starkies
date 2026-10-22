@@ -17,11 +17,16 @@ jobs:
       github.event.pull_request.head.ref != 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Delete merged source branch
+      - name: Delete merged source branch if it still exists
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        shell: bash
         run: |
-          gh api \
-            --method DELETE \
-            "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}"
+          REF_URL="repos/${GITHUB_REPOSITORY}/git/ref/heads/${BRANCH_NAME}"
+          if gh api "${REF_URL}" >/dev/null 2>&1; then
+            gh api --method DELETE "${REF_URL}"
+            echo "Deleted merged branch: ${BRANCH_NAME}"
+          else
+            echo "Source branch already deleted: ${BRANCH_NAME}"
+          fi
