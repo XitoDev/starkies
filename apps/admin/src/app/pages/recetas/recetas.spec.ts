@@ -20,7 +20,6 @@ describe('Recetas', () => {
         { provide: RecipeImageService, useValue: {} },
         { provide: ImageCdnUploadService, useValue: {} },
       ],
-      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Recetas);
