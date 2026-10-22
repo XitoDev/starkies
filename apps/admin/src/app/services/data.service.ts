@@ -319,7 +319,7 @@ export class DataService implements OnDestroy {
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('ingredients', ingredientId));
   }
 
-  async saveRecipe(recipe: Recipe): Promise<void> {
+  async saveRecipe(recipe: Recipe, updateCatalogFields = false): Promise<void> {
     const state = this.rawState();
     if (!state) {
       throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
@@ -347,6 +347,7 @@ export class DataService implements OnDestroy {
     for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete internalRecord[key];
     }
+    const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftRecord: RawRecord = {
       id: recipe.id,
       description: this.asString(savedRecord['catalogDescription'] ?? savedRecord['description']),
@@ -355,16 +356,20 @@ export class DataService implements OnDestroy {
       labelColor: this.asString(savedRecord['catalogLabelColor'], 'Morado'),
       visible: savedRecord['catalogVisible'] !== false,
     };
-    const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const nextDrafts = [...rawDrafts];
-    if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
-    else nextDrafts.push(draftRecord);
+    if (updateCatalogFields) {
+      if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
+      else nextDrafts.push(draftRecord);
+    }
     const nextRecipes = [...rawRecipes];
     if (existingIndex >= 0) nextRecipes[existingIndex] = internalRecord;
     else nextRecipes.push(internalRecord);
-    const nextState = { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipe.id, savedRecord));
+    const nextState = updateCatalogFields
+      ? { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts }
+      : { ...state, recipes: nextRecipes };
+    await this.applyOptimisticState(state, nextState, () =>
+      this.repository.upsertRecipeAndCatalogProjection(recipe.id, savedRecord, updateCatalogFields));
   }
 
 
