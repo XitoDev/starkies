@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { readPublicCatalog } from './catalog-data.js';
 
 type HeaderValue = string | string[] | undefined;
@@ -173,7 +173,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         }
       }
       const demandEntries = [...demandQuantities.entries()];
-      const demandSnapshots = [];
+      const demandSnapshots: DocumentSnapshot[] = [];
       for (const [productId] of demandEntries) {
         demandSnapshots.push(await transaction.get(db.collection('productionDemand').doc(productId)));
       }
