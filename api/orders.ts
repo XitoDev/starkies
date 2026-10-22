@@ -32,13 +32,13 @@ class HttpError extends Error {
 
 const searchTokensFor = (record: Record<string, unknown>): string[] => {
   const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
-    .map(value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
+    .map(value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
     .filter(Boolean);
   const tokens = new Set<string>();
   for (const value of values) {
-    const compact = value.replace(/\\s+/g, '');
+    const compact = value.replace(/\s+/g, '');
     for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
-    for (const word of value.split(/\\s+/).filter(part => part.length >= 2)) {
+    for (const word of value.split(/\s+/).filter(part => part.length >= 2)) {
       for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
     }
   }
