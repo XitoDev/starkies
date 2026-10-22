@@ -7,12 +7,14 @@ describe('DataService catalog visibility', () => {
   const repository = {
     loadState: vi.fn().mockResolvedValue(null),
     upsertCollectionRecord: vi.fn().mockResolvedValue(undefined),
+    upsertRecipeAndCatalogProjection: vi.fn().mockResolvedValue(undefined),
   };
   let service: DataService;
 
   beforeEach(() => {
     repository.loadState.mockReset().mockResolvedValue(null);
     repository.upsertCollectionRecord.mockReset().mockResolvedValue(undefined);
+    repository.upsertRecipeAndCatalogProjection.mockReset().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
         DataService,
@@ -55,13 +57,13 @@ describe('DataService catalog visibility', () => {
       sections: [{ name: 'masa', ingredients: [{ ingredientId: 'flour', quantity: 125 }] }],
     } as never);
 
-    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
-      'recipes',
+    expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       'cookie-1',
       expect.objectContaining({
         sections: [{ name: 'masa', ingredients: [{ ingredientId: 'flour', quantity: 125 }] }],
         items: [expect.objectContaining({ id: 'flour', ingredientId: 'flour', qty: 125, quantity: 125, section: 'masa' })],
       }),
+      false,
     );
     expect(service.recipes()[0].sections[0].ingredients).toEqual([{ ingredientId: 'flour', quantity: 125 }]);
   });
@@ -85,37 +87,38 @@ describe('DataService catalog visibility', () => {
     expect(service.recipes()[0].sections[0].ingredients).toEqual([{ ingredientId: 'flour', quantity: 125 }]);
   });
 
-  it('hides a recipe by updating only the stored record visibility flag', async () => {
+  it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
-    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
-      'recipes',
+    expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       '000015',
       expect.objectContaining({ id: '000015', catalogVisible: false }),
+      undefined,
     );
-    const savedRecord = repository.upsertCollectionRecord.mock.calls[0][2] as Record<string, unknown>;
-    expect(savedRecord).not.toHaveProperty('catalogLabel');
+    expect(service.rawState()?.['catalogDrafts']).toEqual([expect.objectContaining({ id: '000015', visible: false })]);
     expect(service.recipes()[0].catalogVisible).toBe(false);
   });
 
   it('shows a hidden recipe again without changing its other stored fields', async () => {
     service.rawState.update(state => ({
       ...state!,
-      recipes: [{ ...((state!['recipes'] as Record<string, unknown>[])[0]), catalogVisible: false, catalogLabel: 'Favorita' }],
+      recipes: [{ ...((state!['recipes'] as Record<string, unknown>[])[0]), catalogVisible: false }],
+      catalogDrafts: [{ id: '000015', visible: false, label: 'Favorita', description: '', image: '', labelColor: 'Morado' }],
     }));
 
     await service.setRecipeCatalogVisibility('000015', true);
 
-    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
-      'recipes',
+    expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       '000015',
       expect.objectContaining({ catalogVisible: true, catalogLabel: 'Favorita' }),
+      undefined,
     );
+    expect(service.rawState()?.['catalogDrafts']).toEqual([expect.objectContaining({ id: '000015', visible: true, label: 'Favorita' })]);
     expect(service.recipes()[0].catalogVisible).toBe(true);
   });
   it('updates catalog visibility immediately and rolls it back if the write fails', async () => {
     let rejectWrite!: (reason: Error) => void;
-    repository.upsertCollectionRecord.mockReturnValueOnce(new Promise<void>((_resolve, reject) => {
+    repository.upsertRecipeAndCatalogProjection.mockReturnValueOnce(new Promise<void>((_resolve, reject) => {
       rejectWrite = reject;
     }));
 
