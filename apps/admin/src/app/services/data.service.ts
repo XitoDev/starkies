@@ -34,7 +34,7 @@ export class DataService implements OnDestroy {
       this.repository.invalidateStateCache();
       if (changedKeys.includes('orders')) {
         void this.refreshPendingOrderCount().catch(() => undefined);
-        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) void this.loadOrdersPage(true).catch(() => undefined);
+        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
       }
       if (changedKeys.includes('stats:sales')) {
         void this.refreshSalesStats().catch(error => this.error.set(error.message));
@@ -173,6 +173,7 @@ export class DataService implements OnDestroy {
   readonly ordersPageHasMore = signal(false);
   readonly ordersPageLoading = signal(false);
   private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  private lastOrdersStatusFilter = 'ALL';
   private cloudRevision = 0;
   private readonly loadedCollectionRevision = new Map<string, number>();
   private readonly collectionLoadPromises = new Map<string, Promise<void>>();
@@ -181,6 +182,7 @@ export class DataService implements OnDestroy {
 
   /** Loads orders in bounded pages; the initial Admin load does not fetch all orders. */
   async loadOrdersPage(reset = false, statusFilter = 'ALL'): Promise<void> {
+    this.lastOrdersStatusFilter = statusFilter;
     if (this.ordersPageLoading()) return;
     this.ordersPageLoading.set(true);
     try {
