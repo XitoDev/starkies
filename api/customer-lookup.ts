@@ -47,14 +47,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     let value: CustomerRecord | undefined;
     if (customerId) {
       const customerSnapshot = await db.doc('customers/' + customerId).get();
-      value = customerSnapshot.data()?.['value'] as CustomerRecord | undefined;
+      value = customerSnapshot.data() as CustomerRecord | undefined;
     }
     if (!value) {
       const orderIndex = await db.doc('orderPhoneLookup/' + phoneHash).get();
       const orderId = String(orderIndex.data()?.['orderId'] ?? '');
       if (orderId) {
         const orderSnapshot = await db.doc('orders/' + orderId).get();
-        const previousOrder = orderSnapshot.data()?.['value'] as CustomerRecord | undefined;
+        const previousOrder = orderSnapshot.data() as CustomerRecord | undefined;
         if (previousOrder) {
           const rawAddress = typeof previousOrder.address === 'string' ? previousOrder.address : '';
           value = {
