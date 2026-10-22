@@ -50,6 +50,16 @@ const searchTokensFor = record => {
   }
   return [...tokens];
 };
+const nameSearchTokensFor = record => {
+  const name = cleanName(record.name).replace(/[^a-z0-9]+/g, ' ').trim();
+  const tokens = new Set();
+  for (const word of name.split(' ').filter(part => part.length >= 2)) {
+    for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+  }
+  const compact = name.split(' ').join('');
+  for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+  return [...tokens];
+};
 const stableJson = value => {
   if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
   if (!isObject(value)) return JSON.stringify(value);
@@ -95,7 +105,7 @@ async function main() {
       const value = legacyDocument.value;
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
-      const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0), ...(key === 'customers' || key === 'orders' ? { searchTokens: searchTokensFor({ ...value, id: documentId }) } : {}) };
+      const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0), ...(key === 'customers' || key === 'orders' ? { searchTokens: searchTokensFor({ ...value, id: documentId }) } : {}), ...(key === 'customers' ? { nameSearchTokens: nameSearchTokensFor({ ...value, id: documentId }) } : {}) };
       operations.push({ source: document.ref.path, target: targetCollection + '/' + documentId, data });
       if (key === 'customers') {
         const phone = normalizePhone(value.phone);
