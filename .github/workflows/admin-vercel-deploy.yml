@@ -23,7 +23,7 @@ permissions:
 
 concurrency:
   group: vercel-admin-${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate-and-deploy:
