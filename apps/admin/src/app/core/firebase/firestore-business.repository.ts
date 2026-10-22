@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   DocumentSnapshot,
+  DocumentReference,
   doc,
   getDoc,
   getDocs,
@@ -108,7 +109,7 @@ export class FirestoreBusinessRepository {
     await Promise.all(arrayKeys.map(async (key) => {
       const recordsRef = collection(this.firebase.firestore, key);
       const recordsSnapshot = await getDocs(query(recordsRef, orderBy('sortIndex', 'asc')));
-      state[key] = recordsSnapshot.docs.map((record) => record.data());
+      state[key] = recordsSnapshot.docs.map((record) => { const { sortIndex: _sortIndex, ...value } = record.data(); return value; });
     }));
 
     await Promise.all(settingKeys.map(async (key) => {
@@ -132,55 +133,14 @@ export class FirestoreBusinessRepository {
     recordId: string,
     value: Record<string, unknown>,
   ): Promise<void> {
-    this.invalidateStateCache();
-    if (!this.firebase.isConfigured) {
-      throw new Error(this.firebase.configurationMessage);
-    }
-
-    // Firestore rejects undefined anywhere in a document. Optional UI/model fields
-    // can explicitly be undefined (for example packageQuantityGrams or notes),
-    // so normalize the payload once at the persistence boundary.
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields(value);
-    const recordsRef = collection(this.firebase.firestore, collectionKey);
-    // Updating an existing recipe/product must not download the entire
-    // collection. Query its indexed ID first; the full ordered snapshot is
-    // needed only when appending a brand-new record to preserve its index.
-    const matchingById = await getDocs(query(recordsRef, where('id', '==', recordId)));
-    const matchingByIdDoc = matchingById.docs[0];
-    if (matchingByIdDoc) {
-      const index = Number(matchingByIdDoc.data()['sortIndex'] ?? 0);
-      await setDoc(matchingByIdDoc.ref, { ...safeValue, sortIndex: index });
-      this.invalidateStateCache();
-      return;
-    }
-
-    // New recipes can use a stable document ID and a monotonic timestamp index.
-    // This avoids two additional collection reads (legacy-code lookup + full
-    // ordered scan) on the most common "create cookie" flow.
-    if (collectionKey === 'recipes') {
-      await setDoc(doc(recordsRef, recordId), { ...safeValue, sortIndex: Date.now() });
-      this.invalidateStateCache();
-      return;
-    }
-
-    // Some legacy records (for example imported ingredients) are keyed by code.
-    // Preserve the old id-or-code matching semantics for other collections.
-    const matchingByCode = await getDocs(query(recordsRef, where('code', '==', recordId)));
-    const matching = matchingByCode.docs[0];
-    if (matching) {
-      const index = Number(matching.data()['sortIndex'] ?? 0);
-      await setDoc(matching.ref, { ...safeValue, sortIndex: index });
-      this.invalidateStateCache();
-      return;
-    }
-
-    const snapshot = await getDocs(query(recordsRef, orderBy('sortIndex', 'asc')));
-    const maxIndex = snapshot.docs.reduce(
-      (max, record) => Math.max(max, Number(record.data()['sortIndex'] ?? -1)),
-      -1,
-    );
-    const nextIndex = maxIndex + 1;
-    await setDoc(doc(recordsRef, recordId), { ...safeValue, sortIndex: nextIndex });
+    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
+    const existing = await getDoc(recordRef);
+    const sortIndex = existing.exists()
+      ? Number(existing.data()['sortIndex'] ?? Date.now())
+      : Date.now();
+    await setDoc(recordRef, { ...safeValue, sortIndex });
     this.invalidateStateCache();
   }
 
@@ -258,7 +218,7 @@ export class FirestoreBusinessRepository {
       'ingredients',
     );
     const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('sortIndex', 'asc')));
-    const ingredientDocs: { ingredientId: string; quantity: number; ref: (typeof ingredientSnapshot.docs)[number] }[] = [];
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: DocumentReference }[] = [];
 
     for (const [ingredientId, quantity] of totals.entries()) {
       const matching = ingredientSnapshot.docs.find((snapshot) => {
@@ -268,7 +228,7 @@ export class FirestoreBusinessRepository {
       if (!matching) {
         throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
       }
-      ingredientDocs.push({ ingredientId, quantity, ref: matching });
+      ingredientDocs.push({ ingredientId, quantity, ref: matching.ref });
     }
 
     const productionRef = collection(
@@ -294,7 +254,7 @@ export class FirestoreBusinessRepository {
       const finishedInventoryRef = doc(this.firebase.firestore, 'settings', 'finishedProductInventory');
       const finishedInventorySnapshot = await transaction.get(finishedInventoryRef);
 
-      const updates: { ref: (typeof ingredientDocs)[number]['ref']; index: number; value: Record<string, unknown> }[] = [];
+      const updates: { ref: DocumentReference; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
         const snapshot = currentIngredientSnapshots[index];
         if (!snapshot.exists()) {
