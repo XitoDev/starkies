@@ -285,6 +285,14 @@ async function main() {
     data: { deliveredOrders, revenue: Math.round(salesRevenue * 100) / 100, unitsSold: [...sales.values()].reduce((sum, quantity) => sum + quantity, 0), updatedAt: new Date().toISOString() },
   });
   const productionRows = operations.filter(item => item.target.startsWith('productionHistory/')).map(item => item.data);
+  const legacyProductionRows = operations.filter(item => item.target.startsWith('productions/')).map(item => item.data);
+  if (legacyProductionRows.length > 0 && productionRows.length === 0) {
+    throw new Error(
+      'Found ' + legacyProductionRows.length + ' legacy records in productions but none in productionHistory. ' +
+      'The migration cannot safely infer the production-history mapping or initialize businessStats/production from these records. ' +
+      'No writes made; inspect the legacy productions document shape and add an explicit mapping before applying.'
+    );
+  }
   operations.push({
     source: 'derived aggregate from legacy production history',
     target: 'businessStats/production',
