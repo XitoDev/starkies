@@ -600,7 +600,9 @@ export class FirestoreBusinessRepository {
     for (const [key, value] of stateEntries) {
       if (Array.isArray(value)) {
         value.forEach((record, index) => {
-          const rawRecord = this.isRecord(record) ? record : {};\n          const candidateId = String(rawRecord['id'] ?? rawRecord['code'] ?? '').trim();\n          const recordId = candidateId && !candidateId.includes('/') ? candidateId : String(index).padStart(6, '0');
+          const rawRecord = this.isRecord(record) ? record : {};
+          const candidateId = String(rawRecord['id'] ?? rawRecord['code'] ?? '').trim();
+          const recordId = candidateId && !candidateId.includes('/') ? candidateId : String(index).padStart(6, '0');
           const recordRef = doc(
             this.firebase.firestore,
             key, recordId,
