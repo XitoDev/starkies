@@ -383,7 +383,11 @@ export class DataService implements OnDestroy {
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawRecipes = this.asArray(state['recipes']);
     if (!rawRecipes.some(recipe => this.asString(recipe['id']) === recipeId)) throw new Error('No se encontró el producto.');
-    const nextState = { ...state, recipes: rawRecipes.filter(recipe => this.asString(recipe['id']) !== recipeId) };
+    const nextState = {
+      ...state,
+      recipes: rawRecipes.filter(recipe => this.asString(recipe['id']) !== recipeId),
+      catalogDrafts: this.asArray(state['catalogDrafts']).filter(draft => this.asString(draft['id']) !== recipeId),
+    };
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('recipes', recipeId));
   }
 
