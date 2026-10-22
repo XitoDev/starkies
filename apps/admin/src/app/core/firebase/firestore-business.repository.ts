@@ -881,7 +881,14 @@ export class FirestoreBusinessRepository {
             this.firebase.firestore,
             key, recordId,
           );
-          batch.set(recordRef, { ...(this.isRecord(record) ? record : {}), sortIndex: index });
+          const storedRecord: Record<string, unknown> = { ...(this.isRecord(record) ? record : {}), sortIndex: index };
+          if (key === 'customers') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+            storedRecord['nameSearchTokens'] = this.searchNameTokensFor({ ...storedRecord, id: recordId });
+          } else if (key === 'orders') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+          }
+          batch.set(recordRef, storedRecord);
           operations += 1;
         });
         await flushIfFull();
@@ -892,6 +899,54 @@ export class FirestoreBusinessRepository {
         await flushIfFull();
       }
     }
+
+    const ordersForStats = stateEntries.find(([key, value]) => key === 'orders' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const salesByProduct = new Map<string, number>();
+    const demandByProduct = new Map<string, number>();
+    let deliveredOrders = 0;
+    let revenue = 0;
+    for (const rawOrder of ordersForStats ?? []) {
+      if (!this.isRecord(rawOrder)) continue;
+      const status = String(rawOrder['status'] ?? '').toUpperCase();
+      const quantities = this.extractOrderSalesQuantities(rawOrder);
+      if (status === 'DELIVERED') {
+        deliveredOrders++;
+        const total = Number(rawOrder['total'] ?? 0);
+        if (Number.isFinite(total) && total > 0) revenue += total;
+        for (const [id, quantity] of quantities) salesByProduct.set(id, (salesByProduct.get(id) ?? 0) + quantity);
+      } else if (status === 'PENDING') {
+        for (const [id, quantity] of quantities) demandByProduct.set(id, (demandByProduct.get(id) ?? 0) + quantity);
+      }
+    }
+    for (const [id, unitsSold] of salesByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productSalesStats', id), { productId: id, unitsSold });
+      operations += 1;
+      await flushIfFull();
+    }
+    for (const [id, pendingUnits] of demandByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productionDemand', id), { recipeId: id, pendingUnits });
+      operations += 1;
+      await flushIfFull();
+    }
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'sales'), {
+      deliveredOrders, revenue: Math.round(revenue * 100) / 100,
+      unitsSold: [...salesByProduct.values()].reduce((sum, quantity) => sum + quantity, 0),
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
+
+    const productionRows = stateEntries.find(([key, value]) => key === 'productionHistory' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const productionEntries = (productionRows ?? []).filter((row): row is Record<string, unknown> => this.isRecord(row));
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'production'), {
+      totalBatches: productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['batches'] ?? 0)), 0),
+      totalUnits: productionEntries.reduce((sum, row) => sum + (String(row['outputUnit'] ?? '') === 'g' ? 0 : Math.max(0, Number(row['totalYield'] ?? 0))), 0),
+      totalCost: Math.round(productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['calculatedCost'] ?? 0)), 0) * 100) / 100,
+      completedRuns: productionEntries.length,
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
 
     if (operations > 0) await batch.commit();
 
@@ -904,6 +959,8 @@ export class FirestoreBusinessRepository {
       sourceBackupId: archiveId,
       sourceExportedAt,
       importedAt: new Date().toISOString(),
+      revision: increment(1),
+      changedKeys: [...stateKeys, 'stats:sales', 'stats:demand', 'stats:production'],
       recordCounts: Object.fromEntries(
         stateEntries
           .filter(([, value]) => Array.isArray(value))
