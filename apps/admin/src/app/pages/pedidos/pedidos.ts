@@ -18,7 +18,7 @@ import { Order } from 'shared';
 export class Pedidos {
   private readonly data = inject(DataService);
   private readonly router = inject(Router);
-  constructor() { void this.data.loadCollections(['orders', 'customers']); }
+  constructor() { void this.data.loadOrdersPage(true); void this.data.refreshPendingOrderCount().catch(() => undefined); }
     readonly orders = this.data.orders;
   readonly customers = this.data.customers;
   readonly activeTab = signal<'pedidos'|'clientes'>(this.router.parseUrl(this.router.url).queryParams['vista']==='clientes'?'clientes':'pedidos');
@@ -27,7 +27,7 @@ export class Pedidos {
   readonly customerMenuId = signal<string|null>(null);
   readonly notice = signal('');
   readonly error = signal('');
-  readonly pendingOrderCount = computed(()=>this.orders().filter(order=>order.status==='PENDING').length);
+  readonly pendingOrderCount = this.data.pendingOrderCount;
   readonly filteredOrders = computed(()=>{
     const term=this.searchTerm().trim().toLocaleLowerCase('es');
     return [...this.orders()].filter(order=>!term||order.id.toLocaleLowerCase('es').includes(term)||this.getCustomerName(order.customerId).toLocaleLowerCase('es').includes(term)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -36,7 +36,7 @@ export class Pedidos {
     const term=this.searchTerm().trim().toLocaleLowerCase('es');
     return this.customers().filter(customer=>!term||customer.name.toLocaleLowerCase('es').includes(term)||(customer.phone??'').toLocaleLowerCase('es').includes(term)||(customer.address??'').toLocaleLowerCase('es').includes(term));
   });
-  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.searchTerm.set('');this.orderMenuId.set(null);this.customerMenuId.set(null);}
+  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.searchTerm.set('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true);}
   getCustomerName(id:string):string{return this.customers().find(customer=>customer.id===id)?.name??'Cliente desconocido';}
   getCustomerOrderCount(id:string):number{return this.orders().filter(order=>order.customerId===id).length;}
   getCookieCount(order:Order):number{return order.items.reduce((sum,item)=>sum+item.quantity,0);}
