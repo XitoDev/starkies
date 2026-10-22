@@ -88,7 +88,7 @@ export class Produccion {
   readonly commandLines = computed<CommandLine[]>(() => {
     const ready = new Set(this.readyCommandLines());
     const recipes = this.activeRecipes();
-    return this.orders().filter(order => String(order.status).toUpperCase() === 'PENDING').flatMap(order => {
+    return this.orders().flatMap(order => {
       const rawOrder = order as unknown as Record<string, unknown>;
       const rawItems = Array.isArray(rawOrder['items']) ? rawOrder['items']
         : Array.isArray(rawOrder['lines']) ? rawOrder['lines'] : [];
