@@ -232,7 +232,8 @@ export class Finanzas {
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
-    void this.dataService.loadCollections(['recipes', 'ingredients', 'orders', 'cashMovements', 'financeLedger', 'finishedProductInventory']);
+    void this.dataService.loadCollections(['recipes', 'ingredients', 'cashMovements', 'financeLedger', 'finishedProductInventory']);
+    void this.dataService.refreshDeliveredOrders().catch(error => this.ledgerNotice.set(error.message));
     this.route.queryParamMap.subscribe(params => {
       if (params.get('action') !== 'purchase') return;
       const ingredientId = params.get('ingredientId') ?? '';
@@ -283,7 +284,7 @@ export class Finanzas {
 
 
   private deliveredOrdersMissingFromLedger(state: Record<string, unknown>): Record<string, unknown>[] {
-    const orders = Array.isArray(state['orders']) ? state['orders'] : [];
+    const orders = this.dataService.deliveredOrders() as unknown as Record<string, unknown>[];
     const processed = new Set(this.ledger().processedOrderIds);
     return orders.filter((value): value is Record<string, unknown> => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -421,7 +422,7 @@ export class Finanzas {
     }
     const current = this.ledger();
     const state = this.dataService.rawState() ?? {};
-    const deliveredIds = (Array.isArray(state['orders']) ? state['orders'] : [])
+    const deliveredIds = (this.dataService.deliveredOrders() as unknown as Record<string, unknown>[])
       .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
       .filter(order => {
         const status = String(order['status'] ?? '').toLocaleLowerCase('es');
