@@ -141,7 +141,7 @@ export class CatalogoProductoEditor {
         catalogLabel:this.label.trim(),
         catalogLabelColor:this.labelColor,
         catalogDescription:this.description.trim(),
-      } as Recipe);
+      } as Recipe, true);
       this.savingMessage.set('Guardado. Volviendo al catálogo…');
       await this.router.navigate(['/catalogo']);
     } catch(error) { this.error.set(error instanceof Error ? error.message : 'No se pudo guardar el producto.'); this.savingMessage.set(''); }
