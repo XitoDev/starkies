@@ -56,6 +56,7 @@ async function main() {
   }
   const collectionKeys = [...new Set([...(legacyMeta.arrayKeys ?? []), ...knownCollections, ...discoveredCollectionKeys])];
   const operations = [];
+  const originalDocuments = [];
   const counts = {};
   const customerByPhone = new Map();
   const ordersByPhone = new Map();
@@ -67,6 +68,7 @@ async function main() {
     const targetCollection = key;
     for (const document of snapshot.docs) {
       const legacyDocument = document.data();
+      originalDocuments.push({ source: document.ref.path, data: legacyDocument });
       const value = isObject(legacyDocument.value) ? legacyDocument.value : {};
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
@@ -88,6 +90,7 @@ async function main() {
   const settingsSnapshot = await db.collection(oldBase + '/settings').get();
   for (const document of settingsSnapshot.docs) {
     const legacy = document.data();
+    originalDocuments.push({ source: document.ref.path, data: legacy });
     const data = Object.prototype.hasOwnProperty.call(legacy, 'value') ? legacy.value : legacy;
     const targetData = { data };
     operations.push({ source: document.ref.path, target: 'settings/' + document.id, data: targetData });
@@ -95,11 +98,13 @@ async function main() {
 
   const archivesSnapshot = await db.collection(oldBase + '/migrationArchives').get();
   for (const document of archivesSnapshot.docs) {
+    originalDocuments.push({ source: document.ref.path, data: document.data() });
     operations.push({ source: document.ref.path, target: 'migrationArchives/' + document.id, data: document.data() });
   }
 
   const systemSnapshot = await db.collection(oldBase + '/system').get();
   for (const document of systemSnapshot.docs) {
+    originalDocuments.push({ source: document.ref.path, data: document.data() });
     if (document.id === 'stateMeta') continue;
     operations.push({ source: document.ref.path, target: 'system/' + document.id, data: document.data() });
   }
@@ -245,7 +250,7 @@ async function main() {
   await mkdir(resolve('.migration-backups'), { recursive: true });
   const hash = createHash('sha256').update(stableJson(operations)).digest('hex').slice(0, 12);
   const backupPath = resolve('.migration-backups/root-migration-' + Date.now() + '-' + hash + '.json');
-  await writeFile(backupPath, JSON.stringify({ legacyMeta, operations }, null, 2), { mode: 0o600 });
+  await writeFile(backupPath, JSON.stringify({ legacyMeta, originalDocuments, operations }, null, 2), { mode: 0o600 });
   console.log('Private backup: ' + backupPath);
 
   let batch = db.batch();
