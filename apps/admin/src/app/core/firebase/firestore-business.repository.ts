@@ -200,17 +200,17 @@ export class FirestoreBusinessRepository {
   async searchCollection<T extends Record<string, unknown>>(
     collectionKey: string,
     term: string,
-    options: { limit?: number; status?: string } = {},
+    options: { limit?: number; status?: string; tokenField?: 'searchTokens' | 'nameSearchTokens' } = {},
   ): Promise<T[]> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const token = term.normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
     if (token.length < 2) return [];
-    const constraints: QueryConstraint[] = [where('searchTokens', 'array-contains', token)];
+    const constraints: QueryConstraint[] = [where(options.tokenField ?? 'searchTokens', 'array-contains', token)];
     if (options.status && options.status !== 'ALL') constraints.push(where('status', '==', options.status));
     constraints.push(limit(Math.min(50, Math.max(1, options.limit ?? 25))));
     const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
     return snapshot.docs.map(item => {
-      const { sortIndex: _sortIndex, searchTokens: _searchTokens, ...value } = item.data();
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
       return { ...value, id: value['id'] ?? item.id } as T;
     });
   }
@@ -240,6 +240,7 @@ export class FirestoreBusinessRepository {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields(value);
     if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
+    if (collectionKey === 'customers') safeValue['nameSearchTokens'] = this.searchNameTokensFor({ ...safeValue, id: recordId });
     const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
     const existing = await getDoc(recordRef);
     const sortIndex = existing.exists()
@@ -855,6 +856,19 @@ export class FirestoreBusinessRepository {
         for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
       }
     }
+    return [...tokens];
+  }
+
+  private searchNameTokensFor(record: Record<string, unknown>): string[] {
+    const name = String(record['name'] ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+    const tokens = new Set<string>();
+    for (const word of name.split(' ').filter(part => part.length >= 2)) {
+      for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+    }
+    const compact = name.split(' ').join('');
+    for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
     return [...tokens];
   }
 
