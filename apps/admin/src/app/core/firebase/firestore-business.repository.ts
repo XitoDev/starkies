@@ -302,14 +302,15 @@ export class FirestoreBusinessRepository {
    * Persists internal recipe data separately from private catalog drafts and the
    * public-safe projection. All three changes are committed atomically.
    */
-  async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>): Promise<void> {
+  async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>, updateCatalogDraft = false): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields({ ...value, id: recordId });
     const recipeRef = doc(this.firebase.firestore, 'recipes', recordId);
     const draftRef = doc(this.firebase.firestore, 'catalogDrafts', recordId);
     const publicRef = doc(this.firebase.firestore, 'publicCatalog', recordId);
-    const existing = await getDoc(recipeRef);
+    const [existing, existingDraft] = await Promise.all([getDoc(recipeRef), getDoc(draftRef)]);
     const sortIndex = existing.exists() ? Number(existing.data()['sortIndex'] ?? Date.now()) : Date.now();
+    const previousDraft = existingDraft.data() ?? {};
 
     const recipeData: Record<string, unknown> = { ...safeValue };
     for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
@@ -317,12 +318,12 @@ export class FirestoreBusinessRepository {
     }
     const draft = {
       id: recordId,
-      description: String(safeValue['catalogDescription'] ?? safeValue['description'] ?? ''),
-      image: String(safeValue['catalogImage'] ?? ''),
-      label: String(safeValue['catalogLabel'] ?? ''),
-      labelColor: String(safeValue['catalogLabelColor'] ?? 'Morado'),
-      visible: safeValue['catalogVisible'] !== false,
-      sortIndex,
+      description: String(updateCatalogDraft ? (safeValue['catalogDescription'] ?? safeValue['description'] ?? '') : (previousDraft['description'] ?? safeValue['catalogDescription'] ?? safeValue['description'] ?? '')),
+      image: String(updateCatalogDraft ? (safeValue['catalogImage'] ?? '') : (previousDraft['image'] ?? safeValue['catalogImage'] ?? '')),
+      label: String(updateCatalogDraft ? (safeValue['catalogLabel'] ?? '') : (previousDraft['label'] ?? safeValue['catalogLabel'] ?? '')),
+      labelColor: String(updateCatalogDraft ? (safeValue['catalogLabelColor'] ?? 'Morado') : (previousDraft['labelColor'] ?? safeValue['catalogLabelColor'] ?? 'Morado')),
+      visible: updateCatalogDraft ? safeValue['catalogVisible'] !== false : (previousDraft['visible'] !== false),
+      sortIndex: Number(previousDraft['sortIndex'] ?? sortIndex),
     };
     const category = String(safeValue['category'] ?? 'Galletas clásicas');
     const normalizedCategory = category.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
