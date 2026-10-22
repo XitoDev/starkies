@@ -36,6 +36,20 @@ const cleanId = value => {
 const normalizePhone = value => String(value ?? '').replace(/\D/g, '').replace(/^593/, '0');
 const phoneHash = value => createHash('sha256').update(value).digest('hex');
 const cleanName = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+const normalizeSearch = value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+const searchTokensFor = record => {
+  const values = [record.id, record.code, record.name, record.customer, record.phone, record.address]
+    .map(normalizeSearch).filter(Boolean);
+  const tokens = new Set();
+  for (const value of values) {
+    const compact = value.replace(/\\s+/g, '');
+    if (compact.length >= 2) for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+    for (const word of value.split(/\\s+/).filter(part => part.length >= 2)) {
+      for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+    }
+  }
+  return [...tokens];
+};
 const stableJson = value => {
   if (Array.isArray(value)) return '[' + value.map(stableJson).join(',') + ']';
   if (!isObject(value)) return JSON.stringify(value);
@@ -81,7 +95,7 @@ async function main() {
       const value = legacyDocument.value;
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
-      const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0) };
+      const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0), ...(key === 'customers' || key === 'orders' ? { searchTokens: searchTokensFor({ ...value, id: documentId }) } : {}) };
       operations.push({ source: document.ref.path, target: targetCollection + '/' + documentId, data });
       if (key === 'customers') {
         const phone = normalizePhone(value.phone);
