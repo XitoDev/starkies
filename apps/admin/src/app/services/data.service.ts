@@ -100,6 +100,8 @@ export class DataService {
       const merged = { ...currentState, orders: [...previous, ...page.items] };
       this.rawState.set(merged);
       this.loadViewModels(merged);
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar más pedidos.');
     } finally {
       this.ordersPageLoading.set(false);
     }
