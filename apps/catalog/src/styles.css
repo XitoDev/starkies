@@ -1597,3 +1597,105 @@ app-catalog .footer-content { grid-template-columns: 1.4fr repeat(3, minmax(0, .
   app-catalog .footer-bottom .footer-brand .wordmark { font-size: 1.9rem; }
   app-catalog .footer-bottom .footer-brand .brand-tagline { font-size: .44rem; letter-spacing: .14em; }
 }
+
+
+/* Final correction: reuse the exact header wordmark lockup in the footer. */
+app-catalog .site-footer .footer-content {
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, .8fr) !important;
+  align-items: start !important;
+  gap: 32px !important;
+}
+app-catalog .site-footer .footer-social-group {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+}
+app-catalog .site-footer .footer-social-group .footer-label {
+  margin-bottom: 8px !important;
+}
+app-catalog .site-footer .footer-social-group .footer-social-link {
+  min-height: 32px !important;
+  margin: 0 !important;
+}
+app-catalog .site-footer .footer-bottom {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+app-catalog .site-footer .footer-bottom > small { justify-self: start !important; }
+app-catalog .site-footer .footer-bottom > .footer-brand {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-self: center !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  color: #F7F3EA !important;
+  text-decoration: none !important;
+}
+app-catalog .site-footer .footer-brand .wordmark {
+  color: #F7F3EA !important;
+  font-family: 'Shrikhand', 'Cormorant Garamond', Georgia, serif !important;
+  font-size: clamp(2.45rem, 4.5vw, 3.5rem) !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  letter-spacing: -.045em !important;
+  line-height: 1 !important;
+}
+app-catalog .site-footer .footer-brand .wordmark-star {
+  margin-left: 3px !important;
+  color: #B6C648 !important;
+  font-size: .7em !important;
+  vertical-align: top !important;
+}
+app-catalog .site-footer .footer-brand .brand-tagline {
+  display: block !important;
+  margin: 7px 0 0 !important;
+  color: #F7F3EA !important;
+  font-size: .62rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .24em !important;
+  line-height: 1.4 !important;
+}
+app-catalog .site-footer .footer-bottom > a:last-child { justify-self: end !important; }
+
+/* The photo viewport uses the same warm cream as the product card, never lilac. */
+app-catalog .product { background: #FBF8F1 !important; }
+app-catalog .product .photo,
+app-catalog .photo {
+  background: #FBF8F1 !important;
+  background-color: #FBF8F1 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+app-catalog .photo img {
+  background: #FBF8F1 !important;
+  background-color: #FBF8F1 !important;
+  object-fit: contain !important;
+  mix-blend-mode: multiply !important;
+  filter: drop-shadow(0 7px 7px rgb(53 24 47 / 10%)) !important;
+}
+@media (max-width: 700px) {
+  app-catalog .site-footer .footer-content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 22px 18px !important;
+  }
+  app-catalog .site-footer .footer-bottom {
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    text-align: center !important;
+    gap: 14px !important;
+  }
+  app-catalog .site-footer .footer-bottom > small,
+  app-catalog .site-footer .footer-bottom > .footer-brand,
+  app-catalog .site-footer .footer-bottom > a:last-child {
+    justify-self: center !important;
+  }
+}
+@media (max-width: 420px) {
+  app-catalog .site-footer .footer-content {
+    grid-template-columns: 1fr !important;
+  }
+}
