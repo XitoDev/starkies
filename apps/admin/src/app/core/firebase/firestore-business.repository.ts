@@ -8,7 +8,9 @@ import {
   getDoc,
   getDocs,
   getCountFromServer,
+  increment,
   limit,
+  onSnapshot,
   orderBy,
   QueryConstraint,
   QueryDocumentSnapshot,
@@ -18,6 +20,8 @@ import {
   query,
   runTransaction,
   setDoc,
+  serverTimestamp,
+  Unsubscribe,
   writeBatch,
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
@@ -83,6 +87,25 @@ export class FirestoreBusinessRepository {
     } finally {
       if (this.stateLoadPromise === request) this.stateLoadPromise = null;
     }
+  }
+
+  /** Watches the small metadata document, not every business collection. */
+  watchStateMeta(onChange: () => void, onError?: (error: Error) => void): Unsubscribe {
+    if (!this.firebase.isConfigured) return () => undefined;
+    let initialized = false;
+    return onSnapshot(this.stateMetaRef(), () => {
+      if (initialized) onChange();
+      initialized = true;
+    }, error => onError?.(error));
+  }
+
+  /** Signals other Admin sessions that a root collection or setting changed. */
+  private async publishStateChange(): Promise<void> {
+    if (!this.firebase.isConfigured) return;
+    await setDoc(this.stateMetaRef(), {
+      revision: increment(1),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
   }
 
   invalidateStateCache(): void {
@@ -211,6 +234,7 @@ export class FirestoreBusinessRepository {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
+    await this.publishStateChange();
   }
 
   private extractOrderSalesQuantities(order: Record<string, unknown>): Map<string, number> {
@@ -324,6 +348,7 @@ export class FirestoreBusinessRepository {
       await deleteDoc(matching.ref);
     }
     this.invalidateStateCache();
+    await this.publishStateChange();
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
