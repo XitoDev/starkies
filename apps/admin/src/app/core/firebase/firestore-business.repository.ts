@@ -7,7 +7,14 @@ import {
   doc,
   getDoc,
   getDocs,
+  getCountFromServer,
+  limit,
   orderBy,
+  QueryConstraint,
+  QueryDocumentSnapshot,
+  DocumentData,
+  startAfter,
+  where,
   query,
   runTransaction,
   setDoc,
@@ -53,7 +60,10 @@ export class FirestoreBusinessRepository {
    * Reuses a recent complete business snapshot and coalesces simultaneous reads.
    * Writes invalidate the cache; the short TTL also bounds staleness from other sessions.
    */
-  async loadState(): Promise<Record<string, unknown> | null> {
+  async loadState(collectionKeys?: string[]): Promise<Record<string, unknown> | null> {
+    // A scoped read deliberately bypasses the whole-state cache so a screen can
+    // request only the collections it needs without triggering every collection.
+    if (collectionKeys) return this.fetchStateFromFirestore(collectionKeys);
     if (this.stateCache && this.stateCache.expiresAt > Date.now()) {
       return this.cloneState(this.stateCache.value);
     }
@@ -90,7 +100,7 @@ export class FirestoreBusinessRepository {
     return snapshot.exists() && snapshot.data()['status'] === 'complete';
   }
 
-  private async fetchStateFromFirestore(): Promise<Record<string, unknown> | null> {
+  private async fetchStateFromFirestore(requestedCollectionKeys?: string[]): Promise<Record<string, unknown> | null> {
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -101,8 +111,11 @@ export class FirestoreBusinessRepository {
     const metadata = metadataSnapshot.data() as StateMetadata;
     if (metadata.status !== 'complete') return null;
 
-    const arrayKeys = metadata.arrayKeys ?? [];
-    const settingKeys = metadata.settingKeys ?? [];
+    const arrayKeys = requestedCollectionKeys ?? metadata.arrayKeys ?? [];
+    const allSettingKeys = metadata.settingKeys ?? [];
+    const settingKeys = requestedCollectionKeys
+      ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))
+      : allSettingKeys;
     const state: Record<string, unknown> = {};
 
     await Promise.all(arrayKeys.map(async (key) => {
@@ -119,6 +132,53 @@ export class FirestoreBusinessRepository {
     }));
 
     return state;
+  }
+
+  /**
+   * Fetches one bounded page from a root collection. Filters are translated to
+   * Firestore where clauses and are therefore applied before documents are read.
+   */
+  async getCollectionPage<T extends Record<string, unknown>>(
+    collectionKey: string,
+    options: {
+      pageSize?: number;
+      cursor?: QueryDocumentSnapshot<DocumentData> | null;
+      orderField?: string;
+      direction?: 'asc' | 'desc';
+      filters?: { field: string; op: '==' | '>=' | '<=' | '>' | '<' | 'in'; value: unknown }[];
+    } = {},
+  ): Promise<{ items: T[]; cursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize ?? 25)));
+    const constraints: QueryConstraint[] = [];
+    for (const filter of options.filters ?? []) {
+      constraints.push(where(filter.field, filter.op, filter.value));
+    }
+    constraints.push(orderBy(options.orderField ?? 'sortIndex', options.direction ?? 'desc'));
+    if (options.cursor) constraints.push(startAfter(options.cursor));
+    constraints.push(limit(pageSize + 1));
+    const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    const docs = snapshot.docs.slice(0, pageSize);
+    const hasMore = snapshot.docs.length > pageSize;
+    return {
+      items: docs.map(item => {
+        const { sortIndex: _sortIndex, ...value } = item.data();
+        return { ...value, id: value['id'] ?? item.id } as T;
+      }),
+      cursor: docs.length ? docs[docs.length - 1] : null,
+      hasMore,
+    };
+  }
+
+  /** Uses Firestore's count aggregation instead of downloading matching documents. */
+  async countCollection(
+    collectionKey: string,
+    filters: { field: string; op: '==' | '>=' | '<=' | '>' | '<' | 'in'; value: unknown }[] = [],
+  ): Promise<number> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const constraints: QueryConstraint[] = filters.map(filter => where(filter.field, filter.op, filter.value));
+    const snapshot = await getCountFromServer(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    return snapshot.data().count;
   }
 
   /**
