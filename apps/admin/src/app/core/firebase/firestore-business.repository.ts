@@ -40,7 +40,6 @@ interface StateMetadata {
   settingKeys?: string[];
   sourceBackupId?: string;
   sourceExportedAt?: string;
-  sourceBackupId?: string;
   recordCounts?: Record<string, number>;
   [key: string]: unknown;
 }
