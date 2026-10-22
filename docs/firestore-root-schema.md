@@ -1,55 +1,69 @@
-# Firestore root-level schema proposal
+# Firestore root-level schema — StarKies
 
-## Goal
+## Objective
 
-Remove the businesses/starkies namespace for this single-business deployment. Collections live at Firestore root. This is a schema migration, not a production migration: the script is dry-run by default and never deletes legacy documents.
+Remove `businesses/starkies` and the legacy `collections/{name}/records` hierarchy. All live business data is stored in root-level collections. This PR includes the application changes and migration to schema version 3; no Firebase data migration is executed automatically.
 
-## Target paths
+## Document contract (schema v3)
 
-| Domain | Root path | Document model |
+Collection records are stored as their native fields. There is no `value` envelope and no `index` envelope.
+
+- `sortIndex`: numeric ordering metadata for list views.
+- Stable document ID: `id`, then `code`, then legacy document ID when neither field exists.
+- Settings use `settings/{key}` with the setting payload under `data`, since settings may be arrays or primitive values.
+- `system/stateMeta` contains migration state and collection metadata directly.
+- `migrationArchives/{archiveId}` retains original imported backups separately from active records.
+
+## Collections
+
+| Domain | Root path | Notes |
 | --- | --- | --- |
-| Ingredients | ingredients/{ingredientId} | { index, value } during compatibility phase |
-| Recipes | recipes/{recipeId} | { index, value } |
-| Customers | customers/{customerId} | { index, value }; normalized phone lookup uses deterministic IDs |
-| Orders | orders/{orderId} | { index, value }; order snapshots retain price/name at purchase time |
-| Dough bases | doughBases/{baseId} | { index, value } |
-| Production history | productionHistory/{runId} | { index, value } |
-| Cash movements | cashMovements/{movementId} | { index, value } |
-| Delivery zones | deliveryZones/{zoneId} | { index, value } if zones remain a collection |
-| Settings | settings/{settingKey} | { value } |
-| System metadata | system/stateMeta | schema version, migration state, collection/setting keys, counts |
-| Public catalog projection | publicCatalog/{productId} | { index, value }; public read-only to clients |
-| Migration archive | migrationArchives/{archiveId} | original backup archive |
-| Public order rate limits | publicOrderRateLimits/{key} | server-only operational data |
+| Ingredients | `ingredients/{ingredientId}` | Native ingredient fields plus `sortIndex` |
+| Recipes | `recipes/{recipeId}` | Native recipe fields plus `sortIndex` |
+| Customers | `customers/{customerId}` | Native customer fields plus `sortIndex` |
+| Orders | `orders/{orderId}` | Native order snapshot plus `sortIndex` |
+| Dough bases | `doughBases/{baseId}` | Native fields plus `sortIndex` |
+| Production history | `productionHistory/{runId}` | Native fields plus `sortIndex` |
+| Cash movements | `cashMovements/{movementId}` | Native fields plus `sortIndex` |
+| Inventory | `inventory/{itemId}` | Native fields plus `sortIndex` |
+| Delivery zones | `deliveryZones/{zoneId}` | Native fields plus `sortIndex` |
+| Settings | `settings/{key}` | `data` holds the setting payload |
+| Metadata | `system/stateMeta` | Schema version and migration status |
+| Public catalog projection | `publicCatalog/{productId}` | Public, published product fields only |
+| Customer phone index | `customerPhoneLookup/{sha256(normalizedPhone)}` | Stable customer ID lookup |
+| Order phone index | `orderPhoneLookup/{sha256(normalizedPhone)}` | Most recent order ID lookup |
+| Product sales | `productSalesStats/{productId}` | Delivered units sold, updated transactionally |
+| Rate limits | `publicOrderRateLimits/{key}` | Server-maintained abuse protection |
+| Migration archive | `migrationArchives/{archiveId}` | Original backup archive |
 
-Root collection names are domain-specific. Keep the existing value envelope for the first migration to minimize UI changes; a later, separately tested migration can flatten documents after consumers are typed.
+The public catalog is a projection, not the source of truth. Only explicitly published catalog data is public. Phone indexes and rate-limit records are server-only. Firestore rules default-deny access and require approved admin authentication for private root collections.
 
-## Data contract rules
+## Migration
 
-- Document IDs are stable entity IDs (value.id, then value.code, then legacy document ID). The migration aborts on duplicate destination IDs.
-- Keep index only as a transitional display-order field. Do not read an entire collection merely to find one record; direct reads/writes must use stable document IDs.
-- Orders are immutable snapshots of commercial facts: product name, unit price, quantity, delivery fee and totals at purchase time.
-- Customer identity and lookup IDs use a single normalized-phone algorithm. Do not expose phone numbers in public collections.
-- Derived statistics (best sellers, totals) should be maintained separately from order history and updated idempotently on state transitions.
-- Public catalog is a materialized projection, not the source of truth. Only publish explicitly visible, non-archived products and non-sensitive settings.
-- Root collections do not imply public access. Rules default-deny and allow admin access only for approved authenticated users; the public catalog gets read-only public access.
+`scripts/migrate-firestore-root.mjs` migrates the legacy hierarchy into schema v3. It flattens each collection record to native fields, carries its order into `sortIndex`, converts settings to `data`, preserves original archives, links orders to canonical customer IDs, and creates the customer/order phone indexes and initial sales aggregates.
 
-## Migration behavior
+The script is:
+- dry-run by default;
+- guarded against duplicate target IDs, phone collisions, pre-existing unplanned destination documents, and conflicting documents;
+- backed by a private local JSON backup before writing;
+- non-destructive to the old namespace.
 
-npm run firestore:migrate:root performs a dry run. npm run firestore:migrate:root:apply writes destination documents and a local private backup, but does not delete the old namespace. npm run firestore:migrate:root:verify checks that every planned destination document exists and matches.
+The script requires `FIREBASE_SERVICE_ACCOUNT_JSON` for project `starkies`. Never commit that secret or the generated `.migration-backups/` files.
 
-The migration requires a complete legacy system/stateMeta and a service account for project starkies. It refuses duplicate target IDs and conflicting destination documents. Review the dry-run report and keep the generated .migration-backups/ file private.
+Commands:
 
-## Execution recommendation
+```bash
+npm run firestore:migrate:root
+npm run firestore:migrate:root:apply
+npm run firestore:migrate:root:verify
+```
 
-Run locally from a trusted machine after exporting the service-account JSON into FIREBASE_SERVICE_ACCOUNT_JSON. Do not commit the service-account file or backup. GitHub Actions can run this only if secrets and an environment with manual approval are configured; local execution is safer for the first production migration because it avoids placing the production credential in a CI job. The migration is not run automatically by this PR or deployment.
+## Recommended rollout
 
-## Review gate for this draft PR
+1. Review the dry-run report and resolve all conflicts.
+2. Run the migration against a controlled copy or staging project first.
+3. Apply the migration to the intended Firebase project only after explicit approval.
+4. Verify counts, stable IDs, customer/order lookup, delivered-sales aggregates, admin CRUD, production, purchasing, PDF endpoints, and public catalog output.
+5. Switch traffic only after validation. Keep legacy documents until the new schema is proven in production; cleanup is a separate, explicitly approved operation.
 
-The application repositories and API handlers are being switched to root-level paths on this branch. The deployed rules file still contains the legacy businesses/starkies matches; do not merge or deploy this branch until firestore.rules is updated and reviewed to authorize only the intended root collections and expose only publicCatalog for unauthenticated reads. The GitHub editing connection did not accept the rules-file change, so this remains an explicit blocker rather than a hidden assumption.
-
-## Derived indexes
-
-- `customerPhoneLookup/{sha256(normalizedPhone)}` stores the stable customer ID for a normalized phone number.
-- `orderPhoneLookup/{sha256(normalizedPhone)}` stores the most recent order ID for the same normalized phone. Public customer lookup reads these index documents rather than downloading all customers or orders.
-- `productSalesStats/{productId}` stores aggregate units sold for delivered orders. The migration seeds the aggregate, and a pending-to-delivered transition updates the order and stats transactionally.
+The GitHub PR updates the application code and rules but does not run the migration or deploy the project.
