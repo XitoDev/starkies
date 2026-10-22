@@ -567,10 +567,9 @@ export class DataService implements OnDestroy {
     deductions: { ingredientId: string; quantity: number }[],
   ): Promise<void> {
     await this.repository.recordProduction(record, deductions);
-    await this.loadFromCloud();
-    if (this.error()) {
-      throw new Error(this.error());
-    }
+    await this.loadCollections(['ingredients', 'productionHistory', 'finishedProductInventory'], true);
+    await this.refreshProductionStats();
+    if (this.error()) throw new Error(this.error());
   }
 
   exportBackup(): void {
