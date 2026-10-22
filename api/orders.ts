@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { readPublicCatalog } from './catalog-data.js';
 
 type HeaderValue = string | string[] | undefined;
@@ -166,6 +166,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         throw new HttpError(429, 'Se alcanzó el límite temporal de pedidos desde esta conexión. Inténtalo más tarde o escríbenos por WhatsApp.');
       }
 
+      const demandQuantities = new Map<string, number>();
+      for (const line of order.lines) {
+        if (line.id && line.id !== 'shipping' && Number.isFinite(line.qty) && line.qty > 0) {
+          demandQuantities.set(line.id, (demandQuantities.get(line.id) ?? 0) + line.qty);
+        }
+      }
+      const demandEntries = [...demandQuantities.entries()];
+      const demandSnapshots = [];
+      for (const [productId] of demandEntries) {
+        demandSnapshots.push(await transaction.get(db.collection('productionDemand').doc(productId)));
+      }
+
       const metadata = metadataSnapshot.data() ?? {};
       const arrayKeys = Array.isArray(metadata['arrayKeys']) ? metadata['arrayKeys'] as string[] : [];
       const stateKeys = Array.isArray(metadata['stateKeys']) ? metadata['stateKeys'] as string[] : [];
@@ -182,6 +194,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
       transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
       transaction.set(orderRef, { ...orderRecord, searchTokens: searchTokensFor(orderRecord), sortIndex: now });
+      demandEntries.forEach(([productId, quantity], index) => {
+        const snapshot = demandSnapshots[index];
+        transaction.set(db.collection('productionDemand').doc(productId), {
+          recipeId: productId,
+          pendingUnits: Math.max(0, Number(snapshot.exists ? snapshot.data()?.['pendingUnits'] ?? 0 : 0) + quantity),
+          updatedAt: createdAt,
+        });
+      });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
         stateKeys: Array.from(new Set([...stateKeys, 'orders'])),
@@ -190,6 +210,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           orders: Number(recordCounts['orders'] ?? 0) + 1,
           ...(!matchedCustomer ? { customers: Number(recordCounts['customers'] ?? 0) + 1 } : {}),
         },
+        revision: FieldValue.increment(1),
+        changedKeys: ['orders', 'customers', 'stats:demand'],
       }, { merge: true });
     });
 
