@@ -12,7 +12,6 @@ import {
   runTransaction,
   setDoc,
   writeBatch,
-  where,
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
