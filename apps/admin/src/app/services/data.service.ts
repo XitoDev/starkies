@@ -45,7 +45,9 @@ export class DataService implements OnDestroy {
         void this.refreshPendingOrders().catch(error => this.error.set(error.message));
       }
       if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
-      const refreshableKeys = changedKeys.filter(key => !key.startsWith('stats:') && key !== 'orders'
+      const changedCustomerIds = changedKeys.filter(key => key.startsWith('customer:')).map(key => key.slice('customer:'.length));
+      for (const customerId of changedCustomerIds) void this.refreshCustomerRecord(customerId).catch(error => this.error.set(error.message));
+      const refreshableKeys = changedKeys.filter(key => !key.startsWith('stats:') && !key.startsWith('customer:') && key !== 'orders'
         && Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, key));
       if (refreshableKeys.length) void this.loadCollections(refreshableKeys, true);
     }, error => this.error.set(error.message));
@@ -146,12 +148,23 @@ export class DataService implements OnDestroy {
     this.productionStats.set({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0, ...(stats ?? {}) });
   }
 
+  private async refreshCustomerRecord(customerId: string): Promise<void> {
+    const customer = await this.repository.getCollectionRecord('customers', customerId);
+    const state = this.rawState();
+    if (!state || !Object.prototype.hasOwnProperty.call(state, 'customers')) return;
+    const customers = this.asArray(state['customers']).filter(item => this.asString(item['id']) !== customerId);
+    if (customer) customers.push(customer);
+    const nextState = { ...state, customers };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
   async refreshPendingOrders(): Promise<void> {
-    this.pendingOrders.set(await this.repository.loadPendingOrders<Order>());
+    this.pendingOrders.set(await this.repository.loadPendingOrders<RawRecord>() as unknown as Order[]);
   }
 
   async refreshDeliveredOrders(): Promise<void> {
-    this.deliveredOrders.set(await this.repository.loadDeliveredOrders<Order>());
+    this.deliveredOrders.set(await this.repository.loadDeliveredOrders<RawRecord>() as unknown as Order[]);
   }
 
   async refreshProductionDemand(): Promise<void> {
