@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
@@ -67,6 +68,45 @@ export class DataService {
   }
 
   readonly pendingOrderCount = signal(0);
+  readonly ordersPageHasMore = signal(false);
+  readonly ordersPageLoading = signal(false);
+  private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+
+  /** Loads orders in bounded pages; the initial Admin load does not fetch all orders. */
+  async loadOrdersPage(reset = false): Promise<void> {
+    if (this.ordersPageLoading()) return;
+    this.ordersPageLoading.set(true);
+    try {
+      await this.loadCollections(['customers']);
+      if (reset) {
+        this.ordersPageCursor = null;
+        this.rawState.update(state => state ? { ...state, orders: [] } : state);
+        this.orders.set([]);
+      }
+      const page = await this.repository.getCollectionPage<RawRecord>('orders', {
+        pageSize: 25,
+        cursor: this.ordersPageCursor,
+        orderField: 'sortIndex',
+        direction: 'desc',
+      });
+      this.ordersPageCursor = page.cursor;
+      this.ordersPageHasMore.set(page.hasMore);
+      const currentState = this.rawState() ?? {};
+      const previous = reset ? [] : this.asArray(currentState['orders']);
+      const merged = { ...currentState, orders: [...previous, ...page.items] };
+      this.rawState.set(merged);
+      this.loadViewModels(merged);
+    } finally {
+      this.ordersPageLoading.set(false);
+    }
+  }
+
+  /** Loads all orders only when a workflow needs complete cross-order totals or edits. */
+  async loadAllOrders(): Promise<void> {
+    await this.loadCollections(['orders']);
+    this.ordersPageCursor = null;
+    this.ordersPageHasMore.set(false);
+  }
 
   async saveIngredient(ingredient: Ingredient): Promise<void> {
     const state = this.rawState();
