@@ -238,7 +238,8 @@ export class FirestoreBusinessRepository {
     value: Record<string, unknown>,
   ): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const safeValue = this.removeUndefinedFields(value);\n    if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
+    const safeValue = this.removeUndefinedFields(value);
+    if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
     const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
     const existing = await getDoc(recordRef);
     const sortIndex = existing.exists()
