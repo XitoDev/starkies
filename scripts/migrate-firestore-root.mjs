@@ -99,13 +99,16 @@ async function main() {
     for (const document of snapshot.docs) {
       const legacyDocument = document.data();
       originalDocuments.push({ source: document.ref.path, data: legacyDocument });
-      if (!isObject(legacyDocument.value)) {
-        throw new Error('Unexpected legacy record shape at ' + document.ref.path + '. Refusing to drop fields or migrate an unknown envelope; no writes made.');
-      }
-      const value = legacyDocument.value;
+      // Most legacy records use the { value, index } envelope. Some dynamically
+      // discovered collections (for example addressesTypes) store native fields
+      // directly on the record document. Preserve that complete shape instead of
+      // rejecting it or silently discarding fields.
+      const hasValueEnvelope = isObject(legacyDocument.value);
+      const value = hasValueEnvelope ? legacyDocument.value : legacyDocument;
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
-      const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0), ...(key === 'customers' || key === 'orders' ? { searchTokens: searchTokensFor({ ...value, id: documentId }) } : {}), ...(key === 'customers' ? { nameSearchTokens: nameSearchTokensFor({ ...value, id: documentId }) } : {}) };
+      const sortIndex = Number(legacyDocument.index ?? value.sortIndex ?? 0);
+      const data = { ...value, sortIndex, ...(key === 'customers' || key === 'orders' ? { searchTokens: searchTokensFor({ ...value, id: documentId }) } : {}), ...(key === 'customers' ? { nameSearchTokens: nameSearchTokensFor({ ...value, id: documentId }) } : {}) };
       operations.push({ source: document.ref.path, target: targetCollection + '/' + documentId, data });
       if (key === 'customers') {
         const phone = normalizePhone(value.phone);
