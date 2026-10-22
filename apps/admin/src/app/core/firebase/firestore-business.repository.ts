@@ -326,7 +326,7 @@ export class FirestoreBusinessRepository {
       sortIndex: Number(previousDraft['sortIndex'] ?? sortIndex),
     };
     const category = String(safeValue['category'] ?? 'Galletas clásicas');
-    const normalizedCategory = category.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+    const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
     const grams = Number(safeValue['baseGramsPerCookie'] ?? 0);
     const isNy = normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
     const image = String(draft.image || safeValue['image'] || '');
