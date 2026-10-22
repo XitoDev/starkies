@@ -242,7 +242,7 @@ async function main() {
     const statusValue = isObject(rawStatus) ? rawStatus.value ?? rawStatus.label ?? rawStatus.name : rawStatus;
     const status = cleanName(statusValue).toLocaleUpperCase('es');
     const isDelivered = ['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status);
-    const isPending = ['PENDING', 'PENDIENTE', 'PENDIENTES'].includes(status);
+    const isPending = status === 'PENDING' || status.includes('PENDIENT');
     const items = order.lines ?? order.items;
     let counted = isDelivered ? addQuantities(items, sales) : isPending ? addQuantities(items, pendingDemand) : false;
     if (!counted) {
