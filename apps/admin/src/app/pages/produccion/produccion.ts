@@ -40,7 +40,11 @@ type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; availa
 export class Produccion {
   private readonly dataService = inject(DataService);
 
-  constructor() { void this.dataService.loadCollections(['recipes', 'ingredients', 'doughBases', 'productionHistory', 'finishedProductInventory', 'productionReadyLines']); void this.dataService.refreshPendingOrders().catch(error => this.formError.set(error.message)); }
+  constructor() {
+    this.dataService.loadCollections?.(['recipes', 'ingredients', 'doughBases', 'productionHistory', 'finishedProductInventory', 'productionReadyLines']);
+    const pendingLoad = this.dataService.refreshPendingOrders?.();
+    if (pendingLoad) void pendingLoad.catch(error => this.formError.set(error.message));
+  }
 
   readonly recipes = this.dataService.recipes;
   readonly ingredients = this.dataService.ingredients;
