@@ -53,7 +53,7 @@ export class App {
   readonly isBareRoute = signal(false);
 
   private isBarePath(url: string): boolean {
-    return url.startsWith('/login') || url.startsWith('/migracion');
+    return url.startsWith('/login');
   }
 
   constructor(router: Router) {
