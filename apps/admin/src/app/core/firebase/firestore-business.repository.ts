@@ -311,7 +311,7 @@ export class FirestoreBusinessRepository {
    */
   async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>, updateCatalogDraft = false): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const safeValue = this.removeUndefinedFields({ ...value, id: recordId });
+    const safeValue: Record<string, unknown> = this.removeUndefinedFields({ ...value, id: recordId });
     const recipeRef = doc(this.firebase.firestore, 'recipes', recordId);
     const draftRef = doc(this.firebase.firestore, 'catalogDrafts', recordId);
     const publicRef = doc(this.firebase.firestore, 'publicCatalog', recordId);
