@@ -207,6 +207,18 @@ export class FirestoreBusinessRepository {
     return snapshot.exists() ? snapshot.data() : null;
   }
 
+  async loadPendingOrders<T extends Record<string, unknown>>(): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(query(
+      collection(this.firebase.firestore, 'orders'),
+      where('status', '==', 'PENDING'),
+    ));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as T;
+    });
+  }
+
   async loadDeliveredOrders<T extends Record<string, unknown>>(): Promise<T[]> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDocs(query(
