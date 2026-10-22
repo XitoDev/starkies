@@ -193,7 +193,7 @@ export class FirestoreBusinessRepository {
     return {
       items: docs.map(item => {
         const { sortIndex: _sortIndex, ...value } = item.data();
-        return { ...value, id: value['id'] ?? item.id } as T;
+        return { ...value, id: value['id'] ?? item.id } as unknown as T;
       }),
       cursor: docs.length ? docs[docs.length - 1] : null,
       hasMore,
@@ -223,7 +223,7 @@ export class FirestoreBusinessRepository {
     ));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
-      return { ...value, id: value['id'] ?? item.id } as T;
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
     });
   }
 
@@ -235,7 +235,7 @@ export class FirestoreBusinessRepository {
     ));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
-      return { ...value, id: value['id'] ?? item.id } as T;
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
     });
   }
 
@@ -259,7 +259,7 @@ export class FirestoreBusinessRepository {
     const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
-      return { ...value, id: value['id'] ?? item.id } as T;
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
     });
   }
 
