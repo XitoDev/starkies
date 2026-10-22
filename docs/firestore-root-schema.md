@@ -49,7 +49,7 @@ The script is:
 - backed by a private local JSON backup before writing;
 - non-destructive to the old namespace.
 
-The script requires `FIREBASE_SERVICE_ACCOUNT_JSON` for project `starkies`. Never commit that secret or the generated `.migration-backups/` files.
+The script requires `FIREBASE_SERVICE_ACCOUNT_JSON`; by default it only accepts project `starkies`. For a controlled staging copy with a different project ID, explicitly set `FIREBASE_EXPECTED_PROJECT_ID` to that exact staging project ID. Never commit the service-account secret or generated `.migration-backups/` files.
 
 Commands:
 
