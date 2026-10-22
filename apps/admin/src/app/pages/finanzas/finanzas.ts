@@ -346,6 +346,7 @@ export class Finanzas {
         if (!rawLine || typeof rawLine !== 'object' || Array.isArray(rawLine)) continue;
         const line = rawLine as Record<string, unknown>;
         const recipeId = String(line['id'] ?? line['recipeId'] ?? '');
+        if (recipeId.toLocaleLowerCase() === 'shipping' || String(line['name'] ?? '').toLocaleLowerCase().startsWith('envío')) continue;
         const recipe = recipes.find(item => String(item['id'] ?? '') === recipeId);
         const quantity = Number(line['qty'] ?? line['quantity'] ?? 0);
         const unitPrice = Number(line['price'] ?? line['unitPrice'] ?? recipe?.['price'] ?? 0);
