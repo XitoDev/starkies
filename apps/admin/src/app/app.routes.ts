@@ -4,6 +4,7 @@ import { businessDataReadyGuard } from './core/firebase/business-data-ready.guar
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login').then(module => module.Login) },
+  { path: 'migracion', loadComponent: () => import('./pages/migration/migration').then(module => module.Migration), canActivate: [adminAuthGuard] },
   { path: '', redirectTo: 'resumen', pathMatch: 'full' },
   { path: 'resumen', loadComponent: () => import('./pages/resumen/resumen').then(module => module.Resumen), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/nueva', loadComponent: () => import('./pages/recetas/masa-base-editor').then(module => module.MasaBaseEditor), canActivate: [adminAuthGuard, businessDataReadyGuard] },
