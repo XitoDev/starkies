@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
@@ -7,7 +7,7 @@ import { FirebaseClientService } from '../core/firebase/firebase-client.service'
 type RawRecord = Record<string, unknown>;
 
 @Injectable({ providedIn: 'root' })
-export class DataService {
+export class DataService implements OnDestroy {
   readonly ingredients = signal<Ingredient[]>([]);
   readonly recipes = signal<Recipe[]>([]);
   readonly customers = signal<Customer[]>([]);
@@ -69,7 +69,15 @@ export class DataService {
       !Object.prototype.hasOwnProperty.call(current, key)
       || this.loadedCollectionRevision.get(key) !== this.cloudRevision,
     );
-    if (missing.length) await this.loadFromCloud(missing);
+    if (missing.length) {
+      await Promise.all(missing.map(key => {
+        const existing = this.collectionLoadPromises.get(key);
+        if (existing) return existing;
+        const request = this.loadFromCloud([key]).finally(() => this.collectionLoadPromises.delete(key));
+        this.collectionLoadPromises.set(key, request);
+        return request;
+      }));
+    }
   }
 
   /** Server-side count for the summary; avoids downloading all pending orders. */
@@ -82,11 +90,14 @@ export class DataService {
   }
 
   readonly pendingOrderCount = signal(0);
+
+  ngOnDestroy(): void { this.stopMetadataWatch(); }
   readonly ordersPageHasMore = signal(false);
   readonly ordersPageLoading = signal(false);
   private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
   private cloudRevision = 0;
   private readonly loadedCollectionRevision = new Map<string, number>();
+  private readonly collectionLoadPromises = new Map<string, Promise<void>>();
   private readonly ordersPageCache = new Map<string, { items: RawRecord[]; cursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean; revision: number }>();
   private readonly stopMetadataWatch: Unsubscribe;
 
