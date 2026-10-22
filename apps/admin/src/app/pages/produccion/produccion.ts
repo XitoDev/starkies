@@ -88,15 +88,25 @@ export class Produccion {
   readonly commandLines = computed<CommandLine[]>(() => {
     const ready = new Set(this.readyCommandLines());
     const recipes = this.activeRecipes();
-    return this.orders().filter(order => order.status === 'PENDING').flatMap(order => order.items.flatMap(item => {
-      const recipe = recipes.find(entry => entry.id === item.recipeId)
-        ?? recipes.find(entry => entry.name.trim().toLocaleLowerCase('es') === (item.name ?? '').trim().toLocaleLowerCase('es'));
-      if (!recipe || item.quantity <= 0) return [];
-      return [{
-        key: `${order.id}:${recipe.id}`, orderId: order.id, recipeId: recipe.id,
-        recipeName: recipe.name, quantity: item.quantity,
-      }];
-    }));
+    return this.orders().filter(order => String(order.status).toUpperCase() === 'PENDING').flatMap(order => {
+      const rawOrder = order as unknown as Record<string, unknown>;
+      const rawItems = Array.isArray(rawOrder['items']) ? rawOrder['items']
+        : Array.isArray(rawOrder['lines']) ? rawOrder['lines'] : [];
+      return rawItems.flatMap(rawItem => {
+        if (!rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) return [];
+        const item = rawItem as Record<string, unknown>;
+        const itemId = String(item['recipeId'] ?? item['id'] ?? '');
+        const itemName = String(item['name'] ?? '');
+        const quantity = this.asNumber(item['quantity'] ?? item['qty']);
+        const recipe = recipes.find(entry => entry.id === itemId)
+          ?? recipes.find(entry => entry.name.trim().toLocaleLowerCase('es') === itemName.trim().toLocaleLowerCase('es'));
+        if (!recipe || quantity <= 0 || itemId.toLocaleLowerCase() === 'shipping') return [];
+        return [{
+          key: `${order.id}:${recipe.id}`, orderId: order.id, recipeId: recipe.id,
+          recipeName: recipe.name, quantity,
+        }];
+      });
+    });
   });
   readonly readyCommandLines = computed<string[]>(() => {
     const value = this.dataService.rawState()?.['productionReadyLines'];
