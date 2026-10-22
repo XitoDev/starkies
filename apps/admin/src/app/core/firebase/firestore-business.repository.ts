@@ -261,22 +261,14 @@ export class FirestoreBusinessRepository {
       totals.set(deduction.ingredientId, (totals.get(deduction.ingredientId) ?? 0) + deduction.quantity);
     }
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'ingredients',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('sortIndex', 'asc')));
     const ingredientDocs: { ingredientId: string; quantity: number; ref: DocumentReference }[] = [];
-
     for (const [ingredientId, quantity] of totals.entries()) {
-      const matching = ingredientSnapshot.docs.find((snapshot) => {
-        const stored = snapshot.data();
-        return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-      });
-      if (!matching) {
+      const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+      const matching = await getDoc(ingredientRef);
+      if (!matching.exists()) {
         throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
       }
-      ingredientDocs.push({ ingredientId, quantity, ref: matching.ref });
+      ingredientDocs.push({ ingredientId, quantity, ref: ingredientRef });
     }
 
     const productionRef = collection(
@@ -441,16 +433,9 @@ export class FirestoreBusinessRepository {
     };
     this.validateCashMovement(savedMovement);
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'ingredients',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('sortIndex', 'asc')));
-    const matchingIngredient = ingredientSnapshot.docs.find((snapshot) => {
-      const stored = snapshot.data();
-      return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-    });
-    if (!matchingIngredient) {
+    const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+    const matchingIngredient = await getDoc(ingredientRef);
+    if (!matchingIngredient.exists()) {
       throw new Error('No se encontró el insumo seleccionado. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
