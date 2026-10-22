@@ -212,6 +212,9 @@ async function main() {
     if (name) productNames.set(name, operation.target.slice('recipes/'.length));
   }
   const sales = new Map();
+  const pendingDemand = new Map();
+  let deliveredOrders = 0;
+  let salesRevenue = 0;
   const resolveProductId = item => {
     const nested = isObject(item.product) ? item.product : {};
     const rawId = String(item.recipeId ?? item.productId ?? item.id ?? nested.id ?? '').trim();
@@ -219,7 +222,7 @@ async function main() {
     const name = cleanName(item.productName ?? item.name ?? nested.name);
     return productNames.get(name) ?? '';
   };
-  const addSales = items => {
+  const addQuantities = (items, target) => {
     if (!Array.isArray(items)) return false;
     let counted = false;
     for (const rawItem of items) {
@@ -227,7 +230,7 @@ async function main() {
       const productId = resolveProductId(item);
       const quantity = Number(item.qty ?? item.quantity ?? item.count ?? 0);
       if (productId && Number.isFinite(quantity) && quantity > 0) {
-        sales.set(productId, (sales.get(productId) ?? 0) + quantity);
+        target.set(productId, (target.get(productId) ?? 0) + quantity);
         counted = true;
       }
     }
@@ -238,13 +241,23 @@ async function main() {
     const rawStatus = order.status ?? order.state ?? order.orderStatus;
     const statusValue = isObject(rawStatus) ? rawStatus.value ?? rawStatus.label ?? rawStatus.name : rawStatus;
     const status = cleanName(statusValue).toLocaleUpperCase('es');
-    if (!['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status)) continue;
-    if (addSales(order.lines ?? order.items)) continue;
-    let countedBoxes = false;
-    for (const box of Array.isArray(order.boxes) ? order.boxes : []) {
-      if (isObject(box) && addSales(box.items)) countedBoxes = true;
+    const isDelivered = ['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status);
+    const isPending = ['PENDING', 'PENDIENTE', 'PENDIENTES'].includes(status);
+    const items = order.lines ?? order.items;
+    let counted = isDelivered ? addQuantities(items, sales) : isPending ? addQuantities(items, pendingDemand) : false;
+    if (!counted) {
+      for (const box of Array.isArray(order.boxes) ? order.boxes : []) {
+        if (isObject(box)) {
+          const boxCounted = isDelivered ? addQuantities(box.items, sales) : isPending ? addQuantities(box.items, pendingDemand) : false;
+          counted = counted || boxCounted;
+        }
+      }
     }
-    if (!countedBoxes) addSales(order.items);
+    if (isDelivered) {
+      deliveredOrders++;
+      const total = Number(order.total ?? 0);
+      if (Number.isFinite(total) && total > 0) salesRevenue += total;
+    }
   }
   for (const [productId, unitsSold] of sales) {
     operations.push({
@@ -253,6 +266,30 @@ async function main() {
       data: { productId, unitsSold },
     });
   }
+  for (const [recipeId, pendingUnits] of pendingDemand) {
+    operations.push({
+      source: 'derived production demand from pending legacy orders',
+      target: 'productionDemand/' + recipeId,
+      data: { recipeId, pendingUnits },
+    });
+  }
+  operations.push({
+    source: 'derived aggregate from delivered legacy orders',
+    target: 'businessStats/sales',
+    data: { deliveredOrders, revenue: Math.round(salesRevenue * 100) / 100, unitsSold: [...sales.values()].reduce((sum, quantity) => sum + quantity, 0), updatedAt: new Date().toISOString() },
+  });
+  const productionRows = operations.filter(item => item.target.startsWith('productionHistory/')).map(item => item.data);
+  operations.push({
+    source: 'derived aggregate from legacy production history',
+    target: 'businessStats/production',
+    data: {
+      totalBatches: productionRows.reduce((sum, row) => sum + Math.max(0, Number(row.batches ?? 0)), 0),
+      totalUnits: productionRows.reduce((sum, row) => sum + (String(row.outputUnit ?? '') === 'g' ? 0 : Math.max(0, Number(row.totalYield ?? 0))), 0),
+      totalCost: Math.round(productionRows.reduce((sum, row) => sum + Math.max(0, Number(row.calculatedCost ?? 0)), 0) * 100) / 100,
+      completedRuns: productionRows.length,
+      updatedAt: new Date().toISOString(),
+    },
+  });
 
   const targetOwners = new Map();
   for (const operation of operations) {
