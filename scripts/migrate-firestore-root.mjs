@@ -88,6 +88,7 @@ async function main() {
   }
 
   const settingsSnapshot = await db.collection(oldBase + '/settings').get();
+  const settingKeys = settingsSnapshot.docs.map(document => document.id);
   for (const document of settingsSnapshot.docs) {
     const legacy = document.data();
     originalDocuments.push({ source: document.ref.path, data: legacy });
@@ -271,7 +272,10 @@ async function main() {
     schemaVersion: 3,
     sourceSchemaVersion: legacyMeta.schemaVersion ?? 1,
     collectionKeys,
-    settingKeys: [...new Set(legacyMeta.settingKeys ?? [])],
+    arrayKeys: collectionKeys,
+    stateKeys: [...new Set([...collectionKeys, ...settingKeys])],
+    settingKeys,
+    recordCounts: { ...counts },
     migratedFrom: metaPath,
     migratedAt: new Date().toISOString(),
     migrationTool: 'scripts/migrate-firestore-root.mjs',
