@@ -82,6 +82,13 @@ async function main() {
     if (children.some(child => child.id === 'records')) discoveredCollectionKeys.push(collectionDocument.id);
   }
   const collectionKeys = [...new Set([...(legacyMeta.arrayKeys ?? []), ...knownCollections, ...discoveredCollectionKeys])];
+  // The legacy app stored completed production runs under `productions`, while
+  // the v3 Admin model reads and writes that history as `productionHistory`.
+  // Flatten the legacy collection into the canonical destination, not a parallel
+  // unused root collection.
+  const destinationCollectionFor = key => key === 'productions' ? 'productionHistory' : key;
+  const destinationCollectionKeys = [...new Set(collectionKeys.map(destinationCollectionFor))];
+  const destinationRecordCounts = {};
   for (const key of collectionKeys) {
     if (!/^[A-Za-z0-9_-]+$/.test(key)) throw new Error('Unsafe collection key in legacy metadata: ' + key + '. No writes made.');
   }
@@ -95,7 +102,8 @@ async function main() {
     const sourceCollection = db.collection(oldBase + '/collections/' + key + '/records');
     const snapshot = await sourceCollection.get();
     counts[key] = snapshot.size;
-    const targetCollection = key;
+    const targetCollection = destinationCollectionFor(key);
+    destinationRecordCounts[targetCollection] = (destinationRecordCounts[targetCollection] ?? 0) + snapshot.size;
     for (const document of snapshot.docs) {
       const legacyDocument = document.data();
       originalDocuments.push({ source: document.ref.path, data: legacyDocument });
@@ -285,14 +293,6 @@ async function main() {
     data: { deliveredOrders, revenue: Math.round(salesRevenue * 100) / 100, unitsSold: [...sales.values()].reduce((sum, quantity) => sum + quantity, 0), updatedAt: new Date().toISOString() },
   });
   const productionRows = operations.filter(item => item.target.startsWith('productionHistory/')).map(item => item.data);
-  const legacyProductionRows = operations.filter(item => item.target.startsWith('productions/')).map(item => item.data);
-  if (legacyProductionRows.length > 0 && productionRows.length === 0) {
-    throw new Error(
-      'Found ' + legacyProductionRows.length + ' legacy records in productions but none in productionHistory. ' +
-      'The migration cannot safely infer the production-history mapping or initialize businessStats/production from these records. ' +
-      'No writes made; inspect the legacy productions document shape and add an explicit mapping before applying.'
-    );
-  }
   operations.push({
     source: 'derived aggregate from legacy production history',
     target: 'businessStats/production',
@@ -389,15 +389,15 @@ async function main() {
     status: 'complete',
     schemaVersion: 3,
     sourceSchemaVersion: legacyMeta.schemaVersion ?? 1,
-    collectionKeys,
-    arrayKeys: collectionKeys,
-    stateKeys: [...new Set([...collectionKeys, ...settingKeys])],
+    collectionKeys: destinationCollectionKeys,
+    arrayKeys: destinationCollectionKeys,
+    stateKeys: [...new Set([...destinationCollectionKeys, ...settingKeys])],
     settingKeys,
-    recordCounts: { ...counts },
+    recordCounts: { ...destinationRecordCounts },
     migratedFrom: metaPath,
     migratedAt: new Date().toISOString(),
     revision: Number(legacyMeta.revision ?? 0) + 1,
-    changedKeys: [...new Set([...collectionKeys, ...settingKeys, 'stats:sales', 'stats:demand', 'stats:production'])],
+    changedKeys: [...new Set([...destinationCollectionKeys, ...settingKeys, 'stats:sales', 'stats:demand', 'stats:production'])],
     migrationTool: 'scripts/migrate-firestore-root.mjs',
   }, { merge: true });
   await batch.commit();
