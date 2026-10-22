@@ -553,7 +553,6 @@ export class DataService implements OnDestroy {
     }
 
     await this.repository.recordCashMovement(movement);
-    await this.refreshAfterFinancialWrite();
   }
 
   async recordIngredientPurchase(movement: CashMovement): Promise<void> {
@@ -562,7 +561,6 @@ export class DataService implements OnDestroy {
     }
 
     await this.repository.recordIngredientPurchase(movement);
-    await this.refreshAfterFinancialWrite();
   }
 
   private async applyOptimisticState(previousState: RawRecord, nextState: RawRecord, persist: () => Promise<void>): Promise<void> {
@@ -577,22 +575,11 @@ export class DataService implements OnDestroy {
     }
   }
 
-  private async refreshAfterFinancialWrite(): Promise<void> {
-    await this.loadFromCloud();
-    if (this.error()) throw new Error(this.error());
-    if (this.migrationRequired() || !this.rawState()) {
-      throw new Error('No se pudo recargar el estado de StarKies después de guardar el movimiento.');
-    }
-  }
-
   async recordProduction(
     record: Record<string, unknown>,
     deductions: { ingredientId: string; quantity: number }[],
   ): Promise<void> {
     await this.repository.recordProduction(record, deductions);
-    await this.loadCollections(['ingredients', 'productionHistory', 'finishedProductInventory'], true);
-    await this.refreshProductionStats();
-    if (this.error()) throw new Error(this.error());
   }
 
   exportBackup(): void {
