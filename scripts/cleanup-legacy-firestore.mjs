@@ -102,6 +102,7 @@ if (!apply) {
     await metaRef.set({
       stateKeys: (Array.isArray(value.stateKeys) ? value.stateKeys : []).filter(key => !remove.has(key)),
       arrayKeys: (Array.isArray(value.arrayKeys) ? value.arrayKeys : []).filter(key => !remove.has(key)),
+      settingKeys: (Array.isArray(value.settingKeys) ? value.settingKeys : []).filter(key => !remove.has(key)),
       recordCounts: Object.fromEntries(Object.entries(value.recordCounts ?? {}).filter(([key]) => !remove.has(key))),
       revision: FieldValue.increment(1),
       changedKeys: obsoleteCollections,
