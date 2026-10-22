@@ -18,7 +18,8 @@ import { Order } from 'shared';
 export class Pedidos {
   private readonly data = inject(DataService);
   private readonly router = inject(Router);
-  readonly orders = this.data.orders;
+  constructor() { void this.data.loadCollections(['orders', 'customers']); }
+    readonly orders = this.data.orders;
   readonly customers = this.data.customers;
   readonly activeTab = signal<'pedidos'|'clientes'>(this.router.parseUrl(this.router.url).queryParams['vista']==='clientes'?'clientes':'pedidos');
   readonly searchTerm = signal('');
