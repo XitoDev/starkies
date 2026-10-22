@@ -93,18 +93,22 @@ export class FirestoreBusinessRepository {
   watchStateMeta(onChange: () => void, onError?: (error: Error) => void): Unsubscribe {
     if (!this.firebase.isConfigured) return () => undefined;
     let initialized = false;
-    return onSnapshot(this.stateMetaRef(), () => {
-      if (initialized) onChange();
+    return onSnapshot(this.stateMetaRef(), snapshot => {
+      if (initialized) {
+        const keys = snapshot.data()?.['changedKeys'];
+        onChange(Array.isArray(keys) ? keys.filter((key): key is string => typeof key === 'string') : []);
+      }
       initialized = true;
     }, error => onError?.(error));
   }
 
   /** Signals other Admin sessions that a root collection or setting changed. */
-  private async publishStateChange(): Promise<void> {
+  private async publishStateChange(changedKeys: string[] = []): Promise<void> {
     if (!this.firebase.isConfigured) return;
     await setDoc(this.stateMetaRef(), {
       revision: increment(1),
       updatedAt: serverTimestamp(),
+      changedKeys,
     }, { merge: true });
   }
 
@@ -246,16 +250,13 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists()
       ? Number(existing.data()['sortIndex'] ?? Date.now())
       : Date.now();
-    const previousStatus = String(existing.data()?.['status'] ?? '').toUpperCase();
-    const nextStatus = String(safeValue['status'] ?? '').toUpperCase();
-    if (collectionKey === 'orders' && existing.exists()
-      && (previousStatus === 'DELIVERED' || nextStatus === 'DELIVERED')) {
-      await this.persistOrderSalesTransition(recordRef, previousStatus, safeValue, sortIndex);
+    if (collectionKey === 'orders') {
+      await this.persistOrderWithStats(recordRef, safeValue, sortIndex);
     } else {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
-    await this.publishStateChange();
+    await this.publishStateChange([collectionKey]);
   }
 
   private extractOrderSalesQuantities(order: Record<string, unknown>): Map<string, number> {
@@ -279,75 +280,118 @@ export class FirestoreBusinessRepository {
     return quantities;
   }
 
-  private async persistOrderSalesTransition(
+  private async persistOrderWithStats(
     orderRef: DocumentReference,
-    expectedStatus: string,
     updatedOrder: Record<string, unknown>,
     sortIndex: number,
   ): Promise<void> {
+    const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
     await runTransaction(this.firebase.firestore, async transaction => {
-      const currentOrderSnapshot = await transaction.get(orderRef);
-      if (!currentOrderSnapshot.exists()) throw new Error('No se encontró el pedido.');
-      const currentOrder = currentOrderSnapshot.data();
-      const currentStatus = String(currentOrder['status'] ?? '').toUpperCase();
-      if (currentStatus !== expectedStatus) {
-        throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
-      }
-
-      const oldQuantities = currentStatus === 'DELIVERED'
-        ? this.extractOrderSalesQuantities(currentOrder)
-        : new Map<string, number>();
-      const nextIsDelivered = String(updatedOrder['status'] ?? '').toUpperCase() === 'DELIVERED';
-      const nextQuantities = nextIsDelivered
-        ? this.extractOrderSalesQuantities(updatedOrder)
-        : new Map<string, number>();
+      const currentSnapshot = await transaction.get(orderRef);
+      const current = currentSnapshot.exists() ? currentSnapshot.data()! : null;
+      const oldStatus = String(current?.['status'] ?? '').toUpperCase();
+      const newStatus = String(updatedOrder['status'] ?? '').toUpperCase();
+      const oldQuantities = current ? this.extractOrderSalesQuantities(current) : new Map<string, number>();
+      const nextQuantities = this.extractOrderSalesQuantities(updatedOrder);
+      const oldDelivered = oldStatus === 'DELIVERED';
+      const nextDelivered = newStatus === 'DELIVERED';
+      const oldPending = oldStatus === 'PENDING';
+      const nextPending = newStatus === 'PENDING';
       const productIds = new Set([...oldQuantities.keys(), ...nextQuantities.keys()]);
-      const deltas = new Map<string, number>();
-      for (const id of productIds) {
-        const delta = (nextQuantities.get(id) ?? 0) - (oldQuantities.get(id) ?? 0);
-        if (delta !== 0) deltas.set(id, delta);
+      const changes = [...productIds].map(id => ({
+        id,
+        salesDelta: (nextDelivered ? nextQuantities.get(id) ?? 0 : 0) - (oldDelivered ? oldQuantities.get(id) ?? 0 : 0),
+        demandDelta: (nextPending ? nextQuantities.get(id) ?? 0 : 0) - (oldPending ? oldQuantities.get(id) ?? 0 : 0),
+      })).filter(item => item.salesDelta !== 0 || item.demandDelta !== 0);
+      const salesSnapshot = await transaction.get(salesSummaryRef);
+      const productSnapshots: DocumentSnapshot[] = [];
+      const demandSnapshots: DocumentSnapshot[] = [];
+      for (const change of changes) {
+        productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', change.id)));
+        demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', change.id)));
       }
-
-      const statsRefs = [...deltas.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
-      const statsSnapshots: DocumentSnapshot[] = [];
-      for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
 
       transaction.set(orderRef, { ...updatedOrder, sortIndex });
-      statsRefs.forEach((ref, index) => {
-        const snapshot = statsSnapshots[index];
-        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
-        transaction.set(ref, {
-          productId: ref.id,
-          unitsSold: Math.max(0, currentUnits + (deltas.get(ref.id) ?? 0)),
-          updatedAt: new Date().toISOString(),
-        });
+      const now = new Date().toISOString();
+      changes.forEach((change, index) => {
+        if (change.salesDelta !== 0) {
+          const snapshot = productSnapshots[index];
+          const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+          transaction.set(doc(this.firebase.firestore, 'productSalesStats', change.id), {
+            productId: change.id,
+            unitsSold: Math.max(0, currentUnits + change.salesDelta),
+            updatedAt: now,
+          });
+        }
+        if (change.demandDelta !== 0) {
+          const snapshot = demandSnapshots[index];
+          const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+          transaction.set(doc(this.firebase.firestore, 'productionDemand', change.id), {
+            recipeId: change.id,
+            pendingUnits: Math.max(0, currentUnits + change.demandDelta),
+            updatedAt: now,
+          });
+        }
       });
+
+      const revenueDelta = (nextDelivered ? Number(updatedOrder['total'] ?? 0) : 0)
+        - (oldDelivered ? Number(current?.['total'] ?? 0) : 0);
+      const unitsDelta = changes.reduce((sum, item) => sum + item.salesDelta, 0);
+      const deliveredDelta = Number(nextDelivered) - Number(oldDelivered);
+      if (revenueDelta !== 0 || unitsDelta !== 0 || deliveredDelta !== 0 || !salesSnapshot.exists()) {
+        const summary = salesSnapshot.data() ?? {};
+        transaction.set(salesSummaryRef, {
+          deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) + deliveredDelta),
+          revenue: Math.max(0, Math.round((Number(summary['revenue'] ?? 0) + revenueDelta) * 100) / 100),
+          unitsSold: Math.max(0, Number(summary['unitsSold'] ?? 0) + unitsDelta),
+          updatedAt: now,
+        }, { merge: true });
+      }
     });
   }
 
-  private async deleteDeliveredOrder(orderRef: DocumentReference, expectedStatus: string): Promise<void> {
+  private async deleteOrderWithStats(orderRef: DocumentReference): Promise<void> {
+    const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
     await runTransaction(this.firebase.firestore, async transaction => {
       const orderSnapshot = await transaction.get(orderRef);
-      if (!orderSnapshot.exists()) throw new Error('No se encontró el pedido.');
+      if (!orderSnapshot.exists()) throw new Error('No se encontró el registro que intentas eliminar.');
       const order = orderSnapshot.data();
-      const currentStatus = String(order['status'] ?? '').toUpperCase();
-      if (currentStatus !== expectedStatus || currentStatus !== 'DELIVERED') {
-        throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
-      }
+      const status = String(order['status'] ?? '').toUpperCase();
       const quantities = this.extractOrderSalesQuantities(order);
-      const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
-      const statsSnapshots: DocumentSnapshot[] = [];
-      for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
+      const salesSnapshot = await transaction.get(salesSummaryRef);
+      const productSnapshots: DocumentSnapshot[] = [];
+      const demandSnapshots: DocumentSnapshot[] = [];
+      for (const id of quantities.keys()) {
+        productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
+        demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
+      }
       transaction.delete(orderRef);
-      statsRefs.forEach((ref, index) => {
-        const snapshot = statsSnapshots[index];
-        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
-        transaction.set(ref, {
-          productId: ref.id,
-          unitsSold: Math.max(0, currentUnits - (quantities.get(ref.id) ?? 0)),
-          updatedAt: new Date().toISOString(),
-        });
+      const now = new Date().toISOString();
+      [...quantities.entries()].forEach(([id, quantity], index) => {
+        if (status === 'DELIVERED') {
+          const snapshot = productSnapshots[index];
+          const units = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+          transaction.set(doc(this.firebase.firestore, 'productSalesStats', id), {
+            productId: id, unitsSold: Math.max(0, units - quantity), updatedAt: now,
+          });
+        }
+        if (status === 'PENDING') {
+          const snapshot = demandSnapshots[index];
+          const units = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+          transaction.set(doc(this.firebase.firestore, 'productionDemand', id), {
+            recipeId: id, pendingUnits: Math.max(0, units - quantity), updatedAt: now,
+          });
+        }
       });
+      if (status === 'DELIVERED') {
+        const summary = salesSnapshot.data() ?? {};
+        transaction.set(salesSummaryRef, {
+          deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) - 1),
+          revenue: Math.max(0, Math.round((Number(summary['revenue'] ?? 0) - Number(order['total'] ?? 0)) * 100) / 100),
+          unitsSold: Math.max(0, Number(summary['unitsSold'] ?? 0) - [...quantities.values()].reduce((sum, value) => sum + value, 0)),
+          updatedAt: now,
+        }, { merge: true });
+      }
     });
   }
 
@@ -363,13 +407,10 @@ export class FirestoreBusinessRepository {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    if (collectionKey === 'orders' && String(matching.data()['status'] ?? '').toUpperCase() === 'DELIVERED') {
-      await this.deleteDeliveredOrder(matching.ref, 'DELIVERED');
-    } else {
-      await deleteDoc(matching.ref);
-    }
+    if (collectionKey === 'orders') await this.deleteOrderWithStats(matching.ref);
+    else await deleteDoc(matching.ref);
     this.invalidateStateCache();
-    await this.publishStateChange();
+    await this.publishStateChange([collectionKey]);
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
