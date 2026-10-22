@@ -294,19 +294,16 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists()
       ? Number(existing.data()['sortIndex'] ?? Date.now())
       : Date.now();
+    let orderStatsChanges: { salesChanged: boolean; demandChanged: boolean } | null = null;
     if (collectionKey === 'orders') {
-      await this.persistOrderWithStats(recordRef, safeValue, sortIndex);
+      orderStatsChanges = await this.persistOrderWithStats(recordRef, safeValue, sortIndex);
     } else {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
     const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
-    if (collectionKey === 'orders') {
-      const previousStatus = String(existing.data()?.['status'] ?? '').toUpperCase();
-      const nextStatus = String(safeValue['status'] ?? '').toUpperCase();
-      if (previousStatus === 'DELIVERED' || nextStatus === 'DELIVERED') changedKeys.push('stats:sales');
-      if (previousStatus === 'PENDING' || nextStatus === 'PENDING') changedKeys.push('stats:demand');
-    }
+    if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
+    if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
     await this.publishStateChange(changedKeys);
   }
 
@@ -335,9 +332,9 @@ export class FirestoreBusinessRepository {
     orderRef: DocumentReference,
     updatedOrder: Record<string, unknown>,
     sortIndex: number,
-  ): Promise<void> {
+  ): Promise<{ salesChanged: boolean; demandChanged: boolean }> {
     const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
-    await runTransaction(this.firebase.firestore, async transaction => {
+    return runTransaction(this.firebase.firestore, async transaction => {
       const currentSnapshot = await transaction.get(orderRef);
       const current = currentSnapshot.exists() ? currentSnapshot.data()! : null;
       const oldStatus = String(current?.['status'] ?? '').toUpperCase();
@@ -354,42 +351,40 @@ export class FirestoreBusinessRepository {
         salesDelta: (nextDelivered ? nextQuantities.get(id) ?? 0 : 0) - (oldDelivered ? oldQuantities.get(id) ?? 0 : 0),
         demandDelta: (nextPending ? nextQuantities.get(id) ?? 0 : 0) - (oldPending ? oldQuantities.get(id) ?? 0 : 0),
       })).filter(item => item.salesDelta !== 0 || item.demandDelta !== 0);
-      const salesSnapshot = await transaction.get(salesSummaryRef);
+      const salesChanges = changes.filter(item => item.salesDelta !== 0);
+      const demandChanges = changes.filter(item => item.demandDelta !== 0);
+      const salesSnapshot = oldDelivered || nextDelivered ? await transaction.get(salesSummaryRef) : null;
       const productSnapshots: DocumentSnapshot[] = [];
       const demandSnapshots: DocumentSnapshot[] = [];
-      for (const change of changes) {
-        productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', change.id)));
-        demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', change.id)));
-      }
+      for (const change of salesChanges) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', change.id)));
+      for (const change of demandChanges) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', change.id)));
 
       transaction.set(orderRef, { ...updatedOrder, sortIndex });
       const now = new Date().toISOString();
-      changes.forEach((change, index) => {
-        if (change.salesDelta !== 0) {
-          const snapshot = productSnapshots[index];
-          const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
-          transaction.set(doc(this.firebase.firestore, 'productSalesStats', change.id), {
-            productId: change.id,
-            unitsSold: Math.max(0, currentUnits + change.salesDelta),
-            updatedAt: now,
-          });
-        }
-        if (change.demandDelta !== 0) {
-          const snapshot = demandSnapshots[index];
-          const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
-          transaction.set(doc(this.firebase.firestore, 'productionDemand', change.id), {
-            recipeId: change.id,
-            pendingUnits: Math.max(0, currentUnits + change.demandDelta),
-            updatedAt: now,
-          });
-        }
+      salesChanges.forEach((change, index) => {
+        const snapshot = productSnapshots[index];
+        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productSalesStats', change.id), {
+          productId: change.id,
+          unitsSold: Math.max(0, currentUnits + change.salesDelta),
+          updatedAt: now,
+        });
+      });
+      demandChanges.forEach((change, index) => {
+        const snapshot = demandSnapshots[index];
+        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productionDemand', change.id), {
+          recipeId: change.id,
+          pendingUnits: Math.max(0, currentUnits + change.demandDelta),
+          updatedAt: now,
+        });
       });
 
       const revenueDelta = (nextDelivered ? Number(updatedOrder['total'] ?? 0) : 0)
         - (oldDelivered ? Number(current?.['total'] ?? 0) : 0);
       const unitsDelta = changes.reduce((sum, item) => sum + item.salesDelta, 0);
       const deliveredDelta = Number(nextDelivered) - Number(oldDelivered);
-      if (revenueDelta !== 0 || unitsDelta !== 0 || deliveredDelta !== 0 || !salesSnapshot.exists()) {
+      if (salesSnapshot && (revenueDelta !== 0 || unitsDelta !== 0 || deliveredDelta !== 0 || !salesSnapshot.exists())) {
         const summary = salesSnapshot.data() ?? {};
         transaction.set(salesSummaryRef, {
           deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) + deliveredDelta),
@@ -398,43 +393,40 @@ export class FirestoreBusinessRepository {
           updatedAt: now,
         }, { merge: true });
       }
+      return { salesChanged: oldDelivered || nextDelivered, demandChanged: oldPending || nextPending };
     });
   }
 
-  private async deleteOrderWithStats(orderRef: DocumentReference): Promise<void> {
+  private async deleteOrderWithStats(orderRef: DocumentReference): Promise<{ salesChanged: boolean; demandChanged: boolean }> {
     const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
-    await runTransaction(this.firebase.firestore, async transaction => {
+    return runTransaction(this.firebase.firestore, async transaction => {
       const orderSnapshot = await transaction.get(orderRef);
       if (!orderSnapshot.exists()) throw new Error('No se encontró el registro que intentas eliminar.');
       const order = orderSnapshot.data();
       const status = String(order['status'] ?? '').toUpperCase();
       const quantities = this.extractOrderSalesQuantities(order);
-      const salesSnapshot = await transaction.get(salesSummaryRef);
+      const salesSnapshot = status === 'DELIVERED' ? await transaction.get(salesSummaryRef) : null;
       const productSnapshots: DocumentSnapshot[] = [];
       const demandSnapshots: DocumentSnapshot[] = [];
-      for (const id of quantities.keys()) {
-        productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
-        demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
-      }
+      if (status === 'DELIVERED') for (const id of quantities.keys()) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
+      if (status === 'PENDING') for (const id of quantities.keys()) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
       transaction.delete(orderRef);
       const now = new Date().toISOString();
-      [...quantities.entries()].forEach(([id, quantity], index) => {
-        if (status === 'DELIVERED') {
-          const snapshot = productSnapshots[index];
-          const units = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
-          transaction.set(doc(this.firebase.firestore, 'productSalesStats', id), {
-            productId: id, unitsSold: Math.max(0, units - quantity), updatedAt: now,
-          });
-        }
-        if (status === 'PENDING') {
-          const snapshot = demandSnapshots[index];
-          const units = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
-          transaction.set(doc(this.firebase.firestore, 'productionDemand', id), {
-            recipeId: id, pendingUnits: Math.max(0, units - quantity), updatedAt: now,
-          });
-        }
+      if (status === 'DELIVERED') [...quantities.entries()].forEach(([id, quantity], index) => {
+        const snapshot = productSnapshots[index];
+        const units = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productSalesStats', id), {
+          productId: id, unitsSold: Math.max(0, units - quantity), updatedAt: now,
+        });
       });
-      if (status === 'DELIVERED') {
+      if (status === 'PENDING') [...quantities.entries()].forEach(([id, quantity], index) => {
+        const snapshot = demandSnapshots[index];
+        const units = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productionDemand', id), {
+          recipeId: id, pendingUnits: Math.max(0, units - quantity), updatedAt: now,
+        });
+      });
+      if (status === 'DELIVERED' && salesSnapshot) {
         const summary = salesSnapshot.data() ?? {};
         transaction.set(salesSummaryRef, {
           deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) - 1),
@@ -443,6 +435,7 @@ export class FirestoreBusinessRepository {
           updatedAt: now,
         }, { merge: true });
       }
+      return { salesChanged: status === 'DELIVERED', demandChanged: status === 'PENDING' };
     });
   }
 
@@ -458,15 +451,12 @@ export class FirestoreBusinessRepository {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    if (collectionKey === 'orders') await this.deleteOrderWithStats(matching.ref);
-    else await deleteDoc(matching.ref);
+    const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
+    if (collectionKey !== 'orders') await deleteDoc(matching.ref);
     this.invalidateStateCache();
     const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
-    if (collectionKey === 'orders') {
-      const status = String(matching.data()?.['status'] ?? '').toUpperCase();
-      if (status === 'DELIVERED') changedKeys.push('stats:sales');
-      if (status === 'PENDING') changedKeys.push('stats:demand');
-    }
+    if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
+    if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
     await this.publishStateChange(changedKeys);
   }
 
