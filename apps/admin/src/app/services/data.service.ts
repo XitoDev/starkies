@@ -101,7 +101,7 @@ export class DataService implements OnDestroy {
     const key = 'customers|ALL|' + normalized;
     const cached = this.searchCache.get(key);
     if (cached && cached.revision === this.cloudRevision) return cached.items as unknown as Customer[];
-    const items = await this.repository.searchCollection<RawRecord>('customers', normalized, { limit: 50 });
+    const items = await this.repository.searchCollection<RawRecord>('customers', normalized, { limit: 50, tokenField: 'nameSearchTokens' };
     this.searchCache.set(key, { revision: this.cloudRevision, items });
     return items as unknown as Customer[];
   }
