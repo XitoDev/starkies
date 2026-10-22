@@ -16,7 +16,7 @@ import { Order } from 'shared';
   styleUrls: ['./pedidos.css']
 })
 export class Pedidos {
-  private readonly data = inject(DataService);
+  readonly data = inject(DataService);
   private readonly router = inject(Router);
   constructor() { void this.data.loadOrdersPage(true); void this.data.refreshPendingOrderCount().catch(() => undefined); }
     readonly orders = this.data.orders;
