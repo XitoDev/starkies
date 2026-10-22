@@ -196,6 +196,25 @@ export class FirestoreBusinessRepository {
     };
   }
 
+  /** Searches indexed prefixes; only matching documents are returned from Firestore. */
+  async searchCollection<T extends Record<string, unknown>>(
+    collectionKey: string,
+    term: string,
+    options: { limit?: number; status?: string } = {},
+  ): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const token = term.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+    if (token.length < 2) return [];
+    const constraints: QueryConstraint[] = [where('searchTokens', 'array-contains', token)];
+    if (options.status && options.status !== 'ALL') constraints.push(where('status', '==', options.status));
+    constraints.push(limit(Math.min(50, Math.max(1, options.limit ?? 25))));
+    const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as T;
+    });
+  }
+
   /** Uses Firestore's count aggregation instead of downloading matching documents. */
   async countCollection(
     collectionKey: string,
@@ -219,7 +238,7 @@ export class FirestoreBusinessRepository {
     value: Record<string, unknown>,
   ): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const safeValue = this.removeUndefinedFields(value);
+    const safeValue = this.removeUndefinedFields(value);\n    if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
     const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
     const existing = await getDoc(recordRef);
     const sortIndex = existing.exists()
@@ -821,6 +840,21 @@ export class FirestoreBusinessRepository {
       if (child !== undefined) result[key] = this.removeUndefinedFields(child);
     }
     return result as T;
+  }
+
+  private searchTokensFor(record: Record<string, unknown>): string[] {
+    const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
+      .map(value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
+      .filter(Boolean);
+    const tokens = new Set<string>();
+    for (const value of values) {
+      const compact = value.replace(/\\s+/g, '');
+      for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+      for (const word of value.split(/\\s+/).filter(part => part.length >= 2)) {
+        for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+      }
+    }
+    return [...tokens];
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
