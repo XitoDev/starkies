@@ -408,7 +408,10 @@ export class FirestoreBusinessRepository {
           updatedAt: now,
         }, { merge: true });
       }
-      return { salesChanged: oldDelivered || nextDelivered, demandChanged: oldPending || nextPending };
+      return {
+        salesChanged: oldDelivered !== nextDelivered || salesChanges.length > 0 || revenueDelta !== 0,
+        demandChanged: oldPending !== nextPending || demandChanges.length > 0,
+      };
     });
   }
 
