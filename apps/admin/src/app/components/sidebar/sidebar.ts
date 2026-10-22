@@ -33,10 +33,6 @@ export class Sidebar {
     { label: 'Finanzas', path: '/finanzas', icon: 'payments' }
   ];
 
-  exportBackup(): void {
-    this.dataService.exportBackup();
-  }
-
   async logout(): Promise<void> {
     if (this.loggingOut()) return;
     this.loggingOut.set(true);

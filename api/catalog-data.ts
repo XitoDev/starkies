@@ -64,12 +64,11 @@ function numberValue(value: unknown, fallback = 0): number {
 }
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
-  const recipesRef = db.collection('recipes');
-  const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, ordersSnapshot] = await Promise.all([
-    recipesRef.orderBy('sortIndex', 'asc').get(),
-    db.doc('settings/deliveryZones').get(),
-    db.doc('settings/catalogSettings').get(),
-    db.collection('deliveryZones').orderBy('sortIndex', 'asc').get(),
+  // The public endpoint reads only the explicitly published projection. Recipe
+  // documents are private business data and must never be serialized to clients.
+  const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot] = await Promise.all([
+    db.collection('publicCatalog').orderBy('sortIndex', 'asc').get(),
+    db.doc('publicCatalog/catalog-settings').get(),
     db.doc('system/stateMeta').get(),
     db.collection('productSalesStats').get(),
   ]);
@@ -77,60 +76,53 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     throw new Error('El catálogo del negocio todavía no está disponible.');
   }
 
-  const products: PublicProduct[] = recipesSnapshot.docs.flatMap((document) => {
-    const recipe = asRecord(document.data());
-    const id = stringValue(recipe['id'], document.id);
-    const name = stringValue(recipe['name']);
-    const category = stringValue(recipe['category'], 'Galletas clásicas');
-    const price = numberValue(recipe['price'], Number.NaN);
-    if (!id || !name || !Number.isFinite(price) || price < 0 || recipe['archived'] === true || recipe['catalogVisible'] === false) return [];
+  const products: PublicProduct[] = publicSnapshot.docs.flatMap(document => {
+    if (document.id === 'catalog-settings') return [];
+    const item = asRecord(document.data());
+    const id = stringValue(item['id'], document.id);
+    const name = stringValue(item['name']);
+    const category = stringValue(item['category'], 'Galletas clásicas');
+    const price = numberValue(item['price'], Number.NaN);
+    if (!id || !name || !Number.isFinite(price) || price < 0) return [];
     const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
-    const grams = numberValue(recipe['baseGramsPerCookie'], 0);
-    const isNy = normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
-    // The public catalog owns its image; retain the recipe image as a backward-compatible fallback.
-    const image = publicImage(stringValue(recipe['catalogImage'] ?? recipe['image']), id);
+    const grams = numberValue(item['baseGramsPerCookie'], 0);
+    const isNy = item['isNy'] === true || normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
+    const image = publicImage(stringValue(item['image']), id);
     return [{
       id,
       name,
       category: isNy ? 'Galletas NY' : 'Galletas clásicas',
-      description: stringValue(recipe['catalogDescription']) || stringValue(recipe['description']),
-      ...(stringValue(recipe['catalogLabel']) ? { tag: stringValue(recipe['catalogLabel']) } : {}),
+      description: stringValue(item['description']),
+      ...(stringValue(item['tag']) ? { tag: stringValue(item['tag']) } : {}),
       price,
       isNy,
-      stock: true,
+      stock: item['stock'] !== false,
       ...(image ? { image } : {}),
     }];
   });
 
-  const salesCounts = new Map<string, number>(ordersSnapshot.docs.map(document => [document.id, numberValue(document.data()['unitsSold'], 0)]));
+  const salesCounts = new Map<string, number>(
+    salesSnapshot.docs.map(document => [document.id, numberValue(document.data()['unitsSold'], 0)]),
+  );
   const rankedProducts = rankCatalogProducts(products, salesCounts);
-
-  const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['data']);
-  // An empty settings array must not mask valid legacy/catalog settings.
-  const zoneCandidates: unknown[] = [
-    zonesSnapshot.data()?.['data'],
-    catalogSettings['deliveryZones'],
-    legacyZonesSnapshot.docs.map(document => { const data = document.data(); const { sortIndex: _sortIndex, ...zone } = data; return zone; }),
-  ];
-  const zonesValue = zoneCandidates.find(value => Array.isArray(value) && value.length > 0);
-  const zones = (Array.isArray(zonesValue) ? zonesValue : []).flatMap((raw, index) => {
+  const settings = asRecord(settingsSnapshot.data());
+  const zones = (Array.isArray(settings['zones']) ? settings['zones'] : []).flatMap((raw, index) => {
     const zone = asRecord(raw);
     const id = stringValue(zone['id'], `zone-${index + 1}`);
     const name = stringValue(zone['name']);
     const fee = numberValue(zone['fee'], Number.NaN);
     return id && name && Number.isFinite(fee) && fee >= 0 ? [{ id, name, fee }] : [];
   });
-  if (!zones.length) {
-    console.warn('No valid delivery zones were found in business settings; using the same shared defaults as admin.');
-    zones.push(...DEFAULT_DELIVERY_ZONES);
-  }
-
-  return { products: rankedProducts, zones, presentations: BOX_PRESENTATIONS };
+  return {
+    products: rankedProducts,
+    zones: zones.length ? zones : DEFAULT_DELIVERY_ZONES,
+    presentations: BOX_PRESENTATIONS,
+  };
 }
 
 /**
- * Maintains a public projection inside the business namespace. Only published
- * products and public delivery settings are copied into this collection.
+ * Maintains the root-level public projection. Only published products and
+ * explicitly public delivery settings are written to this collection.
  */
 export async function syncPublicCatalogProjection(db: Firestore, catalog: PublicCatalog): Promise<void> {
   const collectionRef = db.collection('publicCatalog');

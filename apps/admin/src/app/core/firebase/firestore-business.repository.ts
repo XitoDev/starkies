@@ -27,7 +27,6 @@ import {
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
 import { FirestoreBackupArchiveService } from './firestore-backup-archive.service';
-
 export interface StarKiesBackupFile {
   business?: string;
   exportedAt?: string;
@@ -55,10 +54,7 @@ export class FirestoreBusinessRepository {
   private stateLoadPromise: Promise<Record<string, unknown> | null> | null = null;
   private cacheGeneration = 0;
 
-  constructor(
-    private readonly firebase: FirebaseClientService,
-    private readonly archiveService: FirestoreBackupArchiveService,
-  ) {}
+  constructor(private readonly firebase: FirebaseClientService, private readonly archiveService: FirestoreBackupArchiveService) {}
 
   /**
    * Reuses a recent complete business snapshot and coalesces simultaneous reads.
@@ -141,7 +137,7 @@ export class FirestoreBusinessRepository {
     const allArrayKeys = metadata.arrayKeys ?? [];
     const allSettingKeys = metadata.settingKeys ?? [];
     const arrayKeys = requestedCollectionKeys
-      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key))
+      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key) || key === 'publicCatalog' || key === 'catalogDrafts')
       : allArrayKeys;
     const settingKeys = requestedCollectionKeys
       ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))
@@ -151,7 +147,9 @@ export class FirestoreBusinessRepository {
     await Promise.all(arrayKeys.map(async (key) => {
       const recordsRef = collection(this.firebase.firestore, key);
       const recordsSnapshot = await getDocs(query(recordsRef, orderBy('sortIndex', 'asc')));
-      state[key] = recordsSnapshot.docs.map((record) => { const { sortIndex: _sortIndex, ...value } = record.data(); return value; });
+      state[key] = recordsSnapshot.docs
+        .filter(record => key !== 'publicCatalog' || record.id !== 'catalog-settings')
+        .map((record) => { const { sortIndex: _sortIndex, ...value } = record.data(); return value; });
     }));
 
     await Promise.all(settingKeys.map(async (key) => {
@@ -305,6 +303,62 @@ export class FirestoreBusinessRepository {
     if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
     if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
     await this.publishStateChange(changedKeys);
+  }
+
+  /**
+   * Persists internal recipe data separately from private catalog drafts and the
+   * public-safe projection. All three changes are committed atomically.
+   */
+  async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>, updateCatalogDraft = false): Promise<void> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const safeValue: Record<string, unknown> = this.removeUndefinedFields({ ...value, id: recordId });
+    const recipeRef = doc(this.firebase.firestore, 'recipes', recordId);
+    const draftRef = doc(this.firebase.firestore, 'catalogDrafts', recordId);
+    const publicRef = doc(this.firebase.firestore, 'publicCatalog', recordId);
+    const [existing, existingDraft] = await Promise.all([getDoc(recipeRef), getDoc(draftRef)]);
+    const sortIndex = existing.exists() ? Number(existing.data()['sortIndex'] ?? Date.now()) : Date.now();
+    const previousDraft = existingDraft.data() ?? {};
+
+    const recipeData: Record<string, unknown> = { ...safeValue };
+    for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
+      delete recipeData[key];
+    }
+    const draft = {
+      id: recordId,
+      description: String(updateCatalogDraft ? (safeValue['catalogDescription'] ?? safeValue['description'] ?? '') : (previousDraft['description'] ?? safeValue['catalogDescription'] ?? safeValue['description'] ?? '')),
+      image: String(updateCatalogDraft ? (safeValue['catalogImage'] ?? '') : (previousDraft['image'] ?? safeValue['catalogImage'] ?? '')),
+      label: String(updateCatalogDraft ? (safeValue['catalogLabel'] ?? '') : (previousDraft['label'] ?? safeValue['catalogLabel'] ?? '')),
+      labelColor: String(updateCatalogDraft ? (safeValue['catalogLabelColor'] ?? 'Morado') : (previousDraft['labelColor'] ?? safeValue['catalogLabelColor'] ?? 'Morado')),
+      visible: updateCatalogDraft ? safeValue['catalogVisible'] !== false : (previousDraft['visible'] !== false),
+      sortIndex: Number(previousDraft['sortIndex'] ?? sortIndex),
+    };
+    const category = String(safeValue['category'] ?? 'Galletas clásicas');
+    const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
+    const grams = Number(safeValue['baseGramsPerCookie'] ?? 0);
+    const isNy = normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
+    const image = String(draft.image || safeValue['image'] || '');
+    const publicProduct: Record<string, unknown> = {
+      id: recordId,
+      name: String(safeValue['name'] ?? ''),
+      category: isNy ? 'Galletas NY' : 'Galletas clásicas',
+      description: draft.description,
+      price: Number(safeValue['price'] ?? 0),
+      isNy,
+      stock: true,
+      sortIndex,
+    };
+    if (draft.label.trim()) publicProduct['tag'] = draft.label.trim();
+    if (image) publicProduct['image'] = image;
+
+    const batch = writeBatch(this.firebase.firestore);
+    batch.set(recipeRef, { ...recipeData, sortIndex });
+    batch.set(draftRef, draft);
+    if (draft.visible && safeValue['archived'] !== true) batch.set(publicRef, publicProduct);
+    else batch.delete(publicRef);
+    await batch.commit();
+
+    this.invalidateStateCache();
+    await this.publishStateChange(['recipes', 'catalogDrafts', 'publicCatalog']);
   }
 
   private isDeliveredOrderStatus(value: unknown): boolean {
@@ -472,9 +526,18 @@ export class FirestoreBusinessRepository {
     }
 
     const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
-    if (collectionKey !== 'orders') await deleteDoc(matching.ref);
+    if (collectionKey === 'recipes') {
+      const batch = writeBatch(this.firebase.firestore);
+      batch.delete(matching.ref);
+      batch.delete(doc(this.firebase.firestore, 'catalogDrafts', recordId));
+      batch.delete(doc(this.firebase.firestore, 'publicCatalog', recordId));
+      await batch.commit();
+    } else if (collectionKey !== 'orders') {
+      await deleteDoc(matching.ref);
+    }
     this.invalidateStateCache();
-    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId]
+      : collectionKey === 'recipes' ? ['recipes', 'catalogDrafts', 'publicCatalog'] : [collectionKey];
     if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
     if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
     await this.publishStateChange(changedKeys);
@@ -491,17 +554,26 @@ export class FirestoreBusinessRepository {
       throw new Error('La migración de StarKies no está completa. No se guardó la configuración.');
     }
     const metadata = metadataSnapshot.data() as StateMetadata;
-    await setDoc(
-      doc(this.firebase.firestore, 'settings', key),
-      { data: value },
-      { merge: true },
-    );
-    await setDoc(metadataRef, {
+    const batch = writeBatch(this.firebase.firestore);
+    batch.set(doc(this.firebase.firestore, 'settings', key), { data: value }, { merge: true });
+    if (key === 'deliveryZones') {
+      const projectionRef = doc(this.firebase.firestore, 'publicCatalog', 'catalog-settings');
+      const projection = await getDoc(projectionRef);
+      batch.set(projectionRef, {
+        id: 'catalog-settings',
+        kind: 'settings',
+        zones: Array.isArray(value) ? value : [],
+        presentations: projection.data()?.['presentations'] ?? [],
+        sortIndex: Number(projection.data()?.['sortIndex'] ?? 0),
+      }, { merge: true });
+    }
+    batch.set(metadataRef, {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
       revision: increment(1),
-      changedKeys: [key],
+      changedKeys: key === 'deliveryZones' ? [key, 'publicCatalog'] : [key],
     }, { merge: true });
+    await batch.commit();
     this.invalidateStateCache();
   }
 
@@ -806,6 +878,7 @@ export class FirestoreBusinessRepository {
     }
     if (!movement.category?.trim()) throw new Error('Selecciona una categoría para el movimiento.');
   }
+
 
   async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {
     this.invalidateStateCache();

@@ -39,10 +39,6 @@
       <span class="nav-label">Configuración</span>
     </button>
     <mat-menu #settingsMenu="matMenu" xPosition="after" yPosition="above">
-      <button mat-menu-item type="button" (click)="exportBackup()">
-        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">download</mat-icon>
-        <span>Descargar respaldo</span>
-      </button>
       <button mat-menu-item type="button" [disabled]="loggingOut()" (click)="logout()">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">logout</mat-icon>
         <span>{{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}</span>
