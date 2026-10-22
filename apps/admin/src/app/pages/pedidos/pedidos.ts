@@ -44,6 +44,7 @@ export class Pedidos {
     return term.length >= 2 ? (this.searchCustomerResults() ?? []) : this.customers();
   });
   setSearchTerm(value: string): void {
+    const previousTerm = this.searchTerm().trim();
     this.searchTerm.set(value);
     this.searchOrderResults.set(null);
     this.searchCustomerResults.set(null);
@@ -52,7 +53,7 @@ export class Pedidos {
     const term = value.trim();
     if (term.length < 2) {
       this.searchPending.set(false);
-      if (this.activeTab() === 'pedidos') void this.data.loadOrdersPage(true, this.statusFilter());
+      if (previousTerm.length >= 2 && this.activeTab() === 'pedidos') void this.data.loadOrdersPage(true, this.statusFilter());
       return;
     }
     this.searchPending.set(true);
