@@ -20,6 +20,7 @@ export class DataService implements OnDestroy {
   readonly productionStats = signal<RawRecord>({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0 });
   readonly productionDemand = signal<Record<string, number>>({});
   readonly deliveredOrders = signal<Order[]>([]);
+  readonly pendingOrders = signal<Order[]>([]);
 
   constructor(
     private readonly repository: FirestoreBusinessRepository,
@@ -36,7 +37,10 @@ export class DataService implements OnDestroy {
         void this.refreshSalesStats().catch(error => this.error.set(error.message));
         void this.refreshDeliveredOrders().catch(error => this.error.set(error.message));
       }
-      if (changedKeys.includes('stats:demand')) void this.refreshProductionDemand().catch(error => this.error.set(error.message));
+      if (changedKeys.includes('stats:demand')) {
+        void this.refreshProductionDemand().catch(error => this.error.set(error.message));
+        void this.refreshPendingOrders().catch(error => this.error.set(error.message));
+      }
       if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
     }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
@@ -47,6 +51,7 @@ export class DataService implements OnDestroy {
     void this.refreshProductionStats().catch(() => undefined);
     void this.refreshProductionDemand().catch(() => undefined);
     void this.refreshDeliveredOrders().catch(() => undefined);
+    void this.refreshPendingOrders().catch(() => undefined);
   }
 
   async loadFromCloud(collectionKeys?: string[]): Promise<void> {
@@ -133,6 +138,10 @@ export class DataService implements OnDestroy {
   async refreshProductionStats(): Promise<void> {
     const stats = await this.repository.getBusinessStats('production');
     this.productionStats.set({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0, ...(stats ?? {}) });
+  }
+
+  async refreshPendingOrders(): Promise<void> {
+    this.pendingOrders.set(await this.repository.loadPendingOrders<Order>());
   }
 
   async refreshDeliveredOrders(): Promise<void> {
