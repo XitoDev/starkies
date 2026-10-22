@@ -69,7 +69,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const record = snapshot.data()?.['value'] as StoredOrder | undefined;
+    const record = snapshot.data() as StoredOrder | undefined;
     if (!record) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.status(404);
