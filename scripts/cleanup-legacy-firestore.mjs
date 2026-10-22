@@ -38,6 +38,7 @@ const obsoleteCollections = [
   'deletedProductions',
   'financeArchives',
   'migrationArchives',
+  'deliveryStockAdjustments',
 ];
 const protectedCollections = [
   'adminUsers', 'businessStats', 'cashMovements', 'catalogDrafts',
