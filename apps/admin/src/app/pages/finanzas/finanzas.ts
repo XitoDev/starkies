@@ -56,6 +56,10 @@ export class Finanzas {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly ingredients = this.dataService.ingredients;
+  readonly salesStats = this.dataService.salesStats;
+  readonly deliveredOrderCount = computed(() => Number(this.salesStats()['deliveredOrders'] ?? 0));
+  readonly deliveredSalesRevenue = computed(() => Number(this.salesStats()['revenue'] ?? 0));
+  readonly deliveredSalesUnits = computed(() => Number(this.salesStats()['unitsSold'] ?? 0));
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
   readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
@@ -232,6 +236,9 @@ export class Finanzas {
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
+    this.dataService.loadCollections?.(['recipes', 'ingredients', 'cashMovements', 'financeLedger', 'finishedProductInventory']);
+    const deliveredLoad = this.dataService.refreshDeliveredOrders?.();
+    if (deliveredLoad) void deliveredLoad.catch(error => this.ledgerNotice.set(error.message));
     this.route.queryParamMap.subscribe(params => {
       if (params.get('action') !== 'purchase') return;
       const ingredientId = params.get('ingredientId') ?? '';
@@ -282,14 +289,14 @@ export class Finanzas {
 
 
   private deliveredOrdersMissingFromLedger(state: Record<string, unknown>): Record<string, unknown>[] {
-    const orders = Array.isArray(state['orders']) ? state['orders'] : [];
+    const orders = this.dataService.deliveredOrders() as unknown as Record<string, unknown>[];
     const processed = new Set(this.ledger().processedOrderIds);
     return orders.filter((value): value is Record<string, unknown> => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
       const order = value as Record<string, unknown>;
       const status = String(order['status'] ?? '').toLocaleLowerCase('es');
       const id = String(order['id'] ?? order['code'] ?? '');
-      return Boolean(id && !processed.has(id) && (status.includes('entreg') || status === 'delivered'));
+      return Boolean(id && !processed.has(id) && (status.includes('entreg') || status === 'delivered' || status === 'completed' || status === 'complete'));
     });
   }
 
@@ -339,6 +346,7 @@ export class Finanzas {
         if (!rawLine || typeof rawLine !== 'object' || Array.isArray(rawLine)) continue;
         const line = rawLine as Record<string, unknown>;
         const recipeId = String(line['id'] ?? line['recipeId'] ?? '');
+        if (recipeId.toLocaleLowerCase() === 'shipping' || String(line['name'] ?? '').toLocaleLowerCase().startsWith('envío')) continue;
         const recipe = recipes.find(item => String(item['id'] ?? '') === recipeId);
         const quantity = Number(line['qty'] ?? line['quantity'] ?? 0);
         const unitPrice = Number(line['price'] ?? line['unitPrice'] ?? recipe?.['price'] ?? 0);
@@ -419,12 +427,11 @@ export class Finanzas {
       return;
     }
     const current = this.ledger();
-    const state = this.dataService.rawState() ?? {};
-    const deliveredIds = (Array.isArray(state['orders']) ? state['orders'] : [])
+    const deliveredIds = (this.dataService.deliveredOrders() as unknown as Record<string, unknown>[])
       .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
       .filter(order => {
         const status = String(order['status'] ?? '').toLocaleLowerCase('es');
-        return status.includes('entreg') || status === 'delivered';
+        return status.includes('entreg') || status === 'delivered' || status === 'completed' || status === 'complete';
       })
       .map(order => String(order['id'] ?? order['code'] ?? ''))
       .filter(Boolean);

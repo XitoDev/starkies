@@ -54,8 +54,9 @@ import { DataService } from '../../services/data.service';
 })
 export class Resumen {
   readonly data = inject(DataService);
-  readonly activeRecipes = computed(() => this.data.recipes().filter(recipe => !recipe.archived).length);
-  readonly pendingOrders = computed(() => this.data.orders().filter(order => order.status === 'PENDING').length);
+  constructor() { void this.data.loadCollections(['recipes', 'ingredients']); void this.data.refreshPendingOrderCount().catch(() => undefined); }
+    readonly activeRecipes = computed(() => this.data.recipes().filter(recipe => !recipe.archived).length);
+  readonly pendingOrders = computed(() => this.data.pendingOrderCount());
   readonly lowStockItems = computed(() => this.data.ingredients().filter(item => item.stock <= (item.minStock ?? 0)).sort((a, b) => a.stock - b.stock).slice(0, 8));
   readonly lowStockCount = computed(() => this.data.ingredients().filter(item => item.stock <= (item.minStock ?? 0)).length);
 }

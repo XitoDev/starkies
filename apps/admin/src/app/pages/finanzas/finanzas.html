@@ -39,6 +39,21 @@
     </div>
   </section>
 
+  <section class="bank-section" aria-label="Estadísticas de ventas">
+    <div class="bank-grid">
+      <article class="bank-card bank-total">
+        <p class="card-label">Pedidos entregados</p>
+        <p class="bank-amount">{{ deliveredOrderCount() }}</p>
+        <p class="card-note">Conteo actualizado desde estadísticas de Firestore</p>
+      </article>
+      <article class="bank-card bank-total">
+        <p class="card-label">Ventas entregadas</p>
+        <p class="bank-amount">{{ deliveredSalesRevenue() | currency:'USD' }}</p>
+        <p class="card-note">{{ deliveredSalesUnits() }} unidades vendidas</p>
+      </article>
+    </div>
+  </section>
+
   <section class="fund-section" aria-labelledby="funds-title">
     <h2 id="funds-title" class="section-title">Fondos informativos</h2>
     <div class="fund-grid">

@@ -19,8 +19,7 @@ export interface StarkiesBackupArchive {
  *
  * This is intentionally separate from the live business collections. It never
  * imports on application startup and refuses to overwrite an existing archive.
- * Once the original schema is mapped and reconciled, a separate migration can
- * copy validated records into their final collections.
+ * The archive is retained separately from flattened live collections and is never used as the active source of truth.
  */
 @Injectable({ providedIn: 'root' })
 export class FirestoreBackupArchiveService {
@@ -49,8 +48,6 @@ export class FirestoreBackupArchiveService {
 
     const archiveRef = doc(
       this.firebase.firestore,
-      'businesses',
-      'starkies',
       'migrationArchives',
       archiveId,
     );

@@ -6,8 +6,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admin users must be allow-listed manually in Firebase Console.
-    // Create adminUsers/{AUTH_UID} for each approved business user.
     function isApprovedAdmin() {
       return signedIn()
         && exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid));
@@ -15,23 +13,36 @@ service cloud.firestore {
 
     match /adminUsers/{userId} {
       allow read: if isApprovedAdmin() && request.auth.uid == userId;
-      // Never allow clients to grant themselves admin access.
       allow create, update, delete: if false;
     }
 
-    match /businesses/starkies/{document=**} {
-      allow read, write: if isApprovedAdmin();
-    }
-
-    // Public storefront projection. Only this collection is readable without
-    // admin authentication; all other business collections remain admin-only.
-    // The server publishes only visible, non-archived products into this path.
-    match /businesses/starkies/collections/catalog/records/{recordId} {
+    // Only deliberately published storefront documents are public.
+    match /publicCatalog/{document=**} {
       allow read: if true;
-      allow create, update, delete: if isApprovedAdmin();
+      allow write: if isApprovedAdmin();
     }
 
-    // Deny anything not explicitly covered above.
+    // Rate limits and lookup indexes are maintained by trusted server endpoints.
+    match /publicOrderRateLimits/{document=**} {
+      allow read, write: if false;
+    }
+    match /customerPhoneLookup/{document=**} {
+      allow read, write: if false;
+    }
+    match /orderPhoneLookup/{document=**} {
+      allow read, write: if false;
+    }
+
+    // All other root collections are restricted to explicitly approved admins.
+    match /{collectionName}/{document=**} {
+      allow read, write: if collectionName != 'adminUsers'
+        && collectionName != 'publicCatalog'
+        && collectionName != 'publicOrderRateLimits'
+        && collectionName != 'customerPhoneLookup'
+        && collectionName != 'orderPhoneLookup'
+        && isApprovedAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -29,6 +29,8 @@ type IngredientForm = {
 })
 export class Ingredientes {
   private readonly dataService = inject(DataService);
+  constructor() { void this.dataService.loadCollections(['ingredients', 'recipes']); }
+
   readonly ingredients = this.dataService.ingredients;
   readonly searchTerm = signal('');
   readonly selectedCategory = signal('Todos');

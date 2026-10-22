@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, OnDestroy, signal } from '@angular/core';
+import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
@@ -6,7 +7,7 @@ import { FirebaseClientService } from '../core/firebase/firebase-client.service'
 type RawRecord = Record<string, unknown>;
 
 @Injectable({ providedIn: 'root' })
-export class DataService {
+export class DataService implements OnDestroy {
   readonly ingredients = signal<Ingredient[]>([]);
   readonly recipes = signal<Recipe[]>([]);
   readonly customers = signal<Customer[]>([]);
@@ -15,17 +16,66 @@ export class DataService {
   readonly migrationRequired = signal(false);
   readonly error = signal('');
   readonly rawState = signal<RawRecord | null>(null);
+  readonly salesStats = signal<RawRecord>({ deliveredOrders: 0, revenue: 0, unitsSold: 0 });
+  readonly productionStats = signal<RawRecord>({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0 });
+  readonly productionDemand = signal<Record<string, number>>({});
+  readonly deliveredOrders = signal<Order[]>([]);
+  readonly pendingOrders = signal<Order[]>([]);
 
   constructor(
     private readonly repository: FirestoreBusinessRepository,
     private readonly firebase: FirebaseClientService,
   ) {
+    // One lightweight metadata listener invalidates shared collection caches when another session writes.
+    this.stopMetadataWatch = this.repository.watchStateMeta?.(changedKeys => {
+      this.cloudRevision += 1;
+      const ordersChanged = changedKeys.includes('orders');
+      const customersChanged = changedKeys.some(key => key === 'customers' || key.startsWith('customer:'));
+      for (const [key, cached] of this.searchCache.entries()) {
+        const collectionKey = key.split('|', 1)[0];
+        if ((collectionKey === 'orders' && ordersChanged) || (collectionKey === 'customers' && customersChanged)) this.searchCache.delete(key);
+        else cached.revision = this.cloudRevision;
+      }
+      if (ordersChanged) this.ordersPageCache.clear();
+      const changedCollections = new Set(changedKeys.filter(key => !key.startsWith('stats:') && !key.startsWith('customer:')));
+      for (const key of this.loadedCollectionRevision.keys()) {
+        if (!changedCollections.has(key)) this.loadedCollectionRevision.set(key, this.cloudRevision);
+      }
+      this.repository.invalidateStateCache();
+      if (ordersChanged) {
+        void this.refreshPendingOrderCount().catch(() => undefined);
+        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) {
+          if (this.ordersPageLoading()) this.ordersRefreshPending = true;
+          else void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
+        }
+      }
+      if (changedKeys.includes('stats:sales')) {
+        void this.refreshSalesStats().catch(error => this.error.set(error.message));
+        void this.refreshDeliveredOrders().catch(error => this.error.set(error.message));
+      }
+      if (changedKeys.includes('stats:demand')) {
+        void this.refreshProductionDemand().catch(error => this.error.set(error.message));
+        void this.refreshPendingOrders().catch(error => this.error.set(error.message));
+      }
+      if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
+      const changedCustomerIds = changedKeys.filter(key => key.startsWith('customer:')).map(key => key.slice('customer:'.length));
+      for (const customerId of changedCustomerIds) void this.refreshCustomerRecord(customerId).catch(error => this.error.set(error.message));
+      const refreshableKeys = changedKeys.filter(key => !key.startsWith('stats:') && !key.startsWith('customer:') && key !== 'orders'
+        && Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, key));
+      if (refreshableKeys.length) void this.loadCollections(refreshableKeys, true);
+    }, error => this.error.set(error.message)) ?? (() => undefined);
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
-    void this.loadFromCloud();
+    void this.loadCollections(['recipes', 'ingredients']);
+    void this.refreshPendingOrderCount().catch(() => undefined);
+    void this.refreshSalesStats().catch(() => undefined);
+    void this.refreshProductionStats().catch(() => undefined);
+    void this.refreshProductionDemand().catch(() => undefined);
+    void this.refreshDeliveredOrders().catch(() => undefined);
+    void this.refreshPendingOrders().catch(() => undefined);
   }
 
-  async loadFromCloud(): Promise<void> {
+  async loadFromCloud(collectionKeys?: string[]): Promise<void> {
     if (!this.firebase.isConfigured) {
       this.error.set(this.firebase.configurationMessage);
       return;
@@ -33,21 +83,190 @@ export class DataService {
 
     this.loading.set(true);
     this.error.set('');
+    const revisionAtStart = this.cloudRevision;
     try {
-      const state = await this.repository.loadState();
+      const state = await this.repository.loadState(collectionKeys);
       if (!state) {
         this.migrationRequired.set(true);
         return;
       }
 
-      this.rawState.set(state);
+      const mergedState = { ...(this.rawState() ?? {}), ...state };
+      this.rawState.set(mergedState);
       this.migrationRequired.set(false);
-      this.loadViewModels(state);
+      this.loadViewModels(mergedState);
+      const loadedKeys = collectionKeys ?? Object.keys(state);
+      for (const key of loadedKeys) this.loadedCollectionRevision.set(key, revisionAtStart);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los datos de Firebase.');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Loads only the named collections/settings and merges them into the local state. */
+  async loadCollections(collectionKeys: string[], force = false): Promise<void> {
+    const current = this.rawState() ?? {};
+    const requested = [...new Set(collectionKeys)];
+    const missing = force ? requested : requested.filter(key =>
+      !Object.prototype.hasOwnProperty.call(current, key)
+      || this.loadedCollectionRevision.get(key) !== this.cloudRevision,
+    );
+    if (missing.length) {
+      await Promise.all(missing.map(key => {
+        const existing = this.collectionLoadPromises.get(key);
+        if (existing) return existing;
+        const request = this.loadFromCloud([key]).finally(() => this.collectionLoadPromises.delete(key));
+        this.collectionLoadPromises.set(key, request);
+        return request;
+      }));
+    }
+  }
+
+  private readonly searchCache = new Map<string, { revision: number; items: RawRecord[] }>();
+
+  async searchOrders(term: string, statusFilter: string): Promise<Order[]> {
+    const normalized = this.normalizeSearchTerm(term);
+    if (normalized.length < 2) return [];
+    const key = 'orders|' + statusFilter + '|' + normalized;
+    const cached = this.searchCache.get(key);
+    if (cached && cached.revision === this.cloudRevision) return cached.items as unknown as Order[];
+    const items = await this.repository.searchCollection<RawRecord>('orders', normalized, { limit: 50, status: statusFilter });
+    this.searchCache.set(key, { revision: this.cloudRevision, items });
+    return items as unknown as Order[];
+  }
+
+  async searchCustomers(term: string): Promise<Customer[]> {
+    const normalized = this.normalizeSearchTerm(term);
+    if (normalized.length < 2) return [];
+    const key = 'customers|ALL|' + normalized;
+    const cached = this.searchCache.get(key);
+    if (cached && cached.revision === this.cloudRevision) return cached.items as unknown as Customer[];
+    const items = await this.repository.searchCollection<RawRecord>('customers', normalized, { limit: 50, tokenField: 'nameSearchTokens' });
+    this.searchCache.set(key, { revision: this.cloudRevision, items });
+    return items as unknown as Customer[];
+  }
+
+  private normalizeSearchTerm(term: string): string {
+    return term.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+  }
+
+  async refreshSalesStats(): Promise<void> {
+    const stats = await this.repository.getBusinessStats('sales');
+    this.salesStats.set({ deliveredOrders: 0, revenue: 0, unitsSold: 0, ...(stats ?? {}) });
+  }
+
+  async refreshProductionStats(): Promise<void> {
+    const stats = await this.repository.getBusinessStats('production');
+    this.productionStats.set({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0, ...(stats ?? {}) });
+  }
+
+  private async refreshCustomerRecord(customerId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state || !Object.prototype.hasOwnProperty.call(state, 'customers')) return;
+    const customer = await this.repository.getCollectionRecord('customers', customerId);
+    const customers = this.asArray(state['customers']).filter(item => this.asString(item['id']) !== customerId);
+    if (customer) customers.push(customer);
+    const nextState = { ...state, customers };
+    this.rawState.set(nextState);
+    this.loadViewModels(nextState);
+  }
+
+  async refreshPendingOrders(): Promise<void> {
+    this.pendingOrders.set(await this.repository.loadPendingOrders<RawRecord>() as unknown as Order[]);
+  }
+
+  async refreshDeliveredOrders(): Promise<void> {
+    this.deliveredOrders.set(await this.repository.loadDeliveredOrders<RawRecord>() as unknown as Order[]);
+  }
+
+  async refreshProductionDemand(): Promise<void> {
+    this.productionDemand.set(await this.repository.loadProductionDemand());
+  }
+
+  /** Server-side count for the summary; avoids downloading all pending orders. */
+  async refreshPendingOrderCount(): Promise<number> {
+    const count = await this.repository.countCollection('orders', [
+      { field: 'status', op: '==', value: 'PENDING' },
+    ]);
+    this.pendingOrderCount.set(count);
+    return count;
+  }
+
+  readonly pendingOrderCount = signal(0);
+
+  ngOnDestroy(): void { this.stopMetadataWatch(); }
+  readonly ordersPageHasMore = signal(false);
+  readonly ordersPageLoading = signal(false);
+  private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  private lastOrdersStatusFilter = 'ALL';
+  private ordersRefreshPending = false;
+  private cloudRevision = 0;
+  private readonly loadedCollectionRevision = new Map<string, number>();
+  private readonly collectionLoadPromises = new Map<string, Promise<void>>();
+  private readonly ordersPageCache = new Map<string, { items: RawRecord[]; cursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean; revision: number }>();
+  private readonly stopMetadataWatch: Unsubscribe;
+
+  /** Loads orders in bounded pages; the initial Admin load does not fetch all orders. */
+  async loadOrdersPage(reset = false, statusFilter = 'ALL'): Promise<void> {
+    this.lastOrdersStatusFilter = statusFilter;
+    if (this.ordersPageLoading()) return;
+    this.ordersPageLoading.set(true);
+    try {
+      await this.loadCollections(['customers']);
+      const cacheKey = statusFilter;
+      const cachedPage = this.ordersPageCache.get(cacheKey);
+      if (reset && cachedPage && cachedPage.revision === this.cloudRevision) {
+        this.ordersPageCursor = cachedPage.cursor;
+        this.ordersPageHasMore.set(cachedPage.hasMore);
+        const cachedState = { ...(this.rawState() ?? {}), orders: cachedPage.items };
+        this.rawState.set(cachedState);
+        this.loadViewModels(cachedState);
+        return;
+      }
+      if (reset) {
+        this.ordersPageCursor = null;
+        this.rawState.update(state => state ? { ...state, orders: [] } : state);
+        this.orders.set([]);
+      }
+      const revisionAtStart = this.cloudRevision;
+      const page = await this.repository.getCollectionPage<RawRecord>('orders', {
+        pageSize: 25,
+        cursor: this.ordersPageCursor,
+        orderField: 'sortIndex',
+        direction: 'desc',
+        filters: statusFilter === 'ALL' ? [] : [{ field: 'status', op: '==', value: statusFilter }],
+      });
+      this.ordersPageCursor = page.cursor;
+      this.ordersPageHasMore.set(page.hasMore);
+      const currentState = this.rawState() ?? {};
+      const previous = reset ? [] : this.asArray(currentState['orders']);
+      const mergedItems = [...previous, ...page.items];
+      const merged = { ...currentState, orders: mergedItems };
+      this.rawState.set(merged);
+      this.loadViewModels(merged);
+      this.ordersPageCache.set(cacheKey, {
+        items: mergedItems,
+        cursor: page.cursor,
+        hasMore: page.hasMore,
+        revision: revisionAtStart,
+      });
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar más pedidos.');
+    } finally {
+      this.ordersPageLoading.set(false);
+      if (this.ordersRefreshPending) {
+        this.ordersRefreshPending = false;
+        void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
+      }
+    }
+  }
+
+  /** Loads all orders only when a workflow needs complete cross-order totals or edits. */
+  async loadAllOrders(): Promise<void> {
+    await this.loadCollections(['orders'], true);
+    this.ordersPageCursor = null;
+    this.ordersPageHasMore.set(false);
   }
 
   async saveIngredient(ingredient: Ingredient): Promise<void> {
@@ -235,6 +454,7 @@ export class DataService {
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const nextState = { ...state, orders: this.asArray(state['orders']).filter((order) => this.asString(order['id'] ?? order['code']) !== orderId) };
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('orders', orderId));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async saveOrderDetails(orderId: string, changes: {
@@ -295,6 +515,7 @@ export class DataService {
     nextOrders[index] = updated;
     const nextState = { ...state, orders: nextOrders };
     await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updated));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async saveBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -331,6 +552,7 @@ export class DataService {
     nextOrders[orderIndex] = updatedOrder;
     const nextState = { ...state, orders: nextOrders };
     await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updatedOrder));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
@@ -339,7 +561,6 @@ export class DataService {
     }
 
     await this.repository.recordCashMovement(movement);
-    await this.refreshAfterFinancialWrite();
   }
 
   async recordIngredientPurchase(movement: CashMovement): Promise<void> {
@@ -348,7 +569,6 @@ export class DataService {
     }
 
     await this.repository.recordIngredientPurchase(movement);
-    await this.refreshAfterFinancialWrite();
   }
 
   private async applyOptimisticState(previousState: RawRecord, nextState: RawRecord, persist: () => Promise<void>): Promise<void> {
@@ -363,23 +583,11 @@ export class DataService {
     }
   }
 
-  private async refreshAfterFinancialWrite(): Promise<void> {
-    await this.loadFromCloud();
-    if (this.error()) throw new Error(this.error());
-    if (this.migrationRequired() || !this.rawState()) {
-      throw new Error('No se pudo recargar el estado de StarKies después de guardar el movimiento.');
-    }
-  }
-
   async recordProduction(
     record: Record<string, unknown>,
     deductions: { ingredientId: string; quantity: number }[],
   ): Promise<void> {
     await this.repository.recordProduction(record, deductions);
-    await this.loadFromCloud();
-    if (this.error()) {
-      throw new Error(this.error());
-    }
   }
 
   exportBackup(): void {
@@ -412,7 +620,7 @@ export class DataService {
     const rawRecipes = this.asArray(state['recipes']);
     const rawOrders = this.asArray(state['orders']);
 
-    this.ingredients.set(rawIngredients.map((item) => ({
+    if (Object.prototype.hasOwnProperty.call(state, 'ingredients')) this.ingredients.set(rawIngredients.map((item) => ({
       id: this.asString(item['id']),
       name: this.asString(item['name'], 'Insumo sin nombre'),
       unit: this.asString(item['unit']),
@@ -427,7 +635,7 @@ export class DataService {
       ingredientGroup: this.asOptionalString(item['ingredientGroup']),
     })));
 
-    this.recipes.set(rawRecipes.map((item) => {
+    if (Object.prototype.hasOwnProperty.call(state, 'recipes')) this.recipes.set(rawRecipes.map((item) => {
       const items = this.asArray(item['items']);
       const grouped = new Map<string, { ingredientId: string; quantity: number }[]>();
       for (const recipeItem of items) {
@@ -516,7 +724,7 @@ export class DataService {
 
       return {
         id: this.asString(item['id'] ?? item['code']),
-        customerId: customerKey,
+        customerId: this.asString(item['customerId'], customerKey),
         items: cookieLines.map((line) => ({
           recipeId: this.asString(line['id'] ?? line['recipeId']),
           name: this.asOptionalString(line['name']),
@@ -540,8 +748,18 @@ export class DataService {
       };
     });
 
-    this.customers.set(Array.from(customerMap.values()));
-    this.orders.set(normalizedOrders);
+    if (Object.prototype.hasOwnProperty.call(state, 'customers')) {
+      const rawCustomers = this.asArray(state['customers']);
+      this.customers.set(rawCustomers.map(item => ({
+        id: this.asString(item['id'] ?? item['customerId']),
+        name: this.asString(item['name'], 'Cliente sin nombre'),
+        phone: this.asOptionalString(item['phone']),
+        address: this.asOptionalString(item['address']),
+      })));
+    } else if (Object.prototype.hasOwnProperty.call(state, 'orders')) {
+      this.customers.set(Array.from(customerMap.values()));
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'orders')) this.orders.set(normalizedOrders);
   }
 
   private normalizeOrderStatus(value: string): Order['status'] {

@@ -36,6 +36,7 @@ export class Catalogo {
   readonly catalogItems = computed(() => this.recipes().filter(item => !item.archived && (this.showHidden() || item.catalogVisible !== false) && (this.categoryFilter() === 'Todos' || item.category === this.categoryFilter())));
   readonly visibleCount = computed(() => this.recipes().filter(item => !item.archived && item.catalogVisible !== false).length);
   constructor() {
+    void this.dataService.loadCollections(['recipes', 'deliveryZones']);
     effect(() => {
       const state = this.dataService.rawState();
       if (!state || this.initialized()) return;

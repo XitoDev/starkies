@@ -40,24 +40,29 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const snapshot = await getDatabase().collection('businesses/starkies/collections/customers/records').get();
-    const match = snapshot.docs.find(doc => {
-      const value = doc.data()['value'] as CustomerRecord | undefined;
-      return value && normalizePhone(String(value.phone ?? '')) === normalized;
-    });
-    let value = match?.data()['value'] as CustomerRecord | undefined;
+    const db = getDatabase();
+    const phoneHash = createHash('sha256').update(normalized).digest('hex');
+    const customerIndex = await db.doc('customerPhoneLookup/' + phoneHash).get();
+    const customerId = String(customerIndex.data()?.['customerId'] ?? '');
+    let value: CustomerRecord | undefined;
+    if (customerId) {
+      const customerSnapshot = await db.doc('customers/' + customerId).get();
+      value = customerSnapshot.data() as CustomerRecord | undefined;
+    }
     if (!value) {
-      const oldOrders = await getDatabase().collection('businesses/starkies/collections/orders/records').get();
-      const previousOrder = oldOrders.docs
-        .map(doc => doc.data()['value'] as CustomerRecord | undefined)
-        .find(order => order && normalizePhone(String(order.phone ?? '')) === normalized);
-      if (previousOrder) {
-        const rawAddress = typeof previousOrder.address === 'string' ? previousOrder.address : '';
-        value = {
-          name: previousOrder.customer,
-          phone: previousOrder.phone,
-          address: rawAddress.includes(' — ') ? rawAddress.split(' — ').slice(1).join(' — ') : rawAddress,
-        };
+      const orderIndex = await db.doc('orderPhoneLookup/' + phoneHash).get();
+      const orderId = String(orderIndex.data()?.['orderId'] ?? '');
+      if (orderId) {
+        const orderSnapshot = await db.doc('orders/' + orderId).get();
+        const previousOrder = orderSnapshot.data() as CustomerRecord | undefined;
+        if (previousOrder) {
+          const rawAddress = typeof previousOrder.address === 'string' ? previousOrder.address : '';
+          value = {
+            name: previousOrder.customer,
+            phone: previousOrder.phone,
+            address: rawAddress.includes(' — ') ? rawAddress.split(' — ').slice(1).join(' — ') : rawAddress,
+          };
+        }
       }
     }
     if (!value) {
@@ -86,7 +91,7 @@ function getDatabase() {
   }, appName);
   return getFirestore(app);
 }
-function normalizePhone(value: string): string { return value.replace(/\\D/g, '').replace(/^593/, '0'); }
+function normalizePhone(value: string): string { return value.replace(/\D/g, '').replace(/^593/, '0'); }
 function headerValue(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }

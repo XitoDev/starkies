@@ -60,6 +60,7 @@ export class Recetas {
   readonly form = signal<RecipeForm>(this.emptyForm());
 
   constructor() {
+    void this.dataService.loadCollections(['recipes', 'ingredients', 'doughBases']);
     this.route.queryParamMap.subscribe(params => {
       if (params.get('vista') === 'masas-base') this.view.set('bases');
     });

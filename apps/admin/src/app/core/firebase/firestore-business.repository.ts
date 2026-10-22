@@ -3,15 +3,26 @@ import {
   collection,
   deleteDoc,
   DocumentSnapshot,
+  DocumentReference,
   doc,
   getDoc,
   getDocs,
+  getCountFromServer,
+  increment,
+  limit,
+  onSnapshot,
   orderBy,
+  QueryConstraint,
+  QueryDocumentSnapshot,
+  DocumentData,
+  startAfter,
+  where,
   query,
   runTransaction,
   setDoc,
+  serverTimestamp,
+  Unsubscribe,
   writeBatch,
-  where,
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
@@ -37,7 +48,7 @@ interface StateMetadata {
 @Injectable({ providedIn: 'root' })
 export class FirestoreBusinessRepository {
   private readonly stateMetaRef = () =>
-    doc(this.firebase.firestore, 'businesses', 'starkies', 'system', 'stateMeta');
+    doc(this.firebase.firestore, 'system', 'stateMeta');
 
   private readonly stateCacheTtlMs = 15_000;
   private stateCache: { value: Record<string, unknown> | null; expiresAt: number } | null = null;
@@ -53,7 +64,10 @@ export class FirestoreBusinessRepository {
    * Reuses a recent complete business snapshot and coalesces simultaneous reads.
    * Writes invalidate the cache; the short TTL also bounds staleness from other sessions.
    */
-  async loadState(): Promise<Record<string, unknown> | null> {
+  async loadState(collectionKeys?: string[]): Promise<Record<string, unknown> | null> {
+    // A scoped read deliberately bypasses the whole-state cache so a screen can
+    // request only the collections it needs without triggering every collection.
+    if (collectionKeys) return this.fetchStateFromFirestore(collectionKeys);
     if (this.stateCache && this.stateCache.expiresAt > Date.now()) {
       return this.cloneState(this.stateCache.value);
     }
@@ -75,6 +89,29 @@ export class FirestoreBusinessRepository {
     }
   }
 
+  /** Watches the small metadata document, not every business collection. */
+  watchStateMeta(onChange: (changedKeys: string[]) => void, onError?: (error: Error) => void): Unsubscribe {
+    if (!this.firebase.isConfigured) return () => undefined;
+    let initialized = false;
+    return onSnapshot(this.stateMetaRef(), snapshot => {
+      if (initialized) {
+        const keys = snapshot.data()?.['changedKeys'];
+        onChange(Array.isArray(keys) ? keys.filter((key): key is string => typeof key === 'string') : []);
+      }
+      initialized = true;
+    }, error => onError?.(error));
+  }
+
+  /** Signals other Admin sessions that a root collection or setting changed. */
+  private async publishStateChange(changedKeys: string[] = []): Promise<void> {
+    if (!this.firebase.isConfigured) return;
+    await setDoc(this.stateMetaRef(), {
+      revision: increment(1),
+      updatedAt: serverTimestamp(),
+      changedKeys,
+    }, { merge: true });
+  }
+
   invalidateStateCache(): void {
     this.cacheGeneration++;
     this.stateCache = null;
@@ -90,7 +127,7 @@ export class FirestoreBusinessRepository {
     return snapshot.exists() && snapshot.data()['status'] === 'complete';
   }
 
-  private async fetchStateFromFirestore(): Promise<Record<string, unknown> | null> {
+  private async fetchStateFromFirestore(requestedCollectionKeys?: string[]): Promise<Record<string, unknown> | null> {
     if (!this.firebase.isConfigured) {
       throw new Error(this.firebase.configurationMessage);
     }
@@ -101,27 +138,140 @@ export class FirestoreBusinessRepository {
     const metadata = metadataSnapshot.data() as StateMetadata;
     if (metadata.status !== 'complete') return null;
 
-    const arrayKeys = metadata.arrayKeys ?? [];
-    const settingKeys = metadata.settingKeys ?? [];
+    const allArrayKeys = metadata.arrayKeys ?? [];
+    const allSettingKeys = metadata.settingKeys ?? [];
+    const arrayKeys = requestedCollectionKeys
+      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key))
+      : allArrayKeys;
+    const settingKeys = requestedCollectionKeys
+      ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))
+      : allSettingKeys;
     const state: Record<string, unknown> = {};
 
     await Promise.all(arrayKeys.map(async (key) => {
-      const recordsRef = collection(
-        this.firebase.firestore,
-        'businesses', 'starkies', 'collections', key, 'records',
-      );
-      const recordsSnapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-      state[key] = recordsSnapshot.docs.map((record) => record.data()['value']);
+      const recordsRef = collection(this.firebase.firestore, key);
+      const recordsSnapshot = await getDocs(query(recordsRef, orderBy('sortIndex', 'asc')));
+      state[key] = recordsSnapshot.docs.map((record) => { const { sortIndex: _sortIndex, ...value } = record.data(); return value; });
     }));
 
     await Promise.all(settingKeys.map(async (key) => {
       const settingSnapshot = await getDoc(
-        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
+        doc(this.firebase.firestore, 'settings', key),
       );
-      if (settingSnapshot.exists()) state[key] = settingSnapshot.data()['value'];
+      if (settingSnapshot.exists()) state[key] = settingSnapshot.data()['data'];
     }));
 
     return state;
+  }
+
+  /**
+   * Fetches one bounded page from a root collection. Filters are translated to
+   * Firestore where clauses and are therefore applied before documents are read.
+   */
+  async getCollectionPage<T extends Record<string, unknown>>(
+    collectionKey: string,
+    options: {
+      pageSize?: number;
+      cursor?: QueryDocumentSnapshot<DocumentData> | null;
+      orderField?: string;
+      direction?: 'asc' | 'desc';
+      filters?: { field: string; op: '==' | '>=' | '<=' | '>' | '<' | 'in'; value: unknown }[];
+    } = {},
+  ): Promise<{ items: T[]; cursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize ?? 25)));
+    const constraints: QueryConstraint[] = [];
+    for (const filter of options.filters ?? []) {
+      constraints.push(where(filter.field, filter.op, filter.value));
+    }
+    constraints.push(orderBy(options.orderField ?? 'sortIndex', options.direction ?? 'desc'));
+    if (options.cursor) constraints.push(startAfter(options.cursor));
+    constraints.push(limit(pageSize + 1));
+    const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    const docs = snapshot.docs.slice(0, pageSize);
+    const hasMore = snapshot.docs.length > pageSize;
+    return {
+      items: docs.map(item => {
+        const { sortIndex: _sortIndex, ...value } = item.data();
+        return { ...value, id: value['id'] ?? item.id } as unknown as T;
+      }),
+      cursor: docs.length ? docs[docs.length - 1] : null,
+      hasMore,
+    };
+  }
+
+  /** Searches indexed prefixes; only matching documents are returned from Firestore. */
+  async getCollectionRecord(collectionKey: string, recordId: string): Promise<Record<string, unknown> | null> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDoc(doc(this.firebase.firestore, collectionKey, recordId));
+    if (!snapshot.exists()) return null;
+    const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = snapshot.data();
+    return { ...value, id: value['id'] ?? snapshot.id };
+  }
+
+  async getBusinessStats(key: 'sales' | 'production'): Promise<Record<string, unknown> | null> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDoc(doc(this.firebase.firestore, 'businessStats', key));
+    return snapshot.exists() ? snapshot.data() : null;
+  }
+
+  async loadPendingOrders<T extends Record<string, unknown>>(): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(query(
+      collection(this.firebase.firestore, 'orders'),
+      where('status', 'in', ['PENDING', 'pending', 'Pendiente', 'PENDIENTE', 'pendiente', 'PENDIENTES', 'Pendiente de pago', 'PENDIENTE DE PAGO', 'pendiente de pago']),
+    ));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
+    });
+  }
+
+  async loadDeliveredOrders<T extends Record<string, unknown>>(): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(query(
+      collection(this.firebase.firestore, 'orders'),
+      where('status', 'in', ['DELIVERED', 'delivered', 'Entregado', 'Entregada', 'ENTREGADO', 'ENTREGADA', 'entregado', 'entregada', 'COMPLETED', 'COMPLETE', 'completed']),
+    ));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
+    });
+  }
+
+  async loadProductionDemand(): Promise<Record<string, number>> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(collection(this.firebase.firestore, 'productionDemand'));
+    return Object.fromEntries(snapshot.docs.map(item => [item.id, Math.max(0, Number(item.data()['pendingUnits'] ?? 0))]));
+  }
+
+  async searchCollection<T extends Record<string, unknown>>(
+    collectionKey: string,
+    term: string,
+    options: { limit?: number; status?: string; tokenField?: 'searchTokens' | 'nameSearchTokens' } = {},
+  ): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const token = term.normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+    if (token.length < 2) return [];
+    const constraints: QueryConstraint[] = [where(options.tokenField ?? 'searchTokens', 'array-contains', token)];
+    if (options.status && options.status !== 'ALL') constraints.push(where('status', '==', options.status));
+    constraints.push(limit(Math.min(50, Math.max(1, options.limit ?? 25))));
+    const snapshot = await getDocs(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as unknown as T;
+    });
+  }
+
+  /** Uses Firestore's count aggregation instead of downloading matching documents. */
+  async countCollection(
+    collectionKey: string,
+    filters: { field: string; op: '==' | '>=' | '<=' | '>' | '<' | 'in'; value: unknown }[] = [],
+  ): Promise<number> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const constraints: QueryConstraint[] = filters.map(filter => where(filter.field, filter.op, filter.value));
+    const snapshot = await getCountFromServer(query(collection(this.firebase.firestore, collectionKey), ...constraints));
+    return snapshot.data().count;
   }
 
   /**
@@ -135,65 +285,178 @@ export class FirestoreBusinessRepository {
     recordId: string,
     value: Record<string, unknown>,
   ): Promise<void> {
-    this.invalidateStateCache();
-    if (!this.firebase.isConfigured) {
-      throw new Error(this.firebase.configurationMessage);
-    }
-
-    // Firestore rejects undefined anywhere in a document. Optional UI/model fields
-    // can explicitly be undefined (for example packageQuantityGrams or notes),
-    // so normalize the payload once at the persistence boundary.
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields(value);
-    const recordsRef = collection(
-      this.firebase.firestore,
-      'businesses', 'starkies', 'collections', collectionKey, 'records',
-    );
-    // Updating an existing recipe/product must not download the entire
-    // collection. Query its indexed ID first; the full ordered snapshot is
-    // needed only when appending a brand-new record to preserve its index.
-    const matchingById = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
-    const matchingByIdDoc = matchingById.docs[0];
-    if (matchingByIdDoc) {
-      const index = Number(matchingByIdDoc.data()['index'] ?? 0);
-      await setDoc(matchingByIdDoc.ref, { index, value: safeValue });
-      this.invalidateStateCache();
-      return;
+    if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
+    if (collectionKey === 'customers') safeValue['nameSearchTokens'] = this.searchNameTokensFor({ ...safeValue, id: recordId });
+    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
+    const existing = await getDoc(recordRef);
+    const sortIndex = existing.exists()
+      ? Number(existing.data()['sortIndex'] ?? Date.now())
+      : Date.now();
+    let orderStatsChanges: { salesChanged: boolean; demandChanged: boolean } | null = null;
+    if (collectionKey === 'orders') {
+      orderStatsChanges = await this.persistOrderWithStats(recordRef, safeValue, sortIndex);
+    } else {
+      await setDoc(recordRef, { ...safeValue, sortIndex });
     }
-
-    // New recipes can use a stable document ID and a monotonic timestamp index.
-    // This avoids two additional collection reads (legacy-code lookup + full
-    // ordered scan) on the most common "create cookie" flow.
-    if (collectionKey === 'recipes') {
-      await setDoc(doc(recordsRef, 'recipe-' + recordId), {
-        index: Date.now(),
-        value: safeValue,
-      });
-      this.invalidateStateCache();
-      return;
-    }
-
-    // Some legacy records (for example imported ingredients) are keyed by code.
-    // Preserve the old id-or-code matching semantics for other collections.
-    const matchingByCode = await getDocs(query(recordsRef, where('value.code', '==', recordId)));
-    const matching = matchingByCode.docs[0];
-    if (matching) {
-      const index = Number(matching.data()['index'] ?? 0);
-      await setDoc(matching.ref, { index, value: safeValue });
-      this.invalidateStateCache();
-      return;
-    }
-
-    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-    const maxIndex = snapshot.docs.reduce(
-      (max, record) => Math.max(max, Number(record.data()['index'] ?? -1)),
-      -1,
-    );
-    const nextIndex = maxIndex + 1;
-    await setDoc(doc(recordsRef, String(nextIndex).padStart(6, '0')), {
-      index: nextIndex,
-      value: safeValue,
-    });
     this.invalidateStateCache();
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
+    if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
+    if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
+    await this.publishStateChange(changedKeys);
+  }
+
+  private isDeliveredOrderStatus(value: unknown): boolean {
+    const status = String(value ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').trim();
+    return status === 'delivered' || status === 'completed' || status === 'complete'
+      || status.includes('entreg');
+  }
+
+  private isPendingOrderStatus(value: unknown): boolean {
+    const status = String(value ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').trim();
+    return status === 'pending' || status.includes('pendient');
+  }
+
+  private extractOrderSalesQuantities(order: Record<string, unknown>): Map<string, number> {
+    const quantities = new Map<string, number>();
+    const addItems = (items: unknown): void => {
+      if (!Array.isArray(items)) return;
+      for (const rawItem of items) {
+        if (!this.isRecord(rawItem)) continue;
+        const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
+        const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
+        if (id && id !== 'shipping' && Number.isFinite(quantity) && quantity > 0) {
+          quantities.set(id, (quantities.get(id) ?? 0) + quantity);
+        }
+      }
+    };
+    addItems(order['lines']);
+    if (!quantities.size) addItems(order['items']);
+    if (!quantities.size && Array.isArray(order['boxes'])) {
+      for (const box of order['boxes']) if (this.isRecord(box)) addItems(box['items']);
+    }
+    return quantities;
+  }
+
+  private async persistOrderWithStats(
+    orderRef: DocumentReference,
+    updatedOrder: Record<string, unknown>,
+    sortIndex: number,
+  ): Promise<{ salesChanged: boolean; demandChanged: boolean }> {
+    const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
+    return runTransaction(this.firebase.firestore, async transaction => {
+      const currentSnapshot = await transaction.get(orderRef);
+      const current = currentSnapshot.exists() ? currentSnapshot.data()! : null;
+      const oldStatus = String(current?.['status'] ?? '').toUpperCase();
+      const newStatus = String(updatedOrder['status'] ?? '').toUpperCase();
+      const oldQuantities = current ? this.extractOrderSalesQuantities(current) : new Map<string, number>();
+      const nextQuantities = this.extractOrderSalesQuantities(updatedOrder);
+      const oldDelivered = this.isDeliveredOrderStatus(oldStatus);
+      const nextDelivered = this.isDeliveredOrderStatus(newStatus);
+      const oldPending = this.isPendingOrderStatus(oldStatus);
+      const nextPending = this.isPendingOrderStatus(newStatus);
+      const productIds = new Set([...oldQuantities.keys(), ...nextQuantities.keys()]);
+      const changes = [...productIds].map(id => ({
+        id,
+        salesDelta: (nextDelivered ? nextQuantities.get(id) ?? 0 : 0) - (oldDelivered ? oldQuantities.get(id) ?? 0 : 0),
+        demandDelta: (nextPending ? nextQuantities.get(id) ?? 0 : 0) - (oldPending ? oldQuantities.get(id) ?? 0 : 0),
+      })).filter(item => item.salesDelta !== 0 || item.demandDelta !== 0);
+      const salesChanges = changes.filter(item => item.salesDelta !== 0);
+      const demandChanges = changes.filter(item => item.demandDelta !== 0);
+      const salesSnapshot = oldDelivered || nextDelivered ? await transaction.get(salesSummaryRef) : null;
+      const productSnapshots: DocumentSnapshot[] = [];
+      const demandSnapshots: DocumentSnapshot[] = [];
+      for (const change of salesChanges) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', change.id)));
+      for (const change of demandChanges) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', change.id)));
+
+      transaction.set(orderRef, { ...updatedOrder, sortIndex });
+      const now = new Date().toISOString();
+      salesChanges.forEach((change, index) => {
+        const snapshot = productSnapshots[index];
+        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productSalesStats', change.id), {
+          productId: change.id,
+          unitsSold: Math.max(0, currentUnits + change.salesDelta),
+          updatedAt: now,
+        });
+      });
+      demandChanges.forEach((change, index) => {
+        const snapshot = demandSnapshots[index];
+        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productionDemand', change.id), {
+          recipeId: change.id,
+          pendingUnits: Math.max(0, currentUnits + change.demandDelta),
+          updatedAt: now,
+        });
+      });
+
+      const revenueDelta = (nextDelivered ? Number(updatedOrder['total'] ?? 0) : 0)
+        - (oldDelivered ? Number(current?.['total'] ?? 0) : 0);
+      const unitsDelta = changes.reduce((sum, item) => sum + item.salesDelta, 0);
+      const deliveredDelta = Number(nextDelivered) - Number(oldDelivered);
+      if (salesSnapshot && (revenueDelta !== 0 || unitsDelta !== 0 || deliveredDelta !== 0 || !salesSnapshot.exists())) {
+        const summary = salesSnapshot.data() ?? {};
+        transaction.set(salesSummaryRef, {
+          deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) + deliveredDelta),
+          revenue: Math.max(0, Math.round((Number(summary['revenue'] ?? 0) + revenueDelta) * 100) / 100),
+          unitsSold: Math.max(0, Number(summary['unitsSold'] ?? 0) + unitsDelta),
+          updatedAt: now,
+        }, { merge: true });
+      }
+      return {
+        salesChanged: oldDelivered !== nextDelivered || salesChanges.length > 0 || revenueDelta !== 0,
+        demandChanged: oldPending !== nextPending || demandChanges.length > 0,
+      };
+    });
+  }
+
+  private async deleteOrderWithStats(orderRef: DocumentReference): Promise<{ salesChanged: boolean; demandChanged: boolean }> {
+    const salesSummaryRef = doc(this.firebase.firestore, 'businessStats', 'sales');
+    return runTransaction(this.firebase.firestore, async transaction => {
+      const orderSnapshot = await transaction.get(orderRef);
+      if (!orderSnapshot.exists()) throw new Error('No se encontró el registro que intentas eliminar.');
+      const order = orderSnapshot.data();
+      const status = String(order['status'] ?? '').toUpperCase();
+      const isDelivered = this.isDeliveredOrderStatus(status);
+      const isPending = this.isPendingOrderStatus(status);
+      const quantities = this.extractOrderSalesQuantities(order);
+      const salesSnapshot = isDelivered ? await transaction.get(salesSummaryRef) : null;
+      const productSnapshots: DocumentSnapshot[] = [];
+      const demandSnapshots: DocumentSnapshot[] = [];
+      if (isDelivered) for (const id of quantities.keys()) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
+      if (isPending) for (const id of quantities.keys()) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
+      transaction.delete(orderRef);
+      const now = new Date().toISOString();
+      if (isDelivered) [...quantities.entries()].forEach(([id, quantity], index) => {
+        const snapshot = productSnapshots[index];
+        const units = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productSalesStats', id), {
+          productId: id, unitsSold: Math.max(0, units - quantity), updatedAt: now,
+        });
+      });
+      if (isPending) [...quantities.entries()].forEach(([id, quantity], index) => {
+        const snapshot = demandSnapshots[index];
+        const units = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
+        transaction.set(doc(this.firebase.firestore, 'productionDemand', id), {
+          recipeId: id, pendingUnits: Math.max(0, units - quantity), updatedAt: now,
+        });
+      });
+      if (isDelivered && salesSnapshot) {
+        const summary = salesSnapshot.data() ?? {};
+        transaction.set(salesSummaryRef, {
+          deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) - 1),
+          revenue: Math.max(0, Math.round((Number(summary['revenue'] ?? 0) - Number(order['total'] ?? 0)) * 100) / 100),
+          unitsSold: Math.max(0, Number(summary['unitsSold'] ?? 0) - [...quantities.values()].reduce((sum, value) => sum + value, 0)),
+          updatedAt: now,
+        }, { merge: true });
+      }
+      return { salesChanged: isDelivered, demandChanged: isPending };
+    });
   }
 
   async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
@@ -202,23 +465,19 @@ export class FirestoreBusinessRepository {
       throw new Error(this.firebase.configurationMessage);
     }
 
-    const recordsRef = collection(
-      this.firebase.firestore,
-      'businesses', 'starkies', 'collections', collectionKey, 'records',
-    );
-    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
-    const matching = snapshot.docs.find((record) => {
-      const storedValue = record.data()['value'];
-      return this.isRecord(storedValue)
-        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
-    });
+    const matching = await getDoc(doc(this.firebase.firestore, collectionKey, recordId));
 
-    if (!matching) {
+    if (!matching.exists()) {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    await deleteDoc(matching.ref);
+    const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
+    if (collectionKey !== 'orders') await deleteDoc(matching.ref);
     this.invalidateStateCache();
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
+    if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
+    if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
+    await this.publishStateChange(changedKeys);
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -233,13 +492,15 @@ export class FirestoreBusinessRepository {
     }
     const metadata = metadataSnapshot.data() as StateMetadata;
     await setDoc(
-      doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
-      { value },
+      doc(this.firebase.firestore, 'settings', key),
+      { data: value },
       { merge: true },
     );
     await setDoc(metadataRef, {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
+      revision: increment(1),
+      changedKeys: [key],
     }, { merge: true });
     this.invalidateStateCache();
   }
@@ -273,27 +534,19 @@ export class FirestoreBusinessRepository {
       totals.set(deduction.ingredientId, (totals.get(deduction.ingredientId) ?? 0) + deduction.quantity);
     }
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'businesses', 'starkies', 'collections', 'ingredients', 'records',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
-    const ingredientDocs: { ingredientId: string; quantity: number; ref: (typeof ingredientSnapshot.docs)[number] }[] = [];
-
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: DocumentReference }[] = [];
     for (const [ingredientId, quantity] of totals.entries()) {
-      const matching = ingredientSnapshot.docs.find((snapshot) => {
-        const stored = snapshot.data()['value'];
-        return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-      });
-      if (!matching) {
+      const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+      const matching = await getDoc(ingredientRef);
+      if (!matching.exists()) {
         throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
       }
-      ingredientDocs.push({ ingredientId, quantity, ref: matching });
+      ingredientDocs.push({ ingredientId, quantity, ref: ingredientRef });
     }
 
     const productionRef = collection(
       this.firebase.firestore,
-      'businesses', 'starkies', 'collections', 'productionHistory', 'records',
+      'productionHistory',
     );
     const newProductionRef = doc(productionRef, productionId);
 
@@ -305,23 +558,25 @@ export class FirestoreBusinessRepository {
 
       const currentIngredientSnapshots: DocumentSnapshot[] = [];
       for (const ingredientDoc of ingredientDocs) {
-        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref.ref));
+        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref));
       }
       const existingProductionSnapshot = await transaction.get(newProductionRef);
       if (existingProductionSnapshot.exists()) {
         throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
       }
-      const finishedInventoryRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', 'finishedProductInventory');
+      const finishedInventoryRef = doc(this.firebase.firestore, 'settings', 'finishedProductInventory');
       const finishedInventorySnapshot = await transaction.get(finishedInventoryRef);
+      const productionStatsRef = doc(this.firebase.firestore, 'businessStats', 'production');
+      const productionStatsSnapshot = await transaction.get(productionStatsRef);
 
-      const updates: { ref: (typeof ingredientDocs)[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
+      const updates: { ref: DocumentReference; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
         const snapshot = currentIngredientSnapshots[index];
         if (!snapshot.exists()) {
           throw new Error('Uno de los ingredientes cambió durante el registro. Actualiza la pantalla e inténtalo de nuevo.');
         }
         const data = snapshot.data();
-        const stored = data['value'];
+        const stored = data;
         if (!this.isRecord(stored)) {
           throw new Error('No se pudo leer uno de los ingredientes. No se registró el lote.');
         }
@@ -335,8 +590,8 @@ export class FirestoreBusinessRepository {
         // Production is allowed to reveal a real stock deficit: negative balances
         // remain visible until the next physical count corrects them.
         updates.push({
-          ref: ingredientDoc.ref.ref,
-          index: Number(data['index'] ?? 0),
+          ref: ingredientDoc.ref,
+          index: Number(data['sortIndex'] ?? 0),
           value: { ...stored, stock: currentStock - ingredientDoc.quantity },
         });
       });
@@ -347,7 +602,7 @@ export class FirestoreBusinessRepository {
       const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory', 'finishedProductInventory']));
       const counts = metadata.recordCounts ?? {};
 
-      const rawInventory = finishedInventorySnapshot.exists() ? finishedInventorySnapshot.data()['value'] : [];
+      const rawInventory = finishedInventorySnapshot.exists() ? finishedInventorySnapshot.data()['data'] : [];
       const inventoryRows = Array.isArray(rawInventory)
         ? rawInventory.filter((item): item is Record<string, unknown> => this.isRecord(item))
         : [];
@@ -371,13 +626,20 @@ export class FirestoreBusinessRepository {
       }));
 
       for (const update of updates) {
-        transaction.set(update.ref, { index: update.index, value: update.value });
+        transaction.set(update.ref, { ...update.value, sortIndex: update.index });
       }
-      transaction.set(newProductionRef, {
-        index: Date.now(),
-        value: record,
-      });
-      transaction.set(finishedInventoryRef, { value: nextInventory }, { merge: true });
+      transaction.set(newProductionRef, { ...record, sortIndex: Date.now() });
+      transaction.set(finishedInventoryRef, { data: nextInventory }, { merge: true });
+      const productionStats = productionStatsSnapshot.data() ?? {};
+      const batches = Math.max(0, Number(record['batches'] ?? 0));
+      const yieldQuantity = String(record['outputUnit'] ?? '') === 'g' ? 0 : Math.max(0, outputQuantity);
+      transaction.set(productionStatsRef, {
+        totalBatches: Math.max(0, Number(productionStats['totalBatches'] ?? 0) + batches),
+        totalUnits: Math.max(0, Number(productionStats['totalUnits'] ?? 0) + yieldQuantity),
+        totalCost: Math.max(0, Math.round((Number(productionStats['totalCost'] ?? 0) + Number(record['calculatedCost'] ?? 0)) * 100) / 100),
+        completedRuns: Math.max(0, Number(productionStats['completedRuns'] ?? 0) + 1),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
       transaction.set(metadataRef, {
         arrayKeys,
         settingKeys,
@@ -386,6 +648,8 @@ export class FirestoreBusinessRepository {
           ...counts,
           productionHistory: Number(counts['productionHistory'] ?? 0) + 1,
         },
+        revision: increment(1),
+        changedKeys: ['ingredients', 'productionHistory', 'finishedProductInventory', 'stats:production'],
       }, { merge: true });
     });
   }
@@ -400,7 +664,7 @@ export class FirestoreBusinessRepository {
     const metadataRef = this.stateMetaRef();
     const movementRef = doc(
       this.firebase.firestore,
-      'businesses', 'starkies', 'collections', 'cashMovements', 'records', movement.id,
+      'cashMovements', movement.id,
     );
 
     await runTransaction(this.firebase.firestore, async (transaction) => {
@@ -416,11 +680,13 @@ export class FirestoreBusinessRepository {
       const metadata = metadataSnapshot.data() as StateMetadata;
       const counts = metadata.recordCounts ?? {};
       const nextCount = Number(counts['cashMovements'] ?? 0) + 1;
-      transaction.set(movementRef, { index: Date.now(), value: movement });
+      transaction.set(movementRef, { ...movement, sortIndex: Date.now() });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
         stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
         recordCounts: { ...counts, cashMovements: nextCount },
+        revision: increment(1),
+        changedKeys: ['cashMovements'],
       }, { merge: true });
     });
   }
@@ -456,23 +722,16 @@ export class FirestoreBusinessRepository {
     };
     this.validateCashMovement(savedMovement);
 
-    const ingredientsRef = collection(
-      this.firebase.firestore,
-      'businesses', 'starkies', 'collections', 'ingredients', 'records',
-    );
-    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
-    const matchingIngredient = ingredientSnapshot.docs.find((snapshot) => {
-      const stored = snapshot.data()['value'];
-      return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
-    });
-    if (!matchingIngredient) {
+    const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
+    const matchingIngredient = await getDoc(ingredientRef);
+    if (!matchingIngredient.exists()) {
       throw new Error('No se encontró el insumo seleccionado. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
     const metadataRef = this.stateMetaRef();
     const movementRef = doc(
       this.firebase.firestore,
-      'businesses', 'starkies', 'collections', 'cashMovements', 'records', savedMovement.id,
+      'cashMovements', savedMovement.id,
     );
 
     await runTransaction(this.firebase.firestore, async (transaction) => {
@@ -490,7 +749,7 @@ export class FirestoreBusinessRepository {
         throw new Error('Esta compra ya existe. Actualiza la pantalla e inténtalo de nuevo.');
       }
 
-      const stored = currentIngredientSnapshot.data()['value'];
+      const stored = currentIngredientSnapshot.data();
       if (!this.isRecord(stored)) {
         throw new Error('No se pudo leer el insumo seleccionado. No se registró la compra.');
       }
@@ -521,15 +780,14 @@ export class FirestoreBusinessRepository {
       const metadata = metadataSnapshot.data() as StateMetadata;
       const counts = metadata.recordCounts ?? {};
       const nextCount = Number(counts['cashMovements'] ?? 0) + 1;
-      transaction.set(currentIngredientSnapshot.ref, {
-        index: Number(currentIngredientSnapshot.data()['index'] ?? 0),
-        value: updatedIngredient,
-      });
-      transaction.set(movementRef, { index: Date.now(), value: savedMovement });
+      transaction.set(currentIngredientSnapshot.ref, { ...updatedIngredient, sortIndex: Number(currentIngredientSnapshot.data()['sortIndex'] ?? 0) });
+      transaction.set(movementRef, { ...savedMovement, sortIndex: Date.now() });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
         stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
         recordCounts: { ...counts, cashMovements: nextCount },
+        revision: increment(1),
+        changedKeys: ['cashMovements', 'ingredients'],
       }, { merge: true });
     });
   }
@@ -599,7 +857,7 @@ export class FirestoreBusinessRepository {
       } else {
         transaction.set(metaRef, {
           status: 'in-progress',
-          schemaVersion: 1,
+          schemaVersion: 3,
           stateKeys,
           arrayKeys,
           settingKeys,
@@ -612,7 +870,7 @@ export class FirestoreBusinessRepository {
 
     const archiveRef = doc(
       this.firebase.firestore,
-      'businesses', 'starkies', 'migrationArchives', archiveId,
+      'migrationArchives', archiveId,
     );
     const archiveSnapshot = await getDoc(archiveRef);
     if (!archiveSnapshot.exists()) {
@@ -634,34 +892,95 @@ export class FirestoreBusinessRepository {
     for (const [key, value] of stateEntries) {
       if (Array.isArray(value)) {
         value.forEach((record, index) => {
-          const recordId = String(index).padStart(6, '0');
+          const rawRecord = this.isRecord(record) ? record : {};
+          const candidateId = String(rawRecord['id'] ?? rawRecord['code'] ?? '').trim();
+          const recordId = candidateId && !candidateId.includes('/') ? candidateId : String(index).padStart(6, '0');
           const recordRef = doc(
             this.firebase.firestore,
-            'businesses', 'starkies', 'collections', key, 'records', recordId,
+            key, recordId,
           );
-          batch.set(recordRef, { index, value: record });
+          const storedRecord: Record<string, unknown> = { ...(this.isRecord(record) ? record : {}), sortIndex: index };
+          if (key === 'customers') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+            storedRecord['nameSearchTokens'] = this.searchNameTokensFor({ ...storedRecord, id: recordId });
+          } else if (key === 'orders') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+          }
+          batch.set(recordRef, storedRecord);
           operations += 1;
         });
         await flushIfFull();
       } else {
-        const settingRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key);
-        batch.set(settingRef, { value });
+        const settingRef = doc(this.firebase.firestore, 'settings', key);
+        batch.set(settingRef, { data: value });
         operations += 1;
         await flushIfFull();
       }
     }
 
+    const ordersForStats = stateEntries.find(([key, value]) => key === 'orders' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const salesByProduct = new Map<string, number>();
+    const demandByProduct = new Map<string, number>();
+    let deliveredOrders = 0;
+    let revenue = 0;
+    for (const rawOrder of ordersForStats ?? []) {
+      if (!this.isRecord(rawOrder)) continue;
+      const status = String(rawOrder['status'] ?? '').toUpperCase();
+      const quantities = this.extractOrderSalesQuantities(rawOrder);
+      const isDelivered = this.isDeliveredOrderStatus(status);
+      const isPending = this.isPendingOrderStatus(status);
+      if (isDelivered) {
+        deliveredOrders++;
+        const total = Number(rawOrder['total'] ?? 0);
+        if (Number.isFinite(total) && total > 0) revenue += total;
+        for (const [id, quantity] of quantities) salesByProduct.set(id, (salesByProduct.get(id) ?? 0) + quantity);
+      } else if (isPending) {
+        for (const [id, quantity] of quantities) demandByProduct.set(id, (demandByProduct.get(id) ?? 0) + quantity);
+      }
+    }
+    for (const [id, unitsSold] of salesByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productSalesStats', id), { productId: id, unitsSold });
+      operations += 1;
+      await flushIfFull();
+    }
+    for (const [id, pendingUnits] of demandByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productionDemand', id), { recipeId: id, pendingUnits });
+      operations += 1;
+      await flushIfFull();
+    }
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'sales'), {
+      deliveredOrders, revenue: Math.round(revenue * 100) / 100,
+      unitsSold: [...salesByProduct.values()].reduce((sum, quantity) => sum + quantity, 0),
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
+
+    const productionRows = stateEntries.find(([key, value]) => key === 'productionHistory' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const productionEntries = (productionRows ?? []).filter((row): row is Record<string, unknown> => this.isRecord(row));
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'production'), {
+      totalBatches: productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['batches'] ?? 0)), 0),
+      totalUnits: productionEntries.reduce((sum, row) => sum + (String(row['outputUnit'] ?? '') === 'g' ? 0 : Math.max(0, Number(row['totalYield'] ?? 0))), 0),
+      totalCost: Math.round(productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['calculatedCost'] ?? 0)), 0) * 100) / 100,
+      completedRuns: productionEntries.length,
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
+
     if (operations > 0) await batch.commit();
 
     await setDoc(metaRef, {
       status: 'complete',
-      schemaVersion: 1,
+      schemaVersion: 3,
       stateKeys,
       arrayKeys,
       settingKeys,
       sourceBackupId: archiveId,
       sourceExportedAt,
       importedAt: new Date().toISOString(),
+      revision: increment(1),
+      changedKeys: [...stateKeys, 'stats:sales', 'stats:demand', 'stats:production'],
       recordCounts: Object.fromEntries(
         stateEntries
           .filter(([, value]) => Array.isArray(value))
@@ -674,14 +993,14 @@ export class FirestoreBusinessRepository {
     const existingArrays = await Promise.all(arrayKeys.map(async (key) => {
       const snapshot = await getDocs(collection(
         this.firebase.firestore,
-        'businesses', 'starkies', 'collections', key, 'records',
+        key,
       ));
       return snapshot.empty ? null : key;
     }));
 
     const existingSettings = await Promise.all(settingKeys.map(async (key) => {
       const snapshot = await getDoc(
-        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
+        doc(this.firebase.firestore, 'settings', key),
       );
       return snapshot.exists() ? key : null;
     }));
@@ -710,6 +1029,34 @@ export class FirestoreBusinessRepository {
       if (child !== undefined) result[key] = this.removeUndefinedFields(child);
     }
     return result as T;
+  }
+
+  private searchTokensFor(record: Record<string, unknown>): string[] {
+    const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
+      .map(value => String(value ?? '').normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
+      .filter(Boolean);
+    const tokens = new Set<string>();
+    for (const value of values) {
+      const compact = value.split(' ').join('');
+      for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+      for (const word of value.split(' ').filter(part => part.length >= 2)) {
+        for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+      }
+    }
+    return [...tokens];
+  }
+
+  private searchNameTokensFor(record: Record<string, unknown>): string[] {
+    const name = String(record['name'] ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+    const tokens = new Set<string>();
+    for (const word of name.split(' ').filter(part => part.length >= 2)) {
+      for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+    }
+    const compact = name.split(' ').join('');
+    for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+    return [...tokens];
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { readPublicCatalog } from './catalog-data.js';
 
 type HeaderValue = string | string[] | undefined;
@@ -30,9 +30,35 @@ class HttpError extends Error {
   }
 }
 
+const searchTokensFor = (record: Record<string, unknown>): string[] => {
+  const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
+    .map(value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
+    .filter(Boolean);
+  const tokens = new Set<string>();
+  for (const value of values) {
+    const compact = value.replace(/\s+/g, '');
+    for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+    for (const word of value.split(/\s+/).filter(part => part.length >= 2)) {
+      for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+    }
+  }
+  return [...tokens];
+};
+
+const nameSearchTokensFor = (record: Record<string, unknown>): string[] => {
+  const name = String(record['name'] ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+  const tokens = new Set<string>();
+  for (const word of name.split(/\s+/).filter(part => part.length >= 2)) {
+    for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+  }
+  const compact = name.replace(/\s+/g, '');
+  for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+  return [...tokens];
+};
+
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX_ORDERS = 8;
-const BUSINESS_PATH = ['businesses', 'starkies'] as const;
+const BUSINESS_PATH = [] as const;
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
@@ -57,19 +83,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const documentToken = createOrderDocumentToken(orderId, documentExpiresAt, getDocumentSigningKey());
     const documentShortCode = randomBytes(6).toString('base64url');
     const metadataRef = db.doc([...BUSINESS_PATH, 'system', 'stateMeta'].join('/'));
-    const orderRef = db.doc([...BUSINESS_PATH, 'collections', 'orders', 'records', orderId].join('/'));
+    const orderRef = db.doc('orders/' + orderId);
     const rateLimitKey = createHash('sha256').update(clientIp(req)).digest('hex').slice(0, 40);
     const rateLimitRef = db.collection('publicOrderRateLimits').doc(rateLimitKey);
-    const customersCollection = db.collection('businesses/starkies/collections/customers/records');
-    const customersSnapshot = await customersCollection.get();
+    const customersCollection = db.collection('customers');
     const normalizedPhone = normalizePhone(order.phone);
-    const matchedCustomer = customersSnapshot.docs.find(document => {
-      const value = document.data()['value'] as Record<string, unknown> | undefined;
-      return value && normalizePhone(String(value['phone'] ?? '')) === normalizedPhone;
-    });
-    const customerId = matchedCustomer?.id ?? 'web-' + createHash('sha256').update(normalizedPhone).digest('hex').slice(0, 20);
-    const customerRef = matchedCustomer?.ref ?? customersCollection.doc(customerId);
-    const existingCustomerValue = matchedCustomer?.data()['value'] as Record<string, unknown> | undefined;
+    const phoneLookupHash = createHash('sha256').update(normalizedPhone).digest('hex');
+    const phoneLookupRef = db.collection('customerPhoneLookup').doc(phoneLookupHash);
+    const orderPhoneLookupRef = db.collection('orderPhoneLookup').doc(phoneLookupHash);
+    const phoneLookupSnapshot = await phoneLookupRef.get();
+    const indexedCustomerId = String(phoneLookupSnapshot.data()?.['customerId'] ?? '');
+    const customerRef = indexedCustomerId
+      ? customersCollection.doc(indexedCustomerId)
+      : customersCollection.doc('web-' + createHash('sha256').update(normalizedPhone).digest('hex').slice(0, 20));
+    const customerSnapshot = await customerRef.get();
+    const matchedCustomer = customerSnapshot.exists ? customerSnapshot : null;
+    const customerId = customerRef.id;
+    const existingCustomerValue = matchedCustomer?.data() as Record<string, unknown> | undefined;
     const customerRecord = {
       ...(existingCustomerValue ?? {}),
       id: customerId,
@@ -81,7 +111,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const orderRecord = {
       id: orderId,
       code: orderId,
-      customerId: 'phone:' + normalizedPhone,
+      customerId,
       customer: order.name,
       phone: order.phone,
       address: order.zoneName === 'Retiro en tienda' ? 'Retiro en tienda' : order.zoneName + ' — ' + order.address,
@@ -136,6 +166,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         throw new HttpError(429, 'Se alcanzó el límite temporal de pedidos desde esta conexión. Inténtalo más tarde o escríbenos por WhatsApp.');
       }
 
+      const demandQuantities = new Map<string, number>();
+      for (const line of order.lines) {
+        if (line.id && line.id !== 'shipping' && Number.isFinite(line.qty) && line.qty > 0) {
+          demandQuantities.set(line.id, (demandQuantities.get(line.id) ?? 0) + line.qty);
+        }
+      }
+      const demandEntries = [...demandQuantities.entries()];
+      const demandSnapshots: DocumentSnapshot[] = [];
+      for (const [productId] of demandEntries) {
+        demandSnapshots.push(await transaction.get(db.collection('productionDemand').doc(productId)));
+      }
+
       const metadata = metadataSnapshot.data() ?? {};
       const arrayKeys = Array.isArray(metadata['arrayKeys']) ? metadata['arrayKeys'] as string[] : [];
       const stateKeys = Array.isArray(metadata['stateKeys']) ? metadata['stateKeys'] as string[] : [];
@@ -148,8 +190,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         count: nextCount,
         updatedAt: createdAt,
       });
-      transaction.set(customerRef, { index: Number(matchedCustomer?.data()['index'] ?? now), value: customerRecord });
-      transaction.set(orderRef, { index: now, value: orderRecord });
+      transaction.set(customerRef, { ...customerRecord, searchTokens: searchTokensFor(customerRecord), nameSearchTokens: nameSearchTokensFor(customerRecord), sortIndex: Number(matchedCustomer?.data()?.['sortIndex'] ?? now) });
+      transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
+      transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
+      transaction.set(orderRef, { ...orderRecord, searchTokens: searchTokensFor(orderRecord), sortIndex: now });
+      demandEntries.forEach(([productId, quantity], index) => {
+        const snapshot = demandSnapshots[index];
+        transaction.set(db.collection('productionDemand').doc(productId), {
+          recipeId: productId,
+          pendingUnits: Math.max(0, Number(snapshot.exists ? snapshot.data()?.['pendingUnits'] ?? 0 : 0) + quantity),
+          updatedAt: createdAt,
+        });
+      });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
         stateKeys: Array.from(new Set([...stateKeys, 'orders'])),
@@ -158,6 +210,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           orders: Number(recordCounts['orders'] ?? 0) + 1,
           ...(!matchedCustomer ? { customers: Number(recordCounts['customers'] ?? 0) + 1 } : {}),
         },
+        revision: FieldValue.increment(1),
+        changedKeys: ['orders', 'customer:' + customerId, 'stats:demand'],
       }, { merge: true });
     });
 
@@ -392,5 +446,5 @@ function createOrderDocumentToken(orderId: string, expiresAt: number, signingKey
 }
 
 function normalizePhone(value: string): string {
-  return value.replace(/\\D/g, '').replace(/^593/, '0');
+  return value.replace(/\D/g, '').replace(/^593/, '0');
 }

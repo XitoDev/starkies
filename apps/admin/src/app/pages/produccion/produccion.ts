@@ -40,6 +40,12 @@ type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; availa
 export class Produccion {
   private readonly dataService = inject(DataService);
 
+  constructor() {
+    this.dataService.loadCollections?.(['recipes', 'ingredients', 'doughBases', 'productionHistory', 'finishedProductInventory', 'productionReadyLines']);
+    const pendingLoad = this.dataService.refreshPendingOrders?.();
+    if (pendingLoad) void pendingLoad.catch(error => this.formError.set(error.message));
+  }
+
   readonly recipes = this.dataService.recipes;
   readonly ingredients = this.dataService.ingredients;
   readonly searchTerm = signal('');
@@ -54,7 +60,7 @@ export class Produccion {
   readonly activeTab = signal<'inventory' | 'commands' | 'history'>('inventory');
   readonly inventoryEdits = signal<Record<string, string>>({});
   readonly activeRecipes = computed(() => this.recipes().filter(recipe => !recipe.archived));
-  readonly orders = this.dataService.orders;
+  readonly orders = this.dataService.pendingOrders;
   readonly doughBases = computed<DoughBase[]>(() => {
     const value = this.dataService.rawState()?.['doughBases'];
     if (!Array.isArray(value)) return [];
@@ -86,15 +92,25 @@ export class Produccion {
   readonly commandLines = computed<CommandLine[]>(() => {
     const ready = new Set(this.readyCommandLines());
     const recipes = this.activeRecipes();
-    return this.orders().filter(order => order.status === 'PENDING').flatMap(order => order.items.flatMap(item => {
-      const recipe = recipes.find(entry => entry.id === item.recipeId)
-        ?? recipes.find(entry => entry.name.trim().toLocaleLowerCase('es') === (item.name ?? '').trim().toLocaleLowerCase('es'));
-      if (!recipe || item.quantity <= 0) return [];
-      return [{
-        key: `${order.id}:${recipe.id}`, orderId: order.id, recipeId: recipe.id,
-        recipeName: recipe.name, quantity: item.quantity,
-      }];
-    }));
+    return this.orders().flatMap(order => {
+      const rawOrder = order as unknown as Record<string, unknown>;
+      const rawItems = Array.isArray(rawOrder['items']) ? rawOrder['items']
+        : Array.isArray(rawOrder['lines']) ? rawOrder['lines'] : [];
+      return rawItems.flatMap(rawItem => {
+        if (!rawItem || typeof rawItem !== 'object' || Array.isArray(rawItem)) return [];
+        const item = rawItem as Record<string, unknown>;
+        const itemId = String(item['recipeId'] ?? item['id'] ?? '');
+        const itemName = String(item['name'] ?? '');
+        const quantity = this.asNumber(item['quantity'] ?? item['qty']);
+        const recipe = recipes.find(entry => entry.id === itemId)
+          ?? recipes.find(entry => entry.name.trim().toLocaleLowerCase('es') === itemName.trim().toLocaleLowerCase('es'));
+        if (!recipe || quantity <= 0 || itemId.toLocaleLowerCase() === 'shipping') return [];
+        return [{
+          key: `${order.id}:${recipe.id}`, orderId: order.id, recipeId: recipe.id,
+          recipeName: recipe.name, quantity,
+        }];
+      });
+    });
   });
   readonly readyCommandLines = computed<string[]>(() => {
     const value = this.dataService.rawState()?.['productionReadyLines'];
@@ -112,12 +128,13 @@ export class Produccion {
     }
     return Array.from(grouped.entries()).map(([recipeId, row]) => {
       const recipe = this.activeRecipes().find(item => item.id === recipeId);
-      const remaining = Math.max(0, row.requested - row.markedReady);
+      const requested = Math.max(0, Number(this.dataService.productionDemand()[recipeId] ?? row.requested));
+      const remaining = Math.max(0, requested - row.markedReady);
       const stock = inventory.get(recipeId) ?? 0;
       const toBake = Math.max(0, remaining - Math.max(0, stock));
       const base = recipe?.baseId ? this.doughBases().find(item => item.id === recipe.baseId) : undefined;
       const doughGrams = base && recipe ? Math.max(0, this.asNumber(recipe.baseGramsPerCookie)) * toBake : 0;
-      return { recipeId, recipeName: row.recipeName, requested: row.requested, markedReady: row.markedReady, remaining, stock, toBake, baseId: base?.id, baseName: base?.name, doughGrams };
+      return { recipeId, recipeName: row.recipeName, requested, markedReady: row.markedReady, remaining, stock, toBake, baseId: base?.id, baseName: base?.name, doughGrams };
     }).sort((a, b) => a.recipeName.localeCompare(b.recipeName, 'es'));
   });
   readonly doughPlan = computed<DoughPlan[]>(() => {
@@ -169,9 +186,9 @@ export class Produccion {
     );
   });
 
-  readonly totalBatches = computed(() => this.productionHistory().reduce((total, item) => total + item.batches, 0));
-  readonly totalUnits = computed(() => this.productionHistory().reduce((total, item) => total + (item.outputUnit === 'g' ? 0 : item.totalYield), 0));
-  readonly totalProductionCost = computed(() => this.productionHistory().reduce((total, item) => total + item.calculatedCost, 0));
+  readonly totalBatches = computed(() => Number(this.dataService.productionStats()['totalBatches'] ?? 0));
+  readonly totalUnits = computed(() => Number(this.dataService.productionStats()['totalUnits'] ?? 0));
+  readonly totalProductionCost = computed(() => Number(this.dataService.productionStats()['totalCost'] ?? 0));
 
   readonly selectedRecipe = computed(() =>
     this.activeRecipes().find(recipe => recipe.id === this.selectedRecipeId()) ?? null,
