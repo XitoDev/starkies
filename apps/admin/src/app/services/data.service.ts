@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
-import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
+import { Ingredient, Recipe, Order, Customer, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
 
@@ -343,11 +343,28 @@ export class DataService implements OnDestroy {
       })),
       items: flattenedItems,
     };
+    const internalRecord: RawRecord = { ...savedRecord };
+    for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
+      delete internalRecord[key];
+    }
+    const draftRecord: RawRecord = {
+      id: recipe.id,
+      description: this.asString(savedRecord['catalogDescription'] ?? savedRecord['description']),
+      image: this.asString(savedRecord['catalogImage']),
+      label: this.asString(savedRecord['catalogLabel']),
+      labelColor: this.asString(savedRecord['catalogLabelColor'], 'Morado'),
+      visible: savedRecord['catalogVisible'] !== false,
+    };
+    const rawDrafts = this.asArray(state['catalogDrafts']);
+    const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
+    const nextDrafts = [...rawDrafts];
+    if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
+    else nextDrafts.push(draftRecord);
     const nextRecipes = [...rawRecipes];
-    if (existingIndex >= 0) nextRecipes[existingIndex] = savedRecord;
-    else nextRecipes.push(savedRecord);
-    const nextState = { ...state, recipes: nextRecipes };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('recipes', recipe.id, savedRecord));
+    if (existingIndex >= 0) nextRecipes[existingIndex] = internalRecord;
+    else nextRecipes.push(internalRecord);
+    const nextState = { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts };
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipe.id, savedRecord));
   }
 
 
@@ -377,11 +394,23 @@ export class DataService implements OnDestroy {
       throw new Error('No se encontró el producto. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    const updatedRecipe: RawRecord = { ...rawRecipes[recipeIndex], catalogVisible: visible };
-    const nextRecipes = [...rawRecipes];
-    nextRecipes[recipeIndex] = updatedRecipe;
-    const nextState = { ...state, recipes: nextRecipes };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('recipes', recipeId, updatedRecipe));
+    const drafts = this.asArray(state['catalogDrafts']);
+    const currentDraft = drafts.find(item => this.asString(item['id']) === recipeId) ?? {};
+    const updatedRecipe: RawRecord = {
+      ...rawRecipes[recipeIndex],
+      catalogVisible: visible,
+      catalogDescription: this.asString(currentDraft['description']),
+      catalogImage: this.asString(currentDraft['image']),
+      catalogLabel: this.asString(currentDraft['label']),
+      catalogLabelColor: this.asString(currentDraft['labelColor'], 'Morado'),
+    };
+    const updatedDraft = { ...currentDraft, id: recipeId, visible };
+    const nextDrafts = [...drafts];
+    const draftIndex = nextDrafts.findIndex(item => this.asString(item['id']) === recipeId);
+    if (draftIndex >= 0) nextDrafts[draftIndex] = updatedDraft;
+    else nextDrafts.push(updatedDraft);
+    const nextState = { ...state, catalogDrafts: nextDrafts };
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipeId, updatedRecipe));
   }
 
   async saveCustomer(customer: Customer): Promise<void> {
@@ -590,30 +619,6 @@ export class DataService implements OnDestroy {
     await this.repository.recordProduction(record, deductions);
   }
 
-  exportBackup(): void {
-    const state = this.rawState();
-    if (!state) {
-      this.error.set('Todavía no hay datos de StarKies cargados para exportar.');
-      return;
-    }
-
-    const backup: StarkiesBackup & { business: string; exportedAt: string; state: RawRecord } = {
-      business: 'StarKies',
-      exportedAt: new Date().toISOString(),
-      state,
-      ingredients: this.ingredients(),
-      recipes: this.recipes(),
-      customers: this.customers(),
-      orders: this.orders(),
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `StarKies-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
-  }
 
   private loadViewModels(state: RawRecord): void {
     const rawIngredients = this.asArray(state['ingredients']);
@@ -635,7 +640,10 @@ export class DataService implements OnDestroy {
       ingredientGroup: this.asOptionalString(item['ingredientGroup']),
     })));
 
-    if (Object.prototype.hasOwnProperty.call(state, 'recipes')) this.recipes.set(rawRecipes.map((item) => {
+    if (Object.prototype.hasOwnProperty.call(state, 'recipes')) {
+      const draftsById = new Map(this.asArray(state['catalogDrafts']).map(draft => [this.asString(draft['id']), draft]));
+      this.recipes.set(rawRecipes.map((item) => {
+      const draft = draftsById.get(this.asString(item['id'])) ?? {};
       const items = this.asArray(item['items']);
       const grouped = new Map<string, { ingredientId: string; quantity: number }[]>();
       for (const recipeItem of items) {
@@ -672,18 +680,19 @@ export class DataService implements OnDestroy {
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
         image: this.asOptionalString(item['image']),
-        catalogImage: this.asOptionalString(item['catalogImage']),
-        catalogVisible: item['catalogVisible'] !== false,
-        catalogLabel: this.asOptionalString(item['catalogLabel']),
-        catalogLabelColor: this.asOptionalString(item['catalogLabelColor']) ?? 'Morado',
-        catalogDescription: this.asOptionalString(item['catalogDescription']),
+        catalogImage: this.asOptionalString(draft['image']),
+        catalogVisible: draft['visible'] !== false,
+        catalogLabel: this.asOptionalString(draft['label']),
+        catalogLabelColor: this.asOptionalString(draft['labelColor']) ?? 'Morado',
+        catalogDescription: this.asOptionalString(draft['description']),
         archived: item['archived'] === true,
         archivedAt: this.asOptionalString(item['archivedAt']),
         baseId: this.asOptionalString(item['baseId']),
         baseGramsPerCookie: this.asOptionalNumber(item['baseGramsPerCookie']),
         sections,
       };
-    }));
+      }));
+    }
 
     const customerMap = new Map<string, Customer>();
     const normalizedOrders = rawOrders.map((item) => {
