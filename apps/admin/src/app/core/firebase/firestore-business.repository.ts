@@ -546,17 +546,26 @@ export class FirestoreBusinessRepository {
       throw new Error('La migración de StarKies no está completa. No se guardó la configuración.');
     }
     const metadata = metadataSnapshot.data() as StateMetadata;
-    await setDoc(
-      doc(this.firebase.firestore, 'settings', key),
-      { data: value },
-      { merge: true },
-    );
-    await setDoc(metadataRef, {
+    const batch = writeBatch(this.firebase.firestore);
+    batch.set(doc(this.firebase.firestore, 'settings', key), { data: value }, { merge: true });
+    if (key === 'deliveryZones') {
+      const projectionRef = doc(this.firebase.firestore, 'publicCatalog', 'catalog-settings');
+      const projection = await getDoc(projectionRef);
+      batch.set(projectionRef, {
+        id: 'catalog-settings',
+        kind: 'settings',
+        zones: Array.isArray(value) ? value : [],
+        presentations: projection.data()?.['presentations'] ?? [],
+        sortIndex: Number(projection.data()?.['sortIndex'] ?? 0),
+      }, { merge: true });
+    }
+    batch.set(metadataRef, {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
       revision: increment(1),
-      changedKeys: [key],
+      changedKeys: key === 'deliveryZones' ? [key, 'publicCatalog'] : [key],
     }, { merge: true });
+    await batch.commit();
     this.invalidateStateCache();
   }
 
