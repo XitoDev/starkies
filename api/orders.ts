@@ -73,7 +73,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const customerSnapshot = await customerRef.get();
     const matchedCustomer = customerSnapshot.exists ? customerSnapshot : null;
     const customerId = customerRef.id;
-    const existingCustomerValue = matchedCustomer?.data()?.['value'] as Record<string, unknown> | undefined;
+    const existingCustomerValue = matchedCustomer?.data() as Record<string, unknown> | undefined;
     const customerRecord = {
       ...(existingCustomerValue ?? {}),
       id: customerId,
@@ -152,10 +152,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         count: nextCount,
         updatedAt: createdAt,
       });
-      transaction.set(customerRef, { index: Number(matchedCustomer?.data()?.['index'] ?? now), value: customerRecord });
+      transaction.set(customerRef, { ...customerRecord, sortIndex: Number(matchedCustomer?.data()?.['sortIndex'] ?? now) });
       transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
       transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
-      transaction.set(orderRef, { index: now, value: orderRecord });
+      transaction.set(orderRef, { ...orderRecord, sortIndex: now });
       transaction.set(metadataRef, {
         arrayKeys: Array.from(new Set([...arrayKeys, 'orders'])),
         stateKeys: Array.from(new Set([...stateKeys, 'orders'])),
