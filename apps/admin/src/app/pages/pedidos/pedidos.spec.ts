@@ -16,6 +16,7 @@ describe('Pedidos', () => {
         provideRouter([]),
         { provide: DataService, useValue: {
           orders: signal([]), customers: signal([]), pendingOrderCount: signal(0),
+          ordersPageHasMore: signal(false), ordersPageLoading: signal(false),
           loadOrdersPage: vi.fn(async () => undefined),
           refreshPendingOrderCount: vi.fn(async () => undefined),
         } },
