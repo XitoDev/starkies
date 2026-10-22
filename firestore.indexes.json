@@ -27,16 +27,6 @@
           "order": "ASCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "customers",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "searchTokens",
-          "arrayConfig": "CONTAINS"
-        }
-      ]
     }
   ],
   "fieldOverrides": []
