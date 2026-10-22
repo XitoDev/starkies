@@ -201,6 +201,14 @@ export class FirestoreBusinessRepository {
   }
 
   /** Searches indexed prefixes; only matching documents are returned from Firestore. */
+  async getCollectionRecord(collectionKey: string, recordId: string): Promise<Record<string, unknown> | null> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDoc(doc(this.firebase.firestore, collectionKey, recordId));
+    if (!snapshot.exists()) return null;
+    const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = snapshot.data();
+    return { ...value, id: value['id'] ?? snapshot.id };
+  }
+
   async getBusinessStats(key: 'sales' | 'production'): Promise<Record<string, unknown> | null> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDoc(doc(this.firebase.firestore, 'businessStats', key));
@@ -292,7 +300,7 @@ export class FirestoreBusinessRepository {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
-    const changedKeys = [collectionKey];
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
     if (collectionKey === 'orders') {
       const previousStatus = String(existing.data()?.['status'] ?? '').toUpperCase();
       const nextStatus = String(safeValue['status'] ?? '').toUpperCase();
@@ -453,7 +461,7 @@ export class FirestoreBusinessRepository {
     if (collectionKey === 'orders') await this.deleteOrderWithStats(matching.ref);
     else await deleteDoc(matching.ref);
     this.invalidateStateCache();
-    const changedKeys = [collectionKey];
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
     if (collectionKey === 'orders') {
       const status = String(matching.data()?.['status'] ?? '').toUpperCase();
       if (status === 'DELIVERED') changedKeys.push('stats:sales');
