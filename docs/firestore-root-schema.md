@@ -96,3 +96,13 @@ Orders and customers receive a normalized `searchTokens` array during migration.
 The query is prefix-oriented rather than arbitrary substring/full-text search: e.g. searching `mar` matches a name beginning with “María” or an indexed word beginning with “mar”; a fragment from the middle of a word is not guaranteed to match. The order query combining `searchTokens array-contains` with `status ==` uses the composite index declared in `firestore.indexes.json`. Customer search uses Firestore's automatic single-field array index.
 
 Because this adds a derived field, the migration's dry-run and verify stages must be run before production; the current script calculates tokens when it prepares destination documents. Existing production documents are not searchable through the new query until migrated with `searchTokens`.
+
+
+## Derived business statistics
+
+- `businessStats/sales` stores delivered-order count, delivered revenue and sold units. The migration and backup import seed it from existing records.
+- `productSalesStats/{recipeId}` stores sold units per product. `productionDemand/{recipeId}` stores units in pending orders per recipe.
+- `businessStats/production` stores production run, batch, unit and cost totals; registration of a production batch updates it in the same transaction as inventory deductions and production history.
+- Admin order upserts and deletions update sales and demand aggregates transactionally. The public order endpoint adds pending demand in the same transaction as order creation. Backup import and the root-schema migration rebuild the derived documents.
+- Finance loads delivered orders only when it needs to reconcile unprocessed ledger entries and uses the sales aggregate for the sales overview. Production loads pending orders only for individual command checkboxes; aggregate demand drives recipe planning, and aggregate production totals drive its summary cards.
+- Metadata publishes changed keys and increments a revision for order, production, cash, ingredient-purchase and setting writes. The Admin listener refreshes only affected collections or targeted customer documents, plus the relevant aggregates. The aggregates should be validated against the source orders/history in staging before the migration is approved.
