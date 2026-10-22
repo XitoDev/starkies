@@ -518,9 +518,18 @@ export class FirestoreBusinessRepository {
     }
 
     const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
-    if (collectionKey !== 'orders') await deleteDoc(matching.ref);
+    if (collectionKey === 'recipes') {
+      const batch = writeBatch(this.firebase.firestore);
+      batch.delete(matching.ref);
+      batch.delete(doc(this.firebase.firestore, 'catalogDrafts', recordId));
+      batch.delete(doc(this.firebase.firestore, 'publicCatalog', recordId));
+      await batch.commit();
+    } else if (collectionKey !== 'orders') {
+      await deleteDoc(matching.ref);
+    }
     this.invalidateStateCache();
-    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
+    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId]
+      : collectionKey === 'recipes' ? ['recipes', 'catalogDrafts', 'publicCatalog'] : [collectionKey];
     if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
     if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
     await this.publishStateChange(changedKeys);
