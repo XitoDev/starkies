@@ -22,7 +22,8 @@ export class DataService {
   ) {
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
-    void this.loadFromCloud();
+    void this.loadCollections(['recipes', 'ingredients']);
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async loadFromCloud(collectionKeys?: string[]): Promise<void> {
@@ -533,7 +534,7 @@ export class DataService {
 
       return {
         id: this.asString(item['id'] ?? item['code']),
-        customerId: customerKey,
+        customerId: this.asString(item['customerId'], customerKey),
         items: cookieLines.map((line) => ({
           recipeId: this.asString(line['id'] ?? line['recipeId']),
           name: this.asOptionalString(line['name']),
