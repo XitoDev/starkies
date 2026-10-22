@@ -219,7 +219,7 @@ export class FirestoreBusinessRepository {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDocs(query(
       collection(this.firebase.firestore, 'orders'),
-      where('status', '==', 'PENDING'),
+      where('status', 'in', ['PENDING', 'pending', 'Pendiente', 'PENDIENTE', 'pendiente', 'PENDIENTES']),
     ));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
@@ -231,7 +231,7 @@ export class FirestoreBusinessRepository {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDocs(query(
       collection(this.firebase.firestore, 'orders'),
-      where('status', '==', 'DELIVERED'),
+      where('status', 'in', ['DELIVERED', 'delivered', 'Entregado', 'Entregada', 'ENTREGADO', 'ENTREGADA', 'entregado', 'entregada', 'COMPLETED', 'COMPLETE', 'completed']),
     ));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
@@ -307,6 +307,21 @@ export class FirestoreBusinessRepository {
     await this.publishStateChange(changedKeys);
   }
 
+  private isDeliveredOrderStatus(value: unknown): boolean {
+    const status = String(value ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').trim();
+    return status === 'delivered' || status === 'completed' || status === 'complete'
+      || status.includes('entreg');
+  }
+
+  private isPendingOrderStatus(value: unknown): boolean {
+    const status = String(value ?? '').normalize('NFD').split('')
+      .filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879)
+      .join('').toLocaleLowerCase('es').trim();
+    return status === 'pending' || status.includes('pendient');
+  }
+
   private extractOrderSalesQuantities(order: Record<string, unknown>): Map<string, number> {
     const quantities = new Map<string, number>();
     const addItems = (items: unknown): void => {
@@ -341,10 +356,10 @@ export class FirestoreBusinessRepository {
       const newStatus = String(updatedOrder['status'] ?? '').toUpperCase();
       const oldQuantities = current ? this.extractOrderSalesQuantities(current) : new Map<string, number>();
       const nextQuantities = this.extractOrderSalesQuantities(updatedOrder);
-      const oldDelivered = oldStatus === 'DELIVERED';
-      const nextDelivered = newStatus === 'DELIVERED';
-      const oldPending = oldStatus === 'PENDING';
-      const nextPending = newStatus === 'PENDING';
+      const oldDelivered = this.isDeliveredOrderStatus(oldStatus);
+      const nextDelivered = this.isDeliveredOrderStatus(newStatus);
+      const oldPending = this.isPendingOrderStatus(oldStatus);
+      const nextPending = this.isPendingOrderStatus(newStatus);
       const productIds = new Set([...oldQuantities.keys(), ...nextQuantities.keys()]);
       const changes = [...productIds].map(id => ({
         id,
@@ -412,21 +427,21 @@ export class FirestoreBusinessRepository {
       if (status === 'PENDING') for (const id of quantities.keys()) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
       transaction.delete(orderRef);
       const now = new Date().toISOString();
-      if (status === 'DELIVERED') [...quantities.entries()].forEach(([id, quantity], index) => {
+      if (isDelivered) [...quantities.entries()].forEach(([id, quantity], index) => {
         const snapshot = productSnapshots[index];
         const units = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
         transaction.set(doc(this.firebase.firestore, 'productSalesStats', id), {
           productId: id, unitsSold: Math.max(0, units - quantity), updatedAt: now,
         });
       });
-      if (status === 'PENDING') [...quantities.entries()].forEach(([id, quantity], index) => {
+      if (isPending) [...quantities.entries()].forEach(([id, quantity], index) => {
         const snapshot = demandSnapshots[index];
         const units = Number(snapshot.exists() ? snapshot.data()?.['pendingUnits'] ?? 0 : 0);
         transaction.set(doc(this.firebase.firestore, 'productionDemand', id), {
           recipeId: id, pendingUnits: Math.max(0, units - quantity), updatedAt: now,
         });
       });
-      if (status === 'DELIVERED' && salesSnapshot) {
+      if (isDelivered && salesSnapshot) {
         const summary = salesSnapshot.data() ?? {};
         transaction.set(salesSummaryRef, {
           deliveredOrders: Math.max(0, Number(summary['deliveredOrders'] ?? 0) - 1),
@@ -435,7 +450,7 @@ export class FirestoreBusinessRepository {
           updatedAt: now,
         }, { merge: true });
       }
-      return { salesChanged: status === 'DELIVERED', demandChanged: status === 'PENDING' };
+      return { salesChanged: isDelivered, demandChanged: isPending };
     });
   }
 
@@ -907,7 +922,9 @@ export class FirestoreBusinessRepository {
       if (!this.isRecord(rawOrder)) continue;
       const status = String(rawOrder['status'] ?? '').toUpperCase();
       const quantities = this.extractOrderSalesQuantities(rawOrder);
-      if (status === 'DELIVERED') {
+      const isDelivered = this.isDeliveredOrderStatus(status);
+      const isPending = this.isPendingOrderStatus(status);
+      if (isDelivered) {
         deliveredOrders++;
         const total = Number(rawOrder['total'] ?? 0);
         if (Number.isFinite(total) && total > 0) revenue += total;
