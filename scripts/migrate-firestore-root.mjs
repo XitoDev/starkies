@@ -253,6 +253,9 @@ async function main() {
         }
       }
     }
+    if (!counted && Array.isArray(order.items) && order.items !== items) {
+      counted = isDelivered ? addQuantities(order.items, sales) : isPending ? addQuantities(order.items, pendingDemand) : false;
+    }
     if (isDelivered) {
       deliveredOrders++;
       const total = Number(order.total ?? 0);
