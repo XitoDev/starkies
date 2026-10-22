@@ -27,7 +27,7 @@ export class DataService implements OnDestroy {
     private readonly firebase: FirebaseClientService,
   ) {
     // One lightweight metadata listener invalidates shared collection caches when another session writes.
-    this.stopMetadataWatch = this.repository.watchStateMeta(changedKeys => {
+    this.stopMetadataWatch = this.repository.watchStateMeta?.(changedKeys => {
       this.cloudRevision += 1;
       const ordersChanged = changedKeys.includes('orders');
       const customersChanged = changedKeys.some(key => key === 'customers' || key.startsWith('customer:'));
@@ -63,7 +63,7 @@ export class DataService implements OnDestroy {
       const refreshableKeys = changedKeys.filter(key => !key.startsWith('stats:') && !key.startsWith('customer:') && key !== 'orders'
         && Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, key));
       if (refreshableKeys.length) void this.loadCollections(refreshableKeys, true);
-    }, error => this.error.set(error.message));
+    }, error => this.error.set(error.message)) ?? (() => undefined);
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
     void this.loadCollections(['recipes', 'ingredients']);
