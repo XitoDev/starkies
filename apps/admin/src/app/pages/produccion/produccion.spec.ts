@@ -28,10 +28,14 @@ describe('Produccion', () => {
         { id: 'flour', name: 'Harina', unit: 'g', stock: 100, costPerUnit: 0.002 },
         { id: 'sugar', name: 'Azúcar', unit: 'g', stock: 20, costPerUnit: 0.001 },
       ]),
-      orders: signal([{
+      pendingOrders: signal([{
         id: 'order-1', customerId: 'customer-1', total: 3, status: 'PENDING', createdAt: '2026-10-21',
         items: [{ recipeId: 'cookie', name: 'Galleta', quantity: 5, unitPrice: 0.6 }],
       }]),
+      productionDemand: signal({ cookie: 5 }),
+      productionStats: signal({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0 }),
+      loadCollections: vi.fn(async () => undefined),
+      refreshPendingOrders: vi.fn(async () => undefined),
       saveBusinessSetting: vi.fn(async (key: string, value: unknown) => {
         state.update(current => ({ ...current!, [key]: value }));
       }),
