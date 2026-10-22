@@ -299,6 +299,7 @@ export class DataService {
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const nextState = { ...state, orders: this.asArray(state['orders']).filter((order) => this.asString(order['id'] ?? order['code']) !== orderId) };
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('orders', orderId));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async saveOrderDetails(orderId: string, changes: {
@@ -359,6 +360,7 @@ export class DataService {
     nextOrders[index] = updated;
     const nextState = { ...state, orders: nextOrders };
     await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updated));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async saveBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -395,6 +397,7 @@ export class DataService {
     nextOrders[orderIndex] = updatedOrder;
     const nextState = { ...state, orders: nextOrders };
     await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updatedOrder));
+    void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
