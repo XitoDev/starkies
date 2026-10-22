@@ -174,7 +174,7 @@ export class FirestoreBusinessRepository {
           if (!this.isRecord(rawItem)) continue;
           const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
           const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
-          if (id && Number.isFinite(quantity) && quantity > 0) {
+          if (id && id !== 'shipping' && Number.isFinite(quantity) && quantity > 0) {
             quantities.set(id, (quantities.get(id) ?? 0) + quantity);
           }
         }
