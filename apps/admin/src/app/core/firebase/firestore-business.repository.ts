@@ -90,7 +90,7 @@ export class FirestoreBusinessRepository {
   }
 
   /** Watches the small metadata document, not every business collection. */
-  watchStateMeta(onChange: () => void, onError?: (error: Error) => void): Unsubscribe {
+  watchStateMeta(onChange: (changedKeys: string[]) => void, onError?: (error: Error) => void): Unsubscribe {
     if (!this.firebase.isConfigured) return () => undefined;
     let initialized = false;
     return onSnapshot(this.stateMetaRef(), snapshot => {
@@ -631,8 +631,6 @@ export class FirestoreBusinessRepository {
         stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
         recordCounts: { ...counts, cashMovements: nextCount },
         revision: increment(1),
-        changedKeys: ['cashMovements', 'ingredients'],
-        revision: increment(1),
         changedKeys: ['cashMovements'],
       }, { merge: true });
     });
@@ -733,6 +731,8 @@ export class FirestoreBusinessRepository {
         arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
         stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
         recordCounts: { ...counts, cashMovements: nextCount },
+        revision: increment(1),
+        changedKeys: ['cashMovements', 'ingredients'],
       }, { merge: true });
     });
   }
