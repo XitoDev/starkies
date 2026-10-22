@@ -1,4 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
+import { DataService } from '../../services/data.service';
+import { RecipeImageService } from '../../services/recipe-image.service';
+import { ImageCdnUploadService } from '../../services/image-cdn-upload.service';
 import { provideRouter } from '@angular/router';
 import { Recetas } from './recetas';
 
@@ -9,7 +14,12 @@ describe('Recetas', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Recetas],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: DataService, useValue: { recipes: signal([]), ingredients: signal([]), rawState: signal(null), loadCollections: vi.fn(async () => undefined) } },
+        { provide: RecipeImageService, useValue: {} },
+        { provide: ImageCdnUploadService, useValue: {} },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Recetas);

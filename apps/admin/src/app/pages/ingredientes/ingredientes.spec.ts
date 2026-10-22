@@ -1,4 +1,7 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
+import { DataService } from '../../services/data.service';
 import { Ingredientes } from './ingredientes';
 
 describe('Ingredientes', () => {
@@ -8,6 +11,9 @@ describe('Ingredientes', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Ingredientes],
+      providers: [
+        { provide: DataService, useValue: { ingredients: signal([]), recipes: signal([]), loadCollections: vi.fn(async () => undefined) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Ingredientes);

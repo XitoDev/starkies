@@ -11,7 +11,7 @@ import { DataService } from '../../services/data.service';
   template: `
     <div class="page-container summary-page">
       <div class="page-heading">
-        <div><p class="eyebrow">Mi negocio / Inicio</p><h1 class="page-title">Resumen</h1><p class="page-subtitle">Una vista rápida de recetas, insumos, inventario y pedidos.</p></div>
+        <div><h1 class="page-title">Resumen</h1><p class="page-subtitle">Una vista rápida de recetas, insumos, inventario y pedidos.</p></div>
       </div>
       @if (data.loading()) { <p class="summary-muted">Cargando los datos del negocio…</p> }
       @if (data.error()) { <div class="notice" role="alert">{{ data.error() }}</div> }

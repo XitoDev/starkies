@@ -238,7 +238,7 @@ type InventoryDraft = { stock: number; minStock: number };
   template: `
     <div class="page-container inventory-page">
       <div class="page-heading">
-        <div><p class="eyebrow">Mi negocio / Compras e inventario</p><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient()" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
+        <div><h1 class="page-title">Compras e inventario</h1><p class="page-subtitle">Registra compras, actualiza costos y controla las existencias disponibles.</p></div><button matButton="elevated" type="button" (click)="buyIngredient()" [disabled]="ingredients().length === 0"><mat-icon fontSet="material-symbols-rounded">add_shopping_cart</mat-icon> Añadir compra</button>
       </div>
       @if (notice()) { <div class="notice" role="status">{{ notice() }}</div> }
       <div class="inventory-table-wrap">
