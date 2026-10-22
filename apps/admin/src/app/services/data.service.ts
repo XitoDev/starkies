@@ -19,6 +19,7 @@ export class DataService implements OnDestroy {
   readonly salesStats = signal<RawRecord>({ deliveredOrders: 0, revenue: 0, unitsSold: 0 });
   readonly productionStats = signal<RawRecord>({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0 });
   readonly productionDemand = signal<Record<string, number>>({});
+  readonly deliveredOrders = signal<Order[]>([]);
 
   constructor(
     private readonly repository: FirestoreBusinessRepository,
@@ -30,11 +31,12 @@ export class DataService implements OnDestroy {
       this.searchCache.clear();
       this.ordersPageCache.clear();
       this.repository.invalidateStateCache();
-      if (changedKeys.includes('orders') || changedKeys.includes('stats:sales')) {
+      if (changedKeys.includes('orders')) void this.refreshPendingOrderCount().catch(() => undefined);
+      if (changedKeys.includes('stats:sales')) {
         void this.refreshSalesStats().catch(error => this.error.set(error.message));
-        void this.refreshProductionDemand().catch(error => this.error.set(error.message));
-        void this.refreshPendingOrderCount().catch(() => undefined);
+        void this.refreshDeliveredOrders().catch(error => this.error.set(error.message));
       }
+      if (changedKeys.includes('stats:demand')) void this.refreshProductionDemand().catch(error => this.error.set(error.message));
       if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
     }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
@@ -44,6 +46,7 @@ export class DataService implements OnDestroy {
     void this.refreshSalesStats().catch(() => undefined);
     void this.refreshProductionStats().catch(() => undefined);
     void this.refreshProductionDemand().catch(() => undefined);
+    void this.refreshDeliveredOrders().catch(() => undefined);
   }
 
   async loadFromCloud(collectionKeys?: string[]): Promise<void> {
@@ -130,6 +133,10 @@ export class DataService implements OnDestroy {
   async refreshProductionStats(): Promise<void> {
     const stats = await this.repository.getBusinessStats('production');
     this.productionStats.set({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0, ...(stats ?? {}) });
+  }
+
+  async refreshDeliveredOrders(): Promise<void> {
+    this.deliveredOrders.set(await this.repository.loadDeliveredOrders<Order>());
   }
 
   async refreshProductionDemand(): Promise<void> {
