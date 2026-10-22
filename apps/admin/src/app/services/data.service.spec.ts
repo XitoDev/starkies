@@ -93,7 +93,6 @@ describe('DataService catalog visibility', () => {
     expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       '000015',
       expect.objectContaining({ id: '000015', catalogVisible: false }),
-      undefined,
     );
     expect(service.rawState()?.['catalogDrafts']).toEqual([expect.objectContaining({ id: '000015', visible: false })]);
     expect(service.recipes()[0].catalogVisible).toBe(false);
