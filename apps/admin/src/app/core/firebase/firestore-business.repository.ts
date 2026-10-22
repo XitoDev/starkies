@@ -335,8 +335,8 @@ export class FirestoreBusinessRepository {
         }
       }
     };
-    addItems(order['items']);
-    if (!quantities.size) addItems(order['lines']);
+    addItems(order['lines']);
+    if (!quantities.size) addItems(order['items']);
     if (!quantities.size && Array.isArray(order['boxes'])) {
       for (const box of order['boxes']) if (this.isRecord(box)) addItems(box['items']);
     }
