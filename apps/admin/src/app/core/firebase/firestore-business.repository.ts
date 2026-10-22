@@ -203,7 +203,7 @@ export class FirestoreBusinessRepository {
     options: { limit?: number; status?: string } = {},
   ): Promise<T[]> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const token = term.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+    const token = term.normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
     if (token.length < 2) return [];
     const constraints: QueryConstraint[] = [where('searchTokens', 'array-contains', token)];
     if (options.status && options.status !== 'ALL') constraints.push(where('status', '==', options.status));
@@ -844,13 +844,13 @@ export class FirestoreBusinessRepository {
 
   private searchTokensFor(record: Record<string, unknown>): string[] {
     const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
-      .map(value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
+      .map(value => String(value ?? '').normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
       .filter(Boolean);
     const tokens = new Set<string>();
     for (const value of values) {
-      const compact = value.replace(/\\s+/g, '');
+      const compact = value.split(' ').join('');
       for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
-      for (const word of value.split(/\\s+/).filter(part => part.length >= 2)) {
+      for (const word of value.split(' ').filter(part => part.length >= 2)) {
         for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
       }
     }
