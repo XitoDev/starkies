@@ -18,11 +18,12 @@ import { Order } from 'shared';
 export class Pedidos {
   readonly data = inject(DataService);
   private readonly router = inject(Router);
-  constructor() { void this.data.loadOrdersPage(true); void this.data.refreshPendingOrderCount().catch(() => undefined); }
+  constructor() { void this.data.loadOrdersPage(true, this.statusFilter()); void this.data.refreshPendingOrderCount().catch(() => undefined); }
     readonly orders = this.data.orders;
   readonly customers = this.data.customers;
   readonly activeTab = signal<'pedidos'|'clientes'>(this.router.parseUrl(this.router.url).queryParams['vista']==='clientes'?'clientes':'pedidos');
   readonly searchTerm = signal('');
+  readonly statusFilter = signal<'ALL' | Order['status']>('ALL');
   readonly orderMenuId = signal<string|null>(null);
   readonly customerMenuId = signal<string|null>(null);
   readonly notice = signal('');
@@ -36,7 +37,8 @@ export class Pedidos {
     const term=this.searchTerm().trim().toLocaleLowerCase('es');
     return this.customers().filter(customer=>!term||customer.name.toLocaleLowerCase('es').includes(term)||(customer.phone??'').toLocaleLowerCase('es').includes(term)||(customer.address??'').toLocaleLowerCase('es').includes(term));
   });
-  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.searchTerm.set('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true);}
+  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.searchTerm.set('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true,this.statusFilter());}
+  setStatusFilter(value: string): void { this.statusFilter.set(value as 'ALL' | Order['status']); this.searchTerm.set(''); void this.data.loadOrdersPage(true, this.statusFilter()); }
   getCustomerName(id:string):string{return this.customers().find(customer=>customer.id===id)?.name??'Cliente desconocido';}
   getCustomerOrderCount(id:string):number{return this.orders().filter(order=>order.customerId===id).length;}
   getCookieCount(order:Order):number{return order.items.reduce((sum,item)=>sum+item.quantity,0);}
