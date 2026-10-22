@@ -199,7 +199,6 @@ export class FirestoreBusinessRepository {
       throw new Error(this.firebase.configurationMessage);
     }
 
-    const recordsRef = collection(this.firebase.firestore, collectionKey);
     const matching = await getDoc(doc(this.firebase.firestore, collectionKey, recordId));
 
     if (!matching.exists()) {
@@ -582,7 +581,7 @@ export class FirestoreBusinessRepository {
       } else {
         transaction.set(metaRef, {
           status: 'in-progress',
-          schemaVersion: 1,
+          schemaVersion: 3,
           stateKeys,
           arrayKeys,
           settingKeys,
@@ -638,7 +637,7 @@ export class FirestoreBusinessRepository {
 
     await setDoc(metaRef, {
       status: 'complete',
-      schemaVersion: 1,
+      schemaVersion: 3,
       stateKeys,
       arrayKeys,
       settingKeys,
