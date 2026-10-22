@@ -201,6 +201,18 @@ export class FirestoreBusinessRepository {
   }
 
   /** Searches indexed prefixes; only matching documents are returned from Firestore. */
+  async getBusinessStats(key: 'sales' | 'production'): Promise<Record<string, unknown> | null> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDoc(doc(this.firebase.firestore, 'businessStats', key));
+    return snapshot.exists() ? snapshot.data() : null;
+  }
+
+  async loadProductionDemand(): Promise<Record<string, number>> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(collection(this.firebase.firestore, 'productionDemand'));
+    return Object.fromEntries(snapshot.docs.map(item => [item.id, Math.max(0, Number(item.data()['pendingUnits'] ?? 0))]));
+  }
+
   async searchCollection<T extends Record<string, unknown>>(
     collectionKey: string,
     term: string,
@@ -432,6 +444,8 @@ export class FirestoreBusinessRepository {
     await setDoc(metadataRef, {
       settingKeys: Array.from(new Set([...(metadata.settingKeys ?? []), key])),
       stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), key])),
+      revision: increment(1),
+      changedKeys: [key],
     }, { merge: true });
     this.invalidateStateCache();
   }
@@ -497,6 +511,8 @@ export class FirestoreBusinessRepository {
       }
       const finishedInventoryRef = doc(this.firebase.firestore, 'settings', 'finishedProductInventory');
       const finishedInventorySnapshot = await transaction.get(finishedInventoryRef);
+      const productionStatsRef = doc(this.firebase.firestore, 'businessStats', 'production');
+      const productionStatsSnapshot = await transaction.get(productionStatsRef);
 
       const updates: { ref: DocumentReference; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
@@ -559,6 +575,16 @@ export class FirestoreBusinessRepository {
       }
       transaction.set(newProductionRef, { ...record, sortIndex: Date.now() });
       transaction.set(finishedInventoryRef, { data: nextInventory }, { merge: true });
+      const productionStats = productionStatsSnapshot.data() ?? {};
+      const batches = Math.max(0, Number(record['batches'] ?? 0));
+      const yieldQuantity = String(record['outputUnit'] ?? '') === 'g' ? 0 : Math.max(0, outputQuantity);
+      transaction.set(productionStatsRef, {
+        totalBatches: Math.max(0, Number(productionStats['totalBatches'] ?? 0) + batches),
+        totalUnits: Math.max(0, Number(productionStats['totalUnits'] ?? 0) + yieldQuantity),
+        totalCost: Math.max(0, Math.round((Number(productionStats['totalCost'] ?? 0) + Number(record['calculatedCost'] ?? 0)) * 100) / 100),
+        completedRuns: Math.max(0, Number(productionStats['completedRuns'] ?? 0) + 1),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
       transaction.set(metadataRef, {
         arrayKeys,
         settingKeys,
@@ -567,6 +593,8 @@ export class FirestoreBusinessRepository {
           ...counts,
           productionHistory: Number(counts['productionHistory'] ?? 0) + 1,
         },
+        revision: increment(1),
+        changedKeys: ['ingredients', 'productionHistory', 'finishedProductInventory', 'stats:production'],
       }, { merge: true });
     });
   }
@@ -602,6 +630,10 @@ export class FirestoreBusinessRepository {
         arrayKeys: Array.from(new Set([...(metadata.arrayKeys ?? []), 'cashMovements'])),
         stateKeys: Array.from(new Set([...(metadata.stateKeys ?? []), 'cashMovements'])),
         recordCounts: { ...counts, cashMovements: nextCount },
+        revision: increment(1),
+        changedKeys: ['cashMovements', 'ingredients'],
+        revision: increment(1),
+        changedKeys: ['cashMovements'],
       }, { merge: true });
     });
   }
