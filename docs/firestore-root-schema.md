@@ -68,3 +68,13 @@ npm run firestore:migrate:root:verify
 5. Switch traffic only after validation. Keep legacy documents until the new schema is proven in production; cleanup is a separate, explicitly approved operation.
 
 The GitHub PR updates the application code and rules but does not run the migration or deploy the project.
+
+## Admin read optimization
+
+Admin now requests a scoped set of collections per feature instead of loading every collection during service initialization. The summary initially loads recipes and ingredients and uses a Firestore `count()` aggregation for pending orders. The Orders tab loads 25 documents per request using a Firestore cursor and exposes a “Load more” action; status filters are applied on the server before documents are returned. Opening the Customers tab loads the complete order set because its current UI calculates per-customer historical totals locally. Explicit manual synchronization still refreshes the full state.
+
+The repository also exposes reusable `getCollectionPage` and `countCollection` methods for future list screens. Queries use cursors, not offsets, so page navigation does not pay to read skipped documents. The status-filtered orders query requires the composite index declared in `firestore.indexes.json`; deploy it alongside Firestore rules.
+
+Firestore filters, `limit`, cursors and ordinary indexed queries are available on the free quota. They consume the free read quota rather than requiring a paid plan by themselves. The current Firebase free quota includes 50,000 document reads per day; aggregation queries such as `count()` are billed according to index entries read, with a minimum of one document read. See the official [Firestore pricing documentation](https://firebase.google.com/docs/firestore/pricing).
+
+Known limitation: the Customers tab still loads all orders to preserve exact historical totals, and the current generic search remains client-side over the records already loaded. A later pass can replace customer totals with server-side aggregations and implement indexed prefix search/search tokens without changing the root schema.
