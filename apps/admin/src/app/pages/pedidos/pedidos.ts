@@ -2,7 +2,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DataService } from '../../services/data.service';
@@ -15,7 +15,7 @@ import { Order } from 'shared';
   templateUrl: './pedidos.html',
   styleUrls: ['./pedidos.css']
 })
-export class Pedidos {
+export class Pedidos implements OnDestroy {
   readonly data = inject(DataService);
   private readonly router = inject(Router);
   constructor() { void this.data.loadOrdersPage(true, this.statusFilter()); void this.data.refreshPendingOrderCount().catch(() => undefined); }
@@ -72,6 +72,10 @@ export class Pedidos {
         if (requestId === this.searchRequestId) this.searchPending.set(false);
       }
     }, 1000);
+  }
+  ngOnDestroy(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchRequestId++;
   }
   setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.setSearchTerm('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true,this.statusFilter());}
   setStatusFilter(value: string): void { this.statusFilter.set(value as 'ALL' | Order['status']); const term=this.searchTerm().trim(); if(term.length>=2) this.setSearchTerm(term); else void this.data.loadOrdersPage(true, this.statusFilter()); }
