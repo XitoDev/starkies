@@ -91,7 +91,7 @@ function getDatabase() {
   }, appName);
   return getFirestore(app);
 }
-function normalizePhone(value: string): string { return value.replace(/\\D/g, '').replace(/^593/, '0'); }
+function normalizePhone(value: string): string { return value.replace(/\D/g, '').replace(/^593/, '0'); }
 function headerValue(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
