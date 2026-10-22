@@ -82,6 +82,7 @@ export class CatalogoProductoEditor {
   newLabelName = '';
 
   constructor() {
+    void this.data.loadCollections(['recipes', 'catalogDrafts']);
     effect(() => {
       const item = this.recipe();
       if (!item) return;
