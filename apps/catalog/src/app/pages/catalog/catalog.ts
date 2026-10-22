@@ -81,9 +81,9 @@ export class Catalog {
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
     const title = inject(Title), meta = inject(Meta);
-    title.setTitle('Cajas de galletas artesanales en Guayaquil | StarKies');
+    title.setTitle('StarKies · La estrella eres tú');
     meta.updateTag({ name: 'description', content: 'Arma tu caja de galletas artesanales StarKies en Guayaquil. Elige sabores clásicos y New York, revisa los precios y solicita tu pedido en línea.' });
-    meta.updateTag({ property: 'og:title', content: 'StarKies | Cajas de galletas artesanales' });
+    meta.updateTag({ property: 'og:title', content: 'StarKies · La estrella eres tú' });
     meta.updateTag({ property: 'og:description', content: 'Combina tus sabores favoritos en cajas de galletas clásicas y New York. Pedidos en Guayaquil y sectores cercanos.' });
     meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
     meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
