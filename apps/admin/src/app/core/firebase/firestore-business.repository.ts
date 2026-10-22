@@ -111,8 +111,11 @@ export class FirestoreBusinessRepository {
     const metadata = metadataSnapshot.data() as StateMetadata;
     if (metadata.status !== 'complete') return null;
 
-    const arrayKeys = requestedCollectionKeys ?? metadata.arrayKeys ?? [];
+    const allArrayKeys = metadata.arrayKeys ?? [];
     const allSettingKeys = metadata.settingKeys ?? [];
+    const arrayKeys = requestedCollectionKeys
+      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key))
+      : allArrayKeys;
     const settingKeys = requestedCollectionKeys
       ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))
       : allSettingKeys;
