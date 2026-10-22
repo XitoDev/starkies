@@ -25,7 +25,7 @@ export class DataService {
     void this.loadFromCloud();
   }
 
-  async loadFromCloud(): Promise<void> {
+  async loadFromCloud(collectionKeys?: string[]): Promise<void> {
     if (!this.firebase.isConfigured) {
       this.error.set(this.firebase.configurationMessage);
       return;
@@ -34,21 +34,38 @@ export class DataService {
     this.loading.set(true);
     this.error.set('');
     try {
-      const state = await this.repository.loadState();
+      const state = await this.repository.loadState(collectionKeys);
       if (!state) {
         this.migrationRequired.set(true);
         return;
       }
 
-      this.rawState.set(state);
+      const mergedState = { ...(this.rawState() ?? {}), ...state };
+      this.rawState.set(mergedState);
       this.migrationRequired.set(false);
-      this.loadViewModels(state);
+      this.loadViewModels(mergedState);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los datos de Firebase.');
     } finally {
       this.loading.set(false);
     }
   }
+
+  /** Loads only the named collections/settings and merges them into the local state. */
+  async loadCollections(collectionKeys: string[]): Promise<void> {
+    await this.loadFromCloud([...new Set(collectionKeys)]);
+  }
+
+  /** Server-side count for the summary; avoids downloading all pending orders. */
+  async refreshPendingOrderCount(): Promise<number> {
+    const count = await this.repository.countCollection('orders', [
+      { field: 'status', op: '==', value: 'PENDING' },
+    ]);
+    this.pendingOrderCount.set(count);
+    return count;
+  }
+
+  readonly pendingOrderCount = signal(0);
 
   async saveIngredient(ingredient: Ingredient): Promise<void> {
     const state = this.rawState();
@@ -412,7 +429,7 @@ export class DataService {
     const rawRecipes = this.asArray(state['recipes']);
     const rawOrders = this.asArray(state['orders']);
 
-    this.ingredients.set(rawIngredients.map((item) => ({
+    if (Object.prototype.hasOwnProperty.call(state, 'ingredients')) this.ingredients.set(rawIngredients.map((item) => ({
       id: this.asString(item['id']),
       name: this.asString(item['name'], 'Insumo sin nombre'),
       unit: this.asString(item['unit']),
@@ -427,7 +444,7 @@ export class DataService {
       ingredientGroup: this.asOptionalString(item['ingredientGroup']),
     })));
 
-    this.recipes.set(rawRecipes.map((item) => {
+    if (Object.prototype.hasOwnProperty.call(state, 'recipes')) this.recipes.set(rawRecipes.map((item) => {
       const items = this.asArray(item['items']);
       const grouped = new Map<string, { ingredientId: string; quantity: number }[]>();
       for (const recipeItem of items) {
@@ -540,8 +557,18 @@ export class DataService {
       };
     });
 
-    this.customers.set(Array.from(customerMap.values()));
-    this.orders.set(normalizedOrders);
+    if (Object.prototype.hasOwnProperty.call(state, 'customers')) {
+      const rawCustomers = this.asArray(state['customers']);
+      this.customers.set(rawCustomers.map(item => ({
+        id: this.asString(item['id'] ?? item['customerId']),
+        name: this.asString(item['name'], 'Cliente sin nombre'),
+        phone: this.asOptionalString(item['phone']),
+        address: this.asOptionalString(item['address']),
+      })));
+    } else if (Object.prototype.hasOwnProperty.call(state, 'orders')) {
+      this.customers.set(Array.from(customerMap.values()));
+    }
+    if (Object.prototype.hasOwnProperty.call(state, 'orders')) this.orders.set(normalizedOrders);
   }
 
   private normalizeOrderStatus(value: string): Order['status'] {
