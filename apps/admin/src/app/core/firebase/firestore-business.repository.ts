@@ -140,8 +140,57 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists()
       ? Number(existing.data()['sortIndex'] ?? Date.now())
       : Date.now();
-    await setDoc(recordRef, { ...safeValue, sortIndex });
+    if (collectionKey === 'orders' && existing.exists()
+      && String(existing.data()['status'] ?? '').toUpperCase() === 'PENDING'
+      && String(safeValue['status'] ?? '').toUpperCase() === 'DELIVERED') {
+      await this.persistDeliveredOrder(recordRef, existing.data(), safeValue, sortIndex);
+    } else {
+      await setDoc(recordRef, { ...safeValue, sortIndex });
+    }
     this.invalidateStateCache();
+  }
+
+  private async persistDeliveredOrder(
+    orderRef: DocumentReference,
+    previousOrder: Record<string, unknown>,
+    updatedOrder: Record<string, unknown>,
+    sortIndex: number,
+  ): Promise<void> {
+    const quantities = new Map<string, number>();
+    const addItems = (items: unknown): void => {
+      if (!Array.isArray(items)) return;
+      for (const rawItem of items) {
+        if (!this.isRecord(rawItem)) continue;
+        const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
+        const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
+        if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
+      }
+    };
+    addItems(previousOrder['items']);
+    if (!quantities.size) addItems(previousOrder['lines']);
+    if (!quantities.size && Array.isArray(previousOrder['boxes'])) {
+      for (const box of previousOrder['boxes']) if (this.isRecord(box)) addItems(box['items']);
+    }
+    const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
+    await runTransaction(this.firebase.firestore, async transaction => {
+      const currentOrderSnapshot = await transaction.get(orderRef);
+      if (!currentOrderSnapshot.exists()) throw new Error('No se encontró el pedido.');
+      const currentOrder = currentOrderSnapshot.data();
+      if (String(currentOrder['status'] ?? '').toUpperCase() !== 'PENDING') {
+        throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
+      }
+      const statsSnapshots: DocumentSnapshot[] = [];
+      for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
+      transaction.set(orderRef, { ...updatedOrder, sortIndex });
+      statsRefs.forEach((ref, index) => {
+        const snapshot = statsSnapshots[index];
+        transaction.set(ref, {
+          productId: ref.id,
+          unitsSold: Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0) + (quantities.get(ref.id) ?? 0),
+          updatedAt: new Date().toISOString(),
+        });
+      });
+    });
   }
 
   async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
