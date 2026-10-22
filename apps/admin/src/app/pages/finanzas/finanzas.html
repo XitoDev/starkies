@@ -48,7 +48,7 @@
       </article>
       <article class="bank-card bank-total">
         <p class="card-label">Ventas entregadas</p>
-        <p class="bank-amount">{{ salesStats()['revenue'] || 0 | currency:'USD' }}</p>
+        <p class="bank-amount">{{ (salesStats()['revenue'] || 0) | currency:'USD' }}</p>
         <p class="card-note">{{ salesStats()['unitsSold'] || 0 }} unidades vendidas</p>
       </article>
     </div>
