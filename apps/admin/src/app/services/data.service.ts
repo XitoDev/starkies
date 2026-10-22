@@ -32,7 +32,10 @@ export class DataService implements OnDestroy {
       this.searchCache.clear();
       this.ordersPageCache.clear();
       this.repository.invalidateStateCache();
-      if (changedKeys.includes('orders')) void this.refreshPendingOrderCount().catch(() => undefined);
+      if (changedKeys.includes('orders')) {
+        void this.refreshPendingOrderCount().catch(() => undefined);
+        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) void this.loadOrdersPage(true).catch(() => undefined);
+      }
       if (changedKeys.includes('stats:sales')) {
         void this.refreshSalesStats().catch(error => this.error.set(error.message));
         void this.refreshDeliveredOrders().catch(error => this.error.set(error.message));
@@ -42,6 +45,9 @@ export class DataService implements OnDestroy {
         void this.refreshPendingOrders().catch(error => this.error.set(error.message));
       }
       if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
+      const refreshableKeys = changedKeys.filter(key => !key.startsWith('stats:') && key !== 'orders'
+        && Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, key));
+      if (refreshableKeys.length) void this.loadCollections(refreshableKeys, true);
     }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
