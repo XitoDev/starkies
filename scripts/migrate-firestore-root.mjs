@@ -48,7 +48,13 @@ async function main() {
     throw new Error('Legacy metadata is missing or incomplete; refusing to guess source collections.');
   }
   const legacyMeta = metaSnapshot.data();
-  const collectionKeys = [...new Set([...(legacyMeta.arrayKeys ?? []), ...knownCollections])];
+  const collectionDocumentRefs = await db.collection(oldBase + '/collections').listDocuments();
+  const discoveredCollectionKeys = [];
+  for (const collectionDocument of collectionDocumentRefs) {
+    const children = await collectionDocument.listCollections();
+    if (children.some(child => child.id === 'records')) discoveredCollectionKeys.push(collectionDocument.id);
+  }
+  const collectionKeys = [...new Set([...(legacyMeta.arrayKeys ?? []), ...knownCollections, ...discoveredCollectionKeys])];
   const operations = [];
   const counts = {};
   const customerByPhone = new Map();
@@ -99,6 +105,12 @@ async function main() {
   const archivesSnapshot = await db.collection(oldBase + '/migrationArchives').get();
   for (const document of archivesSnapshot.docs) {
     operations.push({ source: document.ref.path, target: 'migrationArchives/' + document.id, data: document.data() });
+  }
+
+  const systemSnapshot = await db.collection(oldBase + '/system').get();
+  for (const document of systemSnapshot.docs) {
+    if (document.id === 'stateMeta') continue;
+    operations.push({ source: document.ref.path, target: 'system/' + document.id, data: document.data() });
   }
 
   for (const operation of operations.filter(item => item.target.startsWith('orders/'))) {
@@ -162,7 +174,9 @@ async function main() {
   };
   for (const operation of operations.filter(item => item.target.startsWith('orders/'))) {
     const order = operation.data;
-    const status = cleanName(order.status ?? order.state ?? order.orderStatus).toLocaleUpperCase('es');
+    const rawStatus = order.status ?? order.state ?? order.orderStatus;
+    const statusValue = isObject(rawStatus) ? rawStatus.value ?? rawStatus.label ?? rawStatus.name : rawStatus;
+    const status = cleanName(statusValue).toLocaleUpperCase('es');
     if (!['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status)) continue;
     if (addSales(order.lines ?? order.items)) continue;
     let countedBoxes = false;
