@@ -11,6 +11,7 @@ import {
   runTransaction,
   setDoc,
   writeBatch,
+  where,
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
@@ -36,7 +37,7 @@ interface StateMetadata {
 @Injectable({ providedIn: 'root' })
 export class FirestoreBusinessRepository {
   private readonly stateMetaRef = () =>
-    doc(this.firebase.firestore, 'system', 'stateMeta');
+    doc(this.firebase.firestore, 'businesses', 'starkies', 'system', 'stateMeta');
 
   private readonly stateCacheTtlMs = 15_000;
   private stateCache: { value: Record<string, unknown> | null; expiresAt: number } | null = null;
@@ -107,7 +108,7 @@ export class FirestoreBusinessRepository {
     await Promise.all(arrayKeys.map(async (key) => {
       const recordsRef = collection(
         this.firebase.firestore,
-        key,
+        'businesses', 'starkies', 'collections', key, 'records',
       );
       const recordsSnapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
       state[key] = recordsSnapshot.docs.map((record) => record.data()['value']);
@@ -115,7 +116,7 @@ export class FirestoreBusinessRepository {
 
     await Promise.all(settingKeys.map(async (key) => {
       const settingSnapshot = await getDoc(
-        doc(this.firebase.firestore, 'settings', key),
+        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
       );
       if (settingSnapshot.exists()) state[key] = settingSnapshot.data()['value'];
     }));
@@ -129,21 +130,69 @@ export class FirestoreBusinessRepository {
    * intentional because loadState orders by index and does not require gaps to
    * be compacted.
    */
-  async upsertCollectionRecord(collectionKey: string, recordId: string, value: Record<string, unknown>): Promise<void> {
+  async upsertCollectionRecord(
+    collectionKey: string,
+    recordId: string,
+    value: Record<string, unknown>,
+  ): Promise<void> {
     this.invalidateStateCache();
-    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+
+    // Firestore rejects undefined anywhere in a document. Optional UI/model fields
+    // can explicitly be undefined (for example packageQuantityGrams or notes),
+    // so normalize the payload once at the persistence boundary.
     const safeValue = this.removeUndefinedFields(value);
-    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
-    const existing = await getDoc(recordRef);
-    const existingValue = existing.data()?.['value'];
-    if (collectionKey === 'orders' && existing.exists() && this.isRecord(existingValue)
-      && String(existingValue['status'] ?? '').toUpperCase() === 'PENDING'
-      && String(safeValue['status'] ?? '').toUpperCase() === 'DELIVERED') {
-      await this.updateOrderStatus(recordId, existingValue, safeValue);
+    const recordsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', collectionKey, 'records',
+    );
+    // Updating an existing recipe/product must not download the entire
+    // collection. Query its indexed ID first; the full ordered snapshot is
+    // needed only when appending a brand-new record to preserve its index.
+    const matchingById = await getDocs(query(recordsRef, where('value.id', '==', recordId)));
+    const matchingByIdDoc = matchingById.docs[0];
+    if (matchingByIdDoc) {
+      const index = Number(matchingByIdDoc.data()['index'] ?? 0);
+      await setDoc(matchingByIdDoc.ref, { index, value: safeValue });
+      this.invalidateStateCache();
       return;
     }
-    const index = existing.exists() ? Number(existing.data()['index'] ?? 0) : Date.now();
-    await setDoc(recordRef, { index, value: safeValue });
+
+    // New recipes can use a stable document ID and a monotonic timestamp index.
+    // This avoids two additional collection reads (legacy-code lookup + full
+    // ordered scan) on the most common "create cookie" flow.
+    if (collectionKey === 'recipes') {
+      await setDoc(doc(recordsRef, 'recipe-' + recordId), {
+        index: Date.now(),
+        value: safeValue,
+      });
+      this.invalidateStateCache();
+      return;
+    }
+
+    // Some legacy records (for example imported ingredients) are keyed by code.
+    // Preserve the old id-or-code matching semantics for other collections.
+    const matchingByCode = await getDocs(query(recordsRef, where('value.code', '==', recordId)));
+    const matching = matchingByCode.docs[0];
+    if (matching) {
+      const index = Number(matching.data()['index'] ?? 0);
+      await setDoc(matching.ref, { index, value: safeValue });
+      this.invalidateStateCache();
+      return;
+    }
+
+    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
+    const maxIndex = snapshot.docs.reduce(
+      (max, record) => Math.max(max, Number(record.data()['index'] ?? -1)),
+      -1,
+    );
+    const nextIndex = maxIndex + 1;
+    await setDoc(doc(recordsRef, String(nextIndex).padStart(6, '0')), {
+      index: nextIndex,
+      value: safeValue,
+    });
     this.invalidateStateCache();
   }
 
@@ -153,70 +202,22 @@ export class FirestoreBusinessRepository {
       throw new Error(this.firebase.configurationMessage);
     }
 
-    const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
-    const matching = await getDoc(recordRef);
-    if (!matching.exists()) {
+    const recordsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', collectionKey, 'records',
+    );
+    const snapshot = await getDocs(query(recordsRef, orderBy('index', 'asc')));
+    const matching = snapshot.docs.find((record) => {
+      const storedValue = record.data()['value'];
+      return this.isRecord(storedValue)
+        && String(storedValue['id'] ?? storedValue['code'] ?? '') === recordId;
+    });
+
+    if (!matching) {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
-    await deleteDoc(recordRef);
-    this.invalidateStateCache();
-  }
-
-  async updateOrderStatus(
-    orderId: string,
-    previousOrder: Record<string, unknown>,
-    updatedOrder: Record<string, unknown>,
-  ): Promise<void> {
-    this.invalidateStateCache();
-    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
-    const orderRef = doc(this.firebase.firestore, 'orders', orderId);
-    const countSales = String(previousOrder['status'] ?? '').toUpperCase() === 'PENDING'
-      && String(updatedOrder['status'] ?? '').toUpperCase() === 'DELIVERED';
-    const quantities = new Map<string, number>();
-    if (countSales) {
-      const boxes = Array.isArray(previousOrder['boxes']) ? previousOrder['boxes'] : [];
-      for (const rawBox of boxes) {
-        if (!this.isRecord(rawBox) || !Array.isArray(rawBox['items'])) continue;
-        for (const rawItem of rawBox['items']) {
-          if (!this.isRecord(rawItem)) continue;
-          const id = String(rawItem['id'] ?? rawItem['productId'] ?? rawItem['recipeId'] ?? '').trim();
-          const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? 0);
-          if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
-        }
-      }
-      if (quantities.size === 0) {
-        const lineItems = Array.isArray(previousOrder['lines']) ? previousOrder['lines']
-          : Array.isArray(previousOrder['items']) ? previousOrder['items'] : [];
-        for (const rawItem of lineItems) {
-          if (!this.isRecord(rawItem)) continue;
-          const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
-          const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
-          if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
-        }
-      }
-    }
-    const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
-    await runTransaction(this.firebase.firestore, async transaction => {
-      const currentOrder = await transaction.get(orderRef);
-      if (!currentOrder.exists()) throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
-      const currentValue = currentOrder.data()['value'];
-      if (!this.isRecord(currentValue)) throw new Error('El pedido no tiene un formato válido.');
-      if (String(currentValue['status'] ?? '').toUpperCase() !== String(previousOrder['status'] ?? '').toUpperCase()) {
-        throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
-      }
-      const statsSnapshots: DocumentSnapshot[] = [];
-      for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
-      transaction.set(orderRef, { index: Number(currentOrder.data()['index'] ?? 0), value: updatedOrder });
-      statsRefs.forEach((ref, index) => {
-        const snapshot = statsSnapshots[index];
-        transaction.set(ref, {
-          productId: ref.id,
-          unitsSold: Number(snapshot.exists() ? snapshot.data()['unitsSold'] ?? 0 : 0) + (quantities.get(ref.id) ?? 0),
-          updatedAt: new Date().toISOString(),
-        });
-      });
-    });
+    await deleteDoc(matching.ref);
     this.invalidateStateCache();
   }
 
@@ -232,7 +233,7 @@ export class FirestoreBusinessRepository {
     }
     const metadata = metadataSnapshot.data() as StateMetadata;
     await setDoc(
-      doc(this.firebase.firestore, 'settings', key),
+      doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
       { value },
       { merge: true },
     );
@@ -272,19 +273,27 @@ export class FirestoreBusinessRepository {
       totals.set(deduction.ingredientId, (totals.get(deduction.ingredientId) ?? 0) + deduction.quantity);
     }
 
-    const ingredientDocs: { ingredientId: string; quantity: number; ref: ReturnType<typeof doc> }[] = [];
+    const ingredientsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'ingredients', 'records',
+    );
+    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
+    const ingredientDocs: { ingredientId: string; quantity: number; ref: (typeof ingredientSnapshot.docs)[number] }[] = [];
+
     for (const [ingredientId, quantity] of totals.entries()) {
-      const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
-      const matching = await getDoc(ingredientRef);
-      if (!matching.exists()) {
+      const matching = ingredientSnapshot.docs.find((snapshot) => {
+        const stored = snapshot.data()['value'];
+        return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
+      });
+      if (!matching) {
         throw new Error('No se encontró uno de los ingredientes de la receta. Revisa la fórmula antes de producir.');
       }
-      ingredientDocs.push({ ingredientId, quantity, ref: ingredientRef });
+      ingredientDocs.push({ ingredientId, quantity, ref: matching });
     }
 
     const productionRef = collection(
       this.firebase.firestore,
-      'productionHistory',
+      'businesses', 'starkies', 'collections', 'productionHistory', 'records',
     );
     const newProductionRef = doc(productionRef, productionId);
 
@@ -296,14 +305,16 @@ export class FirestoreBusinessRepository {
 
       const currentIngredientSnapshots: DocumentSnapshot[] = [];
       for (const ingredientDoc of ingredientDocs) {
-        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref));
+        currentIngredientSnapshots.push(await transaction.get(ingredientDoc.ref.ref));
       }
       const existingProductionSnapshot = await transaction.get(newProductionRef);
       if (existingProductionSnapshot.exists()) {
         throw new Error('Este lote ya existe. Actualiza la pantalla antes de volver a intentarlo.');
       }
+      const finishedInventoryRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', 'finishedProductInventory');
+      const finishedInventorySnapshot = await transaction.get(finishedInventoryRef);
 
-      const updates: { ref: (typeof ingredientDocs)[number]['ref']; index: number; value: Record<string, unknown> }[] = [];
+      const updates: { ref: (typeof ingredientDocs)[number]['ref']['ref']; index: number; value: Record<string, unknown> }[] = [];
       ingredientDocs.forEach((ingredientDoc, index) => {
         const snapshot = currentIngredientSnapshots[index];
         if (!snapshot.exists()) {
@@ -316,13 +327,15 @@ export class FirestoreBusinessRepository {
         }
 
         const currentStock = Number(stored['stock'] ?? 0);
-        if (!Number.isFinite(currentStock) || currentStock < ingredientDoc.quantity) {
+        if (!Number.isFinite(currentStock)) {
           const ingredientName = String(stored['name'] ?? ingredientDoc.ingredientId);
-          throw new Error(`Stock insuficiente de "${ingredientName}". Se necesitan ${ingredientDoc.quantity} y hay ${currentStock}.`);
+          throw new Error(`El stock de "${ingredientName}" no es un número válido. Corrige el inventario antes de producir.`);
         }
 
+        // Production is allowed to reveal a real stock deficit: negative balances
+        // remain visible until the next physical count corrects them.
         updates.push({
-          ref: ingredientDoc.ref,
+          ref: ingredientDoc.ref.ref,
           index: Number(data['index'] ?? 0),
           value: { ...stored, stock: currentStock - ingredientDoc.quantity },
         });
@@ -330,8 +343,32 @@ export class FirestoreBusinessRepository {
 
       const metadata = currentMetadataSnapshot.data() as StateMetadata;
       const arrayKeys = Array.from(new Set([...(metadata.arrayKeys ?? []), 'productionHistory']));
-      const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory']));
+      const settingKeys = Array.from(new Set([...(metadata.settingKeys ?? []), 'finishedProductInventory']));
+      const stateKeys = Array.from(new Set([...(metadata.stateKeys ?? []), 'productionHistory', 'finishedProductInventory']));
       const counts = metadata.recordCounts ?? {};
+
+      const rawInventory = finishedInventorySnapshot.exists() ? finishedInventorySnapshot.data()['value'] : [];
+      const inventoryRows = Array.isArray(rawInventory)
+        ? rawInventory.filter((item): item is Record<string, unknown> => this.isRecord(item))
+        : [];
+      const inventoryMap = new Map(inventoryRows.map(item => [
+        String(item['id'] ?? item['recipeId'] ?? ''),
+        Number.isFinite(Number(item['quantity'])) ? Number(item['quantity']) : 0,
+      ]));
+      const outputId = String(record['recipeId'] ?? '').trim();
+      const outputQuantity = Number(record['totalYield'] ?? 0);
+      if (!outputId || !Number.isFinite(outputQuantity) || outputQuantity < 0) {
+        throw new Error('La producción necesita un producto y una cantidad válida.');
+      }
+      inventoryMap.set(outputId, (inventoryMap.get(outputId) ?? 0) + outputQuantity);
+      const baseInventoryId = String(record['baseInventoryId'] ?? '').trim();
+      const baseGramsConsumed = Number(record['baseGramsConsumed'] ?? 0);
+      if (baseInventoryId && Number.isFinite(baseGramsConsumed) && baseGramsConsumed > 0) {
+        inventoryMap.set(baseInventoryId, (inventoryMap.get(baseInventoryId) ?? 0) - baseGramsConsumed);
+      }
+      const nextInventory = Array.from(inventoryMap.entries()).map(([id, quantity]) => ({
+        id, quantity, updatedAt: new Date().toISOString(),
+      }));
 
       for (const update of updates) {
         transaction.set(update.ref, { index: update.index, value: update.value });
@@ -340,8 +377,10 @@ export class FirestoreBusinessRepository {
         index: Date.now(),
         value: record,
       });
+      transaction.set(finishedInventoryRef, { value: nextInventory }, { merge: true });
       transaction.set(metadataRef, {
         arrayKeys,
+        settingKeys,
         stateKeys,
         recordCounts: {
           ...counts,
@@ -361,7 +400,7 @@ export class FirestoreBusinessRepository {
     const metadataRef = this.stateMetaRef();
     const movementRef = doc(
       this.firebase.firestore,
-      'cashMovements', movement.id,
+      'businesses', 'starkies', 'collections', 'cashMovements', 'records', movement.id,
     );
 
     await runTransaction(this.firebase.firestore, async (transaction) => {
@@ -417,16 +456,23 @@ export class FirestoreBusinessRepository {
     };
     this.validateCashMovement(savedMovement);
 
-    const ingredientRef = doc(this.firebase.firestore, 'ingredients', ingredientId);
-    const matchingIngredient = await getDoc(ingredientRef);
-    if (!matchingIngredient.exists()) {
+    const ingredientsRef = collection(
+      this.firebase.firestore,
+      'businesses', 'starkies', 'collections', 'ingredients', 'records',
+    );
+    const ingredientSnapshot = await getDocs(query(ingredientsRef, orderBy('index', 'asc')));
+    const matchingIngredient = ingredientSnapshot.docs.find((snapshot) => {
+      const stored = snapshot.data()['value'];
+      return this.isRecord(stored) && String(stored['id'] ?? '') === ingredientId;
+    });
+    if (!matchingIngredient) {
       throw new Error('No se encontró el insumo seleccionado. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
     const metadataRef = this.stateMetaRef();
     const movementRef = doc(
       this.firebase.firestore,
-      'cashMovements', savedMovement.id,
+      'businesses', 'starkies', 'collections', 'cashMovements', 'records', savedMovement.id,
     );
 
     await runTransaction(this.firebase.firestore, async (transaction) => {
@@ -457,15 +503,19 @@ export class FirestoreBusinessRepository {
       }
 
       const nextStock = currentStock + quantity;
-      const weightedAverageCost = (currentStock * currentUnitCost + quantity * unitCost) / nextStock;
+      const latestPurchaseCost = unitCost;
       const updatedIngredient: Record<string, unknown> = {
         ...stored,
         stock: nextStock,
-        costPerUnit: weightedAverageCost,
+        costPerUnit: latestPurchaseCost,
+        packageQuantityGrams: Number(movement.packageQuantityGrams ?? stored['packageQuantityGrams'] ?? 0),
+        packageUnit: String(movement.packageUnit ?? stored['packageUnit'] ?? stored['unit'] ?? 'g'),
+        packagePrice: Number(movement.packagePrice ?? stored['packagePrice'] ?? amount),
       };
+      if (movement.brand?.trim()) updatedIngredient['brand'] = movement.brand.trim();
       // Preserve compatibility with backups whose original field was named "cost".
       if (Object.prototype.hasOwnProperty.call(stored, 'cost')) {
-        updatedIngredient['cost'] = weightedAverageCost;
+        updatedIngredient['cost'] = latestPurchaseCost;
       }
 
       const metadata = metadataSnapshot.data() as StateMetadata;
@@ -562,7 +612,7 @@ export class FirestoreBusinessRepository {
 
     const archiveRef = doc(
       this.firebase.firestore,
-      'migrationArchives', archiveId,
+      'businesses', 'starkies', 'migrationArchives', archiveId,
     );
     const archiveSnapshot = await getDoc(archiveRef);
     if (!archiveSnapshot.exists()) {
@@ -584,19 +634,17 @@ export class FirestoreBusinessRepository {
     for (const [key, value] of stateEntries) {
       if (Array.isArray(value)) {
         value.forEach((record, index) => {
-          const rawRecord = this.isRecord(record) ? record : {};
-          const candidateId = String(rawRecord['id'] ?? rawRecord['code'] ?? '').trim();
-          const recordId = candidateId && !candidateId.includes('/') ? candidateId : String(index).padStart(6, '0');
+          const recordId = String(index).padStart(6, '0');
           const recordRef = doc(
             this.firebase.firestore,
-            key, recordId,
+            'businesses', 'starkies', 'collections', key, 'records', recordId,
           );
           batch.set(recordRef, { index, value: record });
           operations += 1;
         });
         await flushIfFull();
       } else {
-        const settingRef = doc(this.firebase.firestore, 'settings', key);
+        const settingRef = doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key);
         batch.set(settingRef, { value });
         operations += 1;
         await flushIfFull();
@@ -626,14 +674,14 @@ export class FirestoreBusinessRepository {
     const existingArrays = await Promise.all(arrayKeys.map(async (key) => {
       const snapshot = await getDocs(collection(
         this.firebase.firestore,
-        key,
+        'businesses', 'starkies', 'collections', key, 'records',
       ));
       return snapshot.empty ? null : key;
     }));
 
     const existingSettings = await Promise.all(settingKeys.map(async (key) => {
       const snapshot = await getDoc(
-        doc(this.firebase.firestore, 'settings', key),
+        doc(this.firebase.firestore, 'businesses', 'starkies', 'settings', key),
       );
       return snapshot.exists() ? key : null;
     }));

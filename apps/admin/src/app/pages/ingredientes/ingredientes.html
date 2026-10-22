@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Mi negocio / Costos</p>
       <h1 class="page-title">Insumos</h1>
-      <p class="page-subtitle">Registra cada presentación de compra y calcula automáticamente su costo por gramo.</p>
+      <p class="page-subtitle">Registra cada presentación de compra y calcula automáticamente su costo según la unidad de medida.</p>
     </div>
     <button matButton="elevated" class="btn-primary" type="button" (click)="openNewIngredient()">
       <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="btn-icon">add</mat-icon>
@@ -17,34 +17,52 @@
     <div class="ingredients-toolbar">
       <label class="search-box">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true" class="search-icon">search</mat-icon>
-        <input matInput type="search" placeholder="Buscar insumo o marca..." [value]="searchTerm()" (input)="onSearch($event)" />
+        <input matInput type="search" placeholder="Buscar insumo..." [value]="searchTerm()" (input)="onSearch($event)" />
       </label>
       <span class="result-count">{{ filteredIngredients().length }} insumos</span>
     </div>
 
-    <div class="supply-table-wrap">
-      <table class="supply-table">
-        <thead><tr><th>Ingrediente</th><th>Marca</th><th>Cantidad del empaque (g)</th><th>Precio del empaque</th><th>Costo por gramo</th><th aria-label="Acciones"></th></tr></thead>
-        <tbody>
-          @for (ingredient of filteredIngredients(); track ingredient.id) {
-            <tr>
-              <td><strong>{{ ingredient.name }}</strong></td>
-              <td>{{ ingredient.brand || '—' }}</td>
-              <td>{{ packageQuantity(ingredient) | number:'1.0-3' }} g</td>
-              <td>{{ packagePrice(ingredient) | currency:'USD':'symbol':'1.4-6' }}</td>
-              <td><strong class="cost-per-gram">{{ costPerGram(ingredient) | currency:'USD':'symbol':'1.4-6' }}/g</strong></td>
-              <td class="supply-actions">
+    <nav class="ingredient-category-tabs" aria-label="Filtrar insumos por tipo">
+      @for (category of categoryCounts(); track category.name) {
+        <button type="button" [class.active]="selectedCategory() === category.name" [attr.aria-pressed]="selectedCategory() === category.name" (click)="selectCategory(category.name)">
+          {{ category.name }} <span>{{ category.count }}</span>
+        </button>
+      }
+    </nav>
+
+    @if (filteredIngredients().length > 0) {
+      <div class="ingredients-grid">
+        @for (ingredient of filteredIngredients(); track ingredient.id) {
+          <article class="ingredient-card">
+            <div class="ingredient-card-top">
+              <span class="ingredient-type">{{ displaySupplyType(ingredient.supplyGroup) }}</span>
+              <div class="supply-actions">
                 <button matIconButton class="ingredient-action-button" type="button" aria-label="Editar insumo" (click)="openEditIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">edit</mat-icon></button>
                 <button matIconButton class="ingredient-action-button delete-menu-action" type="button" aria-label="Eliminar insumo" (click)="removeIngredient(ingredient)"><mat-icon fontSet="material-symbols-rounded">delete</mat-icon></button>
-              </td>
-            </tr>
-          }
-          @if (filteredIngredients().length === 0) {
-            <tr><td colspan="6"><div class="empty-state"><strong>{{ ingredients().length === 0 ? 'Todavía no hay insumos' : 'No encontramos insumos' }}</strong><p>Agrega el ingrediente, la marca y los datos del empaque para calcular su costo por gramo.</p></div></td></tr>
-          }
-        </tbody>
-      </table>
-    </div>
+              </div>
+            </div>
+            <h2 class="ingredient-card-name">{{ ingredient.name }}</h2>
+            <div class="ingredient-card-detail">
+              <span>Cantidad del empaque</span>
+              <strong>{{ packageQuantity(ingredient) | number:'1.0-3' }} {{ packageUnitLabel(packageUnit(ingredient)) }}</strong>
+            </div>
+            <div class="ingredient-card-detail">
+              <span>Precio del empaque</span>
+              <strong>{{ packagePrice(ingredient) | currency:'USD':'symbol':'1.2-4' }}</strong>
+            </div>
+            <div class="ingredient-card-cost">
+              <span>Costo por {{ ingredient.unit === 'ml' ? 'ml' : ingredient.unit === 'unidad' ? 'unidad' : 'g' }}</span>
+              <strong>{{ costPerGram(ingredient) | currency:'USD':'symbol':'1.4-6' }}</strong>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <strong>{{ ingredients().length === 0 ? 'Todavía no hay insumos' : 'No encontramos insumos en este tipo' }}</strong>
+        <p>{{ ingredients().length === 0 ? 'Agrega un insumo para comenzar a organizar tus costos.' : 'Prueba otra categoría o cambia tu búsqueda.' }}</p>
+      </div>
+    }
   </section>
 </div>
 
@@ -52,14 +70,15 @@
   <div class="modal-backdrop" (click)="closeForm()">
     <section class="ingredient-modal" role="dialog" aria-modal="true" aria-labelledby="ingredient-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">
-        <div><p class="eyebrow">Costos de compra</p><h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2><p>El costo por gramo se calcula con el precio y el peso del empaque.</p></div>
+        <div><p class="eyebrow">Costos de compra</p><h2 id="ingredient-modal-title">{{ editingId() ? 'Editar insumo' : 'Nuevo insumo' }}</h2><p>Convertimos automáticamente el empaque a su unidad base para calcular costos comparables.</p></div>
       </div>
       <form class="ingredient-form" (submit)="submitForm($event)">
         <label class="form-field form-field-wide"><span>Ingrediente</span><input matInput required maxlength="120" [value]="form().name" (input)="updateTextField('name', $any($event.target).value)" placeholder="Ej. Harina de trigo" /></label>
-        <label class="form-field form-field-wide"><span>Marca</span><input matInput list="ingredient-brand-options" maxlength="120" [value]="form().brand" (input)="updateTextField('brand', $any($event.target).value)" placeholder="Elige una marca o escribe una nueva" /><datalist id="ingredient-brand-options">@for (brand of brands(); track brand) { <option [value]="brand"></option> }</datalist></label>
-        <label class="form-field"><span>Cantidad del empaque (gramos)</span><input matInput required type="number" min="0.001" step="any" [value]="form().packageQuantityGrams" (input)="updateNumberField('packageQuantityGrams', $any($event.target).value)" placeholder="Ej. 1000" /></label>
+        <label class="form-field form-field-wide"><span>Tipo</span><select matNativeControl required [value]="displaySupplyType(form().supplyGroup)" (change)="updateSupplyType($any($event.target).value)"><option value="Secos">Secos</option><option value="Líquidos">Líquidos</option><option value="Decoración y relleno">Decoración y relleno</option><option value="Empaques">Empaques</option><option value="Utensilios y protección">Utensilios y protección</option><option value="Otros">Otros</option></select></label>
+        <label class="form-field form-field-wide"><span>Unidad de medida / compra</span><select matNativeControl required [value]="form().packageUnit" (change)="updateUnit($any($event.target).value)">@for (unit of packageUnits; track unit.value) { <option [value]="unit.value">{{ unit.label }}</option> }</select></label>
+        <label class="form-field"><span>Cantidad del empaque ({{ form().packageUnit }})</span><input matInput required type="number" min="0.001" step="any" [value]="form().packageQuantityGrams" (input)="updateNumberField('packageQuantityGrams', $any($event.target).value)" placeholder="Ej. 1000" /></label>
         <label class="form-field"><span>Precio del empaque (USD)</span><input matInput required type="number" min="0" step="0.0001" [value]="form().packagePrice" (input)="updateNumberField('packagePrice', $any($event.target).value)" placeholder="Ej. 2.50" /></label>
-        <div class="cost-preview form-field-wide"><span>Costo calculado por gramo</span><strong>{{ costPerGramFromForm() | currency:'USD':'symbol':'1.4-6' }}/g</strong></div>
+        <div class="cost-preview form-field-wide"><span>Costo calculado por {{ form().unit === 'ml' ? 'mililitro' : form().unit === 'unidad' ? 'unidad' : 'gramo' }}</span><strong>{{ costPerGramFromForm() | currency:'USD':'symbol':'1.4-6' }}/{{ unitLabel(form().unit) }}</strong></div>
         @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
         <div class="modal-actions">
           <button matButton="outlined" class="btn-secondary" type="button" [disabled]="saving()" (click)="closeForm()">Cancelar</button>

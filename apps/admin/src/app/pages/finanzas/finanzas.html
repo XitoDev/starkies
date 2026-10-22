@@ -5,6 +5,7 @@
       <h1 class="page-title">Finanzas</h1>
       <p class="page-subtitle">Tu capital, ventas y ganancias en un mismo lugar.</p>
     </div>
+    <button matButton="outlined" class="edit-balances-button" type="button" (click)="openBalanceEditor()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon> Editar saldos</button>
   </div>
 
   @if (ledgerNotice()) { <div class="notice" role="status">{{ ledgerNotice() }}</div> }
@@ -69,15 +70,33 @@
   </section>
   } @else {
     <section class="price-section" aria-labelledby="prices-title">
-      <div class="price-heading"><div><h2 id="prices-title" class="section-title">Productos y precios</h2><p>Compara el costo unitario de elaboración con el precio actual y el precio sugerido (costo × 3).</p></div></div>
+      <div class="price-heading">
+        <h2 id="prices-title" class="section-title">Productos y precios</h2>
+        <label class="category-filter">Tipo de galleta
+          <select [value]="categoryFilter()" (change)="categoryFilter.set($any($event.target).value)" aria-label="Filtrar por tipo de galleta">
+            <option value="all">Todas las clasificaciones</option>
+            @for (category of priceCategories(); track category) { <option [value]="category">{{ category }}</option> }
+          </select>
+        </label>
+      </div>
       <div class="price-table-wrap">
         <table class="price-table">
-          <thead><tr><th>Producto</th><th>Categoría</th><th>Costo unitario</th><th>Precio actual</th><th>Precio sugerido</th><th>Diferencia</th></tr></thead>
+          <thead><tr><th>Producto</th><th>COSTOS</th><th>Gastos</th><th>Servicios</th><th>Ganancia fija</th><th>Precio sugerido</th><th>Precio de venta</th><th>Diferencia vs. sugerido</th><th>Margen de ganancia (%)</th></tr></thead>
           <tbody>
-            @for (product of priceRows(); track product.id) {
-              <tr><td><strong>{{ product.name }}</strong></td><td>{{ product.category || 'Sin categoría' }}</td><td>{{ product.unitCost | currency:'USD' }}</td><td>{{ product.currentPrice | currency:'USD' }}</td><td>{{ product.suggestedPrice | currency:'USD' }}</td><td [class.amount-out]="product.extraProfit < 0">{{ product.extraProfit | currency:'USD' }}</td></tr>
+            @for (product of visiblePriceRows(); track product.id) {
+              <tr>
+                <td data-label="Producto"><strong>{{ product.name }}</strong></td>
+                <td data-label="COSTOS">{{ product.ingredientCost | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Gastos">{{ product.expenses | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Servicios">{{ product.services | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Ganancia fija">{{ product.fixedProfit | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Precio sugerido" class="suggested-price-cell">{{ product.suggestedPrice | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Precio de venta"><input class="price-edit-input" [attr.aria-label]="'Precio de venta de ' + product.name" type="number" min="0" step="0.01" [value]="product.salePrice" (input)="updateSalePrice(product.id, $any($event.target).value)" (change)="saveProductPricing(product.id)" /></td>
+                <td data-label="Diferencia vs. sugerido" [class.amount-out]="product.priceDifference < 0">{{ product.priceDifference | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Margen de ganancia (%)" [class.amount-out]="product.marginPercent < 0">{{ product.marginPercent | number:'1.1-1' }}%</td>
+              </tr>
             }
-            @if (priceRows().length === 0) { <tr><td colspan="6"><div class="empty-state"><strong>No hay productos para calcular</strong><p>Registra recetas e ingredientes con sus costos para ver los precios sugeridos.</p></div></td></tr> }
+            @if (visiblePriceRows().length === 0) { <tr><td colspan="9"><div class="empty-state"><strong>No hay recetas para mostrar</strong><p>Prueba otra clasificación o registra recetas con sus insumos.</p></div></td></tr> }
           </tbody>
         </table>
       </div>
@@ -111,12 +130,22 @@
             <p class="form-help form-field-wide">Primero registra un insumo en Inventario para poder cargar una compra.</p>
           }
           <label class="form-field">
-            <span>Cantidad comprada</span>
-            <input matInput type="number" min="0.001" step="0.001" required [value]="purchaseForm().quantity" (input)="updatePurchaseNumber('quantity', $any($event.target).value)" />
+            <span>Unidad del empaque</span>
+            <select matNativeControl required [value]="purchaseForm().packageUnit" (change)="updatePurchaseUnit($any($event.target).value)">
+              @for (unit of purchaseUnits(); track unit.value) { <option [value]="unit.value">{{ unit.label }}</option> }
+            </select>
           </label>
           <label class="form-field">
-            <span>Costo por {{ selectedIngredient()?.unit || 'unidad' }} (USD)</span>
-            <input matInput type="number" min="0.0001" step="0.0001" required [value]="purchaseForm().unitCost" (input)="updatePurchaseNumber('unitCost', $any($event.target).value)" />
+            <span>Cantidad del empaque ({{ purchaseForm().packageUnit }})</span>
+            <input matInput type="number" min="0.001" step="any" required [value]="purchaseForm().packageQuantityGrams" (input)="updatePurchaseNumber('packageQuantityGrams', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Precio del empaque (USD)</span>
+            <input matInput type="number" min="0.0001" step="any" required [value]="purchaseForm().packagePrice" (input)="updatePurchaseNumber('packagePrice', $any($event.target).value)" />
+          </label>
+          <label class="form-field">
+            <span>Marca comprada</span>
+            <input matInput maxlength="120" required [value]="purchaseForm().brand" (input)="updatePurchaseText('brand', $any($event.target).value)" placeholder="Marca del proveedor" />
           </label>
           <label class="form-field">
             <span>Fecha de compra</span>
@@ -176,7 +205,39 @@
       }
     </section>
   </div>
-}@if (ledgerActionOpen()) {
+}@if (editBalancesOpen()) {
+  <div class="modal-backdrop" (click)="editBalancesOpen.set(false)">
+    <section class="finance-modal balance-editor-modal" role="dialog" aria-modal="true" aria-labelledby="balance-editor-title" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow">Configuración inicial</p>
+          <h2 id="balance-editor-title">Editar saldos actuales</h2>
+          <p>Introduce los importes reales que tienes hoy. Estos valores reemplazarán los saldos mostrados; no se registrarán como ventas ni ganancias nuevas.</p>
+        </div>
+      </div>
+      <form class="finance-form balance-editor-form" (submit)="$event.preventDefault(); saveBalances()">
+        <h3 class="balance-group-title form-field-wide">Cuentas bancarias</h3>
+        <label class="form-field"><span>Ingredientes (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankIngredients" (input)="updateBalanceField('bankIngredients', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Gastos (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankExpenses" (input)="updateBalanceField('bankExpenses', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().bankProfit" (input)="updateBalanceField('bankProfit', $any($event.target).value)" /></label>
+        <h3 class="balance-group-title form-field-wide">Fondos informativos</h3>
+        <label class="form-field"><span>Ingredientes (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundIngredients" (input)="updateBalanceField('fundIngredients', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Gastos (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundExpenses" (input)="updateBalanceField('fundExpenses', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Cajas (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundBoxes" (input)="updateBalanceField('fundBoxes', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundProfit" (input)="updateBalanceField('fundProfit', $any($event.target).value)" /></label>
+        <label class="form-field"><span>Ganancia extra (USD)</span><input matInput type="number" min="0" step="0.01" required [value]="balanceForm().fundExtraProfit" (input)="updateBalanceField('fundExtraProfit', $any($event.target).value)" /></label>
+        @if (balanceError()) { <p class="form-error form-field-wide" role="alert">{{ balanceError() }}</p> }
+        <p class="form-help form-field-wide">Esto establece tu saldo real como punto de partida y evita volver a sumar ventas entregadas antiguas. Las nuevas ventas entregadas se contabilizarán automáticamente.</p>
+        <div class="modal-actions form-field-wide">
+          <button matButton="outlined" class="btn-secondary" type="button" [disabled]="balanceSaving()" (click)="editBalancesOpen.set(false)">Cancelar</button>
+          <button matButton="elevated" class="btn-primary" type="submit" [disabled]="balanceSaving()">{{ balanceSaving() ? 'Guardando…' : 'Guardar saldos' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+
+@if (ledgerActionOpen()) {
   <div class="modal-backdrop" (click)="ledgerActionOpen.set(null)">
     <section class="finance-modal" role="dialog" aria-modal="true" aria-labelledby="ledger-modal-title" (click)="$event.stopPropagation()">
       <div class="modal-heading">

@@ -51,7 +51,7 @@ export class Catalog {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
     const presentation = this.selectedPresentation();
     const availableProducts = this.products().filter(product =>
-      product.stock && (product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0),
+      product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0,
     );
     if (!query) return availableProducts;
     return availableProducts.filter(product =>
@@ -119,6 +119,7 @@ export class Catalog {
       this.catalogLoading.set(false);
     }
   }
+  formatPresentationPrice(price: number): string { return '$' + price.toFixed(2).replace('.', ','); }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
   selectPresentation(presentation: BoxPresentation): void { this.selectedPresentation.set(presentation); this.currentBoxItems.set({}); }
   setDeliveryZone(zone: DeliveryZone | null): void {

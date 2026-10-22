@@ -12,6 +12,10 @@ type PurchaseForm = {
   ingredientId: string;
   quantity: number;
   unitCost: number;
+  brand: string;
+  packageQuantityGrams: number;
+  packageUnit: string;
+  packagePrice: number;
   date: string;
   note: string;
 };
@@ -27,6 +31,11 @@ interface FinanceLedger {
   processedOrderIds: string[];
 }
 type LedgerActionForm = { amount: number; description: string; date: string; from: BankKey | 'external'; to: BankKey; pendingId: string };
+type ProductPricingEdit = { salePrice: number };
+type FinanceBalanceForm = {
+  bankIngredients: number; bankExpenses: number; bankProfit: number;
+  fundIngredients: number; fundExpenses: number; fundBoxes: number; fundProfit: number; fundExtraProfit: number;
+};
 
  type ExpenseForm = {
   description: string;
@@ -49,14 +58,69 @@ export class Finanzas {
   readonly ingredients = this.dataService.ingredients;
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
+  readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
+  readonly categoryFilter = signal('all');
+  readonly priceCategories = computed(() => Array.from(new Set(
+    this.recipes().filter(recipe => !recipe.archived).map(recipe => recipe.category?.trim() || 'Sin categoría'),
+  )).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })));
   readonly priceRows = computed(() => this.recipes().filter(recipe => !recipe.archived).map(recipe => {
-    const batchCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
+    const ingredientCost = recipe.sections.reduce((total, section) => total + section.ingredients.reduce((sectionTotal, item) => {
       const ingredient = this.ingredients().find(entry => entry.id === item.ingredientId);
       return sectionTotal + (ingredient?.costPerUnit ?? 0) * item.quantity;
-    }, 0), 0);
-    const unitCost = batchCost / Math.max(1, recipe.yield);
-    return { id: recipe.id, name: recipe.name, category: recipe.category, unitCost, currentPrice: recipe.price, suggestedPrice: unitCost * 3, extraProfit: recipe.price - unitCost * 3 };
+    }, 0), 0) / Math.max(1, recipe.yield);
+    const suggestedPrice = ingredientCost * 4;
+    const fixedProfit = ingredientCost;
+    const edit = this.pricingEdits()[recipe.id];
+    const storedSalePrice = this.money(recipe.price);
+    const salePrice = Math.max(0, edit?.salePrice ?? (storedSalePrice > 0 ? storedSalePrice : suggestedPrice));
+    const expenses = ingredientCost;
+    const services = ingredientCost;
+    const profit = salePrice - ingredientCost - expenses - services;
+    const marginPercent = salePrice > 0 ? profit / salePrice * 100 : 0;
+    const priceDifference = salePrice - suggestedPrice;
+    return {
+      id: recipe.id, name: recipe.name, category: recipe.category, yield: recipe.yield,
+      ingredientCost, expenses, services, fixedProfit, suggestedPrice, salePrice, profit, marginPercent, priceDifference,
+    };
+  }).sort((a, b) => {
+    const categoryOrder = (a.category || 'Sin categoría').localeCompare(
+      b.category || 'Sin categoría', 'es', { sensitivity: 'base' },
+    );
+    return categoryOrder || a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
   }));
+  readonly visiblePriceRows = computed(() => this.priceRows().filter(product =>
+    this.categoryFilter() === 'all' || (product.category || 'Sin categoría') === this.categoryFilter(),
+  ));
+
+  updateSalePrice(id: string, value: string): void {
+    const row = this.priceRows().find(item => item.id === id);
+    if (!row) return;
+    const parsed = value.trim() === '' ? row.suggestedPrice : Number(value);
+    const salePrice = Number.isFinite(parsed)
+      ? Math.max(0, Math.round(parsed * 10000) / 10000)
+      : row.suggestedPrice;
+    this.pricingEdits.update(current => ({ ...current, [id]: { salePrice } }));
+  }
+
+  async saveProductPricing(id: string): Promise<void> {
+    const recipe = this.recipes().find(item => item.id === id);
+    const row = this.priceRows().find(item => item.id === id);
+    if (!recipe || !row) return;
+    const storedSalePrice = this.money(recipe.price);
+    const salePrice = this.pricingEdits()[id]?.salePrice
+      ?? (storedSalePrice > 0 ? storedSalePrice : row.suggestedPrice);
+    try {
+      await this.dataService.saveRecipe({ ...recipe, price: this.money(salePrice) });
+      this.pricingEdits.update(current => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      this.ledgerNotice.set('Precio de venta guardado automáticamente.');
+    } catch (error) {
+      this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio de venta.');
+    }
+  }
 
   readonly activeTab = signal<'movimientos' | 'compras' | 'gastos'>('movimientos');
   readonly formOpen = signal<'purchase' | 'expense' | null>(null);
@@ -115,10 +179,24 @@ export class Finanzas {
   readonly expenseTotal = computed(() => this.cashMovements().filter(item => item.type === 'OUT').reduce((sum, item) => sum + item.amount, 0));
   readonly availableCash = computed(() => this.incomeTotal() - this.expenseTotal());
   readonly inventoryValue = computed(() => this.dataService.ingredients().reduce((sum, item) => sum + item.stock * item.costPerUnit, 0));
-  readonly purchaseTotal = computed(() => Math.round(this.purchaseForm().quantity * this.purchaseForm().unitCost * 100) / 100);
+  readonly purchaseTotal = computed(() => Math.round(this.purchaseForm().packagePrice * 100) / 100);
   readonly selectedIngredient = computed(() =>
     this.ingredients().find(item => item.id === this.purchaseForm().ingredientId) ?? null,
   );
+  readonly purchaseUnits = computed(() => {
+    const selectedUnit = this.selectedIngredient()?.unit;
+    const dimension = selectedUnit === 'ml' ? 'volume' : selectedUnit === 'unidad' ? 'count' : 'mass';
+    return [
+      { value: 'g', label: 'Gramos (g)', dimension: 'mass' }, { value: 'kg', label: 'Kilogramos (kg)', dimension: 'mass' },
+      { value: 'mg', label: 'Miligramos (mg)', dimension: 'mass' }, { value: 'lb', label: 'Libras (lb)', dimension: 'mass' },
+      { value: 'oz', label: 'Onzas (oz)', dimension: 'mass' }, { value: 'ml', label: 'Mililitros (ml)', dimension: 'volume' },
+      { value: 'l', label: 'Litros (l)', dimension: 'volume' }, { value: 'taza', label: 'Tazas (240 ml)', dimension: 'volume' },
+      { value: 'cda', label: 'Cucharadas (15 ml)', dimension: 'volume' }, { value: 'cdta', label: 'Cucharaditas (5 ml)', dimension: 'volume' },
+      { value: 'unidad', label: 'Unidades (u)', dimension: 'count' }, { value: 'pieza', label: 'Piezas (pza)', dimension: 'count' },
+      { value: 'par', label: 'Pares (2 unidades)', dimension: 'count' }, { value: 'media_docena', label: 'Media docena (6 unidades)', dimension: 'count' },
+      { value: 'docena', label: 'Docena (12 unidades)', dimension: 'count' },
+    ].filter(unit => unit.dimension === dimension);
+  });
 
   readonly bankCards = computed(() => {
     const ledger = this.ledger();
@@ -147,6 +225,10 @@ export class Finanzas {
   readonly ledgerError = signal('');
   readonly ledgerNotice = signal('');
   readonly pendingPanelOpen = signal(false);
+  readonly editBalancesOpen = signal(false);
+  readonly balanceSaving = signal(false);
+  readonly balanceError = signal('');
+  readonly balanceForm = signal<FinanceBalanceForm>(this.emptyBalanceForm());
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
@@ -154,7 +236,7 @@ export class Finanzas {
       if (params.get('action') !== 'purchase') return;
       const ingredientId = params.get('ingredientId') ?? '';
       this.openPurchaseForm();
-      this.purchaseForm.update(current => ({ ...current, ingredientId }));
+      this.updatePurchaseIngredient(ingredientId);
       void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
     });
     effect(() => {
@@ -301,6 +383,87 @@ export class Finanzas {
     return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
   }
 
+  private emptyBalanceForm(): FinanceBalanceForm {
+    return { bankIngredients: 0, bankExpenses: 0, bankProfit: 0, fundIngredients: 0, fundExpenses: 0, fundBoxes: 0, fundProfit: 0, fundExtraProfit: 0 };
+  }
+
+  openBalanceEditor(): void {
+    const ledger = this.ledger();
+    this.balanceForm.set({
+      bankIngredients: ledger.bankBalances.ingredients,
+      bankExpenses: ledger.bankBalances.expenses,
+      bankProfit: ledger.bankBalances.profit,
+      fundIngredients: ledger.funds.ingredients.balance,
+      fundExpenses: ledger.funds.expenses.balance,
+      fundBoxes: ledger.funds.boxes.balance,
+      fundProfit: ledger.funds.profit.balance,
+      fundExtraProfit: ledger.funds.extraProfit.balance,
+    });
+    this.balanceError.set('');
+    this.editBalancesOpen.set(true);
+  }
+
+  updateBalanceField(field: keyof FinanceBalanceForm, value: string): void {
+    const amount = value.trim() === '' ? 0 : Number(value);
+    this.balanceForm.update(current => ({
+      ...current,
+      [field]: Number.isFinite(amount) ? Math.max(0, Math.round(amount * 100) / 100) : 0,
+    }));
+  }
+
+  async saveBalances(): Promise<void> {
+    if (this.balanceSaving()) return;
+    const values = this.balanceForm();
+    if (Object.values(values).some(value => !Number.isFinite(value) || value < 0)) {
+      this.balanceError.set('Ingresa montos válidos iguales o mayores que cero.');
+      return;
+    }
+    const current = this.ledger();
+    const state = this.dataService.rawState() ?? {};
+    const deliveredIds = (Array.isArray(state['orders']) ? state['orders'] : [])
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
+      .filter(order => {
+        const status = String(order['status'] ?? '').toLocaleLowerCase('es');
+        return status.includes('entreg') || status === 'delivered';
+      })
+      .map(order => String(order['id'] ?? order['code'] ?? ''))
+      .filter(Boolean);
+    const next: FinanceLedger = {
+      ...current,
+      processedOrderIds: Array.from(new Set([...current.processedOrderIds, ...deliveredIds])),
+      bankBalances: {
+        ingredients: this.money(values.bankIngredients),
+        expenses: this.money(values.bankExpenses),
+        profit: this.money(values.bankProfit),
+      },
+      funds: {
+        ingredients: { balance: this.money(values.fundIngredients), previousBalance: this.money(values.fundIngredients) },
+        expenses: { balance: this.money(values.fundExpenses), previousBalance: this.money(values.fundExpenses) },
+        boxes: { balance: this.money(values.fundBoxes), previousBalance: this.money(values.fundBoxes) },
+        profit: { balance: this.money(values.fundProfit), previousBalance: this.money(values.fundProfit) },
+        extraProfit: { balance: this.money(values.fundExtraProfit), previousBalance: this.money(values.fundExtraProfit) },
+      },
+      history: [{
+        id: crypto.randomUUID(),
+        description: 'Corrección manual de saldos iniciales',
+        amount: 0,
+        date: this.today(),
+        status: 'Saldos actualizados',
+      }, ...current.history],
+    };
+    this.balanceSaving.set(true);
+    this.balanceError.set('');
+    try {
+      await this.dataService.saveBusinessSetting('financeLedger', next);
+      this.editBalancesOpen.set(false);
+      this.ledgerNotice.set('Saldos actuales guardados. Las variaciones de los fondos parten de estos valores.');
+    } catch (error) {
+      this.balanceError.set(error instanceof Error ? error.message : 'No se pudieron guardar los saldos actuales.');
+    } finally {
+      this.balanceSaving.set(false);
+    }
+  }
+
   private emptyLedgerActionForm(): LedgerActionForm {
     return { amount: 0, description: '', date: this.today(), from: 'ingredients', to: 'expenses', pendingId: '' };
   }
@@ -427,6 +590,10 @@ export class Finanzas {
       ingredientId: ingredient?.id ?? '',
       quantity: 1,
       unitCost: ingredient?.costPerUnit ?? 0,
+      brand: ingredient?.brand ?? '',
+      packageQuantityGrams: ingredient?.packageQuantityGrams ?? 1000,
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : ingredient?.unit === 'unidad' ? 'unidad' : 'g'),
+      packagePrice: ingredient?.packagePrice ?? ((ingredient?.costPerUnit ?? 0) * (ingredient?.unit === 'unidad' ? 1 : ['kg', 'l'].includes(ingredient?.unit.toLocaleLowerCase('es') ?? '') ? 1 : 1000)),
       date: this.today(),
       note: '',
     });
@@ -454,14 +621,30 @@ export class Finanzas {
       ...current,
       ingredientId,
       unitCost: ingredient?.costPerUnit ?? current.unitCost,
+      brand: ingredient?.brand ?? current.brand,
+      packageQuantityGrams: ingredient?.packageQuantityGrams ?? current.packageQuantityGrams,
+      packageUnit: ingredient?.packageUnit ?? (ingredient?.unit === 'ml' ? 'ml' : ingredient?.unit === 'unidad' ? 'unidad' : 'g'),
+      packagePrice: ingredient?.packagePrice ?? current.packagePrice,
     }));
   }
 
-  updatePurchaseText(field: 'date' | 'note', value: string): void {
+  updatePurchaseUnit(value: string): void {
+    const next = this.purchaseUnits().find(unit => unit.value === value);
+    if (!next) return;
+    const current = this.purchaseForm();
+    const old = this.purchaseUnits().find(unit => unit.value === current.packageUnit);
+    const factors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5, unidad: 1, pieza: 1, par: 2, media_docena: 6, docena: 12 };
+    const quantity = old?.dimension === next.dimension
+      ? current.packageQuantityGrams * factors[current.packageUnit] / factors[value]
+      : current.packageQuantityGrams;
+    this.purchaseForm.update(valueNow => ({ ...valueNow, packageUnit: value, packageQuantityGrams: quantity }));
+  }
+
+  updatePurchaseText(field: 'date' | 'note' | 'brand', value: string): void {
     this.purchaseForm.update(current => ({ ...current, [field]: value }));
   }
 
-  updatePurchaseNumber(field: 'quantity' | 'unitCost', value: string): void {
+  updatePurchaseNumber(field: 'quantity' | 'unitCost' | 'packageQuantityGrams' | 'packagePrice', value: string): void {
     const parsed = value.trim() === '' ? 0 : Number(value);
     this.purchaseForm.update(current => ({
       ...current,
@@ -495,18 +678,23 @@ export class Finanzas {
     const values = this.purchaseForm();
     const ingredient = this.dataService.ingredients().find(item => item.id === values.ingredientId);
     const date = this.normalizeDate(values.date);
-    const amount = Math.round(values.quantity * values.unitCost * 100) / 100;
+    const packageGrams = values.packageQuantityGrams;
+    const packagePrice = Math.round(values.packagePrice * 10000) / 10000;
+    const packageFactors: Record<string, number> = { g: 1, kg: 1000, mg: 0.001, lb: 453.59237, oz: 28.349523125, ml: 1, l: 1000, taza: 240, cda: 15, cdta: 5, unidad: 1, pieza: 1, par: 2, media_docena: 6, docena: 12 };
+    const quantity = packageGrams * (packageFactors[values.packageUnit] ?? 1);
+    const unitCost = packagePrice / Math.max(quantity, Number.EPSILON);
+    const amount = Math.round(packagePrice * 100) / 100;
 
     if (!ingredient) {
       this.formError.set('Selecciona un insumo registrado antes de guardar la compra.');
       return;
     }
-    if (!Number.isFinite(values.quantity) || values.quantity <= 0) {
-      this.formError.set('La cantidad comprada debe ser mayor que cero.');
+    if (!Number.isFinite(packageGrams) || packageGrams <= 0) {
+      this.formError.set('La cantidad del empaque debe ser mayor que cero.');
       return;
     }
-    if (!Number.isFinite(values.unitCost) || values.unitCost <= 0 || amount <= 0) {
-      this.formError.set('El costo por unidad debe ser mayor que cero.');
+    if (!Number.isFinite(packagePrice) || packagePrice <= 0 || amount <= 0) {
+      this.formError.set('El precio del empaque debe ser mayor que cero.');
       return;
     }
     if (!date) {
@@ -526,8 +714,12 @@ export class Finanzas {
       ingredientId: ingredient.id,
       ingredientName: ingredient.name,
       ingredientUnit: ingredient.unit,
-      quantity: values.quantity,
-      unitCost: values.unitCost,
+      quantity,
+      unitCost,
+      brand: values.brand.trim(),
+      packageQuantityGrams: packageGrams,
+      packageUnit: values.packageUnit,
+      packagePrice,
     };
 
     this.saving.set(true);
@@ -592,7 +784,7 @@ export class Finanzas {
   }
 
   private emptyPurchaseForm(): PurchaseForm {
-    return { ingredientId: '', quantity: 1, unitCost: 0, date: this.today(), note: '' };
+    return { ingredientId: '', quantity: 1, unitCost: 0, brand: '', packageQuantityGrams: 1000, packageUnit: 'g', packagePrice: 0, date: this.today(), note: '' };
   }
 
   private emptyExpenseForm(): ExpenseForm {

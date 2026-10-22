@@ -23,7 +23,8 @@ export class Sidebar {
   readonly loggingOut = signal(false);
   readonly logoutMessage = signal('');
   navItems = [
-    { label: 'Productos', path: '/recetas', icon: 'cookie' },
+    { label: 'Resumen', path: '/resumen', icon: 'dashboard' },
+    { label: 'Recetas', path: '/recetas', icon: 'cookie' },
     { label: 'Insumos', path: '/ingredientes', icon: 'science' },
     { label: 'Inventario', path: '/inventario', icon: 'inventory_2' },
     { label: 'Producción', path: '/produccion', icon: 'precision_manufacturing' },

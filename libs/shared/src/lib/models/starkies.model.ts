@@ -4,8 +4,10 @@ export interface Ingredient {
   unit: string;
   stock: number;
   costPerUnit: number;
-  /** Supplier package size expressed in grams, for normalized recipe costing. */
+  /** Numeric quantity as printed on the supplier package; see packageUnit. */
   packageQuantityGrams?: number;
+  /** Supplier package unit; normalized internally to g or ml. */
+  packageUnit?: string;
   /** Total purchase price for the supplier package. */
   packagePrice?: number;
   brand?: string;
@@ -29,7 +31,10 @@ export interface Recipe {
   category: string;
   yield: number; // Cantidad por tanda
   price: number;
+  /** Image used by the recipe editor and internal recipe cards. */
   image?: string;
+  /** Independent image displayed in the public customer catalog. */
+  catalogImage?: string;
   catalogVisible?: boolean;
   catalogLabel?: string;
   catalogLabelColor?: string;
@@ -55,17 +60,26 @@ export interface OrderItem {
   unitPrice: number;
 }
 
+export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
+export type OrderPaymentMethod = 'TRANSFER' | 'CASH';
+
 export interface Order {
   id: string;
   customerId: string;
   items: OrderItem[];
   total: number;
-  status: 'PENDING' | 'DELIVERED' | 'CANCELLED';
+  status: OrderStatus;
   createdAt: string;
   deliveryDate?: string;
+  deliveryMethod?: string;
+  deliveryAddress?: string;
+  deliveryTime?: string;
   zone?: string;
   notes?: string;
   cookieName?: string;
+  shippingFee?: number;
+  isPaid?: boolean;
+  paymentMethod?: OrderPaymentMethod;
 }
 
 export interface CashMovement {
@@ -81,6 +95,10 @@ export interface CashMovement {
   ingredientUnit?: string;
   quantity?: number;
   unitCost?: number;
+  brand?: string;
+  packageQuantityGrams?: number;
+  packageUnit?: string;
+  packagePrice?: number;
 }
 
 export interface StarkiesBackup {

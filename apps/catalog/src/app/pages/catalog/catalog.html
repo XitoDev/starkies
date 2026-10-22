@@ -1,69 +1,115 @@
 <a matButton="text" class="skip-link" href="#sabores">Saltar al catálogo</a>
-<header id="inicio">
-  <a href="#inicio" class="brand" aria-label="StarKies, inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
+<header class="site-header" id="inicio">
+  <a href="#inicio" class="brand" aria-label="StarKies, inicio">
+    <span class="wordmark">StarKies<span class="wordmark-star">✦</span></span>
+    <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
+  </a>
 </header>
 <main>
   @if (orderSuccess(); as confirmation) {
-    <section class="order-success" role="status" aria-live="polite"><div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a matButton="elevated" class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div><button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button></section>
+    <section class="order-success" role="status" aria-live="polite">
+      <div><strong>¡Gracias! Tu pedido fue registrado.</strong><p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p><p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p><div class="success-actions"><a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>@if (confirmation.documentUrl) { <a matButton="outlined" class="button" [href]="confirmation.documentUrl" target="_blank" rel="noopener noreferrer">Ver pedido en PDF</a> }</div></div>
+      <button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
+    </section>
   }
-  <section class="hero" id="inicio-contenido" aria-labelledby="hero-title">
-    <div class="hero-copy"><h1 id="hero-title">La estrella<br><em>eres tú.</em></h1><p>Elige tus sabores favoritos y crea una caja muy tuya.</p></div>
-    <div class="hero-art" aria-hidden="true"><div class="hero-orbit"></div><span class="hero-star hero-star-one">✧</span><span class="hero-star hero-star-two">✧</span><img class="hero-sketch" src="/starkies-sketch.webp" alt="" width="900" height="420" fetchpriority="high"></div>
+  <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
+    <div class="hero-copy hero-copy-clean">
+      <h1>La estrella<br><em>eres tú.</em></h1>
+      <p>Elige tus galletas favoritas y crea una caja muy tuya.</p>
+      <a matButton="elevated" class="hero-cta" href="#presentaciones">Arma tu caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
+    </div>
+
   </section>
-  <section id="sabores" aria-labelledby="box-title">
-    <div class="section-title"><div><div class="eyebrow">TU PRÓXIMO ANTOJO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación para cada antojo. Tú eliges los sabores.</p></div>
-      <div class="search-field"><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Buscar un sabor"></div>
+
+  <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
+    <div class="section-title">
+      <div><div class="eyebrow">TU CAJA, TU ESTILO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación perfecta para cada antojo. Tú eliges los sabores.</p></div>
+      <div class="search-field"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Busca tu sabor favorito"></div>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
     @if (catalogLoadError()) { <p role="alert" class="catalog-instruction">{{ catalogLoadError() }}</p> }
     <div class="box-presentations" aria-label="Presentaciones de cajas">
-      @for (p of presentations; track p.id) {
-        <button matButton="text" type="button" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-          <span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '✓' : '' }}</span>
-          <strong>{{ p.name }}</strong><span class="presentation-description">{{ p.desc }}</span><b class="box-price">{{ p.price | currency:'USD' }}</b>
+      @for (p of presentations; track p.id; let i = $index) {
+        <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
+          <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
+          <strong>{{ p.name }}</strong>
+          <span class="presentation-description">{{ p.desc }}</span>
+          <span class="presentation-bottom"><b class="box-price">{{ formatPresentationPrice(p.price) }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
         </button>
       }
     </div>
-  
-    <p class="catalog-instruction">Completa una caja, guárdala en tu pedido y añade otra si te apetece. Puedes combinar distintas presentaciones.</p>
+    <div class="catalog-hint"><span class="hint-icon" aria-hidden="true">✦</span><p>Tu caja actual: <strong>{{ selectedPresentation().name }}</strong>. Agrega tus sabores hasta completar las cantidades indicadas y después podrás guardar la caja en tu pedido.</p></div>
+
+    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">NUESTRAS</div><h2>Galletas</h2></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
-        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title">{{ cat }}</h3><div class="products">
+        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-eyebrow">NUESTRAS</span><span class="category-heading">{{ cat }}</span></h3><div class="products">
           @for (product of filteredProducts(); track product.id) {
             @if (product.category === cat) {
-              <article class="product" [class.sold-out]="!product.stock"><div class="photo" [class.photo-sold-out]="!product.stock">
-                @if (product.image) { <img [ngSrc]="product.image" [alt]="product.name" width="320" height="320" [priority]="product.id === '1' || product.id === '6'"> }
-                @else { <span class="cookie-illustration" [class.cookie-ny]="product.isNy" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span> }
-                @if (product.tag && product.stock) { <span class="product-tag">{{ product.tag }}</span> }
-                @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
-              </div><div class="product-body"><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
-                @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
-                @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
-                @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
-              </div></div></article>
+              <article class="product" [class.sold-out]="!product.stock">
+                <div class="photo" [class.photo-sold-out]="!product.stock">
+                  @if (product.image) { <img [ngSrc]="product.image" [alt]="product.name" width="320" height="320" [priority]="product.id === '1' || product.id === '6'"> }
+                  @else { <span class="photo-placeholder" aria-hidden="true"></span> }
+                  @if (product.tag && product.stock) { <span class="product-tag">{{ product.tag }}</span> }
+                  @if (!product.stock) { <span class="product-tag sold-out-tag">Agotado</span> }
+                </div>
+                <div class="product-body"><div class="product-category">{{ product.isNy ? 'NEW YORK STYLE' : 'CLÁSICA' }}</div><h3>{{ product.name }}</h3><p>{{ product.description }}</p><div class="buy">
+                  @if (!product.stock) { <button matButton="text" type="button" disabled>Agotado</button> }
+                  @else if (getQuantity(product.id) === 0) { <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)"><span class="add-label">Agregar</span><mat-icon class="add-icon" fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button> }
+                  @else { <div class="quantity" [attr.aria-label]="'Cantidad de ' + product.name"><button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button><b>{{ getQuantity(product.id) }}</b><button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + product.name" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button></div> }
+                </div></div>
+              </article>
             }
           }
         </div></section>
       }
     </div>
+    @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>No encontramos ese sabor</h3><p>Prueba con otro nombre o cambia tu búsqueda.</p></div> }
   </section>
+
 </main>
-<footer class="site-footer" aria-label="Información y redes sociales de StarKies">
-  <a href="#inicio" class="brand footer-brand" aria-label="StarKies, volver al inicio"><span class="wordmark">StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></a>
-  <nav class="footer-social" aria-label="Redes sociales y contacto">
-    <a matButton="text" class="footer-social-link" href="https://wa.me/593985313438" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>WhatsApp</span></a>
-    <a matButton="outlined" class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en Instagram"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>Instagram</span></a>
-    <a matButton="outlined" class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Seguir a StarKies en TikTok"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>TikTok</span></a>
-  </nav>
-  <small class="footer-copyright">© {{ currentYear }} StarKies. Todos los derechos reservados.</small>
+<footer class="site-footer" aria-label="Información y contacto de StarKies">
+  <div class="footer-content footer-contact-content">
+    <div class="footer-help">
+      <h2>¿Tienes alguna pregunta?</h2>
+      <p>Escríbenos, estamos para ayudarte.</p>
+    </div>
+    <div class="footer-social footer-social-group">
+      <span class="footer-label">REDES SOCIALES</span>
+      <a class="footer-social-link" href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp al 0979075202"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>0979075202</span></a>
+      <a class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>@starkies.ec</span></a>
+      <a class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Abrir TikTok de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>@starkies.ec</span></a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <small>© {{ currentYear }} StarKies. La estrella eres tú.</small>
+    <a class="footer-brand brand" href="#inicio" aria-label="StarKies, volver al inicio">
+      <span class="wordmark">StarKies<span class="wordmark-star" aria-hidden="true">✦</span></span>
+      <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
+    </a>
+    <a href="#inicio">Volver arriba ↑</a>
+  </div>
 </footer>
-@if (totalBoxCurrent() > 0 || completedBoxes().length > 0) { <aside class="cart-dock" aria-label="Resumen de tu caja"><div class="dock-card"><div class="dock-progress">
-  <div class="dock-title"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja lista' : 'cajas listas' }}</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ selectedPresentation().price | currency:'USD' }}</span></div>
-  <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
-  <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
-</div>
-@if (isBoxComplete()) { <button matButton="elevated" type="button" class="dock-continue" (click)="finishBox()">{{ completedBoxes().length > 0 ? 'Añadir caja' : 'Continuar' }}</button> }
-@else if (completedBoxes().length > 0) { <button matButton="elevated" type="button" class="dock-continue" (click)="openOrderSheet()">Ver pedido <span class="dock-total">{{ boxesTotalSum() | currency:'USD' }}</span></button> }
-@else { <button matButton="elevated" type="button" class="dock-continue" disabled>Continuar</button> }
-</div></aside> }
-@if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button matButton="elevated" type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button matButton="outlined" type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }
+@if (totalBoxCurrent() > 0 || completedBoxes().length > 0) {
+  <aside class="cart-dock" aria-label="Resumen de cajas y progreso">
+    <div class="dock-card">
+      @if (totalBoxCurrent() > 0) {
+        <div class="dock-progress current-box-progress">
+          <div class="dock-title"><strong>Caja actual</strong><span>{{ totalBoxCurrent() }}/{{ totalBoxRequired() }} · {{ formatPresentationPrice(selectedPresentation().price) }}</span></div>
+          <progress [value]="totalBoxCurrent()" [max]="totalBoxRequired()" [attr.aria-label]="'Progreso de la caja actual: ' + totalBoxCurrent() + ' de ' + totalBoxRequired()"></progress>
+          <small class="box-composition">@if (selectedPresentation().reqClasicas > 0 && selectedPresentation().reqNY > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} · New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} } @else if (selectedPresentation().reqClasicas > 0) { Clásicas: {{ currentClasicasCount() }}/{{ selectedPresentation().reqClasicas }} } @else { New York: {{ currentNYCount() }}/{{ selectedPresentation().reqNY }} }</small>
+          @if (!isBoxComplete()) { <small class="remaining-message">@if (selectedPresentation().reqClasicas > currentClasicasCount() && selectedPresentation().reqNY > currentNYCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} clásicas y {{ selectedPresentation().reqNY - currentNYCount() }} New York para completar tu caja. } @else if (selectedPresentation().reqClasicas > currentClasicasCount()) { Te faltan {{ selectedPresentation().reqClasicas - currentClasicasCount() }} galletas clásicas para completar tu caja. } @else { Te faltan {{ selectedPresentation().reqNY - currentNYCount() }} galletas New York para completar tu caja. }</small> }
+        </div>
+      }
+      @if (completedBoxes().length > 0) {
+        <div class="dock-saved-count"><strong>{{ completedBoxes().length }} {{ completedBoxes().length === 1 ? 'caja guardada' : 'cajas guardadas' }}</strong><span>Total: {{ formatPresentationPrice(boxesTotalSum()) }}</span></div>
+      }
+      <div class="dock-actions">
+        @if (isBoxComplete()) { <button matButton="elevated" type="button" class="dock-continue" (click)="finishBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : 'Añadir caja' }}</button> }
+        @else if (totalBoxCurrent() > 0 && completedBoxes().length === 0) { <button matButton="elevated" type="button" class="dock-continue" disabled>Completa tu caja</button> }
+        @if (completedBoxes().length > 0) { <button matButton="elevated" type="button" class="dock-order" (click)="openOrderSheet()">Ver mi pedido ({{ completedBoxes().length }})</button> }
+      </div>
+    </div>
+  </aside>
+}
+@if (showBoxChoiceModal()) { <div class="modal-backdrop"><div class="box-choice" role="dialog" aria-modal="true" aria-labelledby="box-ready-title"><span class="choice-sparkle" aria-hidden="true">✦</span><h2 id="box-ready-title">¡Tu caja está lista!</h2><p>Ya tienes {{ completedBoxes().length }} caja(s) en tu pedido.</p><strong class="choice-total">{{ boxesTotalSum() | currency:'USD' }}</strong><div class="choice-actions"><button matButton="elevated" type="button" class="button" (click)="openOrderSheet()">Continuar con mi pedido</button><button matButton="outlined" type="button" class="choice-secondary" (click)="showBoxChoiceModal.set(false)">Añadir otra caja</button></div></div></div> }

@@ -237,14 +237,60 @@ export class DataService {
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('orders', orderId));
   }
 
-  async saveOrderDetails(orderId: string, changes: { deliveryDate?: string; zone?: string; notes?: string }): Promise<void> {
+  async saveOrderDetails(orderId: string, changes: {
+    deliveryDate?: string;
+    deliveryMethod?: string;
+    deliveryAddress?: string;
+    deliveryTime?: string;
+    zone?: string;
+    notes?: string;
+    status?: Order['status'];
+    shippingFee?: number;
+    isPaid?: boolean;
+    paymentMethod?: Order['paymentMethod'];
+  }): Promise<void> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawOrders = this.asArray(state['orders']);
     const index = rawOrders.findIndex((order) => this.asString(order['id'] ?? order['code']) === orderId);
     if (index < 0) throw new Error('No se encontró el pedido.');
     const current = rawOrders[index];
-    const updated = { ...current, ...changes, date: changes.deliveryDate ?? current['date'] };
+    const deliveryDate = changes.deliveryDate ?? this.asString(current['deliveryDate'] ?? current['date']);
+    const shippingFee = changes.shippingFee === undefined
+      ? this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0)
+      : Math.max(0, Math.round(changes.shippingFee * 100) / 100);
+    const paid = changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid');
+    const rawLines = this.asArray(current['lines']).length
+      ? this.asArray(current['lines'])
+      : this.asArray(current['boxOrders']).flatMap(box => this.asArray(box['lines']));
+    const currentShippingLine = rawLines.find(line => this.asString(line['id']).toLocaleLowerCase() === 'shipping'
+      || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
+    const currentShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? currentShippingLine?.['price'] ?? 0);
+    const subtotal = Math.max(0, this.asNumber(current['total']) - currentShippingFee);
+    const zone = changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']);
+    const updatedLines = rawLines.length
+      ? [
+          ...rawLines.filter(line => this.asString(line['id']).toLocaleLowerCase() !== 'shipping'
+            && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío')),
+          ...(shippingFee > 0 ? [{ id: 'shipping', name: 'Envío — ' + zone, qty: 1, price: shippingFee }] : []),
+        ]
+      : rawLines;
+    const updated: RawRecord = {
+      ...current,
+      ...changes,
+      ...(rawLines.length ? { lines: updatedLines } : {}),
+      deliveryDate,
+      date: deliveryDate || current['date'],
+      deliveryMethod: changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption']),
+      deliveryAddress: changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address']),
+      deliveryTime: changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot']),
+      zone,
+      shippingFee,
+      total: rawLines.length ? Math.round((subtotal + shippingFee) * 100) / 100 : this.asNumber(current['total']),
+      isPaid: paid,
+      paymentStatus: paid ? 'PAID' : 'PENDING',
+      paymentMethod: paid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '',
+    };
     const nextOrders = [...rawOrders];
     nextOrders[index] = updated;
     const nextState = { ...state, orders: nextOrders };
@@ -284,7 +330,7 @@ export class DataService {
     const nextOrders = [...rawOrders];
     nextOrders[orderIndex] = updatedOrder;
     const nextState = { ...state, orders: nextOrders };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord("orders", orderId, updatedOrder));
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updatedOrder));
   }
 
   async recordCashMovement(movement: CashMovement): Promise<void> {
@@ -396,13 +442,19 @@ export class DataService {
 
       const rawSections = this.asArray(item['sections']);
       const sections = rawSections.length
-        ? rawSections.map((section) => ({
-            name: this.asString(section['name'], 'masa'),
-            ingredients: this.asArray(section['ingredients']).map((ingredient) => ({
-              ingredientId: this.asString(ingredient['ingredientId']),
-              quantity: this.asNumber(ingredient['quantity']),
-            })),
-          }))
+        ? rawSections.map((section) => {
+            const name = this.asString(section['name'], 'masa');
+            const storedIngredients = this.asArray(section['ingredients']).map((ingredient) => ({
+              ingredientId: this.asString(ingredient['ingredientId'] ?? ingredient['id']),
+              quantity: this.asNumber(ingredient['quantity'] ?? ingredient['qty']),
+            })).filter(ingredient => ingredient.ingredientId && ingredient.quantity > 0);
+            // Older recipes may have empty section shells while the formula
+            // still lives in the flattened items array. Restore those rows.
+            const legacyIngredients = Array.from(grouped.entries())
+              .filter(([legacyName]) => legacyName.trim().toLocaleLowerCase('es') === name.trim().toLocaleLowerCase('es'))
+              .flatMap(([, ingredients]) => ingredients);
+            return { name, ingredients: storedIngredients.length ? storedIngredients : legacyIngredients };
+          })
         : Array.from(grouped.entries()).map(([name, ingredients]) => ({ name, ingredients }));
 
       return {
@@ -412,6 +464,7 @@ export class DataService {
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
         image: this.asOptionalString(item['image']),
+        catalogImage: this.asOptionalString(item['catalogImage']),
         catalogVisible: item['catalogVisible'] !== false,
         catalogLabel: this.asOptionalString(item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(item['catalogLabelColor']) ?? 'Morado',
@@ -447,11 +500,24 @@ export class DataService {
             qty: line['qty'],
             price: line['price'] ?? 0,
           })));
+      const zone = this.asOptionalString(item['zone'] ?? item['deliveryZone'] ?? item['deliveryArea']);
+      const shippingLine = lines.find(line => this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase() === 'shipping'
+        || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
+      const shippingFee = this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? shippingLine?.['price'] ?? 0);
+      const rawAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
+      const addressPrefix = zone ? zone + ' — ' : '';
+      const deliveryAddress = rawAddress?.startsWith(addressPrefix) && addressPrefix
+        ? rawAddress.slice(addressPrefix.length)
+        : rawAddress;
+      const cookieLines = lines.filter(line => {
+        const id = this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase();
+        return id !== 'shipping' && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío');
+      });
 
       return {
         id: this.asString(item['id'] ?? item['code']),
         customerId: customerKey,
-        items: lines.map((line) => ({
+        items: cookieLines.map((line) => ({
           recipeId: this.asString(line['id'] ?? line['recipeId']),
           name: this.asOptionalString(line['name']),
           quantity: this.asNumber(line['qty'] ?? line['quantity']),
@@ -460,10 +526,17 @@ export class DataService {
         total: this.asNumber(item['total']),
         status: this.normalizeOrderStatus(this.asString(item['status'])) as Order['status'],
         createdAt: this.asString(item['createdAt'] ?? item['created'] ?? item['date']),
-        deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['date']),
-        zone: this.asOptionalString(item['zone']),
+        deliveryDate: this.asOptionalString(item['deliveryDate'] ?? item['scheduledDeliveryDate'] ?? item['date']),
+        deliveryMethod: this.asOptionalString(item['deliveryMethod'] ?? item['deliveryType'] ?? item['deliveryOption'])
+          ?? (zone?.toLocaleLowerCase() === 'retiro en tienda' ? 'Retiro en tienda' : zone ? 'Entrega a domicilio' : undefined),
+        deliveryAddress,
+        deliveryTime: this.asOptionalString(item['deliveryTime'] ?? item['deliverySlot']),
+        zone,
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
+        shippingFee,
+        isPaid: item['isPaid'] === true || item['paymentStatus'] === 'PAID' || item['paymentStatus'] === 'paid',
+        paymentMethod: this.normalizePaymentMethod(this.asString(item['paymentMethod'] ?? item['paymentType'])),
       };
     });
 
@@ -475,7 +548,16 @@ export class DataService {
     const normalized = value.trim().toLocaleLowerCase();
     if (normalized.includes('entreg') || normalized === 'delivered') return 'DELIVERED';
     if (normalized.includes('cancel') || normalized === 'cancelled' || normalized === 'canceled') return 'CANCELLED';
+    if (normalized.includes('listo') || normalized === 'ready') return 'READY';
+    if (normalized.includes('prepar') || normalized === 'in_preparation' || normalized === 'processing') return 'PREPARING';
     return 'PENDING';
+  }
+
+  private normalizePaymentMethod(value: string): Order['paymentMethod'] {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (normalized.includes('transf') || normalized.includes('transfer')) return 'TRANSFER';
+    if (normalized.includes('efect') || normalized.includes('cash')) return 'CASH';
+    return undefined;
   }
 
   private asArray(value: unknown): RawRecord[] {
