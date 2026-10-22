@@ -211,7 +211,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           ...(!matchedCustomer ? { customers: Number(recordCounts['customers'] ?? 0) + 1 } : {}),
         },
         revision: FieldValue.increment(1),
-        changedKeys: ['orders', 'customers', 'stats:demand'],
+        changedKeys: ['orders', 'customer:' + customerId, 'stats:demand'],
       }, { merge: true });
     });
 
