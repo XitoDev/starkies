@@ -43,7 +43,7 @@
     <div class="catalog-heading" id="sabores"><div><div class="eyebrow">NUESTRAS</div><h2>Galletas</h2></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
-        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-eyebrow">NUESTRAS</span><span class="category-heading">{{ cat }}</span></h3><div class="products">
+        <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-heading">{{ cat === 'Galletas clásicas' ? 'Clásicas' : 'NY Style' }}</span></h3><div class="products">
           @for (product of filteredProducts(); track product.id) {
             @if (product.category === cat) {
               <article class="product" [class.sold-out]="!product.stock">

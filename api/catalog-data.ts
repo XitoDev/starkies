@@ -67,7 +67,9 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   // The public endpoint reads only the explicitly published projection. Recipe
   // documents are private business data and must never be serialized to clients.
   const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot] = await Promise.all([
-    db.collection('publicCatalog').orderBy('sortIndex', 'asc').get(),
+    // Do not use Firestore orderBy here: documents without sortIndex are omitted
+    // by that query, which made the public catalog look empty after older writes.
+    db.collection('publicCatalog').get(),
     db.doc('publicCatalog/catalog-settings').get(),
     db.doc('system/stateMeta').get(),
     db.collection('productSalesStats').get(),
@@ -76,7 +78,12 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     throw new Error('El catálogo del negocio todavía no está disponible.');
   }
 
-  const products: PublicProduct[] = publicSnapshot.docs.flatMap(document => {
+  const orderedPublicDocs = [...publicSnapshot.docs].sort((left, right) => {
+    const leftIndex = numberValue(asRecord(left.data())['sortIndex'], Number.MAX_SAFE_INTEGER);
+    const rightIndex = numberValue(asRecord(right.data())['sortIndex'], Number.MAX_SAFE_INTEGER);
+    return leftIndex - rightIndex || left.id.localeCompare(right.id);
+  });
+  const products: PublicProduct[] = orderedPublicDocs.flatMap(document => {
     if (document.id === 'catalog-settings') return [];
     const item = asRecord(document.data());
     const id = stringValue(item['id'], document.id);

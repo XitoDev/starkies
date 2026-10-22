@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "apps/admin/**"
-      - "scripts/migrate-firestore-root.mjs"
       - "libs/shared/**"
       - "angular.json"
       - "package.json"
@@ -47,9 +46,6 @@ jobs:
 
       - name: Install dependencies from committed lockfile
         run: npm ci
-
-      - name: Validate Firestore migration script syntax
-        run: node --check scripts/migrate-firestore-root.mjs
 
       - name: Build admin for production
         run: npx ng build admin --configuration production

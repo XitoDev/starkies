@@ -48,6 +48,13 @@ describe('Catalog', () => {
     expect(component.zones).toEqual(TEST_ZONES);
   });
 
+  it('renders concise category headings without the repeated eyebrow', () => {
+    const headings = [...fixture.nativeElement.querySelectorAll('.category-title') as NodeListOf<HTMLElement>]
+      .map(heading => heading.textContent?.trim());
+    expect(headings).toEqual(['Clásicas', 'NY Style']);
+    expect(fixture.nativeElement.querySelectorAll('.category-title .category-eyebrow')).toHaveLength(0);
+  });
+
   it('places new cookies first, the best seller second, and least-sold cookies before the second best seller', () => {
     const products = [
       { id: 'top', tag: undefined },
