@@ -116,6 +116,28 @@ async function main() {
     operations.push({ source: document.ref.path, target: 'system/' + document.id, data: document.data() });
   }
 
+  // Audit every document/subcollection under the legacy namespace. If the
+  // explicit mapping above missed anything, stop before any destination write.
+  const discoveredSourcePaths = new Set();
+  const visitDocument = async documentRef => {
+    const snapshot = await documentRef.get();
+    if (snapshot.exists) discoveredSourcePaths.add(documentRef.path);
+    const childCollections = await documentRef.listCollections();
+    for (const childCollection of childCollections) {
+      const childDocuments = await childCollection.listDocuments();
+      for (const childDocument of childDocuments) await visitDocument(childDocument);
+    }
+  };
+  await visitDocument(db.doc(oldBase));
+  const explicitlyHandledSources = new Set([...originalDocuments.map(item => item.source), metaPath]);
+  const unhandledSources = [...discoveredSourcePaths].filter(path => !explicitlyHandledSources.has(path));
+  if (unhandledSources.length) {
+    throw new Error('Migration mapping is not total. Unhandled source documents/subcollections found: '
+      + unhandledSources.slice(0, 20).join(', ')
+      + (unhandledSources.length > 20 ? ' (and more)' : '')
+      + '. No writes made; add explicit mappings before retrying.');
+  }
+
   for (const operation of operations.filter(item => item.target.startsWith('orders/'))) {
     const order = operation.data;
     const phone = normalizePhone(order.phone);
