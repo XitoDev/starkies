@@ -36,15 +36,15 @@ const cleanId = value => {
 const normalizePhone = value => String(value ?? '').replace(/\D/g, '').replace(/^593/, '0');
 const phoneHash = value => createHash('sha256').update(value).digest('hex');
 const cleanName = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
-const normalizeSearch = value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+const normalizeSearch = value => cleanName(value).replace(/[^a-z0-9]+/g, ' ').trim();
 const searchTokensFor = record => {
   const values = [record.id, record.code, record.name, record.customer, record.phone, record.address]
     .map(normalizeSearch).filter(Boolean);
   const tokens = new Set();
   for (const value of values) {
-    const compact = value.replace(/\\s+/g, '');
+    const compact = value.split(' ').join('');
     if (compact.length >= 2) for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
-    for (const word of value.split(/\\s+/).filter(part => part.length >= 2)) {
+    for (const word of value.split(' ').filter(part => part.length >= 2)) {
       for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
     }
   }
