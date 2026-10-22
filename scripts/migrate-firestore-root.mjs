@@ -48,6 +48,8 @@ async function main() {
     throw new Error('Legacy metadata is missing or incomplete; refusing to guess source collections.');
   }
   const legacyMeta = metaSnapshot.data();
+  const businessRootSnapshot = await db.doc(oldBase).get();
+  const rootBusinessData = businessRootSnapshot.exists ? businessRootSnapshot.data() : undefined;
   const collectionDocumentRefs = await db.collection(oldBase + '/collections').listDocuments();
   const discoveredCollectionKeys = [];
   for (const collectionDocument of collectionDocumentRefs) {
@@ -91,6 +93,15 @@ async function main() {
         }
       }
     }
+  }
+
+  if (rootBusinessData && Object.keys(rootBusinessData).length) {
+    originalDocuments.push({ source: oldBase, data: rootBusinessData });
+    operations.push({
+      source: oldBase,
+      target: 'settings/businessProfile',
+      data: { data: rootBusinessData },
+    });
   }
 
   const settingsSnapshot = await db.collection(oldBase + '/settings').get();
