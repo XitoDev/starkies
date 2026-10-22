@@ -16,22 +16,34 @@ export class DataService implements OnDestroy {
   readonly migrationRequired = signal(false);
   readonly error = signal('');
   readonly rawState = signal<RawRecord | null>(null);
+  readonly salesStats = signal<RawRecord>({ deliveredOrders: 0, revenue: 0, unitsSold: 0 });
+  readonly productionStats = signal<RawRecord>({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0 });
+  readonly productionDemand = signal<Record<string, number>>({});
 
   constructor(
     private readonly repository: FirestoreBusinessRepository,
     private readonly firebase: FirebaseClientService,
   ) {
     // One lightweight metadata listener invalidates shared collection caches when another session writes.
-    this.stopMetadataWatch = this.repository.watchStateMeta(() => {
+    this.stopMetadataWatch = this.repository.watchStateMeta(changedKeys => {
       this.cloudRevision += 1;
       this.searchCache.clear();
       this.ordersPageCache.clear();
       this.repository.invalidateStateCache();
+      if (changedKeys.includes('orders') || changedKeys.includes('stats:sales')) {
+        void this.refreshSalesStats().catch(error => this.error.set(error.message));
+        void this.refreshProductionDemand().catch(error => this.error.set(error.message));
+        void this.refreshPendingOrderCount().catch(() => undefined);
+      }
+      if (changedKeys.includes('stats:production')) void this.refreshProductionStats().catch(error => this.error.set(error.message));
     }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
     void this.loadCollections(['recipes', 'ingredients']);
     void this.refreshPendingOrderCount().catch(() => undefined);
+    void this.refreshSalesStats().catch(() => undefined);
+    void this.refreshProductionStats().catch(() => undefined);
+    void this.refreshProductionDemand().catch(() => undefined);
   }
 
   async loadFromCloud(collectionKeys?: string[]): Promise<void> {
@@ -108,6 +120,20 @@ export class DataService implements OnDestroy {
 
   private normalizeSearchTerm(term: string): string {
     return term.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, '').trim();
+  }
+
+  async refreshSalesStats(): Promise<void> {
+    const stats = await this.repository.getBusinessStats('sales');
+    this.salesStats.set({ deliveredOrders: 0, revenue: 0, unitsSold: 0, ...(stats ?? {}) });
+  }
+
+  async refreshProductionStats(): Promise<void> {
+    const stats = await this.repository.getBusinessStats('production');
+    this.productionStats.set({ totalBatches: 0, totalUnits: 0, totalCost: 0, completedRuns: 0, ...(stats ?? {}) });
+  }
+
+  async refreshProductionDemand(): Promise<void> {
+    this.productionDemand.set(await this.repository.loadProductionDemand());
   }
 
   /** Server-side count for the summary; avoids downloading all pending orders. */
