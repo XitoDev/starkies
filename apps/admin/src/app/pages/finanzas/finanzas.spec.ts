@@ -14,12 +14,16 @@ describe('Finanzas', () => {
   let recordIngredientPurchase: ReturnType<typeof vi.fn>;
   let dataServiceStub: {
     rawState: WritableSignal<Record<string, unknown> | null>;
+    salesStats: WritableSignal<Record<string, unknown>>;
+    deliveredOrders: WritableSignal<Record<string, unknown>[]>;
     ingredients: WritableSignal<Ingredient[]>;
     recipes: WritableSignal<Record<string, unknown>[]>;
     saveRecipe: ReturnType<typeof vi.fn>;
     recordCashMovement: typeof recordCashMovement;
     recordIngredientPurchase: typeof recordIngredientPurchase;
     saveBusinessSetting: ReturnType<typeof vi.fn>;
+    loadCollections: ReturnType<typeof vi.fn>;
+    refreshDeliveredOrders: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -27,6 +31,10 @@ describe('Finanzas', () => {
     recordIngredientPurchase = vi.fn().mockResolvedValue(undefined);
     dataServiceStub = {
       rawState: signal<Record<string, unknown> | null>({ cashMovements: [] }),
+      salesStats: signal({ deliveredOrders: 0, revenue: 0, unitsSold: 0 }),
+      deliveredOrders: signal<Record<string, unknown>[]>([]),
+      loadCollections: vi.fn(async () => undefined),
+      refreshDeliveredOrders: vi.fn(async () => undefined),
       ingredients: signal<Ingredient[]>([
         { id: 'flour', name: 'Harina', unit: 'g', stock: 4000, costPerUnit: 0.0025, packageUnit: 'kg', packageQuantityGrams: 1, packagePrice: 2.5, minStock: 1000 },
       ]),
