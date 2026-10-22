@@ -54,8 +54,11 @@ export class DataService {
   }
 
   /** Loads only the named collections/settings and merges them into the local state. */
-  async loadCollections(collectionKeys: string[]): Promise<void> {
-    await this.loadFromCloud([...new Set(collectionKeys)]);
+  async loadCollections(collectionKeys: string[], force = false): Promise<void> {
+    const current = this.rawState() ?? {};
+    const requested = [...new Set(collectionKeys)];
+    const missing = force ? requested : requested.filter(key => !Object.prototype.hasOwnProperty.call(current, key));
+    if (missing.length) await this.loadFromCloud(missing);
   }
 
   /** Server-side count for the summary; avoids downloading all pending orders. */
@@ -103,7 +106,7 @@ export class DataService {
 
   /** Loads all orders only when a workflow needs complete cross-order totals or edits. */
   async loadAllOrders(): Promise<void> {
-    await this.loadCollections(['orders']);
+    await this.loadCollections(['orders'], true);
     this.ordersPageCursor = null;
     this.ordersPageHasMore.set(false);
   }
