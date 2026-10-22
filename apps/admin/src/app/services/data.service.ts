@@ -29,10 +29,20 @@ export class DataService implements OnDestroy {
     // One lightweight metadata listener invalidates shared collection caches when another session writes.
     this.stopMetadataWatch = this.repository.watchStateMeta(changedKeys => {
       this.cloudRevision += 1;
-      this.searchCache.clear();
-      this.ordersPageCache.clear();
+      const ordersChanged = changedKeys.includes('orders');
+      const customersChanged = changedKeys.some(key => key === 'customers' || key.startsWith('customer:'));
+      for (const [key, cached] of this.searchCache.entries()) {
+        const collectionKey = key.split('|', 1)[0];
+        if ((collectionKey === 'orders' && ordersChanged) || (collectionKey === 'customers' && customersChanged)) this.searchCache.delete(key);
+        else cached.revision = this.cloudRevision;
+      }
+      if (ordersChanged) this.ordersPageCache.clear();
+      const changedCollections = new Set(changedKeys.filter(key => !key.startsWith('stats:') && !key.startsWith('customer:')));
+      for (const key of this.loadedCollectionRevision.keys()) {
+        if (!changedCollections.has(key)) this.loadedCollectionRevision.set(key, this.cloudRevision);
+      }
       this.repository.invalidateStateCache();
-      if (changedKeys.includes('orders')) {
+      if (ordersChanged) {
         void this.refreshPendingOrderCount().catch(() => undefined);
         if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
       }
