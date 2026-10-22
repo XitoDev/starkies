@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Ingredient, Recipe, Order, Customer, StarkiesBackup, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
@@ -21,6 +21,11 @@ export class DataService {
     private readonly repository: FirestoreBusinessRepository,
     private readonly firebase: FirebaseClientService,
   ) {
+    // One lightweight metadata listener invalidates shared collection caches when another session writes.
+    this.stopMetadataWatch = this.repository.watchStateMeta(() => {
+      this.cloudRevision += 1;
+      this.repository.invalidateStateCache();
+    }, error => this.error.set(error.message));
     // Existing pages receive a cloud-backed snapshot; no seed is silently
     // imported and no localStorage value is overwritten.
     void this.loadCollections(['recipes', 'ingredients']);
@@ -35,6 +40,7 @@ export class DataService {
 
     this.loading.set(true);
     this.error.set('');
+    const revisionAtStart = this.cloudRevision;
     try {
       const state = await this.repository.loadState(collectionKeys);
       if (!state) {
@@ -46,6 +52,8 @@ export class DataService {
       this.rawState.set(mergedState);
       this.migrationRequired.set(false);
       this.loadViewModels(mergedState);
+      const loadedKeys = collectionKeys ?? Object.keys(state);
+      for (const key of loadedKeys) this.loadedCollectionRevision.set(key, revisionAtStart);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los datos de Firebase.');
     } finally {
@@ -57,7 +65,10 @@ export class DataService {
   async loadCollections(collectionKeys: string[], force = false): Promise<void> {
     const current = this.rawState() ?? {};
     const requested = [...new Set(collectionKeys)];
-    const missing = force ? requested : requested.filter(key => !Object.prototype.hasOwnProperty.call(current, key));
+    const missing = force ? requested : requested.filter(key =>
+      !Object.prototype.hasOwnProperty.call(current, key)
+      || this.loadedCollectionRevision.get(key) !== this.cloudRevision,
+    );
     if (missing.length) await this.loadFromCloud(missing);
   }
 
@@ -74,6 +85,10 @@ export class DataService {
   readonly ordersPageHasMore = signal(false);
   readonly ordersPageLoading = signal(false);
   private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  private cloudRevision = 0;
+  private readonly loadedCollectionRevision = new Map<string, number>();
+  private readonly ordersPageCache = new Map<string, { items: RawRecord[]; cursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean; revision: number }>();
+  private readonly stopMetadataWatch: Unsubscribe;
 
   /** Loads orders in bounded pages; the initial Admin load does not fetch all orders. */
   async loadOrdersPage(reset = false, statusFilter = 'ALL'): Promise<void> {
@@ -81,11 +96,22 @@ export class DataService {
     this.ordersPageLoading.set(true);
     try {
       await this.loadCollections(['customers']);
+      const cacheKey = statusFilter;
+      const cachedPage = this.ordersPageCache.get(cacheKey);
+      if (reset && cachedPage && cachedPage.revision === this.cloudRevision) {
+        this.ordersPageCursor = cachedPage.cursor;
+        this.ordersPageHasMore.set(cachedPage.hasMore);
+        const cachedState = { ...(this.rawState() ?? {}), orders: cachedPage.items };
+        this.rawState.set(cachedState);
+        this.loadViewModels(cachedState);
+        return;
+      }
       if (reset) {
         this.ordersPageCursor = null;
         this.rawState.update(state => state ? { ...state, orders: [] } : state);
         this.orders.set([]);
       }
+      const revisionAtStart = this.cloudRevision;
       const page = await this.repository.getCollectionPage<RawRecord>('orders', {
         pageSize: 25,
         cursor: this.ordersPageCursor,
@@ -97,9 +123,16 @@ export class DataService {
       this.ordersPageHasMore.set(page.hasMore);
       const currentState = this.rawState() ?? {};
       const previous = reset ? [] : this.asArray(currentState['orders']);
-      const merged = { ...currentState, orders: [...previous, ...page.items] };
+      const mergedItems = [...previous, ...page.items];
+      const merged = { ...currentState, orders: mergedItems };
       this.rawState.set(merged);
       this.loadViewModels(merged);
+      this.ordersPageCache.set(cacheKey, {
+        items: mergedItems,
+        cursor: page.cursor,
+        hasMore: page.hasMore,
+        revision: revisionAtStart,
+      });
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar más pedidos.');
     } finally {
