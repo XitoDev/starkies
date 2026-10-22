@@ -398,5 +398,5 @@ function createOrderDocumentToken(orderId: string, expiresAt: number, signingKey
 }
 
 function normalizePhone(value: string): string {
-  return value.replace(/\\D/g, '').replace(/^593/, '0');
+  return value.replace(/\D/g, '').replace(/^593/, '0');
 }
