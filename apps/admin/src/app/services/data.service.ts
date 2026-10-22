@@ -159,9 +159,9 @@ export class DataService implements OnDestroy {
   }
 
   private async refreshCustomerRecord(customerId: string): Promise<void> {
-    const customer = await this.repository.getCollectionRecord('customers', customerId);
     const state = this.rawState();
     if (!state || !Object.prototype.hasOwnProperty.call(state, 'customers')) return;
+    const customer = await this.repository.getCollectionRecord('customers', customerId);
     const customers = this.asArray(state['customers']).filter(item => this.asString(item['id']) !== customerId);
     if (customer) customers.push(customer);
     const nextState = { ...state, customers };
