@@ -56,6 +56,7 @@ export class Finanzas {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly ingredients = this.dataService.ingredients;
+  readonly salesStats = this.dataService.salesStats;
   readonly recipes = this.dataService.recipes;
   readonly financeTab = signal<'resumen' | 'productos'>('resumen');
   readonly pricingEdits = signal<Record<string, ProductPricingEdit>>({});
