@@ -207,6 +207,18 @@ export class FirestoreBusinessRepository {
     return snapshot.exists() ? snapshot.data() : null;
   }
 
+  async loadDeliveredOrders<T extends Record<string, unknown>>(): Promise<T[]> {
+    if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
+    const snapshot = await getDocs(query(
+      collection(this.firebase.firestore, 'orders'),
+      where('status', '==', 'DELIVERED'),
+    ));
+    return snapshot.docs.map(item => {
+      const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
+      return { ...value, id: value['id'] ?? item.id } as T;
+    });
+  }
+
   async loadProductionDemand(): Promise<Record<string, number>> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDocs(collection(this.firebase.firestore, 'productionDemand'));
@@ -268,7 +280,14 @@ export class FirestoreBusinessRepository {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
-    await this.publishStateChange([collectionKey]);
+    const changedKeys = [collectionKey];
+    if (collectionKey === 'orders') {
+      const previousStatus = String(existing.data()?.['status'] ?? '').toUpperCase();
+      const nextStatus = String(safeValue['status'] ?? '').toUpperCase();
+      if (previousStatus === 'DELIVERED' || nextStatus === 'DELIVERED') changedKeys.push('stats:sales');
+      if (previousStatus === 'PENDING' || nextStatus === 'PENDING') changedKeys.push('stats:demand');
+    }
+    await this.publishStateChange(changedKeys);
   }
 
   private extractOrderSalesQuantities(order: Record<string, unknown>): Map<string, number> {
@@ -422,7 +441,13 @@ export class FirestoreBusinessRepository {
     if (collectionKey === 'orders') await this.deleteOrderWithStats(matching.ref);
     else await deleteDoc(matching.ref);
     this.invalidateStateCache();
-    await this.publishStateChange([collectionKey]);
+    const changedKeys = [collectionKey];
+    if (collectionKey === 'orders') {
+      const status = String(matching.data()?.['status'] ?? '').toUpperCase();
+      if (status === 'DELIVERED') changedKeys.push('stats:sales');
+      if (status === 'PENDING') changedKeys.push('stats:demand');
+    }
+    await this.publishStateChange(changedKeys);
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
