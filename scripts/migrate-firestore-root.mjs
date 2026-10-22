@@ -175,7 +175,7 @@ async function main() {
     operations.push({
       source: 'derived sales from delivered legacy orders',
       target: 'productSalesStats/' + productId,
-      data: { productId, unitsSold, updatedAt: new Date().toISOString() },
+      data: { productId, unitsSold },
     });
   }
 
