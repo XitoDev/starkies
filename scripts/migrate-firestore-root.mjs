@@ -55,6 +55,9 @@ async function main() {
     if (children.some(child => child.id === 'records')) discoveredCollectionKeys.push(collectionDocument.id);
   }
   const collectionKeys = [...new Set([...(legacyMeta.arrayKeys ?? []), ...knownCollections, ...discoveredCollectionKeys])];
+  for (const key of collectionKeys) {
+    if (!/^[A-Za-z0-9_-]+$/.test(key)) throw new Error('Unsafe collection key in legacy metadata: ' + key + '. No writes made.');
+  }
   const operations = [];
   const originalDocuments = [];
   const counts = {};
@@ -69,7 +72,10 @@ async function main() {
     for (const document of snapshot.docs) {
       const legacyDocument = document.data();
       originalDocuments.push({ source: document.ref.path, data: legacyDocument });
-      const value = isObject(legacyDocument.value) ? legacyDocument.value : {};
+      if (!isObject(legacyDocument.value)) {
+        throw new Error('Unexpected legacy record shape at ' + document.ref.path + '. Refusing to drop fields or migrate an unknown envelope; no writes made.');
+      }
+      const value = legacyDocument.value;
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
       const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0) };
@@ -240,6 +246,9 @@ async function main() {
   if (conflicts.length) throw new Error('Destination conflicts found. Resolve them before retrying; no writes made.');
   if (verify) {
     if (checked.some(operation => operation.action === 'create')) throw new Error('Verification failed: some destination documents are missing.');
+    if (!existingMeta.exists || existingMeta.data()?.['schemaVersion'] !== 3 || existingMeta.data()?.['migratedFrom'] !== metaPath) {
+      throw new Error('Verification failed: root system/stateMeta does not contain the expected schema-v3 migration marker.');
+    }
     console.log('Verification passed.');
     return;
   }
