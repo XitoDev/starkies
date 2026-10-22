@@ -419,12 +419,14 @@ export class FirestoreBusinessRepository {
       if (!orderSnapshot.exists()) throw new Error('No se encontró el registro que intentas eliminar.');
       const order = orderSnapshot.data();
       const status = String(order['status'] ?? '').toUpperCase();
+      const isDelivered = this.isDeliveredOrderStatus(status);
+      const isPending = this.isPendingOrderStatus(status);
       const quantities = this.extractOrderSalesQuantities(order);
-      const salesSnapshot = status === 'DELIVERED' ? await transaction.get(salesSummaryRef) : null;
+      const salesSnapshot = isDelivered ? await transaction.get(salesSummaryRef) : null;
       const productSnapshots: DocumentSnapshot[] = [];
       const demandSnapshots: DocumentSnapshot[] = [];
-      if (status === 'DELIVERED') for (const id of quantities.keys()) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
-      if (status === 'PENDING') for (const id of quantities.keys()) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
+      if (isDelivered) for (const id of quantities.keys()) productSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productSalesStats', id)));
+      if (isPending) for (const id of quantities.keys()) demandSnapshots.push(await transaction.get(doc(this.firebase.firestore, 'productionDemand', id)));
       transaction.delete(orderRef);
       const now = new Date().toISOString();
       if (isDelivered) [...quantities.entries()].forEach(([id, quantity], index) => {
@@ -929,7 +931,7 @@ export class FirestoreBusinessRepository {
         const total = Number(rawOrder['total'] ?? 0);
         if (Number.isFinite(total) && total > 0) revenue += total;
         for (const [id, quantity] of quantities) salesByProduct.set(id, (salesByProduct.get(id) ?? 0) + quantity);
-      } else if (status === 'PENDING') {
+      } else if (isPending) {
         for (const [id, quantity] of quantities) demandByProduct.set(id, (demandByProduct.get(id) ?? 0) + quantity);
       }
     }
