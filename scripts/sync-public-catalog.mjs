@@ -25,7 +25,7 @@ const isRecord = value => value !== null && typeof value === 'object' && !Array.
 const str = value => typeof value === 'string' ? value.trim() : '';
 const num = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const publicOnlyFields = ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible'];
-const normalize = value => String(value ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
 const asPublicProduct = (recipe, draft, sortIndex) => {
   const id = str(recipe.id);
   const category = str(recipe.category) || 'Galletas clásicas';
