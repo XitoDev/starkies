@@ -10,8 +10,9 @@ const verify = process.argv.includes('--verify');
 const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 if (!raw) throw new Error('Set FIREBASE_SERVICE_ACCOUNT_JSON; no database operation was started.');
 const account = JSON.parse(raw);
-if (account.project_id !== 'starkies' || !account.client_email || !account.private_key) {
-  throw new Error('Service account must belong to Firebase project starkies.');
+const expectedProjectId = process.env.FIREBASE_EXPECTED_PROJECT_ID ?? 'starkies';
+if (account.project_id !== expectedProjectId || !account.client_email || !account.private_key) {
+  throw new Error('Service account project_id must match FIREBASE_EXPECTED_PROJECT_ID (' + expectedProjectId + ').');
 }
 const app = getApps().find(x => x.name === 'root-migration') ?? initializeApp({
   credential: cert({
