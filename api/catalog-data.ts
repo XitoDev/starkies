@@ -64,21 +64,21 @@ function numberValue(value: unknown, fallback = 0): number {
 }
 
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
-  const recipesRef = db.collection('businesses/starkies/collections/recipes/records');
+  const recipesRef = db.collection('recipes');
   const [recipesSnapshot, zonesSnapshot, catalogSettingsSnapshot, legacyZonesSnapshot, metaSnapshot, ordersSnapshot] = await Promise.all([
-    recipesRef.orderBy('index', 'asc').get(),
-    db.doc('businesses/starkies/settings/deliveryZones').get(),
-    db.doc('businesses/starkies/settings/catalogSettings').get(),
-    db.collection('businesses/starkies/collections/deliveryZones/records').orderBy('index', 'asc').get(),
-    db.doc('businesses/starkies/system/stateMeta').get(),
-    db.collection('businesses/starkies/collections/orders/records').get(),
+    recipesRef.orderBy('sortIndex', 'asc').get(),
+    db.doc('settings/deliveryZones').get(),
+    db.doc('settings/catalogSettings').get(),
+    db.collection('deliveryZones').orderBy('sortIndex', 'asc').get(),
+    db.doc('system/stateMeta').get(),
+    db.collection('productSalesStats').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
   }
 
   const products: PublicProduct[] = recipesSnapshot.docs.flatMap((document) => {
-    const recipe = asRecord(document.data()['value']);
+    const recipe = asRecord(document.data());
     const id = stringValue(recipe['id'], document.id);
     const name = stringValue(recipe['name']);
     const category = stringValue(recipe['category'], 'Galletas clásicas');
@@ -102,65 +102,15 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     }];
   });
 
-  const salesCounts = new Map<string, number>();
-  const productIds = new Set(products.map(product => product.id));
-  const productNames = new Map(products.map(product => [
-    product.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').trim(),
-    product.id,
-  ]));
-  const normalizeStatus = (value: unknown): string => stringValue(value)
-    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleUpperCase('es').trim();
-  const resolveProductId = (item: Record<string, unknown>): string => {
-    const nestedProduct = asRecord(item['product']);
-    const rawId = stringValue(item['recipeId'] ?? item['productId'] ?? item['id'] ?? nestedProduct['id']);
-    if (productIds.has(rawId)) return rawId;
-    const rawName = stringValue(item['productName'] ?? item['name'] ?? nestedProduct['name'])
-      .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').trim();
-    return productNames.get(rawName) ?? '';
-  };
-  const addSales = (rawItems: unknown): boolean => {
-    if (!Array.isArray(rawItems)) return false;
-    let counted = false;
-    for (const rawItem of rawItems) {
-      const item = asRecord(rawItem);
-      const id = resolveProductId(item);
-      const quantity = numberValue(item['qty'] ?? item['quantity'] ?? item['count'], 0);
-      if (id && quantity > 0) {
-        salesCounts.set(id, (salesCounts.get(id) ?? 0) + quantity);
-        counted = true;
-      }
-    }
-    return counted;
-  };
-  for (const orderDocument of ordersSnapshot.docs) {
-    const documentData = asRecord(orderDocument.data());
-    const order = asRecord(documentData['value'] ?? documentData);
-    const statusValue = order['status'] ?? order['state'] ?? order['orderStatus'] ?? documentData['status'];
-    const status = normalizeStatus(typeof statusValue === 'object' && statusValue !== null
-      ? (asRecord(statusValue)['value'] ?? asRecord(statusValue)['label'] ?? asRecord(statusValue)['name'])
-      : statusValue);
-    if (!['DELIVERED', 'ENTREGADO', 'ENTREGADA', 'COMPLETED', 'COMPLETE'].includes(status)) continue;
-
-    // Prefer order lines when they resolve to published products. Some older
-    // orders contain generic line IDs, so fall back to their box/item details.
-    if (addSales(order['lines'])) continue;
-    const boxes = Array.isArray(order['boxes']) ? order['boxes'] : [];
-    let countedBoxItems = false;
-    for (const rawBox of boxes) {
-      const box = asRecord(rawBox);
-      if (addSales(box['items'])) countedBoxItems = true;
-    }
-    if (countedBoxItems) continue;
-    addSales(order['items']);
-  }
+  const salesCounts = new Map<string, number>(ordersSnapshot.docs.map(document => [document.id, numberValue(document.data()['unitsSold'], 0)]));
   const rankedProducts = rankCatalogProducts(products, salesCounts);
 
-  const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['value']);
+  const catalogSettings = asRecord(catalogSettingsSnapshot.data()?.['data']);
   // An empty settings array must not mask valid legacy/catalog settings.
   const zoneCandidates: unknown[] = [
-    zonesSnapshot.data()?.['value'],
+    zonesSnapshot.data()?.['data'],
     catalogSettings['deliveryZones'],
-    legacyZonesSnapshot.docs.map(document => document.data()['value']),
+    legacyZonesSnapshot.docs.map(document => { const data = document.data(); const { sortIndex: _sortIndex, ...zone } = data; return zone; }),
   ];
   const zonesValue = zoneCandidates.find(value => Array.isArray(value) && value.length > 0);
   const zones = (Array.isArray(zonesValue) ? zonesValue : []).flatMap((raw, index) => {
@@ -183,7 +133,7 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
  * products and public delivery settings are copied into this collection.
  */
 export async function syncPublicCatalogProjection(db: Firestore, catalog: PublicCatalog): Promise<void> {
-  const collectionRef = db.collection('businesses/starkies/collections/catalog/records');
+  const collectionRef = db.collection('publicCatalog');
   const current = await collectionRef.get();
   const wantedIds = new Set(catalog.products.map(product => product.id));
   const batch = db.batch();
@@ -197,11 +147,14 @@ export async function syncPublicCatalogProjection(db: Firestore, catalog: Public
     const value: PublicProduct = { ...product };
     if (value.tag === undefined || value.tag === '') delete value.tag;
     if (value.image === undefined || value.image === '') delete value.image;
-    batch.set(collectionRef.doc(product.id), { index, value });
+    batch.set(collectionRef.doc(product.id), { ...value, sortIndex: index });
   });
   batch.set(collectionRef.doc('catalog-settings'), {
-    index: catalog.products.length,
-    value: { zones: catalog.zones, presentations: catalog.presentations },
+    id: 'catalog-settings',
+    kind: 'settings',
+    zones: catalog.zones,
+    presentations: catalog.presentations,
+    sortIndex: catalog.products.length,
   });
   await batch.commit();
 }
