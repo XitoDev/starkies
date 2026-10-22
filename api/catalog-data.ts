@@ -84,7 +84,7 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const category = stringValue(item['category'], 'Galletas clásicas');
     const price = numberValue(item['price'], Number.NaN);
     if (!id || !name || !Number.isFinite(price) || price < 0) return [];
-    const normalizedCategory = category.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+    const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
     const grams = numberValue(item['baseGramsPerCookie'], 0);
     const isNy = item['isNy'] === true || normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
     const image = publicImage(stringValue(item['image']), id);
