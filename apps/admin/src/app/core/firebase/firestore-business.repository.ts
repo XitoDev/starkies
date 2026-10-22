@@ -139,53 +139,63 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists()
       ? Number(existing.data()['sortIndex'] ?? Date.now())
       : Date.now();
+    const previousStatus = String(existing.data()?.['status'] ?? '').toUpperCase();
+    const nextStatus = String(safeValue['status'] ?? '').toUpperCase();
     if (collectionKey === 'orders' && existing.exists()
-      && String(existing.data()['status'] ?? '').toUpperCase() === 'PENDING'
-      && String(safeValue['status'] ?? '').toUpperCase() === 'DELIVERED') {
-      await this.persistDeliveredOrder(recordRef, existing.data(), safeValue, sortIndex);
+      && (previousStatus === 'DELIVERED') !== (nextStatus === 'DELIVERED')) {
+      await this.persistOrderSalesTransition(recordRef, previousStatus, safeValue, sortIndex);
     } else {
       await setDoc(recordRef, { ...safeValue, sortIndex });
     }
     this.invalidateStateCache();
   }
 
-  private async persistDeliveredOrder(
+  private async persistOrderSalesTransition(
     orderRef: DocumentReference,
-    previousOrder: Record<string, unknown>,
+    expectedStatus: string,
     updatedOrder: Record<string, unknown>,
     sortIndex: number,
   ): Promise<void> {
-    const quantities = new Map<string, number>();
-    const addItems = (items: unknown): void => {
-      if (!Array.isArray(items)) return;
-      for (const rawItem of items) {
-        if (!this.isRecord(rawItem)) continue;
-        const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
-        const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
-        if (id && Number.isFinite(quantity) && quantity > 0) quantities.set(id, (quantities.get(id) ?? 0) + quantity);
-      }
-    };
-    addItems(previousOrder['items']);
-    if (!quantities.size) addItems(previousOrder['lines']);
-    if (!quantities.size && Array.isArray(previousOrder['boxes'])) {
-      for (const box of previousOrder['boxes']) if (this.isRecord(box)) addItems(box['items']);
-    }
-    const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
+    const nextIsDelivered = String(updatedOrder['status'] ?? '').toUpperCase() === 'DELIVERED';
+    const delta = nextIsDelivered ? 1 : -1;
     await runTransaction(this.firebase.firestore, async transaction => {
       const currentOrderSnapshot = await transaction.get(orderRef);
       if (!currentOrderSnapshot.exists()) throw new Error('No se encontró el pedido.');
       const currentOrder = currentOrderSnapshot.data();
-      if (String(currentOrder['status'] ?? '').toUpperCase() !== 'PENDING') {
+      const currentStatus = String(currentOrder['status'] ?? '').toUpperCase();
+      if (currentStatus !== expectedStatus) {
         throw new Error('El pedido cambió en otra sesión. Actualiza la pantalla antes de volver a intentarlo.');
       }
+
+      const quantities = new Map<string, number>();
+      const addItems = (items: unknown): void => {
+        if (!Array.isArray(items)) return;
+        for (const rawItem of items) {
+          if (!this.isRecord(rawItem)) continue;
+          const id = String(rawItem['recipeId'] ?? rawItem['productId'] ?? rawItem['id'] ?? '').trim();
+          const quantity = Number(rawItem['quantity'] ?? rawItem['qty'] ?? rawItem['count'] ?? 0);
+          if (id && Number.isFinite(quantity) && quantity > 0) {
+            quantities.set(id, (quantities.get(id) ?? 0) + quantity);
+          }
+        }
+      };
+      addItems(currentOrder['items']);
+      if (!quantities.size) addItems(currentOrder['lines']);
+      if (!quantities.size && Array.isArray(currentOrder['boxes'])) {
+        for (const box of currentOrder['boxes']) if (this.isRecord(box)) addItems(box['items']);
+      }
+
+      const statsRefs = [...quantities.keys()].map(id => doc(this.firebase.firestore, 'productSalesStats', id));
       const statsSnapshots: DocumentSnapshot[] = [];
       for (const ref of statsRefs) statsSnapshots.push(await transaction.get(ref));
+
       transaction.set(orderRef, { ...updatedOrder, sortIndex });
       statsRefs.forEach((ref, index) => {
         const snapshot = statsSnapshots[index];
+        const currentUnits = Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0);
         transaction.set(ref, {
           productId: ref.id,
-          unitsSold: Number(snapshot.exists() ? snapshot.data()?.['unitsSold'] ?? 0 : 0) + (quantities.get(ref.id) ?? 0),
+          unitsSold: Math.max(0, currentUnits + delta * (quantities.get(ref.id) ?? 0)),
           updatedAt: new Date().toISOString(),
         });
       });
