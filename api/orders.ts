@@ -45,6 +45,17 @@ const searchTokensFor = (record: Record<string, unknown>): string[] => {
   return [...tokens];
 };
 
+const nameSearchTokensFor = (record: Record<string, unknown>): string[] => {
+  const name = String(record['name'] ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+  const tokens = new Set<string>();
+  for (const word of name.split(/\\s+/).filter(part => part.length >= 2)) {
+    for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
+  }
+  const compact = name.replace(/\\s+/g, '');
+  for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
+  return [...tokens];
+};
+
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX_ORDERS = 8;
 const BUSINESS_PATH = [] as const;
@@ -167,7 +178,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         count: nextCount,
         updatedAt: createdAt,
       });
-      transaction.set(customerRef, { ...customerRecord, searchTokens: searchTokensFor(customerRecord), sortIndex: Number(matchedCustomer?.data()?.['sortIndex'] ?? now) });
+      transaction.set(customerRef, { ...customerRecord, searchTokens: searchTokensFor(customerRecord), nameSearchTokens: nameSearchTokensFor(customerRecord), sortIndex: Number(matchedCustomer?.data()?.['sortIndex'] ?? now) });
       transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
       transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
       transaction.set(orderRef, { ...orderRecord, searchTokens: searchTokensFor(orderRecord), sortIndex: now });
