@@ -26,6 +26,13 @@ import {
 } from 'firebase/firestore';
 import { CashMovement } from 'shared';
 import { FirebaseClientService } from './firebase-client.service';
+import { FirestoreBackupArchiveService } from './firestore-backup-archive.service';
+export interface StarKiesBackupFile {
+  business?: string;
+  exportedAt?: string;
+  state: Record<string, unknown>;
+}
+
 interface StateMetadata {
   status?: 'in-progress' | 'complete';
   stateKeys?: string[];
@@ -33,6 +40,7 @@ interface StateMetadata {
   settingKeys?: string[];
   sourceBackupId?: string;
   sourceExportedAt?: string;
+  sourceBackupId?: string;
   recordCounts?: Record<string, number>;
   [key: string]: unknown;
 }
@@ -47,7 +55,7 @@ export class FirestoreBusinessRepository {
   private stateLoadPromise: Promise<Record<string, unknown> | null> | null = null;
   private cacheGeneration = 0;
 
-  constructor(private readonly firebase: FirebaseClientService) {}
+  constructor(private readonly firebase: FirebaseClientService, private readonly archiveService: FirestoreBackupArchiveService) {}
 
   /**
    * Reuses a recent complete business snapshot and coalesces simultaneous reads.
@@ -872,6 +880,210 @@ export class FirestoreBusinessRepository {
     if (!movement.category?.trim()) throw new Error('Selecciona una categoría para el movimiento.');
   }
 
+
+  async importInitialBackup(backup: StarKiesBackupFile): Promise<void> {
+    this.invalidateStateCache();
+    if (!this.firebase.isConfigured) {
+      throw new Error(this.firebase.configurationMessage);
+    }
+    if (!this.isRecord(backup) || !this.isRecord(backup.state)) {
+      throw new Error('El archivo no tiene el formato de respaldo StarKies esperado. No se ha importado nada.');
+    }
+
+    const stateEntries = Object.entries(backup.state);
+    if (stateEntries.length === 0) {
+      throw new Error('El respaldo no contiene datos de negocio. No se ha importado nada.');
+    }
+
+    const stateKeys = stateEntries.map(([key]) => key);
+    const arrayKeys = stateEntries.filter(([, value]) => Array.isArray(value)).map(([key]) => key);
+    const settingKeys = stateEntries.filter(([, value]) => !Array.isArray(value)).map(([key]) => key);
+    const sourceExportedAt = backup.exportedAt ?? 'unknown-date';
+    const archiveId = `original-${sourceExportedAt.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    const metaRef = this.stateMetaRef();
+
+    const before = await getDoc(metaRef);
+    let isResume = false;
+
+    if (before.exists()) {
+      const metadata = before.data() as StateMetadata;
+      if (metadata.status === 'complete') {
+        throw new Error('StarKies ya tiene una migración completa en Firebase. Se rechazó la importación para proteger los datos existentes.');
+      }
+      if (metadata.status !== 'in-progress' || metadata.sourceExportedAt !== sourceExportedAt) {
+        throw new Error('Existe una migración incompleta de otro respaldo. No se sobrescribió ningún dato; revisa el estado de migración antes de continuar.');
+      }
+      isResume = true;
+    } else {
+      await this.assertDestinationIsEmpty(arrayKeys, settingKeys);
+    }
+
+    await runTransaction(this.firebase.firestore, async (transaction) => {
+      const current = await transaction.get(metaRef);
+      if (current.exists()) {
+        const metadata = current.data() as StateMetadata;
+        if (metadata.status === 'complete') {
+          throw new Error('StarKies ya tiene una migración completa en Firebase. Se rechazó la importación.');
+        }
+        if (metadata.status !== 'in-progress' || metadata.sourceExportedAt !== sourceExportedAt) {
+          throw new Error('Cambió el estado de migración mientras se preparaba la importación. No se escribieron nuevos registros.');
+        }
+      } else {
+        transaction.set(metaRef, {
+          status: 'in-progress',
+          schemaVersion: 3,
+          stateKeys,
+          arrayKeys,
+          settingKeys,
+          sourceBackupId: archiveId,
+          sourceExportedAt,
+          startedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    const archiveRef = doc(
+      this.firebase.firestore,
+      'migrationArchives', archiveId,
+    );
+    const archiveSnapshot = await getDoc(archiveRef);
+    if (!archiveSnapshot.exists()) {
+      await this.archiveService.archiveOriginalBackup(backup, archiveId);
+    } else if (!isResume) {
+      throw new Error('Ya existe un archivo con ese identificador y no hay una migración en curso. No se sobrescribió.');
+    }
+
+    let batch = writeBatch(this.firebase.firestore);
+    let operations = 0;
+    const flushIfFull = async () => {
+      if (operations >= 400) {
+        await batch.commit();
+        batch = writeBatch(this.firebase.firestore);
+        operations = 0;
+      }
+    };
+
+    for (const [key, value] of stateEntries) {
+      if (Array.isArray(value)) {
+        value.forEach((record, index) => {
+          const rawRecord = this.isRecord(record) ? record : {};
+          const candidateId = String(rawRecord['id'] ?? rawRecord['code'] ?? '').trim();
+          const recordId = candidateId && !candidateId.includes('/') ? candidateId : String(index).padStart(6, '0');
+          const recordRef = doc(
+            this.firebase.firestore,
+            key, recordId,
+          );
+          const storedRecord: Record<string, unknown> = { ...(this.isRecord(record) ? record : {}), sortIndex: index };
+          if (key === 'customers') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+            storedRecord['nameSearchTokens'] = this.searchNameTokensFor({ ...storedRecord, id: recordId });
+          } else if (key === 'orders') {
+            storedRecord['searchTokens'] = this.searchTokensFor({ ...storedRecord, id: recordId });
+          }
+          batch.set(recordRef, storedRecord);
+          operations += 1;
+        });
+        await flushIfFull();
+      } else {
+        const settingRef = doc(this.firebase.firestore, 'settings', key);
+        batch.set(settingRef, { data: value });
+        operations += 1;
+        await flushIfFull();
+      }
+    }
+
+    const ordersForStats = stateEntries.find(([key, value]) => key === 'orders' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const salesByProduct = new Map<string, number>();
+    const demandByProduct = new Map<string, number>();
+    let deliveredOrders = 0;
+    let revenue = 0;
+    for (const rawOrder of ordersForStats ?? []) {
+      if (!this.isRecord(rawOrder)) continue;
+      const status = String(rawOrder['status'] ?? '').toUpperCase();
+      const quantities = this.extractOrderSalesQuantities(rawOrder);
+      const isDelivered = this.isDeliveredOrderStatus(status);
+      const isPending = this.isPendingOrderStatus(status);
+      if (isDelivered) {
+        deliveredOrders++;
+        const total = Number(rawOrder['total'] ?? 0);
+        if (Number.isFinite(total) && total > 0) revenue += total;
+        for (const [id, quantity] of quantities) salesByProduct.set(id, (salesByProduct.get(id) ?? 0) + quantity);
+      } else if (isPending) {
+        for (const [id, quantity] of quantities) demandByProduct.set(id, (demandByProduct.get(id) ?? 0) + quantity);
+      }
+    }
+    for (const [id, unitsSold] of salesByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productSalesStats', id), { productId: id, unitsSold });
+      operations += 1;
+      await flushIfFull();
+    }
+    for (const [id, pendingUnits] of demandByProduct) {
+      batch.set(doc(this.firebase.firestore, 'productionDemand', id), { recipeId: id, pendingUnits });
+      operations += 1;
+      await flushIfFull();
+    }
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'sales'), {
+      deliveredOrders, revenue: Math.round(revenue * 100) / 100,
+      unitsSold: [...salesByProduct.values()].reduce((sum, quantity) => sum + quantity, 0),
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
+
+    const productionRows = stateEntries.find(([key, value]) => key === 'productionHistory' && Array.isArray(value))?.[1] as unknown[] | undefined;
+    const productionEntries = (productionRows ?? []).filter((row): row is Record<string, unknown> => this.isRecord(row));
+    batch.set(doc(this.firebase.firestore, 'businessStats', 'production'), {
+      totalBatches: productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['batches'] ?? 0)), 0),
+      totalUnits: productionEntries.reduce((sum, row) => sum + (String(row['outputUnit'] ?? '') === 'g' ? 0 : Math.max(0, Number(row['totalYield'] ?? 0))), 0),
+      totalCost: Math.round(productionEntries.reduce((sum, row) => sum + Math.max(0, Number(row['calculatedCost'] ?? 0)), 0) * 100) / 100,
+      completedRuns: productionEntries.length,
+      updatedAt: new Date().toISOString(),
+    });
+    operations += 1;
+    await flushIfFull();
+
+    if (operations > 0) await batch.commit();
+
+    await setDoc(metaRef, {
+      status: 'complete',
+      schemaVersion: 3,
+      stateKeys,
+      arrayKeys,
+      settingKeys,
+      sourceBackupId: archiveId,
+      sourceExportedAt,
+      importedAt: new Date().toISOString(),
+      revision: increment(1),
+      changedKeys: [...stateKeys, 'stats:sales', 'stats:demand', 'stats:production'],
+      recordCounts: Object.fromEntries(
+        stateEntries
+          .filter(([, value]) => Array.isArray(value))
+          .map(([key, value]) => [key, (value as unknown[]).length]),
+      ),
+    }, { merge: true });
+  }
+
+  private async assertDestinationIsEmpty(arrayKeys: string[], settingKeys: string[]): Promise<void> {
+    const existingArrays = await Promise.all(arrayKeys.map(async (key) => {
+      const snapshot = await getDocs(collection(
+        this.firebase.firestore,
+        key,
+      ));
+      return snapshot.empty ? null : key;
+    }));
+
+    const existingSettings = await Promise.all(settingKeys.map(async (key) => {
+      const snapshot = await getDoc(
+        doc(this.firebase.firestore, 'settings', key),
+      );
+      return snapshot.exists() ? key : null;
+    }));
+
+    const conflicts = [...existingArrays, ...existingSettings].filter((key): key is string => Boolean(key));
+    if (conflicts.length) {
+      throw new Error(`Ya hay datos en Firebase (${conflicts.slice(0, 5).join(', ')}). Se canceló la importación para no sobrescribirlos.`);
+    }
+  }
 
   /**
    * Recursively removes undefined object properties before sending values to
