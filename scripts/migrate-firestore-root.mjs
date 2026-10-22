@@ -335,7 +335,17 @@ async function main() {
 
   const checked = await Promise.all(operations.map(async operation => {
     const destination = await db.doc(operation.target).get();
-    return { ...operation, action: !destination.exists ? 'create' : equal(destination.data(), operation.data) ? 'skip-identical' : 'conflict' };
+    const existingData = destination.data();
+    // Aggregate documents receive updatedAt during the initial apply. A later
+    // verification rebuilds the same derived values at a different time, so
+    // compare the metric fields while ignoring only that volatile timestamp.
+    const comparableExisting = operation.target.startsWith('businessStats/') && isObject(existingData)
+      ? Object.fromEntries(Object.entries(existingData).filter(([key]) => key !== 'updatedAt'))
+      : existingData;
+    const comparableExpected = operation.target.startsWith('businessStats/') && isObject(operation.data)
+      ? Object.fromEntries(Object.entries(operation.data).filter(([key]) => key !== 'updatedAt'))
+      : operation.data;
+    return { ...operation, action: !destination.exists ? 'create' : equal(comparableExisting, comparableExpected) ? 'skip-identical' : 'conflict' };
   }));
   const conflicts = checked.filter(operation => operation.action === 'conflict');
   const actions = checked.reduce((result, operation) => {
