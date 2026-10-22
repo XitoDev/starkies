@@ -64,23 +64,14 @@ async function main() {
     const sourceCollection = db.collection(oldBase + '/collections/' + key + '/records');
     const snapshot = await sourceCollection.get();
     counts[key] = snapshot.size;
-    const targetCollection = key === 'catalog' ? 'publicCatalog' : key;
+    const targetCollection = key;
     for (const document of snapshot.docs) {
       const legacyDocument = document.data();
       const value = isObject(legacyDocument.value) ? legacyDocument.value : {};
       const documentId = cleanId(value.id) || cleanId(value.code) || cleanId(document.id);
       if (!documentId) throw new Error('Cannot derive a stable document ID from ' + document.ref.path);
       const data = { ...value, sortIndex: Number(legacyDocument.index ?? 0) };
-      if (targetCollection === 'publicCatalog' && documentId === 'catalog-settings') {
-        const settings = isObject(legacyDocument.value) ? legacyDocument.value : {};
-        operations.push({
-          source: document.ref.path,
-          target: 'publicCatalog/catalog-settings',
-          data: { id: 'catalog-settings', kind: 'settings', ...settings, sortIndex: Number(legacyDocument.index ?? 0) },
-        });
-      } else {
-        operations.push({ source: document.ref.path, target: targetCollection + '/' + documentId, data });
-      }
+      operations.push({ source: document.ref.path, target: targetCollection + '/' + documentId, data });
       if (key === 'customers') {
         const phone = normalizePhone(value.phone);
         if (phone.length >= 7) {
@@ -274,7 +265,7 @@ async function main() {
     status: 'complete',
     schemaVersion: 3,
     sourceSchemaVersion: legacyMeta.schemaVersion ?? 1,
-    collectionKeys: [...new Set([...collectionKeys.filter(key => key !== 'catalog'), 'publicCatalog'])],
+    collectionKeys,
     settingKeys: [...new Set(legacyMeta.settingKeys ?? [])],
     migratedFrom: metaPath,
     migratedAt: new Date().toISOString(),
