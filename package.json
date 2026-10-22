@@ -7,15 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "api:dev": "npx vercel dev --listen 3000",
-    "firestore:migrate:root": "node scripts/migrate-firestore-root.mjs",
-    "firestore:migrate:root:apply": "node scripts/migrate-firestore-root.mjs --apply",
-    "firestore:migrate:root:verify": "node scripts/migrate-firestore-root.mjs --verify",
-    "firestore:catalog:projection": "node scripts/sync-public-catalog.mjs",
-    "firestore:catalog:projection:apply": "node scripts/sync-public-catalog.mjs --apply",
-    "firestore:catalog:projection:verify": "node scripts/sync-public-catalog.mjs --verify",
-    "firestore:cleanup:legacy": "node scripts/cleanup-legacy-firestore.mjs",
-    "firestore:cleanup:legacy:apply": "node scripts/cleanup-legacy-firestore.mjs --apply --confirm-delete-legacy-collections"
+    "api:dev": "npx vercel dev --listen 3000"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
