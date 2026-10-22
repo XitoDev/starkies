@@ -425,7 +425,6 @@ export class Finanzas {
       return;
     }
     const current = this.ledger();
-    const state = this.dataService.rawState() ?? {};
     const deliveredIds = (this.dataService.deliveredOrders() as unknown as Record<string, unknown>[])
       .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object' && !Array.isArray(item)))
       .filter(order => {
