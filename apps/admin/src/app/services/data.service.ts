@@ -76,7 +76,7 @@ export class DataService {
   private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
 
   /** Loads orders in bounded pages; the initial Admin load does not fetch all orders. */
-  async loadOrdersPage(reset = false): Promise<void> {
+  async loadOrdersPage(reset = false, statusFilter = 'ALL'): Promise<void> {
     if (this.ordersPageLoading()) return;
     this.ordersPageLoading.set(true);
     try {
@@ -91,6 +91,7 @@ export class DataService {
         cursor: this.ordersPageCursor,
         orderField: 'sortIndex',
         direction: 'desc',
+        filters: statusFilter === 'ALL' ? [] : [{ field: 'status', op: '==', value: statusFilter }],
       });
       this.ordersPageCursor = page.cursor;
       this.ordersPageHasMore.set(page.hasMore);
