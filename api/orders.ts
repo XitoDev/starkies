@@ -46,12 +46,12 @@ const searchTokensFor = (record: Record<string, unknown>): string[] => {
 };
 
 const nameSearchTokensFor = (record: Record<string, unknown>): string[] => {
-  const name = String(record['name'] ?? '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+  const name = String(record['name'] ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
   const tokens = new Set<string>();
-  for (const word of name.split(/\\s+/).filter(part => part.length >= 2)) {
+  for (const word of name.split(/\s+/).filter(part => part.length >= 2)) {
     for (let i = 2; i <= word.length; i++) tokens.add(word.slice(0, i));
   }
-  const compact = name.replace(/\\s+/g, '');
+  const compact = name.replace(/\s+/g, '');
   for (let i = 2; i <= compact.length; i++) tokens.add(compact.slice(0, i));
   return [...tokens];
 };
