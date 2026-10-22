@@ -44,7 +44,10 @@ export class DataService implements OnDestroy {
       this.repository.invalidateStateCache();
       if (ordersChanged) {
         void this.refreshPendingOrderCount().catch(() => undefined);
-        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
+        if (Object.prototype.hasOwnProperty.call(this.rawState() ?? {}, 'orders')) {
+          if (this.ordersPageLoading()) this.ordersRefreshPending = true;
+          else void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
+        }
       }
       if (changedKeys.includes('stats:sales')) {
         void this.refreshSalesStats().catch(error => this.error.set(error.message));
@@ -197,6 +200,7 @@ export class DataService implements OnDestroy {
   readonly ordersPageLoading = signal(false);
   private ordersPageCursor: QueryDocumentSnapshot<DocumentData> | null = null;
   private lastOrdersStatusFilter = 'ALL';
+  private ordersRefreshPending = false;
   private cloudRevision = 0;
   private readonly loadedCollectionRevision = new Map<string, number>();
   private readonly collectionLoadPromises = new Map<string, Promise<void>>();
@@ -251,6 +255,10 @@ export class DataService implements OnDestroy {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar más pedidos.');
     } finally {
       this.ordersPageLoading.set(false);
+      if (this.ordersRefreshPending) {
+        this.ordersRefreshPending = false;
+        void this.loadOrdersPage(true, this.lastOrdersStatusFilter).catch(() => undefined);
+      }
     }
   }
 
