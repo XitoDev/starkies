@@ -236,8 +236,9 @@ export class Finanzas {
   private readonly salesSyncInProgress = signal(false);
 
   constructor() {
-    void this.dataService.loadCollections(['recipes', 'ingredients', 'cashMovements', 'financeLedger', 'finishedProductInventory']);
-    void this.dataService.refreshDeliveredOrders().catch(error => this.ledgerNotice.set(error.message));
+    this.dataService.loadCollections?.(['recipes', 'ingredients', 'cashMovements', 'financeLedger', 'finishedProductInventory']);
+    const deliveredLoad = this.dataService.refreshDeliveredOrders?.();
+    if (deliveredLoad) void deliveredLoad.catch(error => this.ledgerNotice.set(error.message));
     this.route.queryParamMap.subscribe(params => {
       if (params.get('action') !== 'purchase') return;
       const ingredientId = params.get('ingredientId') ?? '';
