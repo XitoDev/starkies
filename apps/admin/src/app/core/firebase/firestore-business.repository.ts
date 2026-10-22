@@ -219,7 +219,7 @@ export class FirestoreBusinessRepository {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const snapshot = await getDocs(query(
       collection(this.firebase.firestore, 'orders'),
-      where('status', 'in', ['PENDING', 'pending', 'Pendiente', 'PENDIENTE', 'pendiente', 'PENDIENTES']),
+      where('status', 'in', ['PENDING', 'pending', 'Pendiente', 'PENDIENTE', 'pendiente', 'PENDIENTES', 'Pendiente de pago', 'PENDIENTE DE PAGO', 'pendiente de pago']),
     ));
     return snapshot.docs.map(item => {
       const { sortIndex: _sortIndex, searchTokens: _searchTokens, nameSearchTokens: _nameSearchTokens, ...value } = item.data();
