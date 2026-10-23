@@ -1,1 +1,172 @@
 /* Storefront styles are scoped in the catalog application's global stylesheet to keep component CSS within Angular's size budget. */
+
+
+/* Tema StarKies inspirado en La noche estrellada, aplicado desde el ámbito del componente. */
+:host .site-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 30%, #f7d980 0 1.5px, transparent 2px),
+    radial-gradient(circle at 25% 72%, #eecb7c 0 1px, transparent 1.8px),
+    radial-gradient(circle at 72% 25%, #f7d980 0 1.5px, transparent 2px),
+    radial-gradient(circle at 86% 68%, #eecb7c 0 1px, transparent 1.8px),
+    linear-gradient(115deg, #101d3b, #1d3157 58%, #172849);
+  border-bottom: 1px solid rgb(242 201 109 / 35%);
+}
+:host .site-header::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .32;
+  pointer-events: none;
+  background:
+    repeating-radial-gradient(ellipse at 80% 20%, transparent 0 22px, rgb(135 165 221 / 22%) 23px 25px, transparent 26px 43px);
+  mask-image: linear-gradient(90deg, transparent, #000);
+}
+:host .brand, :host .brand .wordmark { color: #fff7e7; }
+:host .brand-tagline { color: #f2d58c; letter-spacing: .22em; }
+:host .wordmark-star { color: #f2c96d; }
+:host .hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 13% 22%, #f5d37b 0 2px, transparent 3px),
+    radial-gradient(circle at 24% 66%, #e6bd64 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 43% 18%, #f8dfa0 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 68% 32%, #f5d37b 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 72%, #e6bd64 0 1.5px, transparent 2.5px),
+    radial-gradient(ellipse at 75% 18%, rgb(73 105 167 / 42%), transparent 42%),
+    linear-gradient(125deg, #101d3b 0%, #1c3157 54%, #263d68 100%);
+  color: #fff8e8;
+  border-radius: 0 0 34px 34px;
+}
+:host .hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -18%;
+  pointer-events: none;
+  opacity: .42;
+  background: repeating-radial-gradient(ellipse at 80% 42%, transparent 0 24px, rgb(137 168 225 / 22%) 25px 28px, transparent 29px 48px);
+  transform: rotate(-8deg);
+}
+:host .hero h1 { color: #fff8e8; text-shadow: 0 5px 32px rgb(5 13 32 / 25%); }
+:host .hero h1 em { color: #f4d27e; }
+:host .hero p { color: #e2e8f5; }
+:host .hero .hero-cta {
+  color: #182747;
+  background: linear-gradient(135deg, #f7dc94, #edbf58);
+  box-shadow: 0 8px 24px rgb(3 12 31 / 24%);
+  border: 1px solid rgb(255 247 216 / 60%);
+}
+:host .eyebrow { color: #9b7933; letter-spacing: .18em; }
+:host .presentation-section { background: transparent; }
+:host .section-title h2,
+:host .catalog-heading h2,
+:host .category-title { color: #182747; }
+:host .presentation-card {
+  border: 1px solid #d7d9e0;
+  border-radius: 22px;
+  background: linear-gradient(150deg, #fffdf7, #f0ebdf);
+  color: #182747;
+  box-shadow: 0 8px 24px rgb(24 39 71 / 6%);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+:host .presentation-card:hover { transform: translateY(-3px); box-shadow: 0 14px 28px rgb(24 39 71 / 10%); }
+:host .presentation-card.active {
+  border-color: #d9ad4d;
+  background: linear-gradient(145deg, #1a2b4d, #263d68);
+  color: #fff8e8;
+  box-shadow: 0 12px 30px rgb(19 36 69 / 20%);
+}
+:host .presentation-card.active .presentation-description,
+:host .presentation-card.active .choose-label { color: #e7eaf3; }
+:host .presentation-card.active .box-price,
+:host .presentation-card.active .presentation-check { color: #f4d27e; }
+:host .presentation-number { color: #9b7933; }
+:host .catalog-hint {
+  border: 1px solid #e7d4a4;
+  border-radius: 18px;
+  background: #fff7e2;
+  color: #394765;
+}
+:host .hint-icon { color: #bd8c2d; }
+:host .catalog-count { color: #65718a; }
+:host .category-group { margin-top: 28px; }
+:host .product {
+  overflow: hidden;
+  border: 1px solid #e6e1d7;
+  border-radius: 22px;
+  background: #fffdf8;
+  box-shadow: 0 8px 24px rgb(24 39 71 / 6%);
+}
+:host .product .photo { background: #f0ebdf; }
+:host .product .product-body { background: #fffdf8; }
+:host .product .product-category { color: #9b7933; letter-spacing: .16em; }
+:host .product h3 { color: #182747; }
+:host .product p { color: #65718a; }
+:host .product-tag {
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 999px;
+  background: #1d3157;
+  color: #fff7e7;
+}
+:host .buy .add-button {
+  border: 1px solid #d9ad4d;
+  border-radius: 14px;
+  background: #f6d88c;
+  color: #182747;
+}
+:host .buy .add-button:hover:not(:disabled) { background: #efc76a; }
+:host .add-icon { background: #e8bb51; color: #182747; }
+:host .quantity { border-color: #d9ad4d; background: #fff1c9; }
+:host .quantity button { background: #1d3157; color: #fff8e8; }
+:host .quantity button:hover:not(:disabled) { background: #2c4778; }
+:host .quantity b { color: #182747; }
+:host .site-footer {
+  margin-top: 48px;
+  background:
+    radial-gradient(circle at 12% 22%, #f4d27e 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 83% 66%, #f4d27e 0 1.5px, transparent 2.5px),
+    linear-gradient(125deg, #101d3b, #1d3157 65%, #172849);
+  color: #f8f4eb;
+  border-top: 1px solid rgb(242 201 109 / 35%);
+}
+:host .site-footer h2,
+:host .site-footer .wordmark { color: #fff8e8; }
+:host .site-footer p,
+:host .site-footer .footer-label,
+:host .site-footer small,
+:host .site-footer .footer-bottom > a { color: #dbe3f3; }
+:host .site-footer .brand-tagline,
+:host .site-footer .footer-social-link svg { color: #f2d58c; }
+:host .site-footer .footer-social-link { color: #fff8e8; }
+:host .cart-dock .dock-card {
+  border: 1px solid #d9ad4d;
+  border-radius: 20px;
+  background: #fffdf7;
+  box-shadow: 0 12px 38px rgb(16 29 59 / 18%);
+}
+:host .cart-dock .dock-title strong,
+:host .cart-dock .dock-title span { color: #182747; }
+:host .cart-dock progress { accent-color: #d9ad4d; }
+:host .cart-dock .dock-continue,
+:host .cart-dock .dock-order {
+  border-radius: 12px;
+  background: #1d3157;
+  color: #fff8e8;
+}
+:host .modal-backdrop { background: rgb(8 17 37 / 70%); backdrop-filter: blur(8px); }
+:host .box-choice { border: 1px solid #d9ad4d; background: #fffaf0; color: #182747; box-shadow: 0 24px 90px rgb(3 12 31 / 30%); }
+:host .box-choice h2 { color: #1d3157; }
+:host .choice-total { color: #9b7933; }
+:host .button { background: #1d3157; color: #fff8e8; }
+:host .choice-secondary { border-color: #c5cad7; color: #1d3157; background: #fffdf7; }
+:host .order-success { border-color: #a7d5b6; }
+:host .skip-link:focus { background: #f6d88c; color: #182747; }
+@media (prefers-reduced-motion: reduce) {
+  :host .presentation-card, :host .product, :host .buy .add-button { transition: none; }
+}
