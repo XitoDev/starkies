@@ -76,7 +76,7 @@
           @for (line of commandLines(); track line.key) {
             <label class="command-line" [class.command-ready]="readyCommandLines().includes(line.key)">
               <input type="checkbox" [checked]="readyCommandLines().includes(line.key)" (change)="toggleCommandReady(line.key, $any($event.target).checked)">
-              <span class="command-product"><strong>{{ line.recipeName }}</strong><small>Pedido #{{ line.orderId }}</small></span>
+              <img class="command-product-image" [src]="recipeImage(line.recipeId)" [alt]="line.recipeName" loading="lazy"><span class="command-product"><strong>{{ line.recipeName }}</strong><small>Pedido #{{ line.orderId }}</small></span>
               <span class="command-quantity">{{ line.quantity }} <small>galletas</small></span>
               <span class="command-status">{{ readyCommandLines().includes(line.key) ? 'Listo' : 'Pendiente' }}</span>
             </label>
