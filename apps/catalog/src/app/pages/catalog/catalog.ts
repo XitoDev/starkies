@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Component, computed, inject, signal, PLATFORM_ID } from '@angular/core';
-import { CommonModule, NgOptimizedImage, isPlatformBrowser } from '@angular/common';
+import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
@@ -81,6 +81,7 @@ export class Catalog {
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
     const title = inject(Title), meta = inject(Meta);
+    const document = inject(DOCUMENT);
     title.setTitle('StarKies · La estrella eres tú');
     meta.updateTag({ name: 'description', content: 'Arma tu caja de galletas artesanales StarKies en Guayaquil. Elige sabores clásicos y New York, revisa los precios y solicita tu pedido en línea.' });
     meta.updateTag({ property: 'og:title', content: 'StarKies · La estrella eres tú' });
@@ -90,14 +91,15 @@ export class Catalog {
     // Relative API paths are browser-relative. During Angular prerender there is no
     // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
     // Load live business data only in the browser; never fabricate prerender data.
-    if (isPlatformBrowser(inject(PLATFORM_ID))) void this.loadCatalog();
+    if (isPlatformBrowser(inject(PLATFORM_ID))) void this.loadCatalog(document.baseURI);
   }
-  retryCatalog(): void { void this.loadCatalog(); }
-  private async loadCatalog(): Promise<void> {
+  retryCatalog(): void { void this.loadCatalog(isPlatformBrowser(inject(PLATFORM_ID)) ? inject(DOCUMENT).baseURI : undefined); }
+  private async loadCatalog(baseUri?: string): Promise<void> {
     this.catalogLoading.set(true);
     this.catalogLoadError.set('');
     try {
-      const response = await fetch('/api/catalog', { headers: { Accept: 'application/json' } });
+      const apiUrl = baseUri ? new URL('/api/catalog', baseUri).toString() : '/api/catalog';
+      const response = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
       const result: unknown = await response.json().catch(() => null);
       const record = this.asRecord(result);
       if (!response.ok) throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos cargar el catálogo.');
