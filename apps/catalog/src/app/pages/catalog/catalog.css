@@ -683,3 +683,9 @@
   :host .presentation-card, :host .product-card, :host .product,
   :host .hero .hero-cta, :host .editorial-button, :host .cta-button { transition: none; }
 }
+
+/* (catalog) Evita que la navegación y los controles se compriman en pantallas medianas. */
+@media (min-width: 681px) and (max-width: 820px) {
+  :host .main-nav { flex-wrap: wrap; justify-content: flex-end; }
+  :host .site-header { align-items: center; }
+}
