@@ -288,3 +288,115 @@
   :host .hero-chocolate-one { top: 9%; left: 5%; }
   :host .hero-chocolate-two { bottom: 8%; left: 12%; }
 }
+
+
+/* Ajuste de proporciones para que header y hero formen una sola pieza como la referencia. */
+:host {
+  position: relative;
+  min-height: 100%;
+  background: #d9d5ff;
+}
+:host .site-header {
+  position: absolute;
+  z-index: 10;
+  top: 64px;
+  left: 50%;
+  width: min(92%, 1404px);
+  min-height: 0;
+  margin: 0;
+  padding: 28px clamp(28px, 4.4vw, 68px);
+  transform: translateX(-50%);
+  border-radius: 0;
+  background: transparent;
+}
+:host .hero {
+  width: min(92%, 1404px);
+  min-height: clamp(700px, 58vw, 890px);
+  margin: 64px auto 54px;
+  padding: 142px clamp(28px, 4.4vw, 68px) 64px;
+  border-radius: 40px;
+  box-shadow: 0 30px 52px rgb(32 29 73 / 18%);
+  background: #d9d5ff;
+}
+:host .hero::before {
+  inset: 0 auto 0 0;
+  width: 53%;
+  background: #201d49;
+  clip-path: polygon(0 0, 65% 0, 73% 5%, 84% 11%, 93% 18%, 99% 26%, 100% 33%, 95% 40%, 84% 46%, 78% 52%, 77% 59%, 81% 66%, 86% 75%, 85% 83%, 78% 90%, 65% 96%, 51% 99%, 33% 100%, 17% 97%, 0 91%);
+}
+:host .hero h1 {
+  max-width: 620px;
+  font-size: clamp(3.7rem, 5.9vw, 5.9rem);
+  line-height: .91;
+  letter-spacing: -.06em;
+}
+:host .hero h1 .hero-emphasis { color: #bdb6ff; }
+:host .hero-copy > p { max-width: 440px; margin-top: 22px; margin-bottom: 28px; }
+:host .hero-flavors { gap: clamp(14px, 1.8vw, 28px); margin-bottom: 34px; }
+:host .hero-flavors > span {
+  width: clamp(68px, 6.7vw, 102px);
+  border: 2px solid #fff;
+  box-shadow: none;
+  background: #bdb6ff;
+}
+:host .hero-cta {
+  min-width: 264px;
+  min-height: 60px;
+  background: #d9d5ff;
+  color: #201d49;
+  font-size: 1.05rem;
+  box-shadow: none;
+}
+:host .hero-cta:hover { background: #c9c3ff; }
+:host .hero-art { min-height: 500px; }
+:host .hero-cookie-hero {
+  width: min(118%, 720px);
+  transform: rotate(-5deg) scale(1.12);
+  filter: drop-shadow(0 22px 20px rgb(32 29 73 / 22%));
+}
+:host .hero-orbit-one {
+  right: -28%;
+  bottom: -26%;
+  width: 60%;
+  background: #35315f;
+}
+:host .hero-chocolate {
+  background: linear-gradient(140deg, #5b2a20 0%, #a45b3b 40%, #4b211d 76%, #c17b54 100%);
+}
+@media (max-width: 1000px) {
+  :host .site-header { top: 32px; width: min(94%, 1404px); padding: 22px 28px; }
+  :host .hero { width: min(94%, 1404px); min-height: 760px; margin-top: 32px; padding: 132px 28px 42px; }
+  :host .hero h1 { font-size: clamp(3.1rem, 6.1vw, 4.7rem); }
+  :host .hero-art { min-height: 390px; }
+}
+@media (max-width: 620px) {
+  :host .site-header {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    width: calc(100% - 32px);
+    padding: 16px 18px 10px;
+    transform: translateX(-50%);
+    background: transparent;
+  }
+  :host .hero {
+    width: calc(100% - 32px);
+    min-height: 0;
+    margin: 18px auto 38px;
+    padding: 148px 22px 26px;
+    border-radius: 28px;
+  }
+  :host .hero::before {
+    width: 100%;
+    clip-path: polygon(0 0, 100% 0, 100% 40%, 91% 47%, 86% 54%, 91% 63%, 100% 72%, 100% 100%, 0 100%);
+  }
+  :host .hero-copy { padding: 0; }
+  :host .hero h1 { font-size: clamp(2.8rem, 12vw, 4.3rem); }
+  :host .hero h1 span:first-child { white-space: normal; }
+  :host .hero-copy > p { max-width: 340px; font-size: .98rem; }
+  :host .hero-flavors { gap: 10px; }
+  :host .hero-flavors > span { width: clamp(56px, 15vw, 76px); }
+  :host .hero-cta { min-width: 210px; min-height: 52px; }
+  :host .hero-art { min-height: 0; margin-top: 0; }
+  :host .hero-cookie-hero { width: min(100%, 360px); transform: rotate(-5deg) scale(1.04); }
+}
