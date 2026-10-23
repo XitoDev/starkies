@@ -20,7 +20,7 @@ type IngredientRow = { ingredientId: string; quantity: number | null };
 type RecipeForm = {
   name: string; category: string; gramsPerCookie: number | null; price: number;
   kind: RecipeKind; baseId: string; image: string; notes: string;
-  dough: IngredientRow[]; additions: IngredientRow[]; filling: IngredientRow[];
+  dough: IngredientRow[]; additions: IngredientRow[]; filling: IngredientRow[]; decoration: IngredientRow[];
 };
 type BaseIngredient = { ingredientId?: string; id?: string; name?: string; quantity?: number; qty?: number; unit?: string };
 type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; items?: BaseIngredient[]; ingredients?: BaseIngredient[] };
@@ -131,7 +131,7 @@ export class Recetas {
     if (grams <= 0) return this.editingRecipe()?.yield ?? 1;
     const batchMass = form.kind === 'base'
       ? Number(this.selectedBase()?.weight ?? 0)
-      : this.rowMass(form.dough) + this.rowMass(form.additions) + this.rowMass(form.filling);
+      : this.rowMass(form.dough) + this.rowMass(form.additions) + this.rowMass(form.filling) + this.rowMass(form.decoration);
     return Math.max(1, Math.floor(batchMass / grams) || 1);
   });
   readonly unitCost = computed(() => {
@@ -151,7 +151,7 @@ export class Recetas {
         : 0;
       return baseCostPerCookie + costForRows(form.additions) + costForRows(form.filling);
     }
-    return (costForRows(form.dough) + costForRows(form.additions) + costForRows(form.filling)) / Math.max(1, this.batchYield());
+    return (costForRows(form.dough) + costForRows(form.additions) + costForRows(form.filling) + costForRows(form.decoration)) / Math.max(1, this.batchYield());
   });
   readonly currentRecipeCost = (recipe: Recipe): number => {
     const costForRows = (rows: { ingredientId: string; quantity: number }[]) => rows.reduce((sum, row) => {
@@ -213,7 +213,7 @@ export class Recetas {
       price: recipe.price, kind: recipe.baseId ? 'base' : 'own', baseId: recipe.baseId ?? '',
       image: recipe.image ?? '', notes: String((recipe as Recipe & { notes?: string }).notes ?? ''),
       dough: section('masa'), additions: section('añadidos', 'añadidos a la masa'),
-      filling: section('relleno', 'decoración'),
+      filling: section('relleno'), decoration: section('decoración'),
     });
     this.imagePreview.set(recipe.image ? this.getImageUrl(recipe.image) : '');
     this.selectedFile.set(null); this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
@@ -231,13 +231,13 @@ export class Recetas {
     this.form.update(form => ({ ...form, [field]: parsed === null ? null : Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
   }
   setRecipeKind(value: string): void { if (value === 'own' || value === 'base') this.form.update(form => ({ ...form, kind: value, baseId: value === 'base' ? (form.baseId || this.doughBases()[0]?.id || '') : '' })); }
-  addIngredient(section: 'dough' | 'additions' | 'filling'): void {
+  addIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration'): void {
     this.form.update(form => ({ ...form, [section]: [...form[section], { ingredientId: '', quantity: null }] }));
   }
-  removeIngredient(section: 'dough' | 'additions' | 'filling', index: number): void {
+  removeIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number): void {
     this.form.update(form => ({ ...form, [section]: form[section].filter((_, i) => i !== index) }));
   }
-  updateIngredient(section: 'dough' | 'additions' | 'filling', index: number, field: 'ingredientId' | 'quantity', value: string): void {
+  updateIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number, field: 'ingredientId' | 'quantity', value: string): void {
     this.form.update(form => ({ ...form, [section]: form[section].map((row, i) => i !== index ? row : {
       ...row, [field]: field === 'quantity' ? (value.trim() === '' ? null : Math.max(0, Number(value) || 0)) : value,
     }) }));
@@ -283,19 +283,20 @@ export class Recetas {
       }
       return null;
     };
-    for (const rows of [form.dough, form.additions, form.filling]) {
+    for (const rows of [form.dough, form.additions, form.filling, form.decoration]) {
       const validationError = validateRows(rows);
       if (validationError) { this.formError.set(validationError); return; }
     }
     const makeRows = (rows: IngredientRow[]) => rows
       .filter(row => Boolean(row.ingredientId) && row.quantity !== null && Number(row.quantity) > 0)
       .map(row => ({ ingredientId: row.ingredientId, quantity: Number(row.quantity) }));
-    const dough = makeRows(form.dough), additions = makeRows(form.additions), filling = makeRows(form.filling);
+    const dough = makeRows(form.dough), additions = makeRows(form.additions), filling = makeRows(form.filling), decoration = makeRows(form.decoration);
     if (form.kind === 'own' && !dough.length) { this.formError.set('Agrega al menos un ingrediente a la masa.'); return; }
     if (form.kind === 'base' && !form.baseId) { this.formError.set('Selecciona una masa base.'); return; }
     if (dough.length) sections.push({ name: 'masa', ingredients: dough });
     if (additions.length) sections.push({ name: 'añadidos', ingredients: additions });
     if (filling.length) sections.push({ name: 'relleno', ingredients: filling });
+    if (decoration.length) sections.push({ name: 'decoración', ingredients: decoration });
     if (sections.some(section => section.ingredients.some(row => !Number.isFinite(row.quantity) || row.quantity <= 0))) { this.formError.set('Revisa las cantidades de los ingredientes.'); return; }
     this.saving.set(true); this.formError.set('');
     try {
