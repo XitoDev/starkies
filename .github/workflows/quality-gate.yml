@@ -1,0 +1,150 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, closed]
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: quality-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-scopes:
+    name: Detect commit scopes
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    outputs:
+      admin: ${{ steps.scopes.outputs.admin }}
+      catalog: ${{ steps.scopes.outputs.catalog }}
+    steps:
+      - name: Detect admin/catalog scopes in commit messages
+        id: scopes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let messages = [];
+            if (context.eventName === 'pull_request') {
+              const commits = await github.paginate(
+                github.rest.pulls.listCommits,
+                { owner: context.repo.owner, repo: context.repo.repo, pull_number: context.payload.pull_request.number }
+              );
+              messages = commits.map(commit => commit.commit.message.split('\n')[0]);
+            } else {
+              messages = (context.payload.commits || []).map(commit => commit.message.split('\n')[0]);
+              if (context.payload.head_commit?.message) {
+                messages.push(context.payload.head_commit.message.split('\n')[0]);
+              }
+            }
+            const combined = messages.join('\n');
+            const admin = /\(admin\)/i.test(combined);
+            const catalog = /\(catalog\)/i.test(combined);
+            core.setOutput('admin', String(admin));
+            core.setOutput('catalog', String(catalog));
+            core.info('Detected commit messages:\n' + messages.join('\n'));
+            core.info(`admin scope: ${admin}; catalog scope: ${catalog}`);
+
+  admin:
+    name: Admin build and tests
+    needs: detect-scopes
+    if: needs.detect-scopes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies from committed lockfile
+        run: npm ci
+
+      - name: Build admin for production
+        run: npx ng build admin --configuration production
+
+      - name: Test admin
+        run: npx ng test admin --watch=false
+
+  catalog:
+    name: Public catalog build and tests
+    needs: detect-scopes
+    if: needs.detect-scopes.outputs.catalog == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies from committed lockfile
+        run: npm ci
+
+      - name: Build catalog with static prerendering
+        run: npx ng build catalog --configuration production
+
+      - name: Verify prerendered catalog HTML for search engines
+        run: |
+          HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+          if [ -z "$HTML_FILE" ]; then
+            echo "::error::No prerendered index.html was produced."
+            exit 1
+          fi
+          grep -qi 'rel="canonical"' "$HTML_FILE"
+          grep -qi 'Elige tu caja' "$HTML_FILE"
+          echo "Verified canonical metadata and catalog shell in $HTML_FILE"
+
+      - name: Test catalog
+        run: npx ng test catalog --watch=false
+
+      - name: Type-check public order API
+        run: npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/order-short.ts api/admin-order-document.ts api/customer-lookup.ts
+
+      - name: Smoke-test public API imports with native Node ESM
+        run: |
+          rm -rf /tmp/starkies-catalog-esm
+          npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts api/orders.ts
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
+          node --input-type=module -e "await import('/tmp/starkies-catalog-esm/api/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
+
+  delete-merged-branch:
+    name: Delete source branch after merge
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged source branch if it still exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch}`
+              });
+              core.info(`Deleted merged branch: ${branch}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Source branch already deleted: ${branch}`);
+              } else {
+                throw error;
+              }
+            }
