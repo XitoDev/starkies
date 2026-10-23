@@ -205,7 +205,7 @@ export class Recetas {
         return sectionName === expected
           || (expected === 'masa' && sectionName.includes('masa'))
           || (expected.includes('añad') && sectionName.includes('añad'))
-          || (expected === 'relleno' && (sectionName.includes('relleno') || sectionName.includes('decoración') || sectionName.includes('decoracion')));
+          || (expected === 'relleno' && sectionName.includes('relleno'));
       }))
       .flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
     this.form.set({
