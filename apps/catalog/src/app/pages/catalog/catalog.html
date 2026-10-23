@@ -1,9 +1,19 @@
 <a matButton="text" class="skip-link" href="#sabores">Saltar al catálogo</a>
 <header class="site-header" id="inicio">
   <a href="#inicio" class="brand" aria-label="StarKies, inicio">
-    <span class="wordmark">StarKies<span class="wordmark-star">✦</span></span>
-    <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
+    <img class="brand-symbol" src="/starkies-icon.svg" alt="" width="62" height="62">
+    <span class="wordmark">StarKies</span>
   </a>
+  <nav class="main-nav" aria-label="Navegación principal">
+    <a matButton="text" class="nav-link active" href="#inicio-contenido">Inicio</a>
+    <a matButton="text" class="nav-link" href="#presentaciones">Catálogo</a>
+    <a matButton="text" class="nav-link" href="#nosotros">Nosotros</a>
+    <a matButton="text" class="nav-link" href="#contacto">Contacto</a>
+    <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
+      <span class="cart-count">{{ completedBoxes().length }}</span>
+    </a>
+  </nav>
 </header>
 <main>
   @if (orderSuccess(); as confirmation) {
@@ -14,11 +24,22 @@
   }
   <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
     <div class="hero-copy hero-copy-clean">
-      <h1>La estrella<br><em>eres tú.</em></h1>
-      <p>Elige tus galletas favoritas y crea una caja muy tuya.</p>
-      <a matButton="elevated" class="hero-cta" href="#presentaciones">Arma tu caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
+      <h1><span>La estrella</span><span class="hero-emphasis">eres tú.</span><span class="hero-spark hero-spark-one" aria-hidden="true">╱</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
+      <p>Sabores intensos. Ingredientes reales. Galletas inolvidables. Explora nuestra colección artesanal y encuentra tu nueva favorita.</p>
+      <div class="hero-flavors" aria-label="Sabores de StarKies">
+        <span><img src="/images/chispas-chocolate-classic.webp" alt="" loading="eager"></span>
+        <span><img src="/images/choco-meteor.webp" alt="" loading="eager"></span>
+        <span><img src="/images/chispas-chocolate-classic.webp" alt="" loading="eager"></span>
+        <span><img src="/images/choco-meteor.webp" alt="" loading="eager"></span>
+      </div>
+      <a matButton="elevated" class="hero-cta" href="#presentaciones">Ver catálogo <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
     </div>
-
+    <div class="hero-art" aria-hidden="true">
+      <span class="hero-orbit hero-orbit-one"></span><span class="hero-orbit hero-orbit-two"></span>
+      <img class="hero-cookie-hero" src="/images/choco-meteor.webp" alt="" fetchpriority="high">
+      <span class="hero-chocolate hero-chocolate-one"></span><span class="hero-chocolate hero-chocolate-two"></span>
+      <span class="hero-crumb hero-crumb-one"></span><span class="hero-crumb hero-crumb-two"></span><span class="hero-crumb hero-crumb-three"></span>
+    </div>
   </section>
 
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
@@ -68,7 +89,7 @@
   </section>
 
 </main>
-<footer class="site-footer" aria-label="Información y contacto de StarKies">
+<section class="about-anchor" id="nosotros" aria-label="Sobre StarKies"></section>\n<footer class="site-footer" id="contacto" aria-label="Información y contacto de StarKies">
   <div class="footer-content footer-contact-content">
     <div class="footer-help">
       <h2>¿Tienes alguna pregunta?</h2>
