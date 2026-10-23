@@ -16,6 +16,8 @@ import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatBottomSheetModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
   readonly currentYear = new Date().getFullYear();
   readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
   readonly presentations = BOX_PRESENTATIONS;
