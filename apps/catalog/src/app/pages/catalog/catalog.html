@@ -52,7 +52,7 @@
       <div class="search-field"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Busca tu sabor favorito"></div>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
-    @if (catalogLoadError()) { <p role="alert" class="catalog-instruction">{{ catalogLoadError() }}</p> }
+    @if (catalogLoadError()) { <div role="alert" class="catalog-instruction"><p>{{ catalogLoadError() }}</p><button matButton="outlined" type="button" (click)="retryCatalog()">Intentar de nuevo</button></div> }
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id; let i = $index) {
         <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
@@ -89,7 +89,7 @@
         </div></section>
       }
     </div>
-    @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>No encontramos ese sabor</h3><p>Prueba con otro nombre o cambia tu búsqueda.</p></div> }
+    @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>{{ products().length === 0 ? 'Estamos preparando nuestro catálogo' : 'No encontramos ese sabor' }}</h3><p>{{ products().length === 0 ? 'En este momento no hay sabores publicados. Vuelve a intentarlo más tarde.' : 'Prueba con otro nombre o cambia tu búsqueda.' }}</p><button matButton="outlined" type="button" (click)="retryCatalog()">Actualizar catálogo</button></div> }
   </section>
 
 </main>
