@@ -52,15 +52,7 @@
 :host .hero-orbit { background:#cf8295; opacity:.85; }
 :host .hero-orbit-one { right:-8%; bottom:0; width:44%; aspect-ratio:1; }
 :host .hero-orbit-two { background:#e8b6c0; box-shadow:-54px 78px #f2d6d9,65px 150px #c66a32,-100px 300px #e4a9b5; }
-:host .editorial-about { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,.9fr); align-items:center; gap:clamp(28px,7vw,100px); padding:clamp(56px,8vw,112px) clamp(24px,10vw,150px); background:#fffdfb; }
-:host .about-photo { position:relative; display:grid; place-items:center; min-height:300px; }
-:host .about-photo img { position:relative; z-index:1; width:min(100%,430px); aspect-ratio:1; object-fit:contain; filter:drop-shadow(0 18px 18px #633d3c24); }
-:host .about-orbit { position:absolute; width:72%; aspect-ratio:1; border-radius:50% 0 0 50%; background:#eac2c8; transform:translate(10%,0); }
 :host .eyebrow { color:var(--sk-rose); font-size:.68rem; font-weight:700; letter-spacing:.28em; }
-:host .about-copy h2, :host .testimonial-copy h2 { margin:12px 0 18px; color:var(--sk-ink); font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(2.4rem,4.2vw,4.3rem); font-weight:700; line-height:.98; letter-spacing:-.04em; }
-:host .about-copy h2 em, :host .testimonial-copy h2 em { color:var(--sk-pink); font-weight:600; }
-:host .about-copy p, :host .testimonial-copy p { max-width:510px; color:var(--sk-muted); font-size:.98rem; line-height:1.8; }
-:host .editorial-button { margin-top:12px; }
 :host .presentation-section { width:100%; margin:0; padding:clamp(52px,7vw,96px) clamp(20px,7vw,100px); border-radius:0; background:linear-gradient(130deg,#865477,#a56b8c 55%,#7c4c75); color:#fff8f5; }
 :host .presentation-section .section-title { align-items:end; gap:24px; }
 :host .presentation-section .eyebrow, :host .presentation-section .catalog-count { color:#f4d8df; }
@@ -99,21 +91,9 @@
 :host .quantity { border-color:#e5bdc6; background:#fff0f2; }
 :host .quantity button { background:var(--sk-pink); color:white; }
 :host .quantity b { color:var(--sk-ink); }
-:host .testimonial-band { display:grid; grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,.8fr); align-items:center; gap:clamp(20px,4vw,55px); padding:clamp(50px,7vw,100px) clamp(24px,7vw,105px); background:#fffaf8; }
-:host .testimonial-photo img { width:100%; max-height:300px; object-fit:contain; filter:drop-shadow(0 14px 15px #603a3d20); }
-:host .testimonial-quote { position:relative; padding:clamp(22px,3vw,38px); border-radius:35% 20% 30% 18%; background:#fff; box-shadow:0 14px 38px #613a4b10; text-align:center; }
 :host .quote-mark { color:var(--sk-pink); font-family:Georgia,serif; font-size:3.8rem; line-height:.8; }
-:host .testimonial-quote p { color:var(--sk-muted); line-height:1.8; }
 :host .quote-stars { display:block; margin:12px 0 7px; color:#d8a24e; letter-spacing:.2em; }
-:host .testimonial-quote small { color:var(--sk-muted); }
-:host .testimonial-copy h2 { font-size:clamp(2.1rem,3.5vw,3.4rem); }
 :host .text-link { display:inline-flex; gap:12px; margin-top:14px; color:var(--sk-pink); font-weight:700; text-decoration:none; }
-:host .order-cta { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.75fr); align-items:center; gap:32px; padding:clamp(42px,6vw,80px) clamp(24px,9vw,130px); overflow:hidden; background:radial-gradient(circle at 75% 30%,#c997bd,transparent 35%),linear-gradient(110deg,#9e6d98,#c093ba 55%,#8c5879); color:white; }
-:host .order-cta .eyebrow { color:#fbe8ee; }
-:host .order-cta h2 { max-width:650px; margin:12px 0; color:white; font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(2.6rem,5vw,4.5rem); line-height:.98; }
-:host .order-cta p { max-width:520px; color:#fff0f4; line-height:1.7; }
-:host .order-cta img { width:100%; max-height:310px; object-fit:contain; filter:drop-shadow(0 18px 18px #49254045); }
-:host .cta-button { margin-top:12px; background:#fff8f5; color:var(--sk-pink); }
 :host .site-footer { margin:0; padding:42px clamp(24px,7vw,100px) 20px; border:0; border-radius:0; background:#fff8f5; color:var(--sk-ink); }
 :host .site-footer .footer-content { display:grid; grid-template-columns:1.2fr .8fr .8fr 1fr; gap:30px; }
 :host .site-footer h2, :host .site-footer .wordmark { color:var(--sk-ink); }
@@ -143,10 +123,8 @@
   :host .main-nav a.nav-link { font-size:.75rem; }
   :host .hero { min-height:500px; padding-inline:5vw; }
   :host .hero h1 { font-size:clamp(3.8rem,8vw,6rem); }
-  :host .editorial-about { padding-inline:6vw; }
-  :host .testimonial-band { grid-template-columns:.7fr 1fr; }
-  :host .testimonial-copy { grid-column:1/-1; max-width:600px; margin-inline:auto; text-align:center; }
-  :host .site-footer .footer-content { grid-template-columns:repeat(2,minmax(0,1fr)); }
+:host .testimonial-band { grid-template-columns:.7fr 1fr; }
+:host .site-footer .footer-content { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:620px) {
   :host .site-header { align-items:center; flex-wrap:wrap; gap:12px; padding:14px 18px; }
@@ -161,10 +139,8 @@
   :host .hero-copy>p { margin:22px 0; }
   :host .hero-art { min-height:0; margin-top:12px; }
   :host .hero-cookie-hero { width:min(100%,390px); }
-  :host .editorial-about { grid-template-columns:1fr; gap:22px; padding:48px 24px; }
-  :host .about-photo { min-height:240px; }
-  :host .about-photo img { width:min(85%,320px); }
-  :host .about-copy h2 { font-size:3rem; }
+:host .about-photo { min-height:240px; }
+:host .about-copy h2 { font-size:3rem; }
   :host .presentation-section { padding:45px 18px; }
   :host .presentation-section .section-title { align-items:stretch; }
   :host .section-title h2, :host .catalog-heading h2 { font-size:2.8rem; }
@@ -172,14 +148,10 @@
   :host .presentation-card { min-height:230px; }
   :host .presentation-photo { width:min(100%,135px); }
   :host .catalog-heading { align-items:flex-start; gap:12px; }
-  :host .testimonial-band { grid-template-columns:1fr; padding:44px 24px; }
-  :host .testimonial-photo { max-height:180px; overflow:hidden; }
-  :host .testimonial-photo img { max-height:180px; }
-  :host .testimonial-quote { border-radius:24px; }
-  :host .testimonial-copy { grid-column:auto; text-align:left; }
-  :host .order-cta { grid-template-columns:1fr; padding:42px 24px; }
-  :host .order-cta img { max-height:210px; }
-  :host .site-footer { padding:34px 22px 18px; }
+:host .testimonial-photo { max-height:180px; overflow:hidden; }
+:host .testimonial-quote { border-radius:24px; }
+:host .order-cta { grid-template-columns:1fr; padding:42px 24px; }
+:host .site-footer { padding:34px 22px 18px; }
   :host .site-footer .footer-content { grid-template-columns:1fr 1fr; gap:26px 18px; }
   :host .footer-bottom { gap:12px; flex-wrap:wrap; }
 }
@@ -261,11 +233,6 @@
 :host .hero-flavors > span { border-color: rgb(84 58 85 / 18%); box-shadow: none; }
 :host .hero-orbit-one { background: var(--sk-olive); opacity: .45; }
 :host .hero-orbit-two { background: var(--sk-pink); opacity: .28; box-shadow: -54px 78px var(--sk-blush), 65px 150px rgb(182 198 72 / 40%), -100px 300px rgb(160 145 163 / 28%); }
-:host .editorial-about {
-  gap: clamp(28px, 5vw, 72px);
-  padding: var(--sk-section-space) max(var(--sk-page-gutter), calc((100vw - var(--sk-content-width)) / 2));
-  background: #fffdf8;
-}
 :host .presentation-section, :host .catalog-section, :host .contact-section, :host .footer-inner {
   width: min(calc(100% - 2 * var(--sk-page-gutter)), var(--sk-content-width));
   margin-inline: auto;
@@ -377,8 +344,7 @@
   :host .hero h1 { font-size: clamp(3.5rem, 15vw, 5rem); }
   :host .hero-art { min-height: 220px; max-height: 280px; }
   :host .hero-cookie-hero { width: min(76vw, 300px); }
-  :host .editorial-about { grid-template-columns: minmax(0, 1fr); padding: 42px 20px; gap: 26px; }
-  :host .about-photo { min-height: 210px; }
+:host .about-photo { min-height: 210px; }
   :host .presentation-section { padding-block: 42px; }
   :host .section-title { align-items: stretch; flex-direction: column; gap: 16px; }
   :host .search-field { width: 100%; }
@@ -408,15 +374,6 @@
 }
 :host .presentation-section .section-title .eyebrow,
 :host .presentation-section .catalog-count { color: var(--sk-muted); }
-:host .presentation-section .section-title h2,
-:host .presentation-section .catalog-heading h2 {
-  color: var(--sk-ink);
-  font-family: 'Shrikhand', 'Shrikhand-Regular', Georgia, serif;
-  font-weight: 400;
-  font-size: clamp(2rem, 3.6vw, 3.1rem);
-  line-height: 1.05;
-  margin: 4px 0 8px;
-}
 :host .presentation-section .section-title .small { color: var(--sk-muted); }
 :host .presentation-section .box-presentations { gap: clamp(12px, 1.5vw, 20px); }
 :host .presentation-section .presentation-card {
