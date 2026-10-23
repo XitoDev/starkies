@@ -36,6 +36,7 @@
   color:var(--sk-ink);
 }
 :host .hero::before { position:absolute; z-index:-1; top:10%; right:10%; width:min(39vw,490px); aspect-ratio:1; border-radius:50% 0 50% 50%; background:#edbdc6; content:""; transform:rotate(12deg); }
+:host .hero-eyebrow { margin-bottom:20px; color:var(--sk-rose); }
 :host .hero-copy { z-index:2; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; max-width:520px; }
 :host .hero h1 { display:flex; flex-direction:column; margin:0; color:var(--sk-pink); font-family:'Cormorant Garamond',Georgia,serif; font-size:clamp(4.2rem,9vw,8.2rem); font-weight:700; line-height:.76; letter-spacing:-.065em; text-transform:none; }
 :host .hero h1 span:first-child { white-space:normal; }
@@ -69,8 +70,11 @@
 :host .search-field input { color:white; }
 :host .search-field input::placeholder { color:#f4e5eb; }
 :host .box-presentations { gap:20px; }
-:host .presentation-card { position:relative; min-height:215px; padding:22px; overflow:hidden; border:1px solid #fff5; border-radius:22px; background:#ffffffed; color:var(--sk-ink); box-shadow:0 15px 30px #43253c24; }
+:host .presentation-card { position:relative; min-height:290px; padding:22px; overflow:hidden; border:1px solid #fff5; border-radius:22px; background:#ffffffed; color:var(--sk-ink); box-shadow:0 15px 30px #43253c24; }
+:host .presentation-photo { display:grid; place-items:center; width:min(100%,170px); aspect-ratio:1; margin:0 auto 12px; overflow:hidden; border-radius:50%; background:#f4dfe3; box-shadow:0 10px 22px #74475a20; }
+:host .presentation-photo img { width:100%; height:100%; object-fit:contain; }
 :host .presentation-card.active { border-color:#f5d6dd; background:#f9e9eb; color:var(--sk-ink); box-shadow:0 15px 32px #43253c35; }
+:host .presentation-card .presentation-topline { position:absolute; top:14px; right:14px; left:14px; }
 :host .presentation-card .presentation-number { color:var(--sk-pink); }
 :host .presentation-card .presentation-description, :host .presentation-card .choose-label { color:var(--sk-muted); }
 :host .presentation-card .box-price, :host .presentation-card .presentation-check { color:var(--sk-pink); }
@@ -165,7 +169,8 @@
   :host .presentation-section .section-title { align-items:stretch; }
   :host .section-title h2, :host .catalog-heading h2 { font-size:2.8rem; }
   :host .box-presentations { grid-template-columns:1fr; }
-  :host .presentation-card { min-height:160px; }
+  :host .presentation-card { min-height:230px; }
+  :host .presentation-photo { width:min(100%,135px); }
   :host .catalog-heading { align-items:flex-start; gap:12px; }
   :host .testimonial-band { grid-template-columns:1fr; padding:44px 24px; }
   :host .testimonial-photo { max-height:180px; overflow:hidden; }
