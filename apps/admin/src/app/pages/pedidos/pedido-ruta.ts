@@ -16,7 +16,7 @@ import { Order } from 'shared';
     @if (order(); as item) {
       <section class="order-page">
         <header class="heading">
-          <div><h1>{{ editing() ? 'Editar pedido' : 'Detalle del pedido' }}</h1><p>{{ customerName() }} · Pedido #{{ item.id }}</p></div>
+          <div><h1>{{ editing() ? 'Editar pedido' : 'Detalle del pedido' }}</h1><p>{{ customerName() }} · Pedido {{ displayOrderId(item.id) }}</p></div>
           @if (!editing()) { <button matButton="outlined" class="secondary pdf-download" type="button" (click)="downloadPdf(item.id)" [disabled]="downloadingPdf()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">download</mat-icon>{{ downloadingPdf() ? 'Preparando PDF…' : 'Descargar PDF' }}</button> }
         </header>
         @if (error()) { <p class="message error">{{ error() }}</p> }
@@ -101,6 +101,7 @@ export class PedidoRuta {
       this.paymentMethod = item.paymentMethod ?? 'TRANSFER';
     });
   }
+  displayOrderId(id: string): string { return id.replace(/-/g, '').slice(-6).toUpperCase(); }
   statusLabel(status: Order['status']): string {
     return status === 'PENDING' ? 'Pendiente' : status === 'PREPARING' ? 'En preparación' : status === 'READY' ? 'Listo' : status === 'DELIVERED' ? 'Entregado' : 'Cancelado';
   }
