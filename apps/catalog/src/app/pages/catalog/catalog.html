@@ -10,7 +10,6 @@
     <a matButton="text" class="nav-link" href="#nosotros">Nosotros</a>
     <a matButton="text" class="nav-link" href="#sabores">Sabores</a>
     <a matButton="text" class="nav-link" href="#contacto">Contacto</a>
-    <a matButton="text" class="nav-link" href="#contacto">Contacto</a>
     <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido">
       <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
       <span class="cart-count">{{ completedBoxes().length }}</span>
@@ -26,7 +25,7 @@
   }
   <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
     <div class="hero-copy hero-copy-clean">
-      <h1><span>La estrella</span><span class="hero-emphasis">eres tú.</span><span class="hero-spark hero-spark-one" aria-hidden="true">╱</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
+      <div class="eyebrow hero-eyebrow">GALLETAS PREMIUM</div><h1><span>Cookies</span><span class="hero-emphasis">ARTESANALES</span><span class="hero-spark hero-spark-one" aria-hidden="true">╱</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
       <p>Sabores intensos. Ingredientes reales. Galletas inolvidables. Explora nuestra colección artesanal y encuentra tu nueva favorita.</p>
       <div class="hero-flavors" aria-label="Sabores de StarKies">
         <span><img src="/images/chispas-chocolate-classic.webp" alt="" loading="eager"></span>
@@ -57,7 +56,7 @@
     <div class="box-presentations" aria-label="Presentaciones de cajas">
       @for (p of presentations; track p.id; let i = $index) {
         <button matButton="text" type="button" class="presentation-card" [class.active]="p.id === selectedPresentation().id" [class.presentation-classic]="i === 0" [class.presentation-ny]="i === 1" [class.presentation-mixed]="i === 2" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-          <span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
+          <span class="presentation-photo"><img [src]="filteredProducts()[i]?.image || '/images/chispas-chocolate-classic.webp'" [alt]="'Galletas para ' + p.name" loading="lazy"></span><span class="presentation-topline"><span class="presentation-number">0{{ i + 1 }}</span><span class="presentation-check" aria-hidden="true">{{ p.id === selectedPresentation().id ? '★' : '☆' }}</span></span>
           <strong>{{ p.name }}</strong>
           <span class="presentation-description">{{ p.desc }}</span>
           <span class="presentation-bottom"><b class="box-price">{{ formatPresentationPrice(p.price) }}</b><span class="choose-label">{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
