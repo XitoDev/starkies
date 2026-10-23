@@ -308,7 +308,7 @@
 :host .presentation-number { color: var(--sk-mauve); }
 :host .presentation-check { color: var(--sk-mauve); }
 :host .presentation-photo { background: var(--sk-cream); }
-:host .products-grid, :host .product-grid, :host .catalog-grid {
+:host .products, :host .products-grid, :host .product-grid, :host .catalog-grid {
   gap: var(--sk-card-gap);
 }
 :host .product, :host .product-card {
