@@ -170,3 +170,121 @@
 @media (prefers-reduced-motion: reduce) {
   :host .presentation-card, :host .product, :host .buy .add-button { transition: none; }
 }
+
+
+/* Header y portada fieles a la referencia StarKies en lavanda y azul noche. */
+:host {
+  --hero-lavender: #d8d5ff;
+  --hero-ink: #211e4b;
+  --hero-night: #211e4b;
+  display: block;
+  background: var(--hero-lavender);
+}
+:host .site-header {
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: min(calc(100% - 64px), 1404px);
+  min-height: 112px;
+  margin: 34px auto 0;
+  padding: 22px clamp(24px, 4.5vw, 68px);
+  overflow: visible;
+  border: 0;
+  border-radius: 42px 42px 0 0;
+  background: var(--hero-lavender);
+  box-shadow: none;
+}
+:host .brand { display: inline-flex; align-items: center; gap: 14px; min-width: 0; text-decoration: none; }
+:host .brand-symbol { display: block; width: clamp(48px, 4.5vw, 66px); height: auto; object-fit: contain; }
+:host .wordmark { color: #fff; font-size: clamp(2.15rem, 3.5vw, 3.1rem); font-weight: 850; line-height: 1; letter-spacing: -.045em; }
+:host .brand-tagline, :host .wordmark-star { display: none; }
+:host .main-nav { display: flex; align-items: center; justify-content: flex-end; gap: clamp(12px, 2.5vw, 38px); }
+:host .main-nav a.nav-link { position: relative; min-width: auto; min-height: 42px; padding: 0 4px; border-radius: 0; color: var(--hero-ink); font-size: .95rem; font-weight: 550; text-decoration: none; }
+:host .main-nav a.nav-link.active::after { position: absolute; right: 0; bottom: 1px; left: 0; height: 2px; background: var(--hero-ink); content: ""; }
+:host .header-cart { display: inline-flex; align-items: center; gap: 8px; min-width: auto; padding: 0 0 0 10px; color: var(--hero-ink); text-decoration: none; }
+:host .header-cart mat-icon { width: 27px; height: 27px; font-size: 27px; }
+:host .cart-count { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 50%; background: var(--hero-ink); color: white; font-size: .78rem; font-weight: 800; }
+:host .hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: 16px;
+  width: min(calc(100% - 64px), 1404px);
+  min-height: clamp(570px, 58vw, 840px);
+  margin: 0 auto 54px;
+  padding: clamp(36px, 4vw, 62px) clamp(24px, 4.5vw, 68px);
+  overflow: hidden;
+  border-radius: 0 0 42px 42px;
+  background: var(--hero-lavender);
+  box-shadow: 0 32px 50px rgb(35 30 80 / 18%);
+}
+:host .hero::before {
+  position: absolute; z-index: -1; inset: 0 auto 0 0; width: 53%;
+  background: radial-gradient(ellipse at 90% 52%, #34315f 0 8%, transparent 8.4%),
+    #211e4b;
+  clip-path: polygon(0 0, 65% 0, 79% 8%, 92% 18%, 100% 31%, 94% 43%, 81% 50%, 76% 59%, 83% 71%, 87% 82%, 76% 91%, 54% 98%, 30% 100%, 0 92%);
+  content: "";
+}
+:host .hero-copy { z-index: 2; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; width: 100%; max-width: 570px; min-height: 0; padding: 0; }
+:host .hero h1 { position: relative; display: flex; flex-direction: column; margin: 0; color: #fff; font-size: clamp(3.2rem, 5.8vw, 5.7rem); font-weight: 900; line-height: .91; letter-spacing: -.055em; text-transform: uppercase; }
+:host .hero h1 span:first-child { white-space: nowrap; }
+:host .hero h1 .hero-emphasis { color: #d4d0ff; }
+:host .hero-spark { position: absolute; color: #d4d0ff; font-size: 2.8rem; font-weight: 500; line-height: 1; }
+:host .hero-spark-one { top: 6%; right: -28px; transform: rotate(22deg); }
+:host .hero-spark-two { top: 17%; right: -46px; font-size: 2rem; transform: rotate(-18deg); }
+:host .hero-copy > p { max-width: 430px; margin: 23px 0 27px; color: #e7e5ff; font-size: clamp(.98rem, 1.45vw, 1.2rem); line-height: 1.45; }
+:host .hero-flavors { display: flex; flex-wrap: wrap; gap: clamp(12px, 1.7vw, 26px); margin: 0 0 32px; }
+:host .hero-flavors > span { display: block; width: clamp(58px, 7vw, 102px); aspect-ratio: 1; padding: 3px; overflow: hidden; border: 2px solid #fff; border-radius: 50%; background: #e2deff; box-shadow: 0 3px 0 #b5afff; }
+:host .hero-flavors img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+:host .hero-cta { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-width: 245px; min-height: 58px; padding: 0 30px; border-radius: 999px; background: #d6d2ff; color: #211e4b; font-size: 1.05rem; font-weight: 800; box-shadow: none; }
+:host .hero-cta mat-icon { width: 23px; height: 23px; font-size: 23px; }
+:host .hero-art { position: relative; display: grid; place-items: center; min-width: 0; min-height: 400px; }
+:host .hero-cookie-hero { position: relative; z-index: 2; display: block; width: min(112%, 700px); max-width: none; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 28px 22px rgb(28 21 48 / 24%)); transform: rotate(-7deg) scale(1.08); }
+:host .hero-orbit { position: absolute; z-index: 0; display: block; border-radius: 50%; background: #282552; }
+:host .hero-orbit-one { right: -33%; bottom: -24%; width: 63%; aspect-ratio: 1; }
+:host .hero-orbit-two { top: -2%; right: 4%; width: 10px; height: 10px; background: #c66a32; box-shadow: -54px 78px #b95a28, 65px 150px #c66a32, -100px 300px #c66a32, 190px 280px #b95a28; }
+:host .hero-chocolate { position: absolute; z-index: 3; display: block; width: clamp(35px, 6vw, 76px); aspect-ratio: 1; border-radius: 35% 50% 42% 48%; background: linear-gradient(135deg, #6c3529, #a85d3e 42%, #48201e 80%); box-shadow: inset 5px 5px 8px #e3a17c55, 0 9px 12px #1d173b2b; transform: rotate(28deg); }
+:host .hero-chocolate-one { top: 14%; left: 1%; }
+:host .hero-chocolate-two { bottom: 6%; left: 7%; transform: rotate(-18deg) scale(1.25); }
+:host .hero-crumb { position: absolute; z-index: 3; width: 13px; height: 10px; border-radius: 45% 30% 50%; background: #a95429; box-shadow: 4px 2px 0 #d27c42; transform: rotate(25deg); }
+:host .hero-crumb-one { top: 14%; right: 20%; }
+:host .hero-crumb-two { top: 40%; left: -2%; transform: rotate(-28deg) scale(.8); }
+:host .hero-crumb-three { right: 2%; bottom: 18%; transform: rotate(42deg) scale(1.4); }
+:host .about-anchor { height: 1px; }
+@media (max-width: 850px) {
+  :host .site-header { width: calc(100% - 32px); min-height: 94px; margin-top: 16px; padding: 18px 24px; border-radius: 30px 30px 0 0; }
+  :host .brand-symbol { width: 48px; }
+  :host .wordmark { font-size: 2.15rem; }
+  :host .main-nav { gap: 12px; }
+  :host .main-nav a.nav-link { font-size: .82rem; }
+  :host .hero { width: calc(100% - 32px); min-height: 540px; padding: 36px 24px; border-radius: 0 0 30px 30px; }
+  :host .hero h1 { font-size: clamp(2.8rem, 6vw, 4rem); }
+  :host .hero-art { min-height: 300px; }
+}
+@media (max-width: 620px) {
+  :host .site-header { align-items: flex-start; flex-wrap: wrap; gap: 16px; padding: 18px 20px 12px; }
+  :host .brand { gap: 9px; }
+  :host .brand-symbol { width: 42px; }
+  :host .wordmark { font-size: 1.9rem; }
+  :host .main-nav { width: 100%; justify-content: space-between; gap: 4px; }
+  :host .main-nav a.nav-link { min-height: 36px; padding-inline: 3px; font-size: .76rem; }
+  :host .header-cart { gap: 4px; padding-left: 2px; }
+  :host .header-cart mat-icon { width: 22px; height: 22px; font-size: 22px; }
+  :host .cart-count { width: 23px; height: 23px; font-size: .7rem; }
+  :host .hero { grid-template-columns: 1fr; gap: 8px; min-height: 0; padding: 34px 22px 28px; }
+  :host .hero::before { width: 100%; clip-path: polygon(0 0, 100% 0, 100% 45%, 90% 52%, 100% 65%, 100% 100%, 0 100%); }
+  :host .hero-copy { padding: 0; }
+  :host .hero h1 { font-size: clamp(3rem, 13vw, 4.7rem); }
+  :host .hero-copy > p { max-width: 350px; margin: 18px 0 20px; font-size: .98rem; }
+  :host .hero-flavors { gap: 12px; margin-bottom: 25px; }
+  :host .hero-flavors > span { width: clamp(58px, 16vw, 80px); }
+  :host .hero-cta { min-width: 210px; min-height: 50px; }
+  :host .hero-art { min-height: 0; margin-top: -2px; }
+  :host .hero-cookie-hero { width: min(100%, 390px); }
+  :host .hero-chocolate-one { top: 9%; left: 5%; }
+  :host .hero-chocolate-two { bottom: 8%; left: 12%; }
+}
