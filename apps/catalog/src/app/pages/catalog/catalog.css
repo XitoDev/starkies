@@ -395,3 +395,66 @@
 @media (prefers-reduced-motion: reduce) {
   :host *, :host *::before, :host *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+/* Catálogo comercial compacto: el selector y los productos son el foco. */
+:host .presentation-section {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(28px, 4vw, 52px) clamp(18px, 5vw, 72px);
+  background: #fffdf8;
+  color: var(--sk-ink);
+}
+:host .presentation-section .section-title .eyebrow,
+:host .presentation-section .catalog-count { color: var(--sk-muted); }
+:host .presentation-section .section-title h2,
+:host .presentation-section .catalog-heading h2 {
+  color: var(--sk-ink);
+  font-family: 'Shrikhand', 'Shrikhand-Regular', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 3.6vw, 3.1rem);
+  line-height: 1.05;
+  margin: 4px 0 8px;
+}
+:host .presentation-section .section-title .small { color: var(--sk-muted); }
+:host .presentation-section .box-presentations { gap: clamp(12px, 1.5vw, 20px); }
+:host .presentation-section .presentation-card {
+  padding: clamp(12px, 1.5vw, 20px);
+  border-radius: 14px;
+}
+:host .presentation-section .presentation-photo { max-height: 180px; overflow: hidden; }
+:host .presentation-section .presentation-photo img { width: 100%; max-height: 180px; object-fit: contain; }
+:host .presentation-section .catalog-hint {
+  margin-block: 20px;
+  padding: 12px 16px;
+  border: 1px solid rgb(84 58 85 / 16%);
+  border-radius: 12px;
+  background: #f7f3ea;
+  color: var(--sk-muted);
+}
+:host .presentation-section .category-group { margin-top: 24px; }
+:host .presentation-section .category-title { color: var(--sk-ink); }
+:host .presentation-section .product-card,
+:host .presentation-section .product {
+  min-width: 0;
+  border-radius: 14px;
+}
+:host .presentation-section .product-card img,
+:host .presentation-section .product img { max-height: 210px; object-fit: contain; }
+:host .hero { min-height: clamp(300px, 32vw, 430px); padding-block: clamp(28px, 4vw, 52px); }
+:host .hero h1 { font-size: clamp(3.2rem, 6vw, 5.5rem); }
+:host .hero-copy > p { margin-block: 18px; }
+:host .site-header { min-height: 68px; padding-block: 8px; }
+:host .brand-symbol { width: 34px; height: 34px; }
+@media (max-width: 680px) {
+  :host .presentation-section { padding: 28px 16px; }
+  :host .presentation-section .section-title { margin-bottom: 18px; }
+  :host .presentation-section .box-presentations { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :host .presentation-section .presentation-photo,
+  :host .presentation-section .presentation-photo img { max-height: 130px; }
+  :host .hero { padding: 30px 18px 22px; }
+}
+@media (max-width: 380px) {
+  :host .presentation-section .box-presentations { grid-template-columns: minmax(0, 1fr); }
+}
