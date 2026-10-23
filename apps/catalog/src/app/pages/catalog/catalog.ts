@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Component, computed, inject, signal, PLATFORM_ID } from '@angular/core';
-import { CommonModule, NgOptimizedImage, isPlatformBrowser } from '@angular/common';
+import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
@@ -16,6 +16,8 @@ import { BOX_PRESENTATIONS } from './catalog.data';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatBottomSheetModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
   readonly currentYear = new Date().getFullYear();
   readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
   readonly presentations = BOX_PRESENTATIONS;
@@ -90,14 +92,15 @@ export class Catalog {
     // Relative API paths are browser-relative. During Angular prerender there is no
     // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
     // Load live business data only in the browser; never fabricate prerender data.
-    if (isPlatformBrowser(inject(PLATFORM_ID))) void this.loadCatalog();
+    if (isPlatformBrowser(this.platformId)) void this.loadCatalog(this.document.baseURI);
   }
-  retryCatalog(): void { void this.loadCatalog(); }
-  private async loadCatalog(): Promise<void> {
+  retryCatalog(): void { void this.loadCatalog(isPlatformBrowser(this.platformId) ? this.document.baseURI : undefined); }
+  private async loadCatalog(baseUri?: string): Promise<void> {
     this.catalogLoading.set(true);
     this.catalogLoadError.set('');
     try {
-      const response = await fetch('/api/catalog', { headers: { Accept: 'application/json' } });
+      const apiUrl = baseUri ? new URL('/api/catalog', baseUri).toString() : '/api/catalog';
+      const response = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
       const result: unknown = await response.json().catch(() => null);
       const record = this.asRecord(result);
       if (!response.ok) throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos cargar el catálogo.');
