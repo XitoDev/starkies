@@ -7,8 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Component, computed, inject, signal } from '@angular/core';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { Component, computed, inject, signal, PLATFORM_ID } from '@angular/core';
+import { CommonModule, NgOptimizedImage, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
@@ -87,7 +87,10 @@ export class Catalog {
     meta.updateTag({ property: 'og:description', content: 'Combina tus sabores favoritos en cajas de galletas clásicas y New York. Pedidos en Guayaquil y sectores cercanos.' });
     meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
     meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-    void this.loadCatalog();
+    // Relative API paths are browser-relative. During Angular prerender there is no
+    // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
+    // Load live business data only in the browser; never fabricate prerender data.
+    if (isPlatformBrowser(inject(PLATFORM_ID))) void this.loadCatalog();
   }
   retryCatalog(): void { void this.loadCatalog(); }
   private async loadCatalog(): Promise<void> {
