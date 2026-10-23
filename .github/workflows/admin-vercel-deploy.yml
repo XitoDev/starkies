@@ -1,12 +1,6 @@
 name: Deploy Admin to Vercel
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "public/images/**"
-      - "public/images/image-map.json"
   workflow_dispatch:
     inputs:
       target_environment:
@@ -16,13 +10,13 @@ on:
         options:
           - preview
           - production
-        default: preview
+        default: production
 
 permissions:
   contents: read
 
 concurrency:
-  group: vercel-admin-${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
+  group: vercel-admin-${{ inputs.target_environment }}
   cancel-in-progress: true
 
 jobs:
@@ -30,16 +24,13 @@ jobs:
     name: Validate Admin, then deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Guard production deployment
+      - name: Guard deployment ref
         env:
-          TARGET_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
           SELECTED_REF: ${{ github.ref }}
         run: |
-          if [ "$TARGET_ENVIRONMENT" = "production" ]; then
-            if [ "$SELECTED_REF" != "refs/heads/main" ]; then
-              echo "::error::Production deployments can only run from main."
-              exit 1
-            fi
+          if [ "$SELECTED_REF" != "refs/heads/main" ]; then
+            echo "::error::Deployments can only run manually from main."
+            exit 1
           fi
 
       - name: Check Vercel secrets
@@ -76,11 +67,11 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
-          TARGET_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || inputs.target_environment }}
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
         run: npx vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
 
       - name: Build Vercel production artifacts
-        if: github.event_name == 'push' || inputs.target_environment == 'production'
+        if: inputs.target_environment == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -88,7 +79,7 @@ jobs:
         run: npx vercel build --local-config=vercel.admin.json --prod --token="$VERCEL_TOKEN"
 
       - name: Build Vercel preview artifacts
-        if: github.event_name != 'push' && inputs.target_environment == 'preview'
+        if: inputs.target_environment == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -96,7 +87,7 @@ jobs:
         run: npx vercel build --local-config=vercel.admin.json --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
-        if: github.event_name == 'push' || inputs.target_environment == 'production'
+        if: inputs.target_environment == 'production'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -104,7 +95,7 @@ jobs:
         run: npx vercel deploy --local-config=vercel.admin.json --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy Vercel preview
-        if: github.event_name != 'push' && inputs.target_environment == 'preview'
+        if: inputs.target_environment == 'preview'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
