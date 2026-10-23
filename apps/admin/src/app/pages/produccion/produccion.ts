@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { DataService } from '../../services/data.service';
+import { RecipeImageService } from '../../services/recipe-image.service';
 import { Ingredient, Recipe } from 'shared';
 
 type ProductionEntry = {
@@ -39,6 +40,9 @@ type DoughPlan = { baseId: string; baseName: string; gramsNeeded: number; availa
 })
 export class Produccion {
   private readonly dataService = inject(DataService);
+  private readonly recipeImageService = inject(RecipeImageService);
+
+  recipeImage(recipeId: string): string { const recipe = this.dataService.recipes().find(item => item.id === recipeId); return this.recipeImageService.getImageUrl(recipe?.image); }
 
   constructor() {
     this.dataService.loadCollections?.(['recipes', 'ingredients', 'doughBases', 'productionHistory', 'finishedProductInventory', 'productionReadyLines']);
