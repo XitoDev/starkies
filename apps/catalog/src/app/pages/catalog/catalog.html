@@ -25,14 +25,21 @@
   }
   <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
     <div class="hero-copy hero-copy-clean">
-      <div class="eyebrow hero-eyebrow">GALLETAS PREMIUM</div><h1><span>Cookies</span><span class="hero-emphasis">ARTESANALES</span><span class="hero-spark hero-spark-one" aria-hidden="true">╱</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
-      <p>Galletas artesanales, sabores inolvidables. Elige tu caja y combina tus favoritas.</p>
+      <div class="eyebrow hero-eyebrow">GALLETAS ARTESANALES</div><h1><span>Cookies</span><span class="hero-emphasis">que hacen días más dulces</span><span class="hero-spark hero-spark-one" aria-hidden="true">♡</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
+      <p>Galletas artesanales, horneadas con ingredientes de calidad, mucho amor y ese toque especial que convierte lo cotidiano en algo extraordinario.</p>
       <a matButton="elevated" class="hero-cta" href="#presentaciones">Ver catálogo <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
     </div>
     <div class="hero-art" aria-hidden="true">
       <span class="hero-orbit hero-orbit-one"></span><span class="hero-orbit hero-orbit-two"></span>
       <img class="hero-cookie-hero" src="/images/choco-meteor.webp" alt="" fetchpriority="high">
     </div>
+  </section>
+
+
+  <section class="editorial-features" aria-label="Lo que hace especiales a StarKies">
+    <div class="editorial-feature"><span aria-hidden="true">♧</span><p>Ingredientes<br>de calidad</p></div>
+    <div class="editorial-feature"><span aria-hidden="true">♡</span><p>Hechas<br>con amor</p></div>
+    <div class="editorial-feature"><span aria-hidden="true">☆</span><p>Sabor que<br>deja huella</p></div>
   </section>
 
   <section class="about-section" id="sobre-starkies" aria-labelledby="about-title">
@@ -42,11 +49,10 @@
       <span class="about-spark" aria-hidden="true">✦</span>
     </div>
     <div class="about-copy">
-      <div class="eyebrow">UN POCO DE NOSOTROS</div>
-      <h2 id="about-title">Hechas con cariño,<br><span>para compartir.</span></h2>
-      <p>En StarKies creemos que los mejores momentos empiezan con algo dulce. Preparamos galletas artesanales con sabores especiales, texturas irresistibles y ese toque casero que convierte cada bocado en un pequeño motivo para sonreír.</p>
-      <p>Elige tus favoritas, combina tus sabores y crea una caja hecha a tu manera.</p>
-      <a matButton="elevated" class="editorial-button" href="#presentaciones">Conoce el catálogo <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
+      <div class="eyebrow">SOBRE NOSOTROS</div>
+      <h2 id="about-title" class="about-wordmark">StarKies<span>✦</span></h2><p class="about-tagline">La estrella eres tú</p>
+      <p>En StarKies creemos que las mejores historias comienzan con una galleta. Creamos cookies artesanales con ingredientes de calidad, combinando sabores únicos, mucho cariño y un toque especial que hace brillar tu día.</p>
+      <a matButton="elevated" class="editorial-button" href="#presentaciones">Conoce más <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
     </div>
   </section>
 
@@ -94,6 +100,13 @@
       }
     </div>
     @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>{{ products().length === 0 ? 'Estamos preparando nuestro catálogo' : 'No encontramos ese sabor' }}</h3><p>{{ products().length === 0 ? 'En este momento no hay sabores publicados. Vuelve a intentarlo más tarde.' : 'Prueba con otro nombre o cambia tu búsqueda.' }}</p><button matButton="outlined" type="button" (click)="retryCatalog()">Actualizar catálogo</button></div> }
+  </section>
+
+
+  <section class="editorial-love" aria-label="La experiencia StarKies">
+    <div class="editorial-love-photo"><img src="/images/chispas-chocolate-classic.webp" alt="Galleta artesanal decorada con chocolate" loading="lazy"></div>
+    <div class="editorial-love-quote"><span class="quote-mark" aria-hidden="true">“</span><p>Cada galleta está hecha para convertir un antojo en un momento especial. Elige tus sabores favoritos y arma una caja para compartir… o para ti.</p><span class="quote-signoff">Con cariño, StarKies ♡</span></div>
+    <div class="editorial-love-copy"><div class="eyebrow">LA ESTRELLA ERES TÚ</div><h2>Momentos<br><em>dulces</em> para recordar</h2><p>Una caja, tus sabores favoritos y un detalle que alegra el día.</p><a matButton="elevated" class="editorial-button" href="#presentaciones">Elegir mis galletas <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a></div>
   </section>
 
   <section class="values-band" aria-label="Lo que hace especiales a nuestras galletas">
