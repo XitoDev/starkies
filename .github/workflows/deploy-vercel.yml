@@ -1,0 +1,164 @@
+name: Deploy to Vercel
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Component to deploy"
+        required: true
+        type: choice
+        options:
+          - admin
+          - catalog
+        default: catalog
+      target_environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - production
+          - preview
+        default: production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-${{ inputs.component }}-${{ inputs.target_environment }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    name: Validate and deploy ${{ inputs.component }}
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+    steps:
+      - name: Guard deployment ref
+        env:
+          SELECTED_REF: ${{ github.ref }}
+        run: |
+          if [ "$SELECTED_REF" != "refs/heads/main" ]; then
+            echo "::error::Deployments can only run manually from main."
+            exit 1
+          fi
+
+      - name: Check Vercel secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          ADMIN_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+          CATALOG_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+          COMPONENT: ${{ inputs.component }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Missing VERCEL_TOKEN."
+            exit 1
+          fi
+          if [ "$COMPONENT" = "admin" ] && [ -z "$ADMIN_PROJECT_ID" ]; then
+            echo "::error::Missing VERCEL_ADMIN_PROJECT_ID."
+            exit 1
+          fi
+          if [ "$COMPONENT" = "catalog" ] && [ -z "$CATALOG_PROJECT_ID" ]; then
+            echo "::error::Missing VERCEL_CATALOG_PROJECT_ID."
+            exit 1
+          fi
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "::error::Missing VERCEL_ORG_ID."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies from committed lockfile
+        run: npm ci
+
+      - name: Build and test selected component
+        env:
+          COMPONENT: ${{ inputs.component }}
+        run: |
+          if [ "$COMPONENT" = "admin" ]; then
+            npx ng build admin --configuration production
+            npx ng test admin --watch=false
+          else
+            npx ng build catalog --configuration production
+            HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+            if [ -z "$HTML_FILE" ]; then
+              echo "::error::No prerendered index.html was produced."
+              exit 1
+            fi
+            grep -qi 'rel="canonical"' "$HTML_FILE"
+            grep -qi 'Elige tu caja' "$HTML_FILE"
+            npx ng test catalog --watch=false
+            npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/order-short.ts api/admin-order-document.ts api/customer-lookup.ts
+            rm -rf /tmp/starkies-catalog-esm
+            npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts api/orders.ts
+            ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
+            node --input-type=module -e "await import('/tmp/starkies-catalog-esm/api/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
+          fi
+
+      - name: Pull Vercel settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ inputs.component == 'admin' && secrets.VERCEL_ADMIN_PROJECT_ID || secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: npx vercel pull --yes --environment="$TARGET_ENVIRONMENT" --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel production artifacts
+        if: inputs.target_environment == 'production'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ inputs.component == 'admin' && secrets.VERCEL_ADMIN_PROJECT_ID || secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          if [ "${{ inputs.component }}" = "admin" ]; then
+            npx vercel build --local-config=vercel.admin.json --prod --token="$VERCEL_TOKEN"
+          else
+            npx vercel build --prod --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Build Vercel preview artifacts
+        if: inputs.target_environment == 'preview'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ inputs.component == 'admin' && secrets.VERCEL_ADMIN_PROJECT_ID || secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          if [ "${{ inputs.component }}" = "admin" ]; then
+            npx vercel build --local-config=vercel.admin.json --token="$VERCEL_TOKEN"
+          else
+            npx vercel build --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Deploy to Vercel production
+        if: inputs.target_environment == 'production'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ inputs.component == 'admin' && secrets.VERCEL_ADMIN_PROJECT_ID || secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          if [ "${{ inputs.component }}" = "admin" ]; then
+            npx vercel deploy --local-config=vercel.admin.json --prebuilt --prod --token="$VERCEL_TOKEN"
+          else
+            npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Deploy Vercel preview
+        if: inputs.target_environment == 'preview'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ inputs.component == 'admin' && secrets.VERCEL_ADMIN_PROJECT_ID || secrets.VERCEL_CATALOG_PROJECT_ID }}
+        run: |
+          if [ "${{ inputs.component }}" = "admin" ]; then
+            npx vercel deploy --local-config=vercel.admin.json --prebuilt --token="$VERCEL_TOKEN"
+          else
+            npx vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+          fi
