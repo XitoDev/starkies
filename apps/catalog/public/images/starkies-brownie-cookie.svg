@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+<defs>
+ <radialGradient id="dough" cx="38%" cy="27%" r="78%"><stop offset="0" stop-color="#a85f3c"/><stop offset=".34" stop-color="#7b3b28"/><stop offset=".7" stop-color="#57271f"/><stop offset="1" stop-color="#2d1719"/></radialGradient>
+ <radialGradient id="shine" cx="30%" cy="18%" r="72%"><stop offset="0" stop-color="#f4bd8d" stop-opacity=".72"/><stop offset=".38" stop-color="#b36c49" stop-opacity=".22"/><stop offset="1" stop-color="#130d17" stop-opacity=".5"/></radialGradient>
+ <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#713321"/><stop offset=".22" stop-color="#bd744b"/><stop offset=".45" stop-color="#54221b"/><stop offset=".72" stop-color="#2b1518"/><stop offset="1" stop-color="#8a452d"/></linearGradient>
+ <linearGradient id="chipLight" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#efb27c"/><stop offset=".25" stop-color="#7c3825"/><stop offset=".62" stop-color="#35171a"/><stop offset="1" stop-color="#1e1117"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="19"/><feOffset dx="5" dy="25" result="off"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="3" seed="17" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/></filter>
+ <clipPath id="cookieClip"><path d="M497 126C561 116 617 144 657 181C697 218 735 230 763 270C800 321 821 368 819 421C816 471 847 504 832 559C817 612 784 641 760 681C738 719 697 751 653 769C604 790 575 825 517 829C463 832 431 809 383 800C329 790 290 773 254 738C215 701 177 679 159 634C139 583 112 551 123 494C133 447 116 407 137 359C157 312 188 279 224 244C260 208 290 176 335 160C387 141 438 128 497 126Z"/></clipPath>
+</defs>
+<g filter="url(#shadow)">
+ <path d="M497 126C561 116 617 144 657 181C697 218 735 230 763 270C800 321 821 368 819 421C816 471 847 504 832 559C817 612 784 641 760 681C738 719 697 751 653 769C604 790 575 825 517 829C463 832 431 809 383 800C329 790 290 773 254 738C215 701 177 679 159 634C139 583 112 551 123 494C133 447 116 407 137 359C157 312 188 279 224 244C260 208 290 176 335 160C387 141 438 128 497 126Z" fill="url(#dough)" stroke="#3b1b1c" stroke-width="12"/>
+ <g clip-path="url(#cookieClip)">
+  <rect x="100" y="100" width="760" height="760" fill="url(#shine)"/>
+  <g fill="#d38b5a" opacity=".55">
+   <path d="M174 383l36-22 29 12-9 31-34 19-28-14Z"/><path d="M258 226l31-20 27 11-6 30-34 15-23-13Z"/>
+   <path d="M364 167l31-8 21 20-12 28-33 2-15-19Z"/><path d="M578 177l28-4 19 22-15 23-29-7-9-18Z"/>
+   <path d="M697 274l27-10 22 21-8 24-31 6-18-19Z"/><path d="M740 451l32-15 20 18-5 28-29 11-21-18Z"/>
+   <path d="M682 632l31-11 23 20-12 27-28 7-22-21Z"/><path d="M473 730l28-18 26 14-4 26-29 12-24-14Z"/>
+   <path d="M280 650l32-18 24 17-7 26-32 10-21-18Z"/><path d="M180 539l26-13 21 16-8 24-25 4-15-15Z"/>
+  </g>
+  <g fill="#271417" opacity=".6">
+   <path d="M246 287l22-15 21 7 5 19-23 18-21-9Z"/><path d="M396 243l27-18 22 11-2 23-27 12-22-11Z"/>
+   <path d="M558 287l20-16 25 7 8 20-18 21-27-8Z"/><path d="M660 386l26-17 22 10 1 24-27 15-21-12Z"/>
+   <path d="M355 398l22-18 25 10 2 24-23 17-23-12Z"/><path d="M237 475l24-14 22 11-1 22-26 13-19-14Z"/>
+   <path d="M482 563l24-17 24 8 5 22-23 18-25-11Z"/><path d="M607 663l21-17 23 9 2 21-23 16-20-11Z"/>
+  </g>
+  <g fill="url(#chip)" stroke="#4b211c" stroke-width="5">
+   <path d="M295 245l32-30 45 10 15 35-24 35-43 1-29-22Z" transform="rotate(-12 338 268)"/>
+   <path d="M446 177l39-24 36 14 16 35-23 28-43-1-25-22Z" transform="rotate(9 474 193)"/>
+   <path d="M574 241l34-20 40 12 9 31-28 27-40-5-20-22Z" transform="rotate(-7 605 256)"/>
+   <path d="M187 354l39-23 38 15 7 31-29 25-41-4-19-21Z" transform="rotate(12 225 365)"/>
+   <path d="M355 335l33-25 39 13 14 32-26 29-39-2-23-23Z" transform="rotate(-8 393 348)"/>
+   <path d="M509 393l43-27 39 17 7 34-31 26-42-5-17-24Z" transform="rotate(11 548 411)"/>
+   <path d="M668 478l33-20 37 14 10 30-27 26-37-5-19-21Z" transform="rotate(-14 706 491)"/>
+   <path d="M278 544l42-26 40 13 11 34-30 30-43-3-20-23Z" transform="rotate(7 324 561)"/>
+   <path d="M434 614l38-26 42 13 10 34-31 30-41-4-20-23Z" transform="rotate(-11 473 631)"/>
+   <path d="M584 697l31-22 39 10 14 29-26 29-39-1-23-22Z" transform="rotate(8 615 713)"/>
+   <path d="M359 715l29-20 37 11 10 27-26 25-35-3-17-18Z" transform="rotate(-8 394 730)"/>
+  </g>
+  <g fill="url(#chipLight)" stroke="#4a201b" stroke-width="4">
+   <path d="M249 413l24-22 32 9 11 25-21 25-32-3-17-17Z" transform="rotate(16 281 420)"/>
+   <path d="M421 454l28-24 35 10 8 26-25 24-34-5-12-18Z" transform="rotate(-13 450 461)"/>
+   <path d="M590 558l26-21 33 9 9 26-22 25-34-3-14-18Z" transform="rotate(9 623 565)"/>
+   <path d="M339 605l26-21 33 10 7 26-23 23-32-4-13-17Z" transform="rotate(-9 369 612)"/>
+  </g>
+  <g fill="#f2bd8a" opacity=".75">
+   <path d="M311 248l15-17 22 2 9 11-17-3-15 12Z"/><path d="M455 180l20-12 19 9-19-3-11 10Z"/>
+   <path d="M584 245l17-11 21 8-19-2-10 9Z"/><path d="M363 341l18-15 19 9-18-3-12 10Z"/>
+   <path d="M520 400l19-13 22 9-18-2-13 9Z"/><path d="M446 620l20-13 21 8-18-2-13 10Z"/>
+  </g>
+  <g fill="#d9a078" opacity=".65">
+   <circle cx="205" cy="445" r="5"/><circle cx="288" cy="348" r="4"/><circle cx="407" cy="291" r="5"/><circle cx="538" cy="322" r="4"/>
+   <circle cx="636" cy="430" r="5"/><circle cx="711" cy="548" r="4"/><circle cx="531" cy="672" r="5"/><circle cx="403" cy="672" r="4"/>
+   <circle cx="281" cy="605" r="5"/><circle cx="181" cy="581" r="4"/><circle cx="457" cy="254" r="3"/><circle cx="663" cy="350" r="3"/>
+  </g>
+  <path d="M497 126C561 116 617 144 657 181C697 218 735 230 763 270C800 321 821 368 819 421C816 471 847 504 832 559C817 612 784 641 760 681C738 719 697 751 653 769C604 790 575 825 517 829C463 832 431 809 383 800C329 790 290 773 254 738C215 701 177 679 159 634C139 583 112 551 123 494C133 447 116 407 137 359C157 312 188 279 224 244C260 208 290 176 335 160C387 141 438 128 497 126Z" fill="none" stroke="#d18c61" stroke-opacity=".55" stroke-width="8"/>
+ </g>
+</g>
+</svg>
