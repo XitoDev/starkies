@@ -89,6 +89,7 @@ export class Catalog {
     meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     void this.loadCatalog();
   }
+  retryCatalog(): void { void this.loadCatalog(); }
   private async loadCatalog(): Promise<void> {
     this.catalogLoading.set(true);
     this.catalogLoadError.set('');
@@ -109,7 +110,7 @@ export class Catalog {
         const item = this.asRecord(value);
         return typeof item['id'] === 'string' && typeof item['name'] === 'string' && typeof item['fee'] === 'number';
       });
-      if (!products.length || !zones.length) throw new Error('Todavía no hay productos o tarifas publicables en el negocio.');
+      if (!zones.length) throw new Error('No pudimos cargar las tarifas de entrega. Inténtalo de nuevo.');
       this.products.set(products);
       this.zones = zones;
       if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
