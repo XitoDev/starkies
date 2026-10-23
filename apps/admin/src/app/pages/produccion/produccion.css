@@ -82,3 +82,6 @@
 @media(max-width:900px){.inventory-grid,.dough-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-heading{flex-direction:column}}@media(max-width:560px){.heading-actions{width:100%}.heading-actions button{flex:1}.inventory-grid,.dough-plan-grid{grid-template-columns:1fr}.command-line{grid-template-columns:20px minmax(0,1fr) auto}.command-status{grid-column:2/-1;justify-self:start}}
 
 .production-product-image{display:block;width:100%;height:116px;object-fit:contain;padding:8px;border-radius:12px;background:#fff;margin-bottom:12px}.inventory-card{min-width:0}
+
+.command-product-image{width:54px;height:54px;object-fit:contain;border-radius:9px;background:#fff;padding:3px;align-self:center}.command-line{grid-template-columns:auto 54px minmax(0,1fr) auto auto;gap:12px}
+@media(max-width:600px){.command-line{grid-template-columns:auto 42px minmax(0,1fr);gap:8px}.command-product-image{width:42px;height:42px}.command-quantity,.command-status{grid-column:3}}
