@@ -3,20 +3,6 @@
     <div class="brand-name"><span>StarKies.</span><span class="brand-tagline">LA ESTRELLA ERES TÚ</span></div>
   </div>
 
-  <a
-    matButton="filled"
-    class="business-card"
-    href="https://starkies.lat/"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Mi tienda (abre en una pestaña nueva)"
-  >
-    <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
-    <span class="business-copy">
-      <strong>Mi tienda</strong>
-    </span>
-  </a>
-
   <p class="nav-caption">Tu negocio</p>
   <nav class="sidebar-nav" aria-label="Navegación principal">
     @for (item of navItems; track item.path) {
@@ -27,6 +13,12 @@
           @if (pendingOrderCount() > 0) { <span class="nav-badge" [attr.aria-label]="pendingOrderCount() + ' pedidos pendientes'">{{ pendingOrderCount() }}</span> }
         }
       </a>
+      @if (item.label === 'Catálogo') {
+        <a matButton="filled" class="business-card nav-item" href="https://starkies.lat/" target="_blank" rel="noopener noreferrer" aria-label="Mi tienda (abre en una pestaña nueva)">
+          <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
+          <span class="business-copy"><strong>Mi tienda</strong></span>
+        </a>
+      }
     }
     <button
       type="button"
