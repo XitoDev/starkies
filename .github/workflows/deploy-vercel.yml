@@ -49,6 +49,7 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           ADMIN_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
           CATALOG_PROJECT_ID: ${{ secrets.VERCEL_CATALOG_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           COMPONENT: ${{ inputs.component }}
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
@@ -63,7 +64,7 @@ jobs:
             echo "::error::Missing VERCEL_CATALOG_PROJECT_ID."
             exit 1
           fi
-          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+          if [ -z "$VERCEL_ORG_ID" ]; then
             echo "::error::Missing VERCEL_ORG_ID."
             exit 1
           fi
