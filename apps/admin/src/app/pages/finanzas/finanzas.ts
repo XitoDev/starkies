@@ -76,7 +76,7 @@ export class Finanzas {
     const fixedProfit = ingredientCost;
     const edit = this.pricingEdits()[recipe.id];
     const storedSalePrice = this.money(recipe.price);
-    const salePrice = Math.max(0, edit?.salePrice ?? (storedSalePrice > 0 ? storedSalePrice : suggestedPrice));
+    const salePrice = Math.max(0, edit?.salePrice ?? storedSalePrice);
     const expenses = ingredientCost;
     const services = ingredientCost;
     const profit = salePrice - ingredientCost - expenses - services;
@@ -99,10 +99,10 @@ export class Finanzas {
   updateSalePrice(id: string, value: string): void {
     const row = this.priceRows().find(item => item.id === id);
     if (!row) return;
-    const parsed = value.trim() === '' ? row.suggestedPrice : Number(value);
+    const parsed = value.trim() === '' ? 0 : Number(value);
     const salePrice = Number.isFinite(parsed)
       ? Math.max(0, Math.round(parsed * 10000) / 10000)
-      : row.suggestedPrice;
+      : 0;
     this.pricingEdits.update(current => ({ ...current, [id]: { salePrice } }));
   }
 
@@ -112,7 +112,7 @@ export class Finanzas {
     if (!recipe || !row) return;
     const storedSalePrice = this.money(recipe.price);
     const salePrice = this.pricingEdits()[id]?.salePrice
-      ?? (storedSalePrice > 0 ? storedSalePrice : row.suggestedPrice);
+      ?? storedSalePrice;
     try {
       await this.dataService.saveRecipe({ ...recipe, price: this.money(salePrice) });
       this.pricingEdits.update(current => {
@@ -120,7 +120,7 @@ export class Finanzas {
         delete next[id];
         return next;
       });
-      this.ledgerNotice.set('Precio de venta guardado automáticamente.');
+      this.ledgerNotice.set('');
     } catch (error) {
       this.ledgerNotice.set(error instanceof Error ? error.message : 'No se pudo guardar el precio de venta.');
     }
