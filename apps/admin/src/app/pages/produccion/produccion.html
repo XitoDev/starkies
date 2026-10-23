@@ -39,6 +39,7 @@
       <div class="inventory-grid">
         @for (row of finishedInventory(); track row.id) {
           <article class="inventory-card">
+            <img class="production-product-image" [src]="recipeImage(row.id)" [alt]="row.name" loading="lazy">
             <div class="inventory-card-heading"><h3>{{ row.name }}</h3><span class="stock-state" [class.stock-negative]="row.quantity < 0" [class.stock-zero]="row.quantity === 0">{{ row.quantity < 0 ? 'Negativo' : row.quantity === 0 ? 'Sin existencias' : 'En existencia' }}</span></div>
             <p class="inventory-current"><strong>{{ row.quantity | number:'1.0-2' }}</strong><span>galletas disponibles</span></p>
             <label class="inventory-edit"><span>Conteo manual</span><input type="number" step="1" [attr.aria-label]="'Existencias de ' + row.name" [value]="inventoryEdits()[row.id] ?? row.quantity" (input)="updateInventoryEdit(row.id, $any($event.target).value)"></label>
