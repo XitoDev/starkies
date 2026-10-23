@@ -353,7 +353,8 @@ export class Recetas {
       image: recipe.image ?? '', notes: String((recipe as Recipe & { notes?: string }).notes ?? ''),
       dough: recipe.sections.find(item => item.name === 'masa')?.ingredients.map(item => ({ ...item })) ?? [],
       additions: recipe.sections.filter(item => item.name.toLocaleLowerCase('es').includes('añad')).flatMap(item => item.ingredients.map(row => ({ ...row }))),
-      filling: recipe.sections.filter(item => ['relleno', 'decoración'].includes(item.name.toLocaleLowerCase('es'))).flatMap(item => item.ingredients.map(row => ({ ...row }))),
+      filling: recipe.sections.filter(item => item.name.toLocaleLowerCase('es') === 'relleno').flatMap(item => item.ingredients.map(row => ({ ...row }))),
+      decoration: recipe.sections.filter(item => ['decoración', 'decoracion'].includes(item.name.toLocaleLowerCase('es'))).flatMap(item => item.ingredients.map(row => ({ ...row }))),
     });
     this.imagePreview.set(recipe.image ? this.getImageUrl(recipe.image) : ''); this.selectedFile.set(null);
     this.formError.set(''); this.editorOpen.set(true);
@@ -366,6 +367,6 @@ export class Recetas {
     }, 0);
   }
   private emptyForm(): RecipeForm {
-    return { name: '', category: '', gramsPerCookie: null, price: 0.6, kind: 'own', baseId: '', image: '', notes: '', dough: [{ ingredientId: '', quantity: null }], additions: [], filling: [] };
+    return { name: '', category: '', gramsPerCookie: null, price: 0.6, kind: 'own', baseId: '', image: '', notes: '', dough: [{ ingredientId: '', quantity: null }], additions: [], filling: [], decoration: [] };
   }
 }
