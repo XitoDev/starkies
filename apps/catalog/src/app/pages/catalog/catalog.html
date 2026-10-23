@@ -53,7 +53,7 @@
     </div>
     <div class="catalog-hint"><span class="hint-icon" aria-hidden="true">✦</span><p>Tu caja actual: <strong>{{ selectedPresentation().name }}</strong>. Agrega tus sabores hasta completar las cantidades indicadas y después podrás guardar la caja en tu pedido.</p></div>
 
-    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">HORNEADAS CON AMOR</div><h2>Nuestras galletas</h2><p class="small">Sabores irresistibles, texturas únicas y pequeños momentos de felicidad.</p></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
+    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">HORNEADAS CON AMOR</div><h2>Nuestras galletas</h2><p class="small">Sabores irresistibles, texturas únicas y pequeños momentos de felicidad.</p></div><span class="catalog-count">{{ catalogLoading() ? "Cargando sabores…" : catalogLoadError() ? "Catálogo no disponible" : filteredProducts().length + " sabores" }}</span></div>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
         <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-heading">{{ cat === 'Galletas clásicas' ? 'Clásicas' : 'NY Style' }}</span></h3><div class="products">
