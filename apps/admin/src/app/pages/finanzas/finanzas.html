@@ -15,7 +15,7 @@
     <button matButton="text" class="finance-tab" [class.active]="financeTab() === 'resumen'" type="button" [attr.aria-pressed]="financeTab() === 'resumen'" (click)="financeTab.set('resumen')">Resumen financiero</button>
     <button matButton="text" class="finance-tab" [class.active]="financeTab() === 'productos'" type="button" [attr.aria-pressed]="financeTab() === 'productos'" (click)="financeTab.set('productos')">Productos y Precios</button>
     <button matButton="elevated" class="pending-button" type="button" (click)="pendingPanelOpen.set(true)">
-      TRANSACCIONES POR REALIZAR <span>{{ pendingCount() }}</span>
+      Transacciones por realizar <span>{{ pendingCount() }}</span>
     </button>
   </div>
 
@@ -96,7 +96,7 @@
       </div>
       <div class="price-table-wrap">
         <table class="price-table">
-          <thead><tr><th>Producto</th><th>COSTOS</th><th>Gastos</th><th>Servicios</th><th>Ganancia fija</th><th>Precio sugerido</th><th>Precio de venta</th><th>Diferencia vs. sugerido</th><th>Margen de ganancia (%)</th></tr></thead>
+          <thead><tr><th>Producto</th><th>COSTOS</th><th>Gastos</th><th>Servicios</th><th>Ganancia extra</th><th>Precio sugerido</th><th>Precio de venta</th><th>Diferencia vs. sugerido</th><th>Margen de ganancia (%)</th></tr></thead>
           <tbody>
             @for (product of visiblePriceRows(); track product.id) {
               <tr>
@@ -104,7 +104,7 @@
                 <td data-label="COSTOS">{{ product.ingredientCost | currency:'USD':'symbol':'1.2-4' }}</td>
                 <td data-label="Gastos">{{ product.expenses | currency:'USD':'symbol':'1.2-4' }}</td>
                 <td data-label="Servicios">{{ product.services | currency:'USD':'symbol':'1.2-4' }}</td>
-                <td data-label="Ganancia fija">{{ product.fixedProfit | currency:'USD':'symbol':'1.2-4' }}</td>
+                <td data-label="Ganancia extra">{{ product.fixedProfit | currency:'USD':'symbol':'1.2-4' }}</td>
                 <td data-label="Precio sugerido" class="suggested-price-cell">{{ product.suggestedPrice | currency:'USD':'symbol':'1.2-4' }}</td>
                 <td data-label="Precio de venta"><input class="price-edit-input" [attr.aria-label]="'Precio de venta de ' + product.name" type="number" min="0" step="0.01" [value]="product.salePrice" (input)="updateSalePrice(product.id, $any($event.target).value)" (change)="saveProductPricing(product.id)" /></td>
                 <td data-label="Diferencia vs. sugerido" [class.amount-out]="product.priceDifference < 0">{{ product.priceDifference | currency:'USD':'symbol':'1.2-4' }}</td>

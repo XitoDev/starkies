@@ -16,15 +16,21 @@ import { Order } from 'shared';
     @if (order(); as item) {
       <section class="order-page">
         <header class="heading">
-          <div><h1>{{ editing() ? 'Editar pedido' : 'Detalle del pedido' }}</h1><p>{{ customerName() }} · Pedido #{{ item.id }}</p></div>
+          <div><h1>{{ editing() ? 'Editar pedido' : 'Detalle del pedido' }}</h1><p>{{ customerName() }} · Pedido {{ displayOrderId(item.id) }}</p></div>
           @if (!editing()) { <button matButton="outlined" class="secondary pdf-download" type="button" (click)="downloadPdf(item.id)" [disabled]="downloadingPdf()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">download</mat-icon>{{ downloadingPdf() ? 'Preparando PDF…' : 'Descargar PDF' }}</button> }
         </header>
         @if (error()) { <p class="message error">{{ error() }}</p> }
         @if (!editing()) {
           <div class="summary"><div><span>Cliente</span><strong>{{ customerName() }}</strong><small>{{ customer()?.phone || 'Sin teléfono' }}</small><small>{{ customer()?.address || 'Sin dirección registrada' }}</small></div><div><span>Entrega</span><strong>{{ item.deliveryDate ? (item.deliveryDate | date:'d MMM y') : 'Por confirmar' }}</strong><small>Modalidad: {{ item.deliveryMethod || 'Según catálogo / por confirmar' }}</small><small>Sector: {{ item.zone || 'Por confirmar' }}</small><small>Dirección de entrega: {{ item.deliveryAddress || customer()?.address || 'Por confirmar' }}</small><small>Horario: {{ item.deliveryTime || 'Por confirmar' }}</small><small>Estado: {{ statusLabel(item.status) }}</small><small>Envío: {{ (item.shippingFee ?? 0) | currency:'USD' }}</small><small>Pago: {{ item.isPaid ? 'Pagado' : 'Pendiente de pago' }}@if (item.isPaid && item.paymentMethod) { · {{ paymentMethodLabel(item.paymentMethod) }}}</small></div></div>
           @if (item.notes) { <div class="notes"><span>Notas del pedido</span><p>{{ item.notes }}</p></div> }
+          <section class="quick-status" aria-label="Estado del pedido y pago">
+            <label>Estado del pedido<select [(ngModel)]="status" name="quickStatus"><option value="PENDING">Pendiente</option><option value="PREPARING">En preparación</option><option value="READY">Listo para entregar</option><option value="DELIVERED">Entregado</option><option value="CANCELLED">Cancelado</option></select></label>
+            <label class="quick-paid"><input type="checkbox" [(ngModel)]="isPaid" name="quickPaid"> Pago recibido</label>
+            @if (isPaid) { <label>Forma de pago<select [(ngModel)]="paymentMethod" name="quickPaymentMethod"><option value="TRANSFER">Transferencia</option><option value="CASH">Efectivo</option></select></label> }
+            <button matButton="elevated" type="button" class="primary" (click)="saveQuickStatusAndPayment()" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar estado y pago' }}</button>
+          </section>
           <section class="lines"><header><strong>Productos del pedido</strong><span>{{ item.items.length }} líneas</span></header>@for(line of item.items;track line.recipeId + '-' + $index){<div class="line">@if (recipeImage(line.recipeId); as image) { <img class="cookie-image" [src]="image" [alt]="line.name || recipeName(line.recipeId)" loading="lazy"> } @else { <span class="cookie-placeholder" aria-hidden="true"><mat-icon fontSet="material-symbols-rounded">cookie</mat-icon></span> }<div><strong>{{ line.name || recipeName(line.recipeId) }}</strong><small>{{ line.quantity }} × {{ line.unitPrice | currency:'USD' }}</small></div><b>{{ line.quantity * line.unitPrice | currency:'USD' }}</b></div>}<div class="total-row"><span>Subtotal de galletas</span><strong>{{ subtotal(item) | currency:'USD' }}</strong></div><div class="total-row"><span>Envío</span><strong>{{ (item.shippingFee ?? 0) | currency:'USD' }}</strong></div><div class="total"><span>Total del pedido</span><strong>{{ totalWithShipping(item) | currency:'USD' }}</strong></div></section>
-          <footer class="actions"><a matButton="outlined" class="secondary" routerLink="/pedidos">Volver</a><button matButton="outlined" class="danger" type="button" (click)="remove()">Eliminar pedido</button><a matButton="elevated" class="primary" [routerLink]="['/pedidos', item.id, 'editar']">Editar pedido</a></footer>
+          <footer class="actions"><a matButton="outlined" class="secondary" routerLink="/pedidos">Volver</a><button matButton="outlined" class="danger" type="button" (click)="remove()">Eliminar pedido</button><button matButton="elevated" class="primary" type="button" (click)="editing.set(true)">Editar datos del pedido</button></footer>
         } @else {
           <form (ngSubmit)="save()">
             <label>Estado del pedido<select [(ngModel)]="status" name="status"><option value="PENDING">Pendiente</option><option value="PREPARING">En preparación</option><option value="READY">Listo</option><option value="DELIVERED">Entregado</option><option value="CANCELLED">Cancelado</option></select></label>
@@ -49,7 +55,7 @@ import { Order } from 'shared';
   styles: [`
     :host{display:block;min-width:0;color:#30263a}.order-page{max-width:980px;margin:0 auto;padding:clamp(20px,3vw,36px);border:1px solid #eee7f2;border-radius:18px;background:#fff}
     .heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:26px}.pdf-download{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.pdf-download mat-icon{font-size:18px;width:18px;height:18px}.heading h1{margin:0;font-size:29px;font-weight:500;letter-spacing:-1px}.heading p{margin:9px 0 0;color:#95899d;font-size:13px}
-    .summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:20px}.summary>div{display:grid;align-content:start;gap:9px;padding:18px;border:1px solid #eee7f2;border-radius:12px;background:#fdfbfe}.summary span,.notes>span{color:#9a88a4;font-size:11px}.summary strong{font-size:15px}.summary small{color:#8f8298;font-size:12px;overflow-wrap:anywhere}
+    .quick-status{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:0 0 20px;padding:16px;border:1px solid #eee7f2;border-radius:12px;background:#faf7fc}.quick-status label{display:flex;flex-direction:column;gap:6px;color:#766780;font-size:12px}.quick-status select{min-height:38px;padding:0 10px;border:1px solid #e4d9ec;border-radius:8px;background:#fff;color:#30263a;font:inherit}.quick-status .quick-paid{flex-direction:row;align-items:center;min-height:38px}.quick-status button{min-height:38px}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:20px}.summary>div{display:grid;align-content:start;gap:9px;padding:18px;border:1px solid #eee7f2;border-radius:12px;background:#fdfbfe}.summary span,.notes>span{color:#9a88a4;font-size:11px}.summary strong{font-size:15px}.summary small{color:#8f8298;font-size:12px;overflow-wrap:anywhere}
     .notes{padding:15px;margin-bottom:18px;border-radius:11px;background:#f7f0fb}.notes p{white-space:pre-wrap;font-size:13px;line-height:1.6}.lines{padding:18px;border:1px solid #eee7f2;border-radius:12px}.lines header{display:flex;justify-content:space-between;gap:10px;padding-bottom:13px;border-bottom:1px solid #f0eaf4}.lines header span{color:#95899d;font-size:11px}.line{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #f4eff6}.line>div{display:grid;gap:6px;flex:1;min-width:0}.line strong{font-size:12px}.line small{color:#95899d;font-size:11px}.line b{font-size:12px;white-space:nowrap}.cookie-image,.cookie-placeholder{width:58px;height:58px;flex:0 0 58px;object-fit:contain;border-radius:10px;background:#fff}.cookie-placeholder{display:grid;place-items:center;color:#95899d}.total-row,.total,.readonly-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px}.total-row{color:#776584;font-size:12px}.total strong{color:#8056ad;font-size:22px}.readonly-total{padding:17px;border-radius:10px;background:#f4ebf8}.readonly-total span{font-size:12px;color:#776584}.readonly-total strong{font-size:20px}
     form{display:grid;gap:20px}label{display:grid;gap:8px;color:#8d76a0;font-size:12px}input,textarea,select{width:100%;box-sizing:border-box;padding:13px;border:1px solid #e5d9ed;border-radius:9px;color:#5b4d65;background:#fff;font:inherit;font-size:13px}textarea{resize:vertical}label.paid-toggle{display:flex;align-items:center;gap:10px}label.paid-toggle input{width:18px;height:18px;accent-color:#8056ad}.actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:10px;margin-top:22px}.primary,.secondary,.danger{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 17px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}.secondary{border:1px solid #e8e0ed;background:#fff;color:#65586d}.danger{border:1px solid #f0d6d9;background:#fff;color:#a44855}.message{padding:12px;border-radius:9px;background:#fff0f0;color:#a44855;font-size:12px}
     @media(max-width:600px){.heading{flex-direction:column}.pdf-download{width:100%}.summary{grid-template-columns:1fr}.actions{align-items:stretch;flex-direction:column}.actions>*{width:100%;box-sizing:border-box}}
@@ -95,6 +101,7 @@ export class PedidoRuta {
       this.paymentMethod = item.paymentMethod ?? 'TRANSFER';
     });
   }
+  displayOrderId(id: string): string { return id.replace(/-/g, '').slice(-6).toUpperCase(); }
   statusLabel(status: Order['status']): string {
     return status === 'PENDING' ? 'Pendiente' : status === 'PREPARING' ? 'En preparación' : status === 'READY' ? 'Listo' : status === 'DELIVERED' ? 'Entregado' : 'Cancelado';
   }
@@ -135,6 +142,26 @@ export class PedidoRuta {
     } finally {
       this.downloadingPdf.set(false);
     }
+  }
+  async saveQuickStatusAndPayment(): Promise<void> {
+    const item = this.order();
+    if (!item || this.saving()) return;
+    this.saving.set(true); this.error.set('');
+    try {
+      await this.data.saveOrderDetails(this.orderId(), {
+        deliveryDate: this.deliveryDate,
+        deliveryMethod: this.deliveryMethod.trim(),
+        deliveryAddress: this.deliveryAddress.trim(),
+        deliveryTime: this.deliveryTime.trim(),
+        zone: this.zone.trim(),
+        notes: this.notes.trim(),
+        status: this.status,
+        shippingFee: Math.round(Math.max(0, Number(this.shippingFee) || 0) * 100) / 100,
+        isPaid: this.isPaid,
+        paymentMethod: this.isPaid ? this.paymentMethod : undefined,
+      });
+    } catch (error) { this.error.set(error instanceof Error ? error.message : 'No se pudo actualizar el estado del pedido.'); }
+    finally { this.saving.set(false); }
   }
   async save(): Promise<void> {
     const item = this.order();

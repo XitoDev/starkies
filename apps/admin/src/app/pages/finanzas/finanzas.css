@@ -5,3 +5,9 @@
 .balance-group-title{margin:8px 0 0;padding-bottom:9px;border-bottom:1px solid #eeeeee;color:#514b55;font-size:12px;font-weight:750}
 @media(max-width:600px){.edit-balances-button{margin-left:0}.balance-editor-form{grid-template-columns:1fr}.balance-group-title{grid-column:auto}}
 
+
+/* Compact, aligned finance controls. */
+.pending-button { min-height: 36px !important; padding-inline: 12px !important; border-radius: 9px !important; font-size: 11px !important; letter-spacing: .02em; white-space: nowrap; }
+.pending-button span { min-width: 20px; height: 20px; display: inline-grid; place-items: center; margin-left: 8px; border-radius: 7px; font-size: 11px; }
+.finance-tabs { align-items: center; gap: 10px; flex-wrap: wrap; }
+.price-edit-input { min-width: 100px; }
