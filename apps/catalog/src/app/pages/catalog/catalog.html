@@ -2,12 +2,14 @@
 <header class="site-header" id="inicio">
   <a href="#inicio" class="brand" aria-label="StarKies, inicio">
     <img class="brand-symbol" src="/starkies-icon.svg" alt="" width="62" height="62">
-    <span class="wordmark">StarKies</span>
+    <span class="brand-lockup"><span class="wordmark">StarKies<span class="wordmark-star" aria-hidden="true">✦</span></span><span class="brand-tagline">La estrella eres tú</span></span>
   </a>
   <nav class="main-nav" aria-label="Navegación principal">
     <a matButton="text" class="nav-link active" href="#inicio-contenido">Inicio</a>
     <a matButton="text" class="nav-link" href="#presentaciones">Catálogo</a>
     <a matButton="text" class="nav-link" href="#nosotros">Nosotros</a>
+    <a matButton="text" class="nav-link" href="#sabores">Sabores</a>
+    <a matButton="text" class="nav-link" href="#contacto">Contacto</a>
     <a matButton="text" class="nav-link" href="#contacto">Contacto</a>
     <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido">
       <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
@@ -40,9 +42,14 @@
     </div>
   </section>
 
+
+  <section class="editorial-about" id="nosotros" aria-labelledby="about-title">
+    <div class="about-photo"><span class="about-orbit" aria-hidden="true"></span><img src="/images/chispas-chocolate-classic.webp" alt="Galletas artesanales con chispas de chocolate" loading="lazy"></div>
+    <div class="about-copy"><span class="eyebrow">UN POQUITO DE MAGIA</span><h2 id="about-title">Más que galletas,<br><em>momentos felices.</em></h2><p>En StarKies creemos que las mejores historias comienzan con algo dulce. Horneamos cada galleta con ingredientes seleccionados, mucho cariño y ese toque especial que convierte cualquier momento en uno para recordar.</p><a matButton="elevated" class="editorial-button" href="#sabores">Descubre los sabores <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a></div>
+  </section>
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
     <div class="section-title">
-      <div><div class="eyebrow">TU CAJA, TU ESTILO</div><h2 id="box-title">Elige tu caja</h2><p class="small">Una presentación perfecta para cada antojo. Tú eliges los sabores.</p></div>
+      <div><div class="eyebrow">HECHAS PARA COMPARTIR</div><h2 id="box-title">Elige tu caja</h2><p class="small">Combina tus favoritas y crea una caja tan única como tú.</p></div>
       <div class="search-field"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon><input type="search" aria-label="Buscar un sabor" [ngModel]="searchQuery()" (ngModelChange)="setTabSearch($event)" placeholder="Busca tu sabor favorito"></div>
     </div>
     @if (catalogLoading()) { <p role="status" class="catalog-instruction">Cargando el catálogo actualizado…</p> }
@@ -59,7 +66,7 @@
     </div>
     <div class="catalog-hint"><span class="hint-icon" aria-hidden="true">✦</span><p>Tu caja actual: <strong>{{ selectedPresentation().name }}</strong>. Agrega tus sabores hasta completar las cantidades indicadas y después podrás guardar la caja en tu pedido.</p></div>
 
-    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">NUESTRAS</div><h2>Galletas</h2></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
+    <div class="catalog-heading" id="sabores"><div><div class="eyebrow">HORNEADAS CON AMOR</div><h2>Nuestras galletas</h2><p class="small">Sabores irresistibles, texturas únicas y pequeños momentos de felicidad.</p></div><span class="catalog-count">{{ filteredProducts().length }} sabores</span></div>
     <div class="category-groups">
       @for (cat of categories(); track cat) {
         <section class="category-group" [attr.aria-label]="cat"><h3 class="category-title"><span class="category-heading">{{ cat === 'Galletas clásicas' ? 'Clásicas' : 'NY Style' }}</span></h3><div class="products">
@@ -87,27 +94,21 @@
   </section>
 
 </main>
-<section class="about-anchor" id="nosotros" aria-label="Sobre StarKies"></section>\n<footer class="site-footer" id="contacto" aria-label="Información y contacto de StarKies">
+
+  <section class="testimonial-band" aria-labelledby="testimonial-title">
+    <div class="testimonial-photo"><img src="/images/choco-meteor.webp" alt="Galleta de chocolate StarKies" loading="lazy"></div>
+    <div class="testimonial-quote"><span class="quote-mark" aria-hidden="true">“</span><p>Un mordisco y entiendes por qué las cosas hechas con amor saben diferente. Cada caja de StarKies es una pequeña celebración.</p><span class="quote-stars" aria-label="Cinco estrellas">★★★★★</span><small>Una dulce opinión de nuestra comunidad</small></div>
+    <div class="testimonial-copy"><span class="eyebrow">DULCES MOMENTOS</span><h2 id="testimonial-title">El amor se comparte <em>en cada bocado.</em></h2><p>Tu próximo sabor favorito está esperándote. Elige tu caja y hagamos algo delicioso.</p><a href="#presentaciones" class="text-link">Arma tu caja <span aria-hidden="true">→</span></a></div>
+  </section>
+  <section class="order-cta" aria-labelledby="order-cta-title"><div class="cta-copy"><span class="eyebrow">LA ESTRELLA ERES TÚ</span><h2 id="order-cta-title">¿Lista para endulzar tu día?</h2><p>Elige tus sabores, arma tu caja y déjanos preparar algo especial para ti.</p><a matButton="elevated" class="cta-button" href="#presentaciones">Quiero mi caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a></div><img src="/images/choco-meteor.webp" alt="Galletas artesanales de chocolate listas para compartir" loading="lazy"></section>
+\n<footer class="site-footer" id="contacto" aria-label="Información y contacto de StarKies">
   <div class="footer-content footer-contact-content">
-    <div class="footer-help">
-      <h2>¿Tienes alguna pregunta?</h2>
-      <p>Escríbenos, estamos para ayudarte.</p>
-    </div>
-    <div class="footer-social footer-social-group">
-      <span class="footer-label">REDES SOCIALES</span>
-      <a class="footer-social-link" href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer" aria-label="Contactar a StarKies por WhatsApp al 0979075202"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>0979075202</span></a>
-      <a class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>@starkies.ec</span></a>
-      <a class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer" aria-label="Abrir TikTok de @starkies.ec"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>@starkies.ec</span></a>
-    </div>
+    <div class="footer-help"><a class="footer-logo" href="#inicio">StarKies<span>✦</span></a><p>La estrella eres tú.<br>Galletas artesanales para endulzar tus momentos especiales.</p></div>
+    <div class="footer-links"><strong>Navegación</strong><a href="#inicio-contenido">Inicio</a><a href="#presentaciones">Catálogo</a><a href="#sabores">Sabores</a><a href="#nosotros">Nuestra historia</a></div>
+    <div class="footer-links"><strong>¿Necesitas ayuda?</strong><a href="#contacto">Contacto</a><a href="#contacto">Cómo pedir</a><a href="#contacto">Preguntas frecuentes</a></div>
+    <div class="footer-social footer-social-group"><span class="footer-label">ENCUÉNTRANOS</span><a class="footer-social-link" href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="socialIcons.whatsapp.path"></path></svg><span>0979075202</span></a><a class="footer-social-link" href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="socialIcons.instagram.path"></path></svg><span>@starkies.ec</span></a><a class="footer-social-link" href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer"><svg class="social-brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="socialIcons.tiktok.path"></path></svg><span>@starkies.ec</span></a></div>
   </div>
-  <div class="footer-bottom">
-    <small>© {{ currentYear }} StarKies. La estrella eres tú.</small>
-    <a class="footer-brand brand" href="#inicio" aria-label="StarKies, volver al inicio">
-      <span class="wordmark">StarKies<span class="wordmark-star" aria-hidden="true">✦</span></span>
-      <span class="brand-tagline">LA ESTRELLA ERES TÚ</span>
-    </a>
-    <a href="#inicio">Volver arriba ↑</a>
-  </div>
+  <div class="footer-bottom"><small>© {{ currentYear }} StarKies. La estrella eres tú.</small><a href="#inicio">Hecho con amor y una pizca de magia ✦</a><a href="#inicio">Volver arriba ↑</a></div>
 </footer>
 @if (totalBoxCurrent() > 0 || completedBoxes().length > 0) {
   <aside class="cart-dock" aria-label="Resumen de cajas y progreso">
