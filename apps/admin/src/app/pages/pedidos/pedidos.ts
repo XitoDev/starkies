@@ -26,6 +26,8 @@ export class Pedidos implements OnDestroy {
   readonly searchOrderResults = signal<Order[] | null>(null);
   readonly searchCustomerResults = signal<import('shared').Customer[] | null>(null);
   readonly searchPending = signal(false);
+  readonly openOrderActions = signal<string | null>(null);
+  displayOrderId(id: string): string { return id.replace(/-/g, '').slice(-6).toUpperCase(); }
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
   private searchRequestId = 0;
   readonly statusFilter = signal<'ALL' | Order['status']>('ALL');
