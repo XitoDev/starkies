@@ -83,7 +83,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const pdf = buildOrderPdf(record, verified.orderId);
+    const customerId = typeof record.customerId === 'string' ? record.customerId : '';
+    const customerSnapshot = customerId ? await getDatabase().doc('customers/' + customerId).get() : null;
+    const customer = customerSnapshot?.exists() ? customerSnapshot.data() : undefined;
+    const pdfRecord: StoredOrder = {
+      ...record,
+      customer: typeof record.customer === 'string' && record.customer.trim() ? record.customer : customer?.['name'],
+      phone: typeof record.phone === 'string' && record.phone.trim() ? record.phone : customer?.['phone'],
+      address: typeof record.deliveryAddress === 'string' && record.deliveryAddress.trim()
+        ? record.deliveryAddress
+        : typeof record.address === 'string' && record.address.trim() ? record.address : customer?.['address'],
+      deliveryFee: record.shippingFee ?? record.deliveryFee,
+    };
+    const pdf = buildOrderPdf(pdfRecord, verified.orderId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="pedido-' + safeFilename(verified.orderId) + '.pdf"');
     res.setHeader('Content-Length', String(pdf.length));
@@ -172,7 +184,7 @@ export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   drawText('Teléfono', 56, 631, 8, 'F2', muted);
   drawText(order.phone, 56, 614, 10);
   drawText('Sector / punto', 310, 631, 8, 'F2', muted);
-  drawText(String(order.zone ?? '').trim() || String(order.deliveryMethod ?? '').trim() || order.address, 310, 614, 10);
+  drawText(String(order.deliveryAddress ?? '').trim() || String(order.zone ?? '').trim() || String(order.deliveryMethod ?? '').trim() || order.address, 310, 614, 10);
   drawText(order.zone === 'Retiro en tienda' || order.address === 'Retiro en tienda' ? 'Fecha de retiro' : 'Fecha de entrega', 56, 600, 8, 'F2', muted);
   drawText(formatDate(safeDate), 150, 600, 9);
 
