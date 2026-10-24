@@ -26,7 +26,7 @@
     </div>
     <div class="category-tabs">
       <button matButton="text" type="button" [class.active]="categoryFilter()==='Todos'" (click)="categoryFilter.set('Todos')">
-        Todos <span>{{recipes().filter ? catalogItems().length : catalogItems().length}}</span>
+        Todos <span>{{productCount()}}</span>
       </button>
       @for(category of categories();track category){
         <button matButton="text" type="button" [class.active]="categoryFilter()===category" (click)="categoryFilter.set(category)">
