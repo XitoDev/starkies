@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { NgForm } from '@angular/forms';
 import { Landing } from './landing';
+import { provideRouter } from '@angular/router';
 
 describe('Landing', () => {
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [Landing] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Landing], providers: [provideRouter([])] }).compileComponents();
   });
 
   it('creates the landing page', () => {
