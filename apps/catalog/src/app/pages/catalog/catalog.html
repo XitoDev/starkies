@@ -1,16 +1,13 @@
 <a matButton="text" class="skip-link" href="#sabores">Saltar al catálogo</a>
 <header class="site-header" id="inicio">
-  <a href="#inicio" class="brand" aria-label="StarKies, inicio">
+  <a href="/" class="brand" aria-label="StarKies, inicio">
     <img class="brand-symbol" src="/starkies-icon.svg" alt="" width="62" height="62">
     <span class="brand-lockup"><span class="wordmark">StarKies<span class="wordmark-star" aria-hidden="true">✦</span></span><span class="brand-tagline">La estrella eres tú</span></span>
   </a>
   <nav class="main-nav" aria-label="Navegación principal">
-    <a matButton="text" class="nav-link active" href="#inicio-contenido">Inicio</a>
-    <a matButton="text" class="nav-link" href="#presentaciones">Catálogo</a>
-    <a matButton="text" class="nav-link" href="#sabores">Sabores</a>
-    <a matButton="text" class="nav-link nav-how" href="#como-pedir">Cómo pedir</a>
-    <a matButton="text" class="nav-link nav-order" href="#presentaciones">Mi pedido</a>
-    <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido">
+    <a matButton="text" class="nav-link" href="/">Inicio</a>
+    <a matButton="text" class="nav-link active" href="/menu">Catálogo</a>
+    <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido" (click)="openOrderSheet(); $event.preventDefault()">
       <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
       <span class="cart-count">{{ completedBoxes().length }}</span>
     </a>
@@ -23,19 +20,7 @@
       <button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
     </section>
   }
-  <section class="hero" id="inicio-contenido" aria-label="Presentación de StarKies">
-    <div class="hero-copy hero-copy-clean">
-      <div class="eyebrow hero-eyebrow">GALLETAS PREMIUM</div><h1><span>Cookies</span><span class="hero-emphasis">ARTESANALES</span><span class="hero-spark hero-spark-one" aria-hidden="true">╱</span><span class="hero-spark hero-spark-two" aria-hidden="true">╱╱</span></h1>
-      <p>Galletas artesanales, sabores inolvidables. Elige tu caja y combina tus favoritas.</p>
-      <a matButton="elevated" class="hero-cta" href="#presentaciones">Ver catálogo <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
-    </div>
-    <div class="hero-art" aria-hidden="true">
-      <span class="hero-orbit hero-orbit-one"></span><span class="hero-orbit hero-orbit-two"></span>
-      <img class="hero-cookie-hero" src="/images/choco-meteor.webp" alt="" fetchpriority="high">
-    </div>
-  </section>
-
-  <section class="about-section" id="sobre-starkies" aria-labelledby="about-title">
+<section class="about-section" id="sobre-starkies" aria-labelledby="about-title">
     <div class="about-art">
       <span class="about-orbit" aria-hidden="true"></span>
       <img src="/images/chispas-chocolate-classic.webp" alt="Galleta artesanal con chispas de chocolate" loading="lazy">
@@ -96,13 +81,7 @@
     @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>{{ products().length === 0 ? 'Estamos preparando nuestro catálogo' : 'No encontramos ese sabor' }}</h3><p>{{ products().length === 0 ? 'En este momento no hay sabores publicados. Vuelve a intentarlo más tarde.' : 'Prueba con otro nombre o cambia tu búsqueda.' }}</p><button matButton="outlined" type="button" (click)="retryCatalog()">Actualizar catálogo</button></div> }
   </section>
 
-  <section class="values-band" aria-label="Lo que hace especiales a nuestras galletas">
-    <div class="value-item"><span class="value-icon" aria-hidden="true">♡</span><h2>Preparadas con cariño</h2><p>Cuidamos cada detalle para que disfrutes algo verdaderamente especial.</p></div>
-    <div class="value-item"><span class="value-icon" aria-hidden="true">✦</span><h2>Sabores para elegir</h2><p>Encuentra tu favorita y combina las variedades en tu caja.</p></div>
-    <div class="value-item"><span class="value-icon" aria-hidden="true">☆</span><h2>Un detalle dulce</h2><p>Para regalar, compartir o darte un gusto en cualquier momento.</p></div>
-  </section>
-
-  <section class="order-cta" id="como-pedir" aria-labelledby="order-cta-title">
+<section class="order-cta" id="como-pedir" aria-labelledby="order-cta-title">
     <div class="order-cta-copy">
       <div class="eyebrow">LA ESTRELLA ERES TÚ</div>
       <h2 id="order-cta-title">¿Lista para pedir?</h2>
