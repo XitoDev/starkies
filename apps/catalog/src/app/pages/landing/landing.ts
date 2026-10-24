@@ -21,13 +21,17 @@ import { RouterLink } from '@angular/router';
         </div>
       </section>
 
-      <section class="section features-section" aria-labelledby="features-title">
-        <p class="eyebrow">Una experiencia deliciosa</p>
-        <h2 id="features-title">Pequeños momentos, grandes sabores</h2>
-        <div class="features">
-          <article class="feature"><span aria-hidden="true">🍪</span><h3>Recién hechas</h3><p>Galletas preparadas con dedicación.</p></article>
-          <article class="feature"><span aria-hidden="true">🎁</span><h3>Tu caja, a tu gusto</h3><p>Combina tus sabores favoritos.</p></article>
-          <article class="feature"><span aria-hidden="true">✨</span><h3>Un detalle especial</h3><p>Perfectas para regalar o consentirte.</p></article>
+      <section class="section brownie-story" aria-labelledby="brownie-story-title">
+        <div class="story-image-wrap">
+          <img src="/images/starkies-brownie-cookie.svg" alt="Brownie Classic, la galleta de chocolate insignia de StarKies" width="1000" height="1000" loading="lazy">
+        </div>
+        <div class="story-copy">
+          <p class="eyebrow">Nuestra historia</p>
+          <span class="story-label">Nuestra más vendida</span>
+          <h2 id="brownie-story-title">La galleta con la que empezó todo</h2>
+          <p>Brownie Classic fue la primera galleta que horneamos en StarKies. Nació de una idea sencilla: llevar el sabor reconfortante de un brownie a una galleta que puedas disfrutar en cualquier momento.</p>
+          <p>Su sabor suave y su apariencia evocan un brownie tradicional, con ese aspecto casero que la hace tan especial, pero hecho galleta. Hoy es nuestra galleta insignia y la más vendida de StarKies.</p>
+          <a class="primary-button" routerLink="/menu">Prueba Brownie Classic</a>
         </div>
       </section>
 
@@ -93,11 +97,15 @@ import { RouterLink } from '@angular/router';
     .primary-button { display:inline-flex; align-items:center; justify-content:center; min-height:45px; padding:14px 22px; border:0; border-radius:8px; background:#604a59; color:white; font:600 14px 'DM Sans',Arial,sans-serif; cursor:pointer; }
     .section { max-width:1250px; margin:auto; padding:70px 6%; text-align:center; }
     h2 { margin:10px 0; color:#604a59; font:42px/1.2 'Shrikhand',Georgia,serif; font-weight:400; }
-    .features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:35px; }
-    .feature { padding:28px; border:1px solid var(--line); border-radius:14px; background:white; }
-    .feature>span { font-size:36px; }
-    .feature h3 { margin:12px 0 6px; color:#4a3f4b; font-size:17px; }
-    .feature p { margin:0; font-size:14px; }
+    .brownie-story { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:clamp(28px,6vw,84px); max-width:1250px; padding-top:88px; padding-bottom:88px; text-align:left; }
+    .story-image-wrap { position:relative; display:grid; place-items:center; min-width:0; aspect-ratio:1/1; overflow:hidden; border:1px solid #eadfe5; border-radius:24px; background:radial-gradient(circle at 50% 45%,#fff 0,#fff 48%,#f7e9ee 100%); }
+    .story-image-wrap::after { position:absolute; inset:16px; border:1px solid rgb(193 160 172 / 38%); border-radius:17px; content:""; pointer-events:none; }
+    .story-image-wrap img { display:block; width:100%; height:100%; padding:clamp(12px,2vw,28px); object-fit:contain; }
+    .story-copy { min-width:0; }
+    .story-label { display:inline-flex; align-items:center; margin:8px 0 12px; padding:7px 11px; border-radius:6px; background:#f0d9e4; color:#604a59; font-size:12px; font-weight:700; letter-spacing:.2px; }
+    .story-copy h2 { max-width:600px; margin:4px 0 18px; font-size:clamp(34px,4vw,52px); }
+    .story-copy p:not(.eyebrow) { max-width:590px; margin:0 0 14px; font-size:16px; line-height:1.85; }
+    .story-copy .primary-button { margin-top:12px; }
     .quote-section { border-top:1px solid var(--line); padding:72px 6%; background:#fff; }
     .quote-inner { max-width:820px; margin:auto; }
     .quote-intro { margin-bottom:28px; text-align:center; }
@@ -119,7 +127,10 @@ import { RouterLink } from '@angular/router';
       .hero-description { font-size:1rem; }
       .section { padding:55px 6%; }
       h2 { font-size:34px; }
-      .features { grid-template-columns:1fr; }
+      .brownie-story { grid-template-columns:1fr; gap:24px; padding-top:56px; padding-bottom:56px; text-align:left; }
+      .story-image-wrap { width:min(100%,460px); margin:0 auto; }
+      .story-copy h2 { font-size:34px; }
+      .story-copy p:not(.eyebrow) { font-size:15px; }
       .quote-section { padding:50px 6%; }
       .quote-form { grid-template-columns:1fr; padding:18px; }
       .full { grid-column:auto; }

@@ -30,6 +30,7 @@ describe('Catalog', () => {
   let fixture: ComponentFixture<Catalog>;
 
   beforeEach(async () => {
+    window.sessionStorage.removeItem('starkies.catalog.cart.v1');
     await TestBed.configureTestingModule({ imports: [Catalog] }).compileComponents();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,

@@ -14,6 +14,11 @@ import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.mod
 import { BOX_PRESENTATIONS } from './catalog.data';
 import { CatalogUiService } from '../../catalog-ui.service';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
+interface CachedPublicCatalog { products: Product[]; zones: DeliveryZone[]; fetchedAt: number; }
+interface CartDraft { selectedPresentationId: string; currentBoxItems: Record<string, number>; completedBoxes: PackedBox[]; editingBoxIndex: number | null; }
+const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
+const CART_DRAFT_KEY = 'starkies.catalog.cart.v1';
+let publicCatalogCache: CachedPublicCatalog | null = null;
 @Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatDialogModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   private readonly platformId = inject(PLATFORM_ID);
@@ -106,12 +111,17 @@ export class Catalog {
     // Relative API paths are browser-relative. During Angular prerender there is no
     // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
     // Load live business data only in the browser; never fabricate prerender data.
-    if (isPlatformBrowser(this.platformId)) void this.loadCatalog(this.document.baseURI);
+    if (isPlatformBrowser(this.platformId)) { this.restoreCartDraft(); void this.loadCatalog(this.document.baseURI); }
   }
-  retryCatalog(): void { void this.loadCatalog(isPlatformBrowser(this.platformId) ? this.document.baseURI : undefined); }
+  retryCatalog(): void { publicCatalogCache = null; void this.loadCatalog(isPlatformBrowser(this.platformId) ? this.document.baseURI : undefined); }
   private async loadCatalog(baseUri?: string): Promise<void> {
     this.catalogLoading.set(true);
     this.catalogLoadError.set('');
+    if (isPlatformBrowser(this.platformId) && publicCatalogCache && Date.now() - publicCatalogCache.fetchedAt < CATALOG_CACHE_TTL_MS) {
+      this.applyPublicCatalog(publicCatalogCache);
+      this.catalogLoading.set(false);
+      return;
+    }
     try {
       const apiUrl = baseUri ? new URL('/api/catalog', baseUri).toString() : '/api/catalog';
       const response = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -131,14 +141,57 @@ export class Catalog {
         return typeof item['id'] === 'string' && typeof item['name'] === 'string' && typeof item['fee'] === 'number';
       });
       if (!zones.length) throw new Error('No pudimos cargar las tarifas de entrega. Inténtalo de nuevo.');
-      this.products.set(products);
-      this.zones = zones;
-      if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
+      const cache: CachedPublicCatalog = { products, zones, fetchedAt: Date.now() };
+      if (isPlatformBrowser(this.platformId)) publicCatalogCache = cache;
+      this.applyPublicCatalog(cache);
     } catch (error) {
       this.catalogLoadError.set(error instanceof Error ? error.message : 'No pudimos cargar el catálogo.');
     } finally {
       this.catalogLoading.set(false);
     }
+  }
+  private applyPublicCatalog(cache: CachedPublicCatalog): void {
+    this.products.set(cache.products);
+    this.zones = cache.zones;
+    if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
+  }
+  private restoreCartDraft(): void {
+    try {
+      const raw = window.sessionStorage.getItem(CART_DRAFT_KEY);
+      if (!raw) return;
+      const draft = this.asRecord(JSON.parse(raw));
+      const presentation = this.presentations.find(item => item.id === draft['selectedPresentationId']);
+      if (presentation) this.selectedPresentation.set(presentation);
+      const currentItems = this.asRecord(draft['currentBoxItems']);
+      const validItems = Object.fromEntries(Object.entries(currentItems).filter(([, quantity]) => Number.isInteger(quantity) && Number(quantity) > 0)) as Record<string, number>;
+      this.currentBoxItems.set(validItems);
+      if (Array.isArray(draft['completedBoxes'])) {
+        const boxes: PackedBox[] = draft['completedBoxes'].flatMap(value => {
+          const item = this.asRecord(value);
+          const savedPresentation = this.presentations.find(p => p.id === this.asRecord(item['presentation'])['id']);
+          const items = this.asRecord(item['items']);
+          if (!savedPresentation || !Object.values(items).every(quantity => Number.isInteger(quantity) && Number(quantity) > 0)) return [];
+          return [{ presentation: savedPresentation, items: Object.fromEntries(Object.entries(items).filter(([, quantity]) => Number.isInteger(quantity) && Number(quantity) > 0)) as Record<string, number> }];
+        });
+        this.completedBoxes.set(boxes);
+      }
+      const editingIndex = draft['editingBoxIndex'];
+      this.editingBoxIndex.set(Number.isInteger(editingIndex) && Number(editingIndex) >= 0 ? Number(editingIndex) : null);
+    } catch {
+      try { window.sessionStorage.removeItem(CART_DRAFT_KEY); } catch { /* Storage may be unavailable. */ }
+    }
+  }
+  private persistCartDraft(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const draft: CartDraft = {
+        selectedPresentationId: this.selectedPresentation().id,
+        currentBoxItems: this.currentBoxItems(),
+        completedBoxes: this.completedBoxes(),
+        editingBoxIndex: this.editingBoxIndex(),
+      };
+      window.sessionStorage.setItem(CART_DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* Storage may be unavailable or full; the in-memory cart remains usable. */ }
   }
   getPresentationTitle(presentation: BoxPresentation): string {
     switch (presentation.id) {
@@ -179,6 +232,7 @@ export class Catalog {
       ? 'Galletas clásicas'
       : presentation.id === 'ny' ? 'Galletas NY' : 'Todas');
     this.boxSelectionError.set('');
+    this.persistCartDraft();
   }
   setDeliveryZone(zone: DeliveryZone | null): void {
     this.orderForm.zone = zone;
@@ -220,6 +274,7 @@ export class Catalog {
     this.currentBoxItems.set(nextItems);
     if (!wasComplete && this.isBoxComplete()) this.triggerCartTip();
     if (delta < 0) this.boxSelectionError.set('');
+    this.persistCartDraft();
   }
   private triggerCartTip(): void {
     this.showCartTip.set(false);
@@ -247,6 +302,7 @@ export class Catalog {
     this.showCartTip.set(false);
     this.orderError.set('');
     this.orderSuccess.set(null);
+    this.persistCartDraft();
   }
   addAnotherBox(): void {
     this.finishBox();
@@ -259,12 +315,14 @@ export class Catalog {
     this.selectedPresentation.set(box.presentation);
     this.currentBoxItems.set(availableItems);
     this.editingBoxIndex.set(index);
+    this.persistCartDraft();
     this.orderSheetRef?.close();
     this.orderError.set('');
     document.getElementById('sabores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   removeBox(index: number): void {
     this.completedBoxes.update(previous => previous.filter((_, current) => current !== index));
+    this.persistCartDraft();
   }
   boxHasUnavailableItems(box: PackedBox): boolean {
     return Object.keys(box.items).some(id => !this.products().some(product => product.id === id && product.stock));
@@ -367,7 +425,7 @@ export class Catalog {
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
-      this.orderSheetRef?.close(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
+      this.orderSheetRef?.close(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm(); this.editingBoxIndex.set(null); this.persistCartDraft();
     } catch (error) {
       if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');

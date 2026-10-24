@@ -40,6 +40,7 @@
 :host .optional-name-toggle { display:flex; align-items:center; min-height:40px; }
 :host .lookup-message { color:#756974; font-size:11px; line-height:1.45; }
 :host .summary { margin-top:4px; color:var(--ink); }
+:host .empty-cart-message { margin:0; padding:12px 0; color:#857982; font-size:14px; line-height:1.6; }
 :host .summary h3 { margin:0 0 8px; color:#604a59; font:400 22px 'Shrikhand',Georgia,serif; }
 :host .review-intro { margin:0 0 12px; color:#756974; font-size:14px; line-height:1.6; }
 :host .review-empty { padding:18px; border:1px dashed var(--line); border-radius:8px; color:#756974; line-height:1.6; }
