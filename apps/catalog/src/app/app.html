@@ -1,1 +1,43 @@
-<router-outlet></router-outlet>
+<div class="app-shell">
+  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  <header class="site-header" id="site-header">
+    <a class="brand" routerLink="/" aria-label="StarKies, inicio">StarKies <span aria-hidden="true">✦</span></a>
+    <nav aria-label="Navegación principal">
+      <a matButton="text" class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+      <a matButton="text" class="nav-link" routerLink="/menu" routerLinkActive="active">Catálogo</a>
+      <button matIconButton type="button" class="cart-trigger" aria-label="Abrir mi pedido" title="Mi pedido" (click)="openOrder()">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
+        <span class="cart-badge">{{ cartItemCount() }}</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="route-content" id="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="site-footer" id="contacto" aria-label="Información y redes sociales de StarKies">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand footer-logo" routerLink="/" aria-label="StarKies, inicio">StarKies <span aria-hidden="true">✦</span></a>
+        <p>La estrella eres tú.</p>
+      </div>
+      <div class="footer-contact">
+        <strong>Redes sociales</strong>
+        <a href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.whatsapp.path"></path></svg>
+          <span>WhatsApp · 0979075202</span>
+        </a>
+        <a href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.instagram.path"></path></svg>
+          <span>Instagram · @starkies.ec</span>
+        </a>
+        <a href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path [attr.d]="socialIcons.tiktok.path"></path></svg>
+          <span>TikTok · @starkies.ec</span>
+        </a>
+      </div>
+    </div>
+    <small class="contact-note">© {{ currentYear }} StarKies · La estrella eres tú.</small>
+  </footer>
+</div>
