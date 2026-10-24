@@ -90,7 +90,7 @@
                 @if (!product.stock) {
                   <button matButton="text" type="button" class="sold-out-button" disabled>Agotado</button>
                 } @else if (getQuantity(product.id) === 0) {
-                  <button matButton="elevated" type="button" class="add-button" (click)="changeQuantity(product.id, 1)">Agregar +</button>
+                  <button matButton="elevated" type="button" class="add-button" [disabled]="!canAddProduct(product.id)" (click)="changeQuantity(product.id, 1)">Agregar +</button>
                 } @else {
                   <div class="product-qty" [attr.aria-label]="'Cantidad de ' + product.name">
                     <button matIconButton type="button" class="qty-button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button>
