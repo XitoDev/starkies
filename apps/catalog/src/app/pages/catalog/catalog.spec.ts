@@ -55,6 +55,21 @@ describe('Catalog', () => {
     expect(fixture.nativeElement.querySelectorAll('.category-title')).toHaveLength(0);
   });
 
+  it('matches the approved HTML box-card labels without adding price rows', () => {
+    const choices = [...fixture.nativeElement.querySelectorAll('.box-choice') as NodeListOf<HTMLElement>];
+    expect(choices.map(choice => choice.querySelector('strong')?.textContent?.trim())).toEqual([
+      'Caja de 10 clásicas',
+      'Caja de 6 NY Style',
+      'Caja mixta',
+    ]);
+    expect(choices.map(choice => choice.querySelector('small')?.textContent?.trim())).toEqual([
+      '10 galletas clásicas',
+      '6 galletas NY Style',
+      '4 clásicas + 4 NY Style',
+    ]);
+    expect(fixture.nativeElement.querySelectorAll('.box-choice-bottom')).toHaveLength(0);
+  });
+
   it('places new cookies first, the best seller second, and least-sold cookies before the second best seller', () => {
     const products = [
       { id: 'top', tag: undefined },
