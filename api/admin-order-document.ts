@@ -38,7 +38,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!record) { res.status(404).json({ message: 'No encontramos los detalles del pedido.' }); return; }
     const customerId = typeof record.customerId === 'string' ? record.customerId : '';
     const customerSnapshot = customerId ? await getDatabase().doc('customers/' + customerId).get() : null;
-    const customer = customerSnapshot?.exists() ? customerSnapshot.data() : undefined;
+    const customer = customerSnapshot?.exists ? customerSnapshot.data() : undefined;
     const pdfRecord: StoredOrder = {
       ...record,
       customer: typeof record.customer === 'string' && record.customer.trim() ? record.customer : customer?.['name'],
