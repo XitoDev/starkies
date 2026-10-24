@@ -438,7 +438,31 @@ export class DataService implements OnDestroy {
     this.loadViewModels(nextState);
   }
 
-  async createCustomer(input: Omit<Customer, 'id'>): Promise<Customer> {
+  getCustomerDraftFromOrder(orderId: string): { name: string; phone: string; address: string } | null {
+    const state = this.rawState();
+    if (!state) return null;
+    const order = this.asArray(state['orders']).find(item => this.asString(item['id'] ?? item['code']) === orderId);
+    if (!order) return null;
+    const zone = this.asString(order['zone'] ?? order['deliveryZone'] ?? order['deliveryArea']);
+    const deliveryMethod = this.asString(order['deliveryMethod'] ?? order['deliveryType'] ?? order['deliveryOption']);
+    const legacyAddress = this.asString(order['address']).trim();
+    const explicitAddress = this.asString(order['deliveryAddress'] ?? order['shippingAddress']).trim();
+    const isPickup = zone.toLocaleLowerCase('es').includes('retiro')
+      || deliveryMethod.toLocaleLowerCase('es').includes('retiro')
+      || legacyAddress.toLocaleLowerCase('es') === 'retiro en tienda';
+    let address = explicitAddress || legacyAddress;
+    if (!explicitAddress && legacyAddress.includes(' — ')) {
+      address = legacyAddress.split(' — ').slice(1).join(' — ').trim();
+    }
+    if (isPickup) address = '';
+    return {
+      name: this.asString(order['customer'] ?? order['customerName'] ?? order['name']).trim(),
+      phone: this.asString(order['phone'] ?? order['customerPhone']).trim(),
+      address,
+    };
+  }
+
+  async createCustomer(input: Omit<Customer, 'id'>, linkedOrderId?: string): Promise<Customer> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const name = input.name.trim();
@@ -450,10 +474,37 @@ export class DataService implements OnDestroy {
     if (normalizedPhone.length >= 7 && customers.some(item => this.normalizePhone(this.asString(item['phone'])) === normalizedPhone)) {
       throw new Error('Ya existe un cliente con ese teléfono. Busca su ficha y reutilízala.');
     }
+
+    const rawOrders = this.asArray(state['orders']);
+    const orderIndex = linkedOrderId
+      ? rawOrders.findIndex(item => this.asString(item['id'] ?? item['code']) === linkedOrderId)
+      : -1;
+    if (linkedOrderId && orderIndex < 0) throw new Error('No se encontró el pedido que debe vincularse. Actualiza la pantalla e inténtalo de nuevo.');
+    const linkedOrder = orderIndex >= 0 ? rawOrders[orderIndex] : undefined;
+    if (linkedOrder) {
+      const currentCustomerId = this.asString(linkedOrder['customerId']);
+      if (currentCustomerId && customers.some(item => this.asString(item['id'] ?? item['customerId']) === currentCustomerId)) {
+        throw new Error('Este pedido ya tiene un cliente asociado. Actualiza la pantalla e inténtalo de nuevo.');
+      }
+    }
+
     const id = 'admin-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
     const customer: Customer = { id, name, phone, address };
-    const nextState = { ...state, customers: [...customers, customer as unknown as RawRecord] };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('customers', id, customer as unknown as RawRecord));
+    const nextCustomers = [...customers, customer as unknown as RawRecord];
+    const nextOrders = [...rawOrders];
+    const updatedOrder = linkedOrder ? { ...linkedOrder, customerId: id } : undefined;
+    if (updatedOrder && orderIndex >= 0) nextOrders[orderIndex] = updatedOrder;
+    const nextState = {
+      ...state,
+      customers: nextCustomers,
+      ...(updatedOrder ? { orders: nextOrders } : {}),
+    };
+    await this.applyOptimisticState(state, nextState, async () => {
+      await this.repository.upsertCollectionRecord('customers', id, customer as unknown as RawRecord);
+      if (updatedOrder) {
+        await this.repository.upsertCollectionRecord('orders', linkedOrderId!, updatedOrder);
+      }
+    });
     return customer;
   }
 

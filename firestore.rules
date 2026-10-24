@@ -22,15 +22,16 @@ service cloud.firestore {
       allow write: if isApprovedAdmin();
     }
 
-    // Rate limits and lookup indexes are maintained by trusted server endpoints.
+    // Rate limits remain server-only. Phone lookup indexes are private to approved
+    // admins because the Admin UI validates and maintains them during customer/order edits.
     match /publicOrderRateLimits/{document=**} {
       allow read, write: if false;
     }
     match /customerPhoneLookup/{document=**} {
-      allow read, write: if false;
+      allow read, write: if isApprovedAdmin();
     }
     match /orderPhoneLookup/{document=**} {
-      allow read, write: if false;
+      allow read, write: if isApprovedAdmin();
     }
 
     // All other root collections are restricted to explicitly approved admins.

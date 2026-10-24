@@ -389,10 +389,20 @@ export class FirestoreBusinessRepository {
   private async assertCustomerPhoneAvailable(customerId: string, normalizedPhone: string): Promise<void> {
     const hash = await this.phoneHash(normalizedPhone);
     if (!hash) return;
-    const lookup = await getDoc(doc(this.firebase.firestore, 'customerPhoneLookup', hash));
-    if (lookup.exists() && String(lookup.data()?.['customerId'] ?? '') !== customerId) {
+    const lookupRef = doc(this.firebase.firestore, 'customerPhoneLookup', hash);
+    const lookup = await getDoc(lookupRef);
+    const indexedCustomerId = String(lookup.data()?.['customerId'] ?? '');
+    if (!lookup.exists() || !indexedCustomerId || indexedCustomerId === customerId) return;
+
+    const indexedCustomer = await getDoc(doc(this.firebase.firestore, 'customers', indexedCustomerId));
+    const indexedPhone = this.normalizePhone(String(indexedCustomer.data()?.['phone'] ?? ''));
+    if (indexedCustomer.exists() && indexedPhone === normalizedPhone) {
       throw new Error('Ese teléfono ya está asociado a otro cliente.');
     }
+
+    // Older records may leave an index behind after the corresponding customer
+    // was removed or its phone changed. Only an approved admin can repair it.
+    await deleteDoc(lookupRef);
   }
 
   private async syncCustomerPhoneLookup(

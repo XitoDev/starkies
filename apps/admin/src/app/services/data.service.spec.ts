@@ -131,6 +131,63 @@ describe('DataService catalog visibility', () => {
   });
 
 
+  it('recovers contact details from an unknown customer order', () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [],
+      customers: [],
+      orders: [{
+        id: 'order-unknown',
+        customerId: 'missing-customer',
+        customer: 'Ana Pérez',
+        phone: '0991234567',
+        address: 'Centro — Calle 10 y 11',
+        zone: 'Centro',
+        total: 8,
+        lines: [{ id: 'cookie-1', name: 'Brownie', qty: 2, price: 4 }],
+      }],
+    });
+
+    expect(service.getCustomerDraftFromOrder('order-unknown')).toEqual({
+      name: 'Ana Pérez',
+      phone: '0991234567',
+      address: 'Calle 10 y 11',
+    });
+  });
+
+  it('creates a customer and links it to an unknown order without changing its existing total or items', async () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [],
+      customers: [],
+      orders: [{
+        id: 'order-unknown',
+        customerId: 'missing-customer',
+        customer: 'Ana Pérez',
+        phone: '0991234567',
+        address: 'Centro — Calle 10 y 11',
+        zone: 'Centro',
+        total: 8,
+        lines: [{ id: 'cookie-1', name: 'Brownie', qty: 2, price: 4 }],
+      }],
+    });
+
+    const customer = await service.createCustomer({
+      name: 'Ana Pérez',
+      phone: '0991234567',
+      address: 'Calle 10 y 11',
+    }, 'order-unknown');
+
+    expect(service.customers()).toEqual([expect.objectContaining({ id: customer.id, name: 'Ana Pérez' })]);
+    expect(service.orders()[0].customerId).toBe(customer.id);
+    expect(service.orders()[0].total).toBe(8);
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'orders',
+      'order-unknown',
+      expect.objectContaining({ customerId: customer.id, total: 8 }),
+    );
+  });
+
   it('persists a customer by its document ID without requiring linked orders', async () => {
     service.rawState.set({
       ingredients: [],

@@ -64,7 +64,13 @@ import { Order, OrderItem, Recipe } from 'shared';
                 <div><span>Dirección predeterminada</span><strong>{{ customer.address || 'Todavía no tiene una dirección predeterminada' }}</strong></div>
               </div>
             } @else {
-              <p class="hint">¿No encuentras al cliente? <a routerLink="/pedidos/clientes/nuevo">Registrar cliente</a></p>
+              <p class="hint">¿No encuentras al cliente?
+                @if (creating()) {
+                  <a routerLink="/pedidos/clientes/nuevo">Registrar cliente</a>
+                } @else {
+                  <a [routerLink]="['/pedidos/clientes/nuevo']" [queryParams]="{ orderId: order()!.id }">Registrar cliente</a>
+                }
+              </p>
             }
           </section>
 

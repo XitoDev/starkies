@@ -12,7 +12,7 @@ import { DataService } from '../../services/data.service';
   imports: [CommonModule, FormsModule, RouterLink, MatButtonModule],
   template: `
     <section class="editor-page">
-      <header class="heading"><div><h1>{{ creating() ? 'Registrar cliente' : 'Detalles del cliente' }}</h1><p>{{ creating() ? 'Guarda sus datos para reutilizarlos en próximos pedidos.' : 'Estos son los datos predeterminados que se proponen para sus próximos pedidos.' }}</p></div></header>
+      <header class="heading"><div><h1>{{ creating() ? 'Registrar cliente' : 'Detalles del cliente' }}</h1><p>{{ creating() ? (linkedOrderId ? 'Completa los datos y se vinculará automáticamente al pedido.' : 'Guarda sus datos para reutilizarlos en próximos pedidos.') : 'Estos son los datos predeterminados que se proponen para sus próximos pedidos.' }}</p></div></header>
       @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
       @if (saved()) { <p class="message success" role="status">Cliente actualizado correctamente.</p> }
       @if (!creating() && !customer()) { <p class="message">No se encontró este cliente. Puede que los datos todavía se estén cargando.</p> }
@@ -42,6 +42,7 @@ export class ClienteEditor {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly customerId = signal(this.route.snapshot.paramMap.get('customerId') ?? 'nuevo');
+  readonly linkedOrderId = this.route.snapshot.queryParamMap.get('orderId')?.trim() ?? '';
   readonly creating = computed(() => this.customerId() === 'nuevo');
   readonly customer = computed(() => this.data.customers().find(item => item.id === this.customerId()) ?? null);
   name = '';
@@ -52,7 +53,18 @@ export class ClienteEditor {
   readonly error = signal('');
 
   constructor() {
-    void this.data.loadCollections(['customers']).catch(error => this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los clientes.'));
+    const collections = this.linkedOrderId ? ['customers', 'orders'] : ['customers'];
+    void this.data.loadCollections(collections).then(() => {
+      if (!this.creating() || !this.linkedOrderId) return;
+      const draft = this.data.getCustomerDraftFromOrder(this.linkedOrderId);
+      if (!draft) {
+        this.error.set('No se encontró el pedido original. Puedes registrar el cliente, pero no se podrá vincular automáticamente.');
+        return;
+      }
+      this.name ||= draft.name;
+      this.phone ||= draft.phone;
+      this.address ||= draft.address;
+    }).catch(error => this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los datos del cliente.'));
     effect(() => {
       const customer = this.customer();
       if (!customer) return;
@@ -66,13 +78,20 @@ export class ClienteEditor {
     this.saving.set(true); this.error.set(''); this.saved.set(false);
     try {
       if (this.creating()) {
-        await this.data.createCustomer({ name: this.name.trim(), phone: this.phone.trim(), address: this.address.trim() });
+        await this.data.createCustomer(
+          { name: this.name.trim(), phone: this.phone.trim(), address: this.address.trim() },
+          this.linkedOrderId || undefined,
+        );
       } else {
         const customer = this.customer();
         if (!customer) throw new Error('No se encontró el cliente.');
         await this.data.saveCustomer({ ...customer, name: this.name.trim(), phone: this.phone.trim(), address: this.address.trim() } as Customer);
       }
-      await this.router.navigate(['/pedidos'], { queryParams: { vista: 'clientes' } });
+      if (this.creating() && this.linkedOrderId) {
+        await this.router.navigate(['/pedidos', this.linkedOrderId]);
+      } else {
+        await this.router.navigate(['/pedidos'], { queryParams: { vista: 'clientes' } });
+      }
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudo guardar el cliente.');
     } finally { this.saving.set(false); }
