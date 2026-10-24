@@ -97,3 +97,20 @@
 }
 
 :host .add-button:disabled { background:#ddd3d9; color:#857982; cursor:not-allowed; box-shadow:none; }
+
+
+/* Crawlable links to the server-rendered public cookie detail pages. */
+.product-detail-link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 2px;
+  color: #604a59;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #c1a0ac;
+  text-underline-offset: 3px;
+}
+.product-detail-link:hover { color: #806c79; }
+.product-detail-link:focus-visible { outline: 2px solid #b89cab; outline-offset: 3px; }
