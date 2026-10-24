@@ -97,11 +97,15 @@ import { RouterLink } from '@angular/router';
     .primary-button { display:inline-flex; align-items:center; justify-content:center; min-height:45px; padding:14px 22px; border:0; border-radius:8px; background:#604a59; color:white; font:600 14px 'DM Sans',Arial,sans-serif; cursor:pointer; }
     .section { max-width:1250px; margin:auto; padding:70px 6%; text-align:center; }
     h2 { margin:10px 0; color:#604a59; font:42px/1.2 'Shrikhand',Georgia,serif; font-weight:400; }
-    .features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:35px; }
-    .feature { padding:28px; border:1px solid var(--line); border-radius:14px; background:white; }
-    .feature>span { font-size:36px; }
-    .feature h3 { margin:12px 0 6px; color:#4a3f4b; font-size:17px; }
-    .feature p { margin:0; font-size:14px; }
+    .brownie-story { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:clamp(28px,6vw,84px); max-width:1250px; padding-top:88px; padding-bottom:88px; text-align:left; }
+    .story-image-wrap { position:relative; display:grid; place-items:center; min-width:0; aspect-ratio:1/1; overflow:hidden; border:1px solid #eadfe5; border-radius:24px; background:radial-gradient(circle at 50% 45%,#fff 0,#fff 48%,#f7e9ee 100%); }
+    .story-image-wrap::after { position:absolute; inset:16px; border:1px solid rgb(193 160 172 / 38%); border-radius:17px; content:""; pointer-events:none; }
+    .story-image-wrap img { display:block; width:100%; height:100%; padding:clamp(12px,2vw,28px); object-fit:contain; }
+    .story-copy { min-width:0; }
+    .story-label { display:inline-flex; align-items:center; margin:8px 0 12px; padding:7px 11px; border-radius:6px; background:#f0d9e4; color:#604a59; font-size:12px; font-weight:700; letter-spacing:.2px; }
+    .story-copy h2 { max-width:600px; margin:4px 0 18px; font-size:clamp(34px,4vw,52px); }
+    .story-copy p:not(.eyebrow) { max-width:590px; margin:0 0 14px; font-size:16px; line-height:1.85; }
+    .story-copy .primary-button { margin-top:12px; }
     .quote-section { border-top:1px solid var(--line); padding:72px 6%; background:#fff; }
     .quote-inner { max-width:820px; margin:auto; }
     .quote-intro { margin-bottom:28px; text-align:center; }
@@ -123,7 +127,7 @@ import { RouterLink } from '@angular/router';
       .hero-description { font-size:1rem; }
       .section { padding:55px 6%; }
       h2 { font-size:34px; }
-      .features { grid-template-columns:1fr; }
+      .brownie-story { grid-template-columns:1fr; gap:24px; padding-top:56px; padding-bottom:56px; text-align:left; }\n      .story-image-wrap { width:min(100%,460px); margin:0 auto; }\n      .story-copy h2 { font-size:34px; }\n      .story-copy p:not(.eyebrow) { font-size:15px; }
       .quote-section { padding:50px 6%; }
       .quote-form { grid-template-columns:1fr; padding:18px; }
       .full { grid-column:auto; }
