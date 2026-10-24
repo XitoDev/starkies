@@ -84,7 +84,7 @@ export class Landing {
         shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'EC', name: zone.name },
         shippingRate: { '@type': 'MonetaryAmount', value: zone.fee.toFixed(2), currency: 'USD' },
       }));
-      const script = this.document.querySelector<HTMLScriptElement>('script[type="application/ld+json"]');
+      const script = this.document.getElementById('starkies-site-structured-data') as HTMLScriptElement | null;
       if (!script?.textContent) return;
       const jsonLd = JSON.parse(script.textContent) as { '@graph'?: Array<Record<string, unknown>> };
       const graph = Array.isArray(jsonLd['@graph']) ? jsonLd['@graph'] : [];
