@@ -1,16 +1,90 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { NgForm } from '@angular/forms';
 import { Landing } from './landing';
 import { provideRouter } from '@angular/router';
 
 describe('Landing', () => {
+  let schemaScript: HTMLScriptElement | null = null;
+  let originalSchemaContent: string | null = null;
+  let createdSchemaScript = false;
+
   beforeEach(async () => {
+    schemaScript = null;
+    originalSchemaContent = null;
+    createdSchemaScript = false;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     await TestBed.configureTestingModule({ imports: [Landing], providers: [provideRouter([])] }).compileComponents();
+  });
+
+  afterEach(() => {
+    if (schemaScript) {
+      if (createdSchemaScript) schemaScript.remove();
+      else schemaScript.textContent = originalSchemaContent;
+    }
+    vi.unstubAllGlobals();
   });
 
   it('creates the landing page', () => {
     const fixture = TestBed.createComponent(Landing);
     expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('adds published cookie images, delivery rates and refund policy to the box schema', async () => {
+    const existingScript = document.getElementById('starkies-site-structured-data') as HTMLScriptElement | null;
+    const script = existingScript ?? document.createElement('script');
+    schemaScript = script;
+    createdSchemaScript = !existingScript;
+    if (existingScript) originalSchemaContent = existingScript.textContent;
+    script.id = 'starkies-site-structured-data';
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        { '@type': 'Bakery', '@id': 'https://starkies.lat/#bakery' },
+        {
+          '@type': 'ItemList',
+          itemListElement: [
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja solo clásicas', offers: {} } },
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja solo New York', offers: {} } },
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja mixta de galletas', offers: {} } },
+          ],
+        },
+      ],
+    });
+    if (!existingScript) document.head.appendChild(script);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        products: [
+          { name: 'Brownie Classic', isNy: false, image: '/images/starkies-brownie-cookie.webp' },
+          { name: 'Choco Meteor', isNy: true, image: 'https://cdn.example.test/choco-meteor.webp' },
+        ],
+        zones: [
+          { name: 'Norte', fee: 3.5 },
+          { name: 'Retiro en tienda', fee: 0 },
+        ],
+      }),
+    }));
+
+    const fixture = TestBed.createComponent(Landing);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const data = JSON.parse(script.textContent ?? '{}') as { '@graph': Array<Record<string, unknown>> };
+    const bakery = data['@graph'].find(node => node['@type'] === 'Bakery');
+    const itemList = data['@graph'].find(node => node['@type'] === 'ItemList');
+    const elements = itemList?.['itemListElement'] as Array<{ item: Record<string, unknown> }>;
+    expect(bakery?.['hasMerchantReturnPolicy']).toMatchObject({
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'EC',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+    });
+    expect(elements[0].item['image']).toEqual(['https://starkies.lat/images/starkies-brownie-cookie.webp']);
+    expect(elements[1].item['image']).toEqual(['https://cdn.example.test/choco-meteor.webp']);
+    expect(elements[2].item['image']).toHaveLength(2);
+    expect((elements[0].item['offers'] as Record<string, unknown>)['shippingDetails']).toHaveLength(1);
+    expect((elements[0].item['offers'] as Record<string, unknown>)['hasMerchantReturnPolicy']).toBeTruthy();
   });
 
   it('includes all quote fields in the WhatsApp message', () => {

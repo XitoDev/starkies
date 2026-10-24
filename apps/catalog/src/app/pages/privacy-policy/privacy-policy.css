@@ -11,6 +11,9 @@
     .policy-content { max-width:820px; margin:0 auto; padding-top:16px; }
     .policy-content section { padding:22px 0; border-bottom:1px solid #e9dfe5; }
     h2 { margin:0 0 12px; color:#604a59; font-size:20px; line-height:1.4; }
+    h3 { margin:18px 0 8px; color:#604a59; font-size:16px; line-height:1.45; }
+    .policy-shortcut { margin:14px 0 0; font-size:13px; }
+    .policy-shortcut a { color:#604a59; font-weight:700; text-underline-offset:3px; }
     p, li { color:#5f5660; font-size:14px; line-height:1.85; }
     p { margin:0 0 12px; }
     p:last-child { margin-bottom:0; }
