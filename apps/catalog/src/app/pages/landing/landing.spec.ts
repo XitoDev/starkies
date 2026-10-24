@@ -2,10 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { NgForm } from '@angular/forms';
 import { Landing } from './landing';
 import { provideRouter } from '@angular/router';
+import { vi } from 'vitest';
 
 describe('Landing', () => {
   beforeEach(async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     await TestBed.configureTestingModule({ imports: [Landing], providers: [provideRouter([])] }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('creates the landing page', () => {
