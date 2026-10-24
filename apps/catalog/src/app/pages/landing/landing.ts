@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Meta, Title } from '@angular/platform-browser';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -16,7 +18,7 @@ import { RouterLink } from '@angular/router';
         <div class="hero-copy">
           <p class="eyebrow">GALLETAS HECHAS CON AMOR</p>
           <h1 id="hero-title">La estrella<br>eres tú.</h1>
-          <p class="hero-description">Galletas irresistibles para los momentos que merecen algo especial. Elige tus favoritas, arma tu caja y disfruta cada mordida.</p>
+          <p class="hero-description">Galletas artesanales hechas para momentos especiales. Descubre nuestras cajas clásicas y NY Style en Guayaquil, Ecuador; elige tus favoritas y arma tu caja en línea.</p>
           <a class="primary-button" routerLink="/menu">Ver catálogo</a>
         </div>
       </section>
@@ -142,6 +144,32 @@ import { RouterLink } from '@angular/router';
    `]
 })
 export class Landing {
+  private readonly document = inject(DOCUMENT);
+
+  constructor() {
+    const title = inject(Title), meta = inject(Meta);
+    const pageTitle = 'Galletas artesanales en Guayaquil | StarKies';
+    const pageDescription = 'StarKies ofrece galletas artesanales en Guayaquil, Ecuador: cajas clásicas, NY Style y galletas personalizadas para regalos y eventos. Explora sabores y arma tu caja en línea.';
+    title.setTitle(pageTitle);
+    meta.updateTag({ name: 'description', content: pageDescription });
+    meta.updateTag({ name: 'keywords', content: 'StarKies, galletas artesanales Guayaquil, comprar galletas Guayaquil, cajas de galletas, galletas clásicas, galletas New York Guayaquil, galletas personalizadas Guayaquil, galletas para eventos, galletas para regalar, postres Guayaquil, galletas Ecuador' });
+    meta.updateTag({ property: 'og:title', content: pageTitle });
+    meta.updateTag({ property: 'og:description', content: pageDescription });
+    meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
+    meta.updateTag({ property: 'og:image', content: 'https://starkies.lat/starkies-social.png' });
+    meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    meta.updateTag({ name: 'twitter:title', content: pageTitle });
+    meta.updateTag({ name: 'twitter:description', content: pageDescription });
+    meta.updateTag({ name: 'twitter:image', content: 'https://starkies.lat/starkies-social.png' });
+    let canonical = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = this.document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      this.document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', 'https://starkies.lat/');
+  }
+
   phone = '';
   name = '';
   quantity: number | null = null;
