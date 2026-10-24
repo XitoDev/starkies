@@ -14,7 +14,6 @@ import { CatalogUiService } from './catalog-ui.service';
 })
 export class App {
   readonly title = 'catalog';
-  readonly currentYear = new Date().getFullYear();
   readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
   private readonly router = inject(Router);
   private readonly catalogUi = inject(CatalogUiService);
