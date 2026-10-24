@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { siInstagram, siTiktok, siWhatsapp } from 'simple-icons';
 import { CatalogUiService } from './catalog-ui.service';
-import { CustomerDataConsentService } from './customer-data-consent.service';
 
 @Component({
   selector: 'app-root',
@@ -15,11 +14,9 @@ import { CustomerDataConsentService } from './customer-data-consent.service';
 })
 export class App {
   readonly title = 'catalog';
-  readonly currentYear = new Date().getFullYear();
   readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
   private readonly router = inject(Router);
   private readonly catalogUi = inject(CatalogUiService);
-  readonly customerDataConsent = inject(CustomerDataConsentService);
   readonly cartItemCount = this.catalogUi.cartItemCount;
 
   openOrder(): void {
