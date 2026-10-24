@@ -58,7 +58,7 @@
 :host .catalog-message p { margin:0 0 10px; }
 :host .error-message { border-color:#edc8c8; background:#fff8f8; color:#8e2f3a; }
 :host .products { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
-:host .product { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; }
+:host .product { display:block; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; }
 :host .product.sold-out { opacity:.75; }
 :host .product-image { position:relative; display:grid; place-items:center; width:100%; height:190px; overflow:hidden; background:#f5e9e7; }
 :host .product-image img { display:block; width:100%; height:100%; object-fit:contain; }
@@ -82,8 +82,8 @@
 :host .empty-results>span { color:var(--mauve); font-size:28px; }
 :host .empty-results h3 { margin:8px 0; color:#604a59; font:24px 'Shrikhand',Georgia,serif; font-weight:400; }
 :host .empty-results p { color:#665c64; font-size:14px; line-height:1.6; }
-:host .site-footer { padding:32px 6% 18px; background:#4a3f4b; color:#fff; }
-:host .footer-inner { display:flex; justify-content:space-between; align-items:flex-start; gap:32px; max-width:1180px; margin:0 auto; }
+:host .site-footer { padding:32px 6% 18px; background:#4a3f4b; color:#fff; text-align:center; }
+:host .footer-inner { display:flex; justify-content:space-between; align-items:flex-start; gap:32px; max-width:1180px; margin:0 auto; text-align:left; }
 :host .footer-logo { display:inline-block; color:#fff; font-size:32px; }
 :host .footer-brand p { margin:10px 0 0; color:#f1e7ee; font-size:14px; line-height:1.7; }
 :host .footer-contact { display:flex; flex-direction:column; align-items:flex-start; gap:8px; min-width:150px; }
