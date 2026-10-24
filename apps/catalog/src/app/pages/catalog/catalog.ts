@@ -420,8 +420,8 @@ export class Catalog {
         ? new URL('/p/' + encodeURIComponent(documentShortCode), window.location.origin).toString()
         : '';
       const message = 'Hola StarKies, quiero confirmar mi pedido.\n\n'
-        + (pdfUrl ? 'Mi pedido en PDF:\n' + pdfUrl + '\n\n' : '')
-        + 'Recuerda enviar tu ubicación exacta por WhatsApp para la entrega.';
+        + (pdfUrl ? 'Pedido:\n' + pdfUrl + '\n\n' : '')
+        + 'Enviaré mi ubicación exacta por WhatsApp para la entrega.';
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
