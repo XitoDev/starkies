@@ -46,6 +46,8 @@ describe('Catalog', () => {
     expect(component.products().length).toBe(13);
     expect(component.presentations).toEqual(BOX_PRESENTATIONS);
     expect(component.zones).toEqual(TEST_ZONES);
+    expect(component.fulfillmentMode()).toBe('pickup');
+    expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
   });
 
   it('renders the approved compact category filter row', () => {
