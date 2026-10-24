@@ -183,6 +183,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     res.status(200).send(html);
   } catch (error) {
     console.error('Public cookie page failed:', error);
+    res.setHeader('X-Robots-Tag', 'noindex');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(503).send('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Catálogo temporalmente no disponible | StarKies</title></head><body><h1>Catálogo temporalmente no disponible</h1><p>Inténtalo de nuevo más tarde.</p><a href="/menu">Volver al catálogo</a></body></html>');
   }
