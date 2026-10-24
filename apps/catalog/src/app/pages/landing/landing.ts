@@ -127,7 +127,10 @@ import { RouterLink } from '@angular/router';
       .hero-description { font-size:1rem; }
       .section { padding:55px 6%; }
       h2 { font-size:34px; }
-      .brownie-story { grid-template-columns:1fr; gap:24px; padding-top:56px; padding-bottom:56px; text-align:left; }\n      .story-image-wrap { width:min(100%,460px); margin:0 auto; }\n      .story-copy h2 { font-size:34px; }\n      .story-copy p:not(.eyebrow) { font-size:15px; }
+      .brownie-story { grid-template-columns:1fr; gap:24px; padding-top:56px; padding-bottom:56px; text-align:left; }
+      .story-image-wrap { width:min(100%,460px); margin:0 auto; }
+      .story-copy h2 { font-size:34px; }
+      .story-copy p:not(.eyebrow) { font-size:15px; }
       .quote-section { padding:50px 6%; }
       .quote-form { grid-template-columns:1fr; padding:18px; }
       .full { grid-column:auto; }
