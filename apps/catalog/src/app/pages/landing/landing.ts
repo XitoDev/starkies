@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { Component, inject, PendingTasks, PLATFORM_ID } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -145,6 +145,8 @@ import { RouterLink } from '@angular/router';
 })
 export class Landing {
   private readonly document = inject(DOCUMENT);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly pendingTasks = inject(PendingTasks);
 
   constructor() {
     const title = inject(Title), meta = inject(Meta);
@@ -168,6 +170,55 @@ export class Landing {
       this.document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', 'https://starkies.lat/');
+    void this.updateBoxShippingDetails();
+  }
+
+  private async updateBoxShippingDetails(): Promise<void> {
+    const finishPendingTask = this.pendingTasks.add();
+    try {
+      const isBrowser = isPlatformBrowser(this.platformId);
+      const baseUri = isBrowser ? this.document.baseURI : 'https://starkies.lat/';
+      const requestOptions: RequestInit = { headers: { Accept: 'application/json' }, cache: 'no-store' };
+      if (!isBrowser) requestOptions.signal = AbortSignal.timeout(8000);
+      const response = await fetch(new URL('/api/catalog', baseUri).toString(), requestOptions);
+      if (!response.ok) return;
+      const payload: unknown = await response.json().catch(() => null);
+      if (typeof payload !== 'object' || payload === null || !('zones' in payload) || !Array.isArray(payload.zones)) return;
+      const zones = payload.zones.flatMap((value: unknown) => {
+        if (typeof value !== 'object' || value === null) return [];
+        const zone = value as { name?: unknown; fee?: unknown };
+        const name = typeof zone.name === 'string' ? zone.name.trim() : '';
+        const fee = Number(zone.fee);
+        const normalized = name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+        return name && !normalized.includes('retiro') && Number.isFinite(fee) && fee >= 0 ? [{ name, fee }] : [];
+      });
+      if (!zones.length) return;
+      const shippingDetails = zones.map(zone => ({
+        '@type': 'OfferShippingDetails',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'EC', name: zone.name },
+        shippingRate: { '@type': 'MonetaryAmount', value: zone.fee.toFixed(2), currency: 'USD' },
+      }));
+      const script = this.document.querySelector<HTMLScriptElement>('script[type="application/ld+json"]');
+      if (!script?.textContent) return;
+      const jsonLd = JSON.parse(script.textContent) as { '@graph'?: Array<Record<string, unknown>> };
+      const graph = Array.isArray(jsonLd['@graph']) ? jsonLd['@graph'] : [];
+      const itemList = graph.find(node => node['@type'] === 'ItemList');
+      const elements = Array.isArray(itemList?.['itemListElement']) ? itemList['itemListElement'] : [];
+      for (const element of elements) {
+        if (typeof element !== 'object' || element === null) continue;
+        const item = (element as Record<string, unknown>)['item'];
+        if (typeof item !== 'object' || item === null) continue;
+        const offer = (item as Record<string, unknown>)['offers'];
+        if (typeof offer === 'object' && offer !== null) {
+          (offer as Record<string, unknown>)['shippingDetails'] = shippingDetails;
+        }
+      }
+      script.textContent = JSON.stringify(jsonLd);
+    } catch {
+      // Keep the valid static product schema if live delivery rates cannot be fetched.
+    } finally {
+      finishPendingTask();
+    }
   }
 
   phone = '';
