@@ -152,7 +152,7 @@ export class Landing {
     const pageDescription = 'StarKies ofrece galletas artesanales en Guayaquil, Ecuador: cajas clásicas, NY Style y galletas personalizadas para regalos y eventos. Explora sabores y arma tu caja en línea.';
     title.setTitle(pageTitle);
     meta.updateTag({ name: 'description', content: pageDescription });
-    meta.updateTag({ name: 'keywords', content: 'StarKies, galletas artesanales Guayaquil, comprar galletas Guayaquil, cajas de galletas, galletas clásicas, galletas New York Guayaquil, galletas personalizadas Guayaquil, galletas para eventos, galletas para regalar, postres Guayaquil, galletas Ecuador' });
+    meta.updateTag({ name: 'keywords', content: 'StarKies, galletas artesanales Guayaquil, comprar galletas Guayaquil, cajas de galletas Guayaquil, galletas clásicas, galletas New York Guayaquil, galletas NY Style, galletas de chocolate Guayaquil, galletas rellenas Guayaquil, galletas personalizadas Guayaquil, galletas para cumpleaños Guayaquil, galletas para eventos Guayaquil, galletas para regalar Guayaquil, galletas a domicilio Guayaquil, galletas por pedido Guayaquil, postres Guayaquil, galletas artesanales Ecuador' });
     meta.updateTag({ property: 'og:title', content: pageTitle });
     meta.updateTag({ property: 'og:description', content: pageDescription });
     meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
