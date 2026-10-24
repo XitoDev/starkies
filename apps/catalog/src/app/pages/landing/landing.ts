@@ -69,8 +69,8 @@ import { FormsModule, NgForm } from '@angular/forms';
               </select>
             </div>
             <div class="field full">
-              <label for="quote-notes">Cuéntanos qué tienes en mente</label>
-              <textarea id="quote-notes" name="notes" [(ngModel)]="notes" rows="5" maxlength="2000" placeholder="Ocasión, temática, colores, fecha del evento y cualquier detalle que quieras compartir…"></textarea>
+              <label for="quote-notes">Cuéntanos qué tienes en mente <span aria-hidden="true">*</span></label>
+              <textarea id="quote-notes" name="notes" [(ngModel)]="notes" required rows="5" maxlength="2000" placeholder="Ocasión, temática, colores, fecha del evento y cualquier detalle que quieras compartir…"></textarea>
             </div>
             <p class="form-hint full">Al enviar, se abrirá WhatsApp con los datos de tu solicitud para que puedas revisarlos y mandarlos.</p>
             <button class="primary-button full submit-button" type="submit">Cotizar por WhatsApp</button>
