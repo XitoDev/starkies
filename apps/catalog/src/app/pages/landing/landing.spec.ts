@@ -20,7 +20,7 @@ describe('Landing', () => {
     component.quantity = 24;
     component.cookieType = 'Mixtas';
     component.notes = 'Galletas para un cumpleaños';
-    const open = vi.spyOn(window, 'open').mockReturnValue({ opener: null } as unknown as Window);
+    const open = vi.spyOn(window, 'open').mockReturnValue({ opener: null } as unknown as WindowProxy);
 
     component.sendQuote({ valid: true } as NgForm);
 
