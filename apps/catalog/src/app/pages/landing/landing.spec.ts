@@ -5,13 +5,23 @@ import { Landing } from './landing';
 import { provideRouter } from '@angular/router';
 
 describe('Landing', () => {
+  let schemaScript: HTMLScriptElement | null = null;
+  let originalSchemaContent: string | null = null;
+  let createdSchemaScript = false;
+
   beforeEach(async () => {
+    schemaScript = null;
+    originalSchemaContent = null;
+    createdSchemaScript = false;
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     await TestBed.configureTestingModule({ imports: [Landing], providers: [provideRouter([])] }).compileComponents();
   });
 
   afterEach(() => {
-    document.getElementById('starkies-site-structured-data-test')?.remove();
+    if (schemaScript) {
+      if (createdSchemaScript) schemaScript.remove();
+      else schemaScript.textContent = originalSchemaContent;
+    }
     vi.unstubAllGlobals();
   });
 
@@ -21,8 +31,12 @@ describe('Landing', () => {
   });
 
   it('adds published cookie images, delivery rates and refund policy to the box schema', async () => {
-    const script = document.createElement('script');
-    script.id = 'starkies-site-structured-data-test';
+    const existingScript = document.getElementById('starkies-site-structured-data') as HTMLScriptElement | null;
+    const script = existingScript ?? document.createElement('script');
+    schemaScript = script;
+    createdSchemaScript = !existingScript;
+    if (existingScript) originalSchemaContent = existingScript.textContent;
+    script.id = 'starkies-site-structured-data';
     script.type = 'application/ld+json';
     script.textContent = JSON.stringify({
       '@context': 'https://schema.org',
@@ -38,9 +52,7 @@ describe('Landing', () => {
         },
       ],
     });
-    // The landing component targets the site-level JSON-LD by its stable ID.
-    script.id = 'starkies-site-structured-data';
-    document.head.appendChild(script);
+    if (!existingScript) document.head.appendChild(script);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -73,7 +85,6 @@ describe('Landing', () => {
     expect(elements[2].item['image']).toHaveLength(2);
     expect((elements[0].item['offers'] as Record<string, unknown>)['shippingDetails']).toHaveLength(1);
     expect((elements[0].item['offers'] as Record<string, unknown>)['hasMerchantReturnPolicy']).toBeTruthy();
-    script.remove();
   });
 
   it('includes all quote fields in the WhatsApp message', () => {
