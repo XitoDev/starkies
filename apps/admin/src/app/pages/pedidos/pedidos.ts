@@ -134,13 +134,32 @@ export class Pedidos implements OnDestroy {
     const rawOrder = order ? rawOrders.find(item => String(item['id'] ?? item['code'] ?? '') === order.id) : undefined;
     const phone = this.normalizePhone(String(rawOrder?.['phone'] ?? ''));
     const matched = phone ? this.customers().find(customer => this.normalizePhone(customer.phone ?? '') === phone) : undefined;
-    return matched?.name ?? (typeof rawOrder?.['customer'] === 'string' && rawOrder['customer'] ? String(rawOrder['customer']) : 'Cliente desconocido');
+    const legacyName = typeof rawOrder?.['customer'] === 'string' ? String(rawOrder['customer']).trim().toLocaleLowerCase('es') : '';
+    const matchedByName = legacyName ? this.customers().find(customer => customer.name.trim().toLocaleLowerCase('es') === legacyName) : undefined;
+    return matched?.name ?? matchedByName?.name ?? (typeof rawOrder?.['customer'] === 'string' && rawOrder['customer'] ? String(rawOrder['customer']) : 'Cliente desconocido');
   }
 
-  getCustomerOrderCount(id: string): number { return this.orders().filter(order => order.customerId === id).length; }
+  private getOrdersForCustomer(id: string): Order[] {
+    const customer = this.customers().find(item => item.id === id);
+    const rawState = this.data.rawState?.();
+    const rawOrders = Array.isArray(rawState?.['orders']) ? rawState['orders'] as Record<string, unknown>[] : [];
+    const customerPhone = this.normalizePhone(customer?.phone ?? '');
+    const customerName = customer?.name.trim().toLocaleLowerCase('es') ?? '';
+    return this.orders().filter(order => {
+      if (order.customerId === id) return true;
+      const raw = rawOrders.find(item => String(item['id'] ?? item['code'] ?? '') === order.id);
+      if (!raw) return false;
+      const orderPhone = this.normalizePhone(String(raw['phone'] ?? ''));
+      if (customerPhone.length >= 7 && orderPhone.length >= 7) return customerPhone === orderPhone;
+      const orderName = String(raw['customer'] ?? '').trim().toLocaleLowerCase('es');
+      return Boolean(customerName && orderName && customerName === orderName);
+    });
+  }
+
+  getCustomerOrderCount(id: string): number { return this.getOrdersForCustomer(id).length; }
   getCookieCount(order: Order): number { return order.items.reduce((sum, item) => sum + item.quantity, 0); }
-  getCustomerTotal(id: string): number { return this.orders().filter(order => order.customerId === id && order.status !== 'CANCELLED').reduce((sum, order) => sum + order.total, 0); }
-  getCustomerOutstanding(id: string): number { return this.orders().filter(order => order.customerId === id && order.status === 'PENDING').reduce((sum, order) => sum + order.total, 0); }
+  getCustomerTotal(id: string): number { return this.getOrdersForCustomer(id).filter(order => order.status !== 'CANCELLED').reduce((sum, order) => sum + order.total, 0); }
+  getCustomerOutstanding(id: string): number { return this.getOrdersForCustomer(id).filter(order => order.status === 'PENDING').reduce((sum, order) => sum + order.total, 0); }
   getInitials(name: string): string { return name.trim().split(/\s+/).slice(0, 2).map(part => part[0] ?? '').join('').toLocaleUpperCase('es'); }
 
   statusLabel(status: Order['status']): string {
