@@ -343,8 +343,6 @@ export class FirestoreBusinessRepository {
         phone: safeValue['phone'] ?? nextCustomerData?.['phone'] ?? previousCustomerData?.['phone'],
         address: safeValue['address'] ?? safeValue['deliveryAddress'],
       });
-    } else {
-      safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
     }
 
     const sortIndex = existing.exists() ? Number(existingData['sortIndex'] ?? Date.now()) : Date.now();

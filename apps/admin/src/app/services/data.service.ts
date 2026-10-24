@@ -499,7 +499,7 @@ export class DataService implements OnDestroy {
       const name = this.asString(order['customer']).trim().toLocaleLowerCase('es');
       return normalizedPhone.length >= 7 ? phone === normalizedPhone : name === normalizedName;
     });
-    const updatedRelated = related.map(order => {
+    const updatedRelated: RawRecord[] = related.map((order): RawRecord => {
       const id = this.asString(order['id'] ?? order['code']);
       return { ...order, customerId: 'deleted-' + id, customer: 'Cliente eliminado · ' + id, phone: '', address: '' };
     });
