@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { signal, type WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -23,10 +23,10 @@ const makeRecipe = (overrides: Partial<Recipe> = {}): Recipe => ({
 describe('Catalogo', () => {
   let component: Catalogo;
   let fixture: ComponentFixture<Catalogo>;
-  let recipeState: ReturnType<typeof signal<Recipe[]>>;
+  let recipeState: WritableSignal<Recipe[]>;
   let dataServiceMock: {
-    recipes: ReturnType<typeof signal<Recipe[]>>;
-    rawState: ReturnType<typeof signal<Record<string, unknown> | null>>;
+    recipes: WritableSignal<Recipe[]>;
+    rawState: WritableSignal<Record<string, unknown> | null>;
     loadCollections: ReturnType<typeof vi.fn>;
     setRecipeCatalogVisibility: ReturnType<typeof vi.fn>;
     deleteRecipe: ReturnType<typeof vi.fn>;
