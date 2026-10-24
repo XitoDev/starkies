@@ -705,7 +705,6 @@ export class DataService implements OnDestroy {
       delete updated['boxes'];
       delete updated['boxOrders'];
     }
-    const isPickup = deliveryMethod.toLocaleLowerCase('es').includes('retiro') || zone.toLocaleLowerCase('es') === 'retiro en tienda';
     const customerWithDefault = !this.asString(rawCustomer['address']).trim() && deliveryAddress && !isPickup
       ? { ...rawCustomer, address: deliveryAddress }
       : rawCustomer;
