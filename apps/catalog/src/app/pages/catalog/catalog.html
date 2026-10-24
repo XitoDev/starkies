@@ -17,7 +17,7 @@
   <section class="menu-top" aria-labelledby="menu-title">
     <p class="eyebrow">Nuestro catálogo</p>
     <h1 id="menu-title">Elige tus galletas</h1>
-    <p>Selecciona sabores y cantidades. Revisa tu pedido desde el carrito.</p>
+    <p>Descubre nuestras galletas artesanales en Guayaquil, Ecuador: sabores clásicos, NY Style y opciones de chocolate. Selecciona tus favoritas, consulta los precios y arma tu caja desde el catálogo de StarKies.</p>
   </section>
 
   <div class="menu-layout">
@@ -57,7 +57,7 @@
 
       <div class="products" id="sabores">
         @for (product of filteredProducts(); track product.id) {
-          <article class="product" [class.sold-out]="!product.stock">
+          <article class="product" [class.sold-out]="!product.stock" [attr.id]="'galleta-' + product.id">
             <div class="product-image">
               @if (product.image) {
                 <img [ngSrc]="product.image" [alt]="product.name" width="480" height="320" [priority]="product.id === '1' || product.id === '6'">
