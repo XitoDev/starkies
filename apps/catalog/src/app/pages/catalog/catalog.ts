@@ -118,6 +118,8 @@ export class Catalog {
     meta.updateTag({ name: 'twitter:description', content: pageDescription });
     meta.updateTag({ name: 'twitter:image', content: 'https://starkies.lat/starkies-social.png' });
     this.setCanonicalUrl('https://starkies.lat/menu');
+    // The base index schema describes the home page and its three boxes only.
+    this.document.getElementById('starkies-site-structured-data')?.remove();
 
     // Render the public projection during prerender too, so published products and
     // crawlable detail links can be present in the generated HTML.
