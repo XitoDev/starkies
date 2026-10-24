@@ -142,6 +142,8 @@ export class Landing {
       'Notas adicionales: ' + (this.notes.trim() || 'Sin notas adicionales'),
     ];
     const url = 'https://wa.me/593979075202?text=' + encodeURIComponent(lines.join('\n'));
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const popup = window.open(url, '_blank');
+    if (popup) popup.opener = null;
+    else this.formError = 'No pudimos abrir WhatsApp. Permite las ventanas emergentes o escríbenos al 0979075202.';
   }
 }
