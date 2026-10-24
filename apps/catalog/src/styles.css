@@ -2269,3 +2269,124 @@ app-catalog .footer-bottom{border-top:1px solid #ecdde1}
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+
+/* Final menu direction: classic styling moved global to stay within component CSS budget. */
+app-catalog .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 76px;
+  padding: 12px clamp(20px, 5vw, 76px);
+  background: rgb(255 255 255 / 94%);
+  border-bottom: 1px solid #e9dfe5;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 5%);
+  backdrop-filter: blur(14px);
+}
+app-catalog .brand-symbol { display: none; }
+app-catalog .brand-lockup { gap: 0; }
+app-catalog .wordmark {
+  color: #735363;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+app-catalog .wordmark-star { color: #735363; }
+app-catalog .brand-tagline { display: none; }
+app-catalog .main-nav { gap: 26px; }
+app-catalog .main-nav a.nav-link { font-size: 1rem; font-weight: 500; }
+app-catalog .main-nav a.nav-link.active::after { background: #806c79; }
+app-catalog .header-cart {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border-radius: 50%;
+  color: #604a59;
+}
+app-catalog .header-cart mat-icon { width: 26px; height: 26px; font-size: 26px; }
+app-catalog .cart-count {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #604a59;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+app-catalog .presentation-section {
+  padding: clamp(38px, 5vw, 64px) clamp(20px, 6vw, 88px);
+  background: #fbf8f5;
+  color: #4a3f4b;
+}
+app-catalog .presentation-section .section-title,
+app-catalog .presentation-section .catalog-heading { color: #4a3f4b; }
+app-catalog .presentation-section .eyebrow { color: #806c79; }
+app-catalog .presentation-section .section-title h2,
+app-catalog .presentation-section .catalog-heading h2 {
+  color: #5c4253;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-weight: 400;
+}
+app-catalog .presentation-section .small,
+app-catalog .presentation-section .catalog-count { color: #806c79; }
+app-catalog .presentation-section .presentation-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: none;
+}
+app-catalog .presentation-section .presentation-card.active {
+  border: 2px solid #806c79;
+  background: #f7eff3;
+}
+app-catalog .presentation-section .presentation-description,
+app-catalog .presentation-section .choose-label { color: #806c79; }
+app-catalog .presentation-section .catalog-hint {
+  border: 1px solid #e9dfe5;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a3f4b;
+}
+app-catalog .presentation-section .catalog-hint strong { color: #4a3f4b; }
+app-catalog .presentation-section .category-title { color: #5c4253; }
+app-catalog .presentation-section .product {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 4%);
+}
+app-catalog .presentation-section .product:hover {
+  border-color: #c1a0ac;
+  box-shadow: 0 8px 24px rgb(74 63 75 / 9%);
+}
+app-catalog .presentation-section .add-button,
+app-catalog .presentation-section .dock-continue,
+app-catalog .presentation-section .dock-order {
+  border-radius: 9px;
+  background: #604a59;
+  color: #fff;
+}
+app-catalog .cart-dock .dock-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: 0 10px 32px rgb(74 63 75 / 12%);
+}
+app-catalog .cart-dock progress { accent-color: #806c79; }
+@media (max-width: 520px) {
+  app-catalog .site-header { padding: 12px 16px; }
+  app-catalog .main-nav { gap: 12px; }
+  app-catalog .main-nav a.nav-link { font-size: .9rem; }
+}
+
