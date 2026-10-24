@@ -27,7 +27,6 @@
 :host .nav-link.active { font-weight:700; }
 :host .nav-link.active::after { display:none; }
 :host .cart-trigger { position:relative; display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; padding:0; border:0; border-radius:50%; background:transparent; color:var(--plum); }
-:host .cart-trigger:hover { background:#f7eff3; }
 :host .cart-trigger mat-icon { width:24px; height:24px; font-size:24px; }
 :host .cart-badge { position:absolute; top:0; right:-1px; display:grid; min-width:19px; height:19px; place-items:center; padding:0 4px; border:2px solid #fff; border-radius:99px; background:var(--plum); color:#fff; font-size:10px; font-weight:700; line-height:1; }
 :host .cart-tip { position:absolute; top:calc(100% + 12px); right:0; z-index:60; width:max-content; max-width:230px; padding:10px 13px; border-radius:9px; background:var(--plum); color:#fff; font-size:12px; font-weight:600; line-height:1.4; box-shadow:0 8px 25px rgb(36 23 32 / 15%); opacity:0; visibility:hidden; pointer-events:none; }
@@ -44,8 +43,7 @@
 :host .menu-main { min-width:0; }
 :host .box-section-title { margin:0 0 14px; color:#584755; font-size:18px; font-weight:700; }
 :host .box-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0 0 24px; }
-:host .box-choice { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; min-width:0; padding:14px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#584755; text-align:left; white-space:normal; box-shadow:none; transition:border-color .18s,background .18s; }
-:host .box-choice:hover { border-color:#cbb9c4; background:#fffdfb; }
+:host .box-choice { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; min-width:0; padding:14px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#584755; text-align:left; white-space:normal; box-shadow:none; }
 :host .box-choice.active { border-color:var(--plum); background:var(--plum); color:#fff; }
 :host .box-choice strong { display:block; font-size:14px; font-weight:700; line-height:1.4; }
 :host .box-choice small { display:block; margin-top:5px; color:inherit; font-size:12px; font-weight:400; line-height:1.4; }
@@ -56,13 +54,11 @@
 :host .filter-button.active { border-color:var(--plum); background:var(--plum); color:#fff; }
 :host .add-box-row { display:flex; flex:0 0 auto; justify-content:flex-end; margin:0; }
 :host .add-box-button { min-height:46px; padding:14px 22px; border:1px dashed #bca8b5; border-radius:8px; background:#fff; color:var(--plum); font-size:14px; font-weight:600; white-space:nowrap; box-shadow:none; }
-:host .add-box-button:hover { background:#f7eff3; }
 :host .catalog-message { margin:0 0 20px; padding:14px 16px; border:1px solid var(--line); border-radius:10px; background:#fff; color:#665c64; font-size:14px; line-height:1.6; }
 :host .catalog-message p { margin:0 0 10px; }
 :host .error-message { border-color:#edc8c8; background:#fff8f8; color:#8e2f3a; }
 :host .products { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
-:host .product { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 3px 14px rgb(74 63 75 / 4%); transition:transform .18s,box-shadow .18s,border-color .18s; }
-:host .product:hover { transform:translateY(-2px); border-color:#d7c6cf; box-shadow:0 9px 24px rgb(74 63 75 / 8%); }
+:host .product { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#fff; }
 :host .product.sold-out { opacity:.75; }
 :host .product-image { position:relative; display:grid; place-items:center; width:100%; height:190px; overflow:hidden; background:#f5e9e7; }
 :host .product-image img { display:block; width:100%; height:100%; object-fit:contain; }
@@ -75,7 +71,6 @@
 :host .product-bottom { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 :host .product-price { color:#261f29; font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
 :host .add-button { min-height:46px; padding:14px 22px; border:0; border-radius:8px; background:var(--plum); color:#fff; font:600 14px 'DM Sans',Arial,sans-serif; box-shadow:none; }
-:host .add-button:hover { background:#4a3f4b; }
 :host .sold-out-button { min-height:36px; padding:0 10px; color:#857982; font-size:12px; }
 :host .product-qty { display:flex; align-items:center; gap:8px; min-height:34px; }
 :host .qty-button { width:34px; height:34px; min-width:34px; padding:7px 11px; border-radius:8px; font-size:14px; }
