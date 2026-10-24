@@ -189,7 +189,7 @@ export class Landing {
         const zone = value as { name?: unknown; fee?: unknown };
         const name = typeof zone.name === 'string' ? zone.name.trim() : '';
         const fee = Number(zone.fee);
-        const normalized = name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+        const normalized = name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('es');
         return name && !normalized.includes('retiro') && Number.isFinite(fee) && fee >= 0 ? [{ name, fee }] : [];
       });
       if (!zones.length) return;
