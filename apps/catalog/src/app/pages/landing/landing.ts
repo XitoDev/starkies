@@ -30,7 +30,7 @@ import { RouterLink } from '@angular/router';
           <span class="story-label">Nuestra más vendida</span>
           <h2 id="brownie-story-title">La galleta con la que empezó todo</h2>
           <p>Brownie Classic fue la primera galleta que horneamos en StarKies. Nació de una idea sencilla: llevar el sabor reconfortante de un brownie a una galleta que puedas disfrutar en cualquier momento.</p>
-          <p>Su textura suave y su intenso sabor a chocolate recuerdan a un brownie tradicional, con esa apariencia casera que la hace tan especial, pero hecha galleta. Hoy es nuestra galleta insignia y la favorita de quienes vuelven por otra.</p>
+          <p>Su sabor suave y su apariencia evocan un brownie tradicional, con ese aspecto casero que la hace tan especial, pero hecho galleta. Hoy es nuestra galleta insignia y la más vendida de StarKies.</p>
           <a class="primary-button" routerLink="/menu">Prueba Brownie Classic</a>
         </div>
       </section>
