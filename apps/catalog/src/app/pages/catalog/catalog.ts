@@ -102,16 +102,98 @@ export class Catalog {
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
     const title = inject(Title), meta = inject(Meta);
-    title.setTitle('StarKies · La estrella eres tú');
-    meta.updateTag({ name: 'description', content: 'Arma tu caja de galletas artesanales StarKies en Guayaquil. Elige sabores clásicos y New York, revisa los precios y solicita tu pedido en línea.' });
-    meta.updateTag({ property: 'og:title', content: 'StarKies · La estrella eres tú' });
-    meta.updateTag({ property: 'og:description', content: 'Combina tus sabores favoritos en cajas de galletas clásicas y New York. Pedidos en Guayaquil y sectores cercanos.' });
-    meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/' });
+    const pageTitle = 'Catálogo de galletas artesanales en Guayaquil | StarKies';
+    const pageDescription = 'Explora el catálogo de galletas artesanales en Guayaquil, Ecuador: galletas clásicas, NY Style y sabores de chocolate. Consulta precios y arma tu caja en línea con StarKies.';
+    title.setTitle(pageTitle);
+    meta.updateTag({ name: 'description', content: pageDescription });
+    meta.updateTag({ name: 'keywords', content: 'galletas artesanales Guayaquil, catálogo de galletas Guayaquil, galletas clásicas, galletas New York Guayaquil, NY Style, galletas de chocolate, galletas para regalar, StarKies Ecuador' });
+    meta.updateTag({ property: 'og:title', content: pageTitle });
+    meta.updateTag({ property: 'og:description', content: pageDescription });
+    meta.updateTag({ property: 'og:url', content: 'https://starkies.lat/menu' });
+    meta.updateTag({ property: 'og:image', content: 'https://starkies.lat/starkies-social.png' });
     meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+    meta.updateTag({ name: 'twitter:title', content: pageTitle });
+    meta.updateTag({ name: 'twitter:description', content: pageDescription });
+    meta.updateTag({ name: 'twitter:image', content: 'https://starkies.lat/starkies-social.png' });
+    this.setCanonicalUrl('https://starkies.lat/menu');
     // Relative API paths are browser-relative. During Angular prerender there is no
     // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
     // Load live business data only in the browser; never fabricate prerender data.
     if (isPlatformBrowser(this.platformId)) { this.restoreCartDraft(); void this.loadCatalog(this.document.baseURI); }
+  }
+
+  private setCanonicalUrl(url: string): void {
+    let canonical = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = this.document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      this.document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', url);
+  }
+
+  private updateProductStructuredData(products: Product[]): void {
+    const pageUrl = 'https://starkies.lat/menu';
+    const itemList = {
+      '@type': 'ItemList',
+      name: 'Galletas artesanales disponibles en el catálogo de StarKies',
+      numberOfItems: products.length,
+      itemListElement: products.map((product, index) => {
+        const url = pageUrl + '#galleta-' + encodeURIComponent(product.id);
+        return {
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Thing',
+            name: product.name,
+            url,
+            ...(product.description ? { description: product.description } : {}),
+          },
+        };
+      }),
+    };
+    const productEntities = products.flatMap(product => {
+      if (!product.image) return [];
+      let image: string;
+      try { image = new URL(product.image, 'https://starkies.lat/').toString(); }
+      catch { return []; }
+      const url = pageUrl + '#galleta-' + encodeURIComponent(product.id);
+      return [{
+        '@type': 'Product',
+        '@id': url,
+        name: product.name,
+        image,
+        ...(product.description ? { description: product.description } : {}),
+        category: product.category,
+        sku: product.id,
+        brand: { '@type': 'Brand', name: 'StarKies' },
+        offers: {
+          '@type': 'Offer',
+          price: product.price.toFixed(2),
+          priceCurrency: 'USD',
+          availability: product.stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          url,
+          seller: { '@id': 'https://starkies.lat/#bakery' },
+        },
+      }];
+    });
+    const graph = [{
+      '@type': 'CollectionPage',
+      '@id': pageUrl + '#webpage',
+      url: pageUrl,
+      name: 'Catálogo de galletas artesanales en Guayaquil | StarKies',
+      description: 'Galletas clásicas y NY Style disponibles en Guayaquil, Ecuador.',
+      inLanguage: 'es-EC',
+      mainEntity: itemList,
+    }, ...productEntities];
+    let script = this.document.getElementById('starkies-catalog-structured-data') as HTMLScriptElement | null;
+    if (!script) {
+      script = this.document.createElement('script');
+      script.id = 'starkies-catalog-structured-data';
+      script.type = 'application/ld+json';
+      this.document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
   }
   retryCatalog(): void { publicCatalogCache = null; void this.loadCatalog(isPlatformBrowser(this.platformId) ? this.document.baseURI : undefined); }
   private async loadCatalog(baseUri?: string): Promise<void> {
@@ -152,6 +234,7 @@ export class Catalog {
   }
   private applyPublicCatalog(cache: CachedPublicCatalog): void {
     this.products.set(cache.products);
+    this.updateProductStructuredData(cache.products);
     this.zones = cache.zones;
     if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
   }
