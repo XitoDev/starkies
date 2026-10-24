@@ -1,16 +1,79 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { NgForm } from '@angular/forms';
 import { Landing } from './landing';
 import { provideRouter } from '@angular/router';
 
 describe('Landing', () => {
   beforeEach(async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     await TestBed.configureTestingModule({ imports: [Landing], providers: [provideRouter([])] }).compileComponents();
+  });
+
+  afterEach(() => {
+    document.getElementById('starkies-site-structured-data-test')?.remove();
+    vi.unstubAllGlobals();
   });
 
   it('creates the landing page', () => {
     const fixture = TestBed.createComponent(Landing);
     expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('adds published cookie images, delivery rates and refund policy to the box schema', async () => {
+    const script = document.createElement('script');
+    script.id = 'starkies-site-structured-data-test';
+    script.type = 'application/ld+json';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        { '@type': 'Bakery', '@id': 'https://starkies.lat/#bakery' },
+        {
+          '@type': 'ItemList',
+          itemListElement: [
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja solo clásicas', offers: {} } },
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja solo New York', offers: {} } },
+            { '@type': 'ListItem', item: { '@type': 'Product', name: 'Caja mixta de galletas', offers: {} } },
+          ],
+        },
+      ],
+    });
+    // The landing component targets the site-level JSON-LD by its stable ID.
+    script.id = 'starkies-site-structured-data';
+    document.head.appendChild(script);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        products: [
+          { name: 'Brownie Classic', isNy: false, image: '/images/starkies-brownie-cookie.webp' },
+          { name: 'Choco Meteor', isNy: true, image: 'https://cdn.example.test/choco-meteor.webp' },
+        ],
+        zones: [
+          { name: 'Norte', fee: 3.5 },
+          { name: 'Retiro en tienda', fee: 0 },
+        ],
+      }),
+    }));
+
+    const fixture = TestBed.createComponent(Landing);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const data = JSON.parse(script.textContent ?? '{}') as { '@graph': Array<Record<string, unknown>> };
+    const bakery = data['@graph'].find(node => node['@type'] === 'Bakery');
+    const itemList = data['@graph'].find(node => node['@type'] === 'ItemList');
+    const elements = itemList?.['itemListElement'] as Array<{ item: Record<string, unknown> }>;
+    expect(bakery?.['hasMerchantReturnPolicy']).toMatchObject({
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'EC',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+    });
+    expect(elements[0].item['image']).toEqual(['https://starkies.lat/images/starkies-brownie-cookie.webp']);
+    expect(elements[1].item['image']).toEqual(['https://cdn.example.test/choco-meteor.webp']);
+    expect(elements[2].item['image']).toHaveLength(2);
+    expect((elements[0].item['offers'] as Record<string, unknown>)['shippingDetails']).toHaveLength(1);
+    expect((elements[0].item['offers'] as Record<string, unknown>)['hasMerchantReturnPolicy']).toBeTruthy();
+    script.remove();
   });
 
   it('includes all quote fields in the WhatsApp message', () => {
