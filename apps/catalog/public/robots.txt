@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
+# Public sitemap only; the private admin subdomain is intentionally excluded.
 Sitemap: https://starkies.lat/sitemap.xml
