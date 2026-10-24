@@ -26,5 +26,9 @@ describe('PrivacyPolicy', () => {
     expect(text).toContain('Una vez que el pedido está en camino, no se puede cancelar');
     expect(text).toContain('no aceptamos cambios ni devoluciones');
     expect(document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href).toBe('https://starkies.lat/privacy-policy');
+    expect(document.getElementById('starkies-site-structured-data')).toBeNull();
+    const schema = JSON.parse(document.getElementById('starkies-privacy-structured-data')?.textContent ?? '{}') as Record<string, unknown>;
+    expect(schema['@type']).toBe('WebPage');
+    expect(schema['url']).toBe('https://starkies.lat/privacy-policy');
   });
 });
