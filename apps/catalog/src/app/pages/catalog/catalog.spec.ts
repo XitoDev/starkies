@@ -165,7 +165,7 @@ describe('Catalog', () => {
   it('submits an order and clears the cart only after the API confirms it', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true, orderId: 'SK-20261019-ABC123', total: 6.99 }),
+      json: async () => ({ ok: true, orderId: 'SK-20261019-ABC123', documentShortCode: 'ABC123', total: 6.99 }),
     });
     vi.stubGlobal('fetch', fetchMock);
     component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
@@ -179,6 +179,12 @@ describe('Catalog', () => {
       await component.submitOrder();
       expect(fetchMock).toHaveBeenCalledWith('/api/orders', expect.objectContaining({ method: 'POST' }));
       expect(component.orderSuccess()?.id).toBe('SK-20261019-ABC123');
+      const confirmation = component.orderSuccess();
+      expect(confirmation?.documentUrl).toBe(new URL('/p/ABC123', window.location.origin).toString());
+      const whatsappMessage = new URL(confirmation?.whatsappUrl ?? '').searchParams.get('text') ?? '';
+      expect(whatsappMessage).toContain(confirmation?.documentUrl);
+      expect(whatsappMessage).toContain('Enviaré mi ubicación exacta por WhatsApp para la entrega.');
+      expect(whatsappMessage).not.toContain('SK-20261019-ABC123');
       expect(component.completedBoxes()).toHaveLength(0);
     } finally {
       vi.unstubAllGlobals();
