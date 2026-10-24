@@ -259,7 +259,7 @@ export class Catalog {
     this.selectedPresentation.set(box.presentation);
     this.currentBoxItems.set(availableItems);
     this.editingBoxIndex.set(index);
-    this.orderSheetRef?.dismiss();
+    this.orderSheetRef?.close();
     this.orderError.set('');
     document.getElementById('sabores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -367,7 +367,7 @@ export class Catalog {
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
       this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
-      this.orderSheetRef?.dismiss(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
+      this.orderSheetRef?.close(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm();
     } catch (error) {
       if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
