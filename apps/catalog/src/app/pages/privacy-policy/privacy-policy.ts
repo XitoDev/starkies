@@ -7,7 +7,7 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [RouterLink],
   template: `
-    <main class="privacy-page" aria-labelledby="privacy-title">
+    <section class="privacy-page" aria-labelledby="privacy-title">
       <header class="privacy-hero">
         <a class="back-link" routerLink="/">← Volver a StarKies</a>
         <p class="eyebrow">TU PRIVACIDAD IMPORTA</p>
@@ -80,7 +80,7 @@ import { RouterLink } from '@angular/router';
           <a class="secondary-link" routerLink="/">Ir al inicio</a>
         </div>
       </article>
-    </main>
+    </section>
   `,
   styles: [`
     :host { display:block; background:#fbf8f5; color:#261f29; font-family:'DM Sans',Arial,sans-serif; }
