@@ -70,6 +70,7 @@
             <div class="product-content">
               <h3>{{ product.name }}</h3>
               <p>{{ product.description }}</p>
+              <a class="product-detail-link" [href]="getProductDetailUrl(product)">Ver detalles</a>
               <div class="product-bottom">
                 <strong class="product-price">{{ product.price | currency:'USD' }}</strong>
                 @if (!product.stock) {
