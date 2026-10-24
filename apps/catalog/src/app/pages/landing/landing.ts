@@ -66,7 +66,7 @@ import { RouterLink } from '@angular/router';
           </form>
         </div>
       </section>
-    </main>
+    </div>
 
   `,
   styles: [`
@@ -131,7 +131,6 @@ import { RouterLink } from '@angular/router';
    `]
 })
 export class Landing {
-  readonly currentYear = new Date().getFullYear();
   phone = '';
   name = '';
   quantity: number | null = null;
