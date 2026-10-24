@@ -33,7 +33,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (isSocialPreviewBot(userAgent)) {
       const canonicalUrl = 'https://starkies.lat/p/' + encodeURIComponent(code);
       const title = 'Un mensaje amigable de pedido | StarKies';
-      const description = 'Tu pedido de StarKies está listo para revisar. Abre el enlace para consultar el PDF y coordinar la entrega por WhatsApp.';
+      const description = 'Consulta el documento de tu pedido y coordina la entrega con StarKies por WhatsApp.';
       const html = '<!doctype html><html lang="es"><head><meta charset="utf-8">'
         + '<meta name="viewport" content="width=device-width,initial-scale=1">'
         + '<title>' + escapeHtml(title) + '</title>'
