@@ -1,18 +1,4 @@
-<a matButton="text" class="skip-link" href="#sabores">Saltar al catálogo</a>
-<header class="site-header" id="inicio">
-  <a href="/" class="logo" aria-label="StarKies, inicio">StarKies <span aria-hidden="true">✦</span></a>
-  <nav aria-label="Navegación principal">
-    <a matButton="text" class="nav-link" href="/">Inicio</a>
-    <a matButton="text" class="nav-link active" href="/menu" aria-current="page">Catálogo</a>
-    <button matIconButton type="button" class="cart-trigger" aria-label="Abrir carrito" title="Mi pedido" (click)="openOrderSheet()">
-      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
-      <span class="cart-badge">{{ cartItemCount() }}</span>
-      <span class="cart-tip" [class.show]="showCartTip()" role="status">¡Caja completa! Puedes agregar otra.</span>
-    </button>
-  </nav>
-</header>
-
-<main class="menu-page">
+<section class="menu-page">
   @if (orderSuccess(); as confirmation) {
     <section class="order-success" role="status" aria-live="polite">
       <div>
@@ -112,20 +98,4 @@
       }
     </section>
   </div>
-</main>
-
-<footer class="site-footer" id="contacto" aria-label="Información y contacto de StarKies">
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <a class="logo footer-logo" href="/">StarKies <span aria-hidden="true">✦</span></a>
-      <p>La estrella eres tú.<br>Galletas artesanales para tus momentos especiales.</p>
-    </div>
-    <div class="footer-contact">
-      <strong>Contacto</strong>
-      <a href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">chat</mat-icon><span>WhatsApp · 0979075202</span></a>
-      <a href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">photo_camera</mat-icon><span>Instagram · @starkies.ec</span></a>
-      <a href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">music_note</mat-icon><span>TikTok · @starkies.ec</span></a>
-    </div>
-  </div>
-  <p class="contact-note">© {{ currentYear }} StarKies · La estrella eres tú.</p>
-</footer>
+</section>
