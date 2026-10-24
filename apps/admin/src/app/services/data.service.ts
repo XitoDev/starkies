@@ -557,9 +557,11 @@ export class DataService implements OnDestroy {
     const shippingFee = Math.round(feeValue * 100) / 100;
     const deliveryMethod = (input.deliveryMethod ?? '').trim();
     const zone = (input.zone ?? '').trim();
-    const deliveryAddress = (input.deliveryAddress ?? '').trim() || this.asString(rawCustomer['address']).trim();
     const isPickup = deliveryMethod.toLocaleLowerCase('es').includes('retiro') || zone.toLocaleLowerCase('es') === 'retiro en tienda';
-    const customerWithDefault = !this.asString(rawCustomer['address']).trim() && deliveryAddress && !isPickup
+    const inputAddress = (input.deliveryAddress ?? '').trim();
+    const customerDefaultAddress = this.asString(rawCustomer['address']).trim();
+    const deliveryAddress = inputAddress || (isPickup ? '' : customerDefaultAddress);
+    const customerWithDefault = !customerDefaultAddress && deliveryAddress && !isPickup
       ? { ...rawCustomer, address: deliveryAddress }
       : rawCustomer;
     const nextCustomers = customers.map(item =>
@@ -581,7 +583,6 @@ export class DataService implements OnDestroy {
       createdAt,
       deliveryDate: (input.deliveryDate ?? '').trim(),
       deliveryMethod,
-      deliveryAddress,
       deliveryTime: (input.deliveryTime ?? '').trim(),
       zone,
       notes: (input.notes ?? '').trim(),
@@ -591,6 +592,7 @@ export class DataService implements OnDestroy {
       paymentMethod: isPaid ? (input.paymentMethod ?? '') : '',
       orderChannel: 'admin',
     };
+    if (deliveryAddress && deliveryAddress !== this.asString(customerWithDefault['address']).trim()) orderRecord['deliveryAddress'] = deliveryAddress;
     const nextState = { ...state, customers: nextCustomers, orders: [...this.asArray(state['orders']), orderRecord] };
     await this.applyOptimisticState(state, nextState, async () => {
       if (customerWithDefault !== rawCustomer) {
@@ -670,9 +672,11 @@ export class DataService implements OnDestroy {
     const shippingFee = Math.round(feeValue * 100) / 100;
     const deliveryDate = (changes.deliveryDate ?? this.asString(current['deliveryDate'] ?? current['date'])).trim();
     const deliveryMethod = (changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption'])).trim();
-    const deliveryAddress = (changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address'] ?? rawCustomer['address'])).trim();
     const deliveryTime = (changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot'])).trim();
     const zone = (changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea'])).trim();
+    const isPickup = deliveryMethod.toLocaleLowerCase('es').includes('retiro') || zone.toLocaleLowerCase('es') === 'retiro en tienda';
+    const requestedDeliveryAddress = (changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address'])).trim();
+    const deliveryAddress = requestedDeliveryAddress || (isPickup ? '' : this.asString(rawCustomer['address']).trim());
     const notes = (changes.notes ?? this.asString(current['notes'])).trim();
     const status = changes.status ?? this.normalizeOrderStatus(this.asString(current['status']));
     const isPaid = changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid');
@@ -686,7 +690,6 @@ export class DataService implements OnDestroy {
       lines: updatedLines,
       deliveryDate,
       deliveryMethod,
-      deliveryAddress,
       deliveryTime,
       zone,
       notes,
@@ -697,7 +700,7 @@ export class DataService implements OnDestroy {
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
       paymentMethod,
     };
-    for (const key of ['customer', 'phone', 'address', 'code', 'date', 'deliveryFee', 'shipping', 'shippingAddress', 'deliveryType', 'deliveryOption', 'paymentType', 'items']) delete updated[key];
+    for (const key of ['customer', 'phone', 'address', 'deliveryAddress', 'code', 'date', 'deliveryFee', 'shipping', 'shippingAddress', 'deliveryType', 'deliveryOption', 'paymentType', 'items']) delete updated[key];
     if (changes.items !== undefined) {
       delete updated['boxes'];
       delete updated['boxOrders'];
@@ -706,6 +709,7 @@ export class DataService implements OnDestroy {
     const customerWithDefault = !this.asString(rawCustomer['address']).trim() && deliveryAddress && !isPickup
       ? { ...rawCustomer, address: deliveryAddress }
       : rawCustomer;
+    if (deliveryAddress && deliveryAddress !== this.asString(customerWithDefault['address']).trim()) updated['deliveryAddress'] = deliveryAddress;
     const nextCustomers = customers.map(item =>
       this.asString(item['id'] ?? item['customerId']) === customerId ? customerWithDefault : item,
     );
@@ -855,6 +859,7 @@ export class DataService implements OnDestroy {
     }
 
     const customerMap = new Map<string, Customer>();
+    const customersById = new Map(this.asArray(state['customers']).map(customer => [this.asString(customer['id'] ?? customer['customerId']), customer]));
     const normalizedOrders = rawOrders.map((item) => {
       const name = this.asString(item['customer'], 'Cliente sin nombre');
       const phone = this.asOptionalString(item['phone']);
@@ -881,11 +886,17 @@ export class DataService implements OnDestroy {
       const shippingLine = lines.find(line => this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase() === 'shipping'
         || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
       const shippingFee = this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? shippingLine?.['price'] ?? 0);
-      const rawAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
+      const linkedCustomer = customersById.get(this.asString(item['customerId']));
+      const explicitAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
       const addressPrefix = zone ? zone + ' — ' : '';
-      const deliveryAddress = rawAddress?.startsWith(addressPrefix) && addressPrefix
-        ? rawAddress.slice(addressPrefix.length)
-        : rawAddress;
+      const cleanedAddress = explicitAddress?.startsWith(addressPrefix) && addressPrefix
+        ? explicitAddress.slice(addressPrefix.length)
+        : explicitAddress;
+      const isPickup = (zone ?? '').toLocaleLowerCase('es').includes('retiro');
+      const defaultAddress = this.asOptionalString(linkedCustomer?.['address']);
+      const addressMatchesDefault = Boolean(cleanedAddress && defaultAddress
+        && cleanedAddress.trim().toLocaleLowerCase('es') === defaultAddress.trim().toLocaleLowerCase('es'));
+      const deliveryAddress = addressMatchesDefault ? defaultAddress : cleanedAddress ?? (!isPickup ? defaultAddress : undefined);
       const cookieLines = lines.filter(line => {
         const id = this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase();
         return id !== 'shipping' && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío');

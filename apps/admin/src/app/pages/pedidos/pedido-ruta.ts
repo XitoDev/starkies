@@ -98,7 +98,7 @@ import { Order, OrderItem, Recipe } from 'shared';
             <div class="section-heading"><div><h2>Entrega</h2><p>La dirección de este pedido puede ser distinta de la dirección predeterminada del cliente.</p></div></div>
             <div class="form-grid">
               <label>Fecha de entrega<input type="date" [(ngModel)]="deliveryDate" name="deliveryDate"></label>
-              <label>Modalidad<select [(ngModel)]="deliveryMethod" name="deliveryMethod"><option value="">Por confirmar</option><option value="Entrega a domicilio">Entrega a domicilio</option><option value="Retiro en tienda">Retiro en tienda</option></select></label>
+              <label>Modalidad<select [ngModel]="deliveryMethod" (ngModelChange)="onDeliveryMethodChange($event)" name="deliveryMethod"><option value="">Por confirmar</option><option value="Entrega a domicilio">Entrega a domicilio</option><option value="Retiro en tienda">Retiro en tienda</option></select></label>
               <label>Sector de entrega<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Sector o zona"></label>
               <label>Horario de entrega<input maxlength="100" [(ngModel)]="deliveryTime" name="deliveryTime" placeholder="Horario acordado"></label>
               <label class="full-width">Dirección de entrega<textarea rows="2" maxlength="250" [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Se propone la dirección predeterminada del cliente; puedes cambiarla para este pedido"></textarea></label>
@@ -216,7 +216,8 @@ export class PedidoRuta implements OnDestroy {
     this.items.set(item.items.map(line => ({ recipeId: line.recipeId, name: line.name ?? this.recipeName(line.recipeId), quantity: line.quantity, unitPrice: line.unitPrice })));
     this.deliveryDate = item.deliveryDate?.slice(0, 10) ?? '';
     this.deliveryMethod = item.deliveryMethod ?? '';
-    this.deliveryAddress = item.deliveryAddress ?? this.selectedCustomer()?.address ?? '';
+    const isPickup = this.deliveryMethod.toLocaleLowerCase('es').includes('retiro') || (item.zone ?? '').toLocaleLowerCase('es').includes('retiro');
+    this.deliveryAddress = item.deliveryAddress ?? (isPickup ? '' : this.selectedCustomer()?.address ?? '');
     this.deliveryTime = item.deliveryTime ?? ''; this.zone = item.zone ?? ''; this.notes = item.notes ?? '';
     this.status = item.status; this.shippingFee = item.shippingFee ?? 0;
     this.isPaid = item.isPaid ?? false; this.paymentMethod = item.paymentMethod ?? 'TRANSFER';
@@ -229,7 +230,17 @@ export class PedidoRuta implements OnDestroy {
   onCustomerChange(id: string): void {
     this.customerId.set(id);
     const customer = this.customers().find(item => item.id === id);
-    this.deliveryAddress = customer?.address ?? '';
+    const isPickup = this.deliveryMethod.toLocaleLowerCase('es').includes('retiro');
+    this.deliveryAddress = isPickup ? '' : customer?.address ?? '';
+    this.saved.set(false);
+  }
+
+  onDeliveryMethodChange(value: string): void {
+    const wasPickup = this.deliveryMethod.toLocaleLowerCase('es').includes('retiro');
+    this.deliveryMethod = value;
+    const isPickup = value.toLocaleLowerCase('es').includes('retiro');
+    if (isPickup) this.deliveryAddress = '';
+    else if (wasPickup && !this.deliveryAddress.trim()) this.deliveryAddress = this.selectedCustomer()?.address ?? '';
     this.saved.set(false);
   }
 

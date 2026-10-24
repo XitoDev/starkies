@@ -175,6 +175,30 @@ describe('DataService catalog visibility', () => {
     );
   });
 
+  it('stores a changed delivery address on the order without overwriting the customer default', async () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [{ id: 'cookie-1', name: 'Brownie', price: 1.5 }],
+      customers: [{ id: 'customer-1', name: 'Ana', phone: '0991234567', address: 'Centro' }],
+      orders: [],
+    });
+    await service.createOrder({
+      customerId: 'customer-1',
+      items: [{ recipeId: 'cookie-1', name: 'Brownie', quantity: 1, unitPrice: 1.5 }],
+      deliveryAddress: 'Norte',
+    });
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'orders',
+      expect.stringMatching(/^SK-\d{8}-[A-F0-9]{6}$/),
+      expect.objectContaining({ customerId: 'customer-1', deliveryAddress: 'Norte' }),
+    );
+    expect(repository.upsertCollectionRecord).not.toHaveBeenCalledWith(
+      'customers',
+      'customer-1',
+      expect.objectContaining({ address: 'Norte' }),
+    );
+  });
+
   it('allows moving an order from a delivered state back to pending and persists the status', async () => {
     service.rawState.set({
       ingredients: [],
