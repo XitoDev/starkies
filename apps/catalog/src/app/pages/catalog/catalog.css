@@ -467,3 +467,10 @@
   border-color: #c7b4c0;
   box-shadow: 0 5px 18px rgb(38 7 41 / 6%);
 }
+
+:host .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  backdrop-filter: blur(14px);
+}
