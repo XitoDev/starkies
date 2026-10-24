@@ -23,7 +23,7 @@ import { RouterLink } from '@angular/router';
 
       <section class="section brownie-story" aria-labelledby="brownie-story-title">
         <div class="story-image-wrap">
-          <img src="/images/starkies-brownie-cookie.svg" alt="Brownie Classic, la galleta de chocolate insignia de StarKies" width="1000" height="1000" loading="lazy">
+          <img src="/images/starkies-brownie-cookie.webp" alt="Brownie Classic, la galleta de chocolate insignia de StarKies" width="1000" height="1000" loading="lazy">
         </div>
         <div class="story-copy">
           <p class="eyebrow">Nuestra historia</p>

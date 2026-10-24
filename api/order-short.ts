@@ -46,7 +46,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         + '<meta property="og:title" content="' + escapeHtml(title) + '">'
         + '<meta property="og:description" content="' + escapeHtml(description) + '">'
         + '<meta property="og:url" content="' + canonicalUrl + '">'
-        + '<meta property="og:image" content="https://starkies.lat/images/starkies-brownie-cookie.svg">'
+        + '<meta property="og:image" content="https://starkies.lat/starkies-icon.svg">'
         + '<meta property="og:image:alt" content="Galleta Brownie Classic de StarKies">'
         + '<meta name="twitter:card" content="summary_large_image">'
         + '<meta name="twitter:title" content="' + escapeHtml(title) + '">'
