@@ -183,7 +183,7 @@ describe('Catalog', () => {
       expect(confirmation?.documentUrl).toBe(new URL('/p/ABC123', window.location.origin).toString());
       const whatsappMessage = new URL(confirmation?.whatsappUrl ?? '').searchParams.get('text') ?? '';
       expect(whatsappMessage).toContain(confirmation?.documentUrl);
-      expect(whatsappMessage).toContain('Recuerda enviar tu ubicación exacta por WhatsApp para la entrega.');
+      expect(whatsappMessage).toContain('Enviaré mi ubicación exacta por WhatsApp para la entrega.');
       expect(whatsappMessage).not.toContain('SK-20261019-ABC123');
       expect(component.completedBoxes()).toHaveLength(0);
     } finally {
