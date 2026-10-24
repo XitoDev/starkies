@@ -40,12 +40,11 @@
               <ul>@for (key of catalog.getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ catalog.getProductName(key) }}</li> }</ul>
               <div class="box-actions"><button matButton="text" type="button" (click)="catalog.editBox($index)">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="catalog.removeBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Quitar caja</button></div>
             </div> }
-            <button matButton="elevated" class="add-box-button" type="button" (click)="catalog.closeOrderSheet(); catalog.showBoxChoiceModal.set(false)">Añadir otra caja</button>
+            @if (catalog.completedBoxes().length > 0) { <button matButton="outlined" class="add-box-button" type="button" (click)="catalog.closeOrderSheet()">Añadir otra caja</button> }
             <div class="cart-row"><span>Valor de las cajas</span><strong>{{ catalog.boxesTotalSum() | currency:'USD' }}</strong></div>
             <div class="cart-row"><span>Envío</span><strong>{{ catalog.orderForm.zone ? (catalog.shippingFee() | currency:'USD') : 'Por confirmar' }}</strong></div>
           </div>
           @if (catalog.orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ catalog.orderError() }}</p><a matButton="elevated" class="button whatsapp-fallback" [href]="catalog.getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
-        </div>
 
           } @else {
 
