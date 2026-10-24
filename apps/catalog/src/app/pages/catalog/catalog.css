@@ -147,3 +147,5 @@
 @media(prefers-reduced-motion:reduce) {
   :host *, :host *::before, :host *::after { transition:none!important; animation:none!important; }
 }
+
+:host .add-button:disabled { background:#ddd3d9; color:#857982; cursor:not-allowed; box-shadow:none; }
