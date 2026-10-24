@@ -21,13 +21,17 @@ import { RouterLink } from '@angular/router';
         </div>
       </section>
 
-      <section class="section features-section" aria-labelledby="features-title">
-        <p class="eyebrow">Una experiencia deliciosa</p>
-        <h2 id="features-title">Pequeños momentos, grandes sabores</h2>
-        <div class="features">
-          <article class="feature"><span aria-hidden="true">🍪</span><h3>Recién hechas</h3><p>Galletas preparadas con dedicación.</p></article>
-          <article class="feature"><span aria-hidden="true">🎁</span><h3>Tu caja, a tu gusto</h3><p>Combina tus sabores favoritos.</p></article>
-          <article class="feature"><span aria-hidden="true">✨</span><h3>Un detalle especial</h3><p>Perfectas para regalar o consentirte.</p></article>
+      <section class="section brownie-story" aria-labelledby="brownie-story-title">
+        <div class="story-image-wrap">
+          <img src="/images/starkies-brownie-cookie.svg" alt="Brownie Classic, la galleta de chocolate insignia de StarKies" width="1000" height="1000" loading="lazy">
+        </div>
+        <div class="story-copy">
+          <p class="eyebrow">Nuestra historia</p>
+          <span class="story-label">Nuestra más vendida</span>
+          <h2 id="brownie-story-title">La galleta con la que empezó todo</h2>
+          <p>Brownie Classic fue la primera galleta que horneamos en StarKies. Nació de una idea sencilla: llevar el sabor reconfortante de un brownie a una galleta que puedas disfrutar en cualquier momento.</p>
+          <p>Su textura suave y su intenso sabor a chocolate recuerdan a un brownie tradicional, con esa apariencia casera que la hace tan especial, pero hecha galleta. Hoy es nuestra galleta insignia y la favorita de quienes vuelven por otra.</p>
+          <a class="primary-button" routerLink="/menu">Prueba Brownie Classic</a>
         </div>
       </section>
 
