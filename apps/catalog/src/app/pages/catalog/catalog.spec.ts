@@ -5,7 +5,7 @@ import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
 import { DeliveryZone, Product } from './catalog.models';
 
 const TEST_PRODUCTS: Product[] = [
-  { id: '1', name: 'Brownie Classic', category: 'Galletas clásicas', description: 'Cacao', price: .6, isNy: false, stock: true },
+  { id: '1', name: 'Brownie Classic', category: 'Galletas clásicas', description: 'Cacao', price: .6, isNy: false, stock: true, image: '/images/chispas-chocolate-classic.webp' },
   { id: '2', name: 'Avena Classic', category: 'Galletas clásicas', description: 'Avena', price: .6, isNy: false, stock: true },
   { id: '3', name: 'Chispas de Chocolate Classic', category: 'Galletas clásicas', description: 'Chocolate', price: .6, isNy: false, stock: true },
   { id: '4', name: 'Canela Classic', category: 'Galletas clásicas', description: 'Canela', price: .6, isNy: false, stock: true },
@@ -49,6 +49,25 @@ describe('Catalog', () => {
     expect(component.zones).toEqual(TEST_ZONES);
     expect(component.fulfillmentMode()).toBe('pickup');
     expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
+  });
+
+  it('publishes the public product list and image-backed Product structured data with a menu canonical', () => {
+    const script = document.getElementById('starkies-catalog-structured-data') as HTMLScriptElement | null;
+    expect(script).toBeTruthy();
+    const data = JSON.parse(script?.textContent ?? '{}') as {
+      '@graph': Array<Record<string, unknown> & { '@type': string }>;
+    };
+    const collection = data['@graph'].find(node => node['@type'] === 'CollectionPage');
+    const mainEntity = collection?.['mainEntity'] as { itemListElement?: unknown[] } | undefined;
+    expect(mainEntity?.itemListElement).toHaveLength(13);
+
+    const product = data['@graph'].find(node => node['@type'] === 'Product' && node['name'] === 'Brownie Classic');
+    expect(product?.['image']).toBe('https://starkies.lat/images/chispas-chocolate-classic.webp');
+    expect(product?.['brand']).toEqual({ '@type': 'Brand', name: 'StarKies' });
+    expect(data['@graph'].some(node => node['@type'] === 'Product' && node['name'] === 'Red Velvet Classic')).toBe(false);
+
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    expect(canonical?.href).toBe('https://starkies.lat/menu');
   });
 
   it('renders the approved compact category filter row', () => {
