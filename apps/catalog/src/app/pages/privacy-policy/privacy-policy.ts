@@ -30,5 +30,25 @@ export class PrivacyPolicy {
       this.document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', 'https://starkies.lat/privacy-policy');
+    this.document.getElementById('starkies-site-structured-data')?.remove();
+
+    let script = this.document.getElementById('starkies-privacy-structured-data') as HTMLScriptElement | null;
+    if (!script) {
+      script = this.document.createElement('script');
+      script.id = 'starkies-privacy-structured-data';
+      script.type = 'application/ld+json';
+      this.document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': 'https://starkies.lat/privacy-policy#webpage',
+      url: 'https://starkies.lat/privacy-policy',
+      name: pageTitle,
+      description: pageDescription,
+      inLanguage: 'es-EC',
+      isPartOf: { '@id': 'https://starkies.lat/#website' },
+      about: { '@id': 'https://starkies.lat/#bakery' },
+    });
   }
 }
