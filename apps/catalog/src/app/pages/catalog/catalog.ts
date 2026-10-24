@@ -116,10 +116,12 @@ export class Catalog {
     meta.updateTag({ name: 'twitter:description', content: pageDescription });
     meta.updateTag({ name: 'twitter:image', content: 'https://starkies.lat/starkies-social.png' });
     this.setCanonicalUrl('https://starkies.lat/menu');
-    // Relative API paths are browser-relative. During Angular prerender there is no
-    // document origin, so Node fetch('/api/catalog') throws "Failed to parse URL".
-    // Load live business data only in the browser; never fabricate prerender data.
-    if (isPlatformBrowser(this.platformId)) { this.restoreCartDraft(); void this.loadCatalog(this.document.baseURI); }
+    // Fetch the public projection during prerender using an absolute URL so the
+    // generated HTML can contain the currently published products and JSON-LD.
+    // If the production API is temporarily unavailable, the browser retries after load.
+    const isBrowser = isPlatformBrowser(this.platformId);
+    if (isBrowser) this.restoreCartDraft();
+    void this.loadCatalog(isBrowser ? this.document.baseURI : 'https://starkies.lat/');
   }
 
   private setCanonicalUrl(url: string): void {
@@ -227,7 +229,11 @@ export class Catalog {
       if (isPlatformBrowser(this.platformId)) publicCatalogCache = cache;
       this.applyPublicCatalog(cache);
     } catch (error) {
-      this.catalogLoadError.set(error instanceof Error ? error.message : 'No pudimos cargar el catálogo.');
+      // Keep prerender output clean when a remote API is unavailable; the browser
+      // performs a fresh request and displays the retry message if it also fails.
+      if (isPlatformBrowser(this.platformId)) {
+        this.catalogLoadError.set(error instanceof Error ? error.message : 'No pudimos cargar el catálogo.');
+      }
     } finally {
       this.catalogLoading.set(false);
     }
