@@ -105,17 +105,22 @@ describe('Catalog', () => {
     expect(component.filteredProducts().map(product => product.name)).toEqual(['Sunny Carrot']);
   });
 
-  it('shows only the cookie category allowed by the selected box', () => {
-    component.selectPresentation(BOX_PRESENTATIONS[0]);
-    expect(component.categories()).toEqual(['Galletas clásicas']);
-    expect(component.filteredProducts().every(product => !product.isNy)).toBe(true);
+  it('keeps both category filters visible and disables flavours incompatible with the selected box', () => {
+    expect(component.selectedPresentation().id).toBe('clasicas');
+    expect(component.categories()).toEqual(['Galletas clásicas', 'Galletas NY']);
+    expect(component.filteredProducts()).toHaveLength(13);
+    expect(component.canAddProduct('6')).toBe(false);
 
-    component.selectPresentation(BOX_PRESENTATIONS[1]);
-    expect(component.categories()).toEqual(['Galletas NY']);
+    component.setCategoryFilter('Galletas NY');
     expect(component.filteredProducts().every(product => product.isNy)).toBe(true);
 
+    component.selectPresentation(BOX_PRESENTATIONS[1]);
+    expect(component.categoryFilter()).toBe('Galletas NY');
+    expect(component.canAddProduct('6')).toBe(true);
+
     component.selectPresentation(BOX_PRESENTATIONS[2]);
-    expect(component.categories()).toEqual(['Galletas clásicas', 'Galletas NY']);
+    expect(component.categoryFilter()).toBe('Todas');
+    expect(component.filteredProducts()).toHaveLength(13);
   });
 
   it('prevents adding unavailable cookies', () => {
