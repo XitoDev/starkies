@@ -169,7 +169,7 @@ export class Catalog {
 
   getProductDetailUrl(product: Product): string {
     const slug = product.name.normalize('NFD')
-      .replace(/[\\u0300-\\u036f]/g, '')
+      .replace(/\p{M}/gu, '')
       .toLocaleLowerCase('es')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'galleta';
