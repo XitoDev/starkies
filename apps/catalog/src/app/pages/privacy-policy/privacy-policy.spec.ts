@@ -21,5 +21,10 @@ describe('PrivacyPolicy', () => {
     expect(text).toContain('teléfono');
     expect(text).toContain('almacenamiento de sesión');
     expect(text).toContain('WhatsApp');
+    expect(fixture.nativeElement.querySelector('#entregas-reembolsos')).toBeTruthy();
+    expect(text).toContain('reembolso del valor total pagado');
+    expect(text).toContain('Una vez que el pedido está en camino, no se puede cancelar');
+    expect(text).toContain('no aceptamos cambios ni devoluciones');
+    expect(document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href).toBe('https://starkies.lat/privacy-policy');
   });
 });
