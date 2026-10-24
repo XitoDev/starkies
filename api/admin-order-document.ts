@@ -31,7 +31,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const url = new URL(req.url ?? '/', 'https://starkies.lat');
     const orderId = url.searchParams.get('orderId') ?? '';
-    if (!/^SK-\d{8}-[A-F0-9]{6}$/.test(orderId)) { res.status(400).json({ message: 'Identificador de pedido no válido.' }); return; }
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) { res.status(400).json({ message: 'Identificador de pedido no válido.' }); return; }
     const snapshot = await getDatabase().doc(['orders',orderId].join('/')).get();
     if (!snapshot.exists) { res.status(404).json({ message: 'No encontramos este pedido.' }); return; }
     const record = snapshot.data() as StoredOrder | undefined;

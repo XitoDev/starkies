@@ -337,6 +337,7 @@ export class FirestoreBusinessRepository {
       }
       previousPhone = this.normalizePhone(String(existingData['phone'] ?? previousCustomerData?.['phone'] ?? ''));
       nextPhone = this.normalizePhone(String(safeValue['phone'] ?? nextCustomerData?.['phone'] ?? ''));
+      if (nextCustomerId && nextCustomerData) await this.assertCustomerPhoneAvailable(nextCustomerId, nextPhone);
       safeValue['searchTokens'] = this.searchTokensFor({
         ...safeValue,
         customer: safeValue['customer'] ?? nextCustomerData?.['name'] ?? previousCustomerData?.['name'],
