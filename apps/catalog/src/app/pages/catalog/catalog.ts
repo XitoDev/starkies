@@ -45,7 +45,7 @@ export class Catalog {
   readonly editingBoxIndex = signal<number | null>(null);
   readonly wantsCookieName = signal(false);
   readonly selectedDeliveryZone = signal<DeliveryZone | null>(null);
-  readonly fulfillmentMode = signal<'delivery' | 'pickup'>('delivery');
+  readonly fulfillmentMode = signal<'delivery' | 'pickup'>('pickup');
   orderForm = this.emptyOrderForm();
   readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
   readonly filteredProducts = computed(() => {
