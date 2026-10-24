@@ -73,7 +73,7 @@ export function escapeXml(value: string): string {
 export function buildShippingDetails(zones: Array<{ name: string; fee: number }>): Array<Record<string, unknown>> {
   return zones
     .filter(zone => {
-      const name = zone.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+      const name = zone.name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('es');
       return !name.includes('retiro') && Number.isFinite(zone.fee) && zone.fee >= 0;
     })
     .map(zone => ({
@@ -89,4 +89,14 @@ export function buildShippingDetails(zones: Array<{ name: string; fee: number }>
         currency: 'USD',
       },
     }));
+}
+
+
+export function buildMerchantReturnPolicy(): Record<string, string> {
+  return {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'EC',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+    merchantReturnLink: 'https://starkies.lat/privacy-policy#entregas-reembolsos',
+  };
 }
