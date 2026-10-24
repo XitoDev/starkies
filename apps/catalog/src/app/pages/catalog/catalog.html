@@ -92,9 +92,9 @@
                   <button matButton="elevated" type="button" class="add-button" [disabled]="!canAddProduct(product.id)" (click)="changeQuantity(product.id, 1)">Agregar +</button>
                 } @else {
                   <div class="product-qty" [attr.aria-label]="'Cantidad de ' + product.name">
-                    <button matIconButton type="button" class="qty-button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button>
+                    <button matButton="outlined" type="button" class="qty-button" [attr.aria-label]="'Quitar una unidad de ' + product.name" (click)="changeQuantity(product.id, -1)">−</button>
                     <span class="qty-number">{{ getQuantity(product.id) }}</span>
-                    <button matIconButton type="button" class="qty-button" [attr.aria-label]="'Añadir una unidad de ' + product.name" [disabled]="!canAddProduct(product.id)" (click)="changeQuantity(product.id, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button>
+                    <button matButton="elevated" type="button" class="qty-button" [attr.aria-label]="'Añadir una unidad de ' + product.name" [disabled]="!canAddProduct(product.id)" (click)="changeQuantity(product.id, 1)">+</button>
                   </div>
                 }
               </div>
