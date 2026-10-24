@@ -51,6 +51,27 @@ describe('Catalog', () => {
     expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
   });
 
+  it('publishes a crawlable item list linking to each published cookie and sets the menu canonical', () => {
+    const script = document.getElementById('starkies-catalog-structured-data') as HTMLScriptElement | null;
+    expect(script).toBeTruthy();
+    const data = JSON.parse(script?.textContent ?? '{}') as {
+      '@graph': Array<Record<string, unknown> & { '@type': string }>;
+    };
+    const collection = data['@graph'].find(node => node['@type'] === 'CollectionPage');
+    const mainEntity = collection?.['mainEntity'] as {
+      itemListElement?: Array<{ name?: string; url?: string; position?: number }>;
+    } | undefined;
+    expect(mainEntity?.itemListElement).toHaveLength(13);
+    expect(mainEntity?.itemListElement?.[0]).toMatchObject({
+      name: 'Brownie Classic',
+      url: 'https://starkies.lat/galletas/brownie-classic/1',
+      position: 1,
+    });
+    expect(data['@graph'].some(node => node['@type'] === 'Product')).toBe(false);
+    expect(component.getProductDetailUrl(TEST_PRODUCTS[0])).toBe('/galletas/brownie-classic/1');
+    expect(document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href).toBe('https://starkies.lat/menu');
+  });
+
   it('renders the approved compact category filter row', () => {
     const filters = [...fixture.nativeElement.querySelectorAll('.filter-button') as NodeListOf<HTMLElement>]
       .map(button => button.textContent?.trim());
