@@ -51,23 +51,27 @@ describe('Catalog', () => {
     expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
   });
 
-  it('publishes the public product list and image-backed Product structured data with a menu canonical', () => {
+  it('publishes a crawlable item list linking to individual cookie pages and a menu canonical', () => {
     const script = document.getElementById('starkies-catalog-structured-data') as HTMLScriptElement | null;
     expect(script).toBeTruthy();
     const data = JSON.parse(script?.textContent ?? '{}') as {
       '@graph': Array<Record<string, unknown> & { '@type': string }>;
     };
     const collection = data['@graph'].find(node => node['@type'] === 'CollectionPage');
-    const mainEntity = collection?.['mainEntity'] as { itemListElement?: unknown[] } | undefined;
+    const mainEntity = collection?.['mainEntity'] as {
+      itemListElement?: Array<{ name?: string; url?: string; position?: number }>;
+    } | undefined;
     expect(mainEntity?.itemListElement).toHaveLength(13);
-
-    const product = data['@graph'].find(node => node['@type'] === 'Product' && node['name'] === 'Brownie Classic');
-    expect(product?.['image']).toBe('https://starkies.lat/images/chispas-chocolate-classic.webp');
-    expect(product?.['brand']).toEqual({ '@type': 'Brand', name: 'StarKies' });
-    expect(data['@graph'].some(node => node['@type'] === 'Product' && node['name'] === 'Red Velvet Classic')).toBe(false);
+    expect(mainEntity?.itemListElement?.[0]).toMatchObject({
+      name: 'Brownie Classic',
+      url: 'https://starkies.lat/galletas/brownie-classic/1',
+      position: 1,
+    });
+    expect(data['@graph'].some(node => node['@type'] === 'Product')).toBe(false);
 
     const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     expect(canonical?.href).toBe('https://starkies.lat/menu');
+    expect(component.getProductDetailUrl(TEST_PRODUCTS[0])).toBe('/galletas/brownie-classic/1');
   });
 
   it('renders the approved compact category filter row', () => {
