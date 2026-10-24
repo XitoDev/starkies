@@ -4,7 +4,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { DataService } from '../../services/data.service';
 import { RecipeImageService } from '../../services/recipe-image.service';
 import { Recipe } from 'shared';
@@ -24,7 +24,6 @@ export class Catalogo {
   private readonly router = inject(Router);
   readonly recipes = this.dataService.recipes;
   readonly categoryFilter = signal('Todos');
-  readonly openMenuId = signal<string | null>(null);
   readonly settingsOpen = signal(false);
   readonly zones = signal<DeliveryZone[]>([]);
   readonly saving = signal(false);
@@ -35,6 +34,7 @@ export class Catalogo {
   private readonly initialized = signal(false);
   readonly categories = computed(() => Array.from(new Set(this.recipes().filter(item => !item.archived).map(item => item.category.trim() || 'Sin categoría'))).sort((a,b) => a.localeCompare(b,'es')));
   readonly catalogItems = computed(() => this.recipes().filter(item => !item.archived && (this.categoryFilter() === 'Todos' || (item.category.trim() || 'Sin categoría') === this.categoryFilter())));
+  readonly productCount = computed(() => this.recipes().filter(item => !item.archived).length);
   readonly visibleCount = computed(() => this.recipes().filter(item => !item.archived && item.catalogVisible !== false).length);
   constructor() {
     void this.dataService.loadCollections(['recipes', 'catalogDrafts', 'deliveryZones']);
@@ -61,8 +61,6 @@ export class Catalogo {
     });
   }
   categoryCount(category: string): number { return this.recipes().filter(recipe => !recipe.archived && (recipe.category.trim() || 'Sin categoría') === category).length; }
-  labelBackground(color?: string): string { return ({'Morado':'#8056ad','Rosa suave':'#f5d8d1','Crema':'#eee5f2','Arena':'#e9ddd3','Azul':'#4f6f9f','Verde':'#55775f','Coral':'#a65b50','Dorado':'#b58a3e','Ciruela':'#7b5678'} as Record<string,string>)[color ?? 'Morado'] ?? '#8056ad'; }
-  labelForeground(color?: string): string { return ['Morado','Azul','Verde','Coral','Ciruela'].includes(color ?? 'Morado') ? '#fff' : '#51445b'; }
   getImageUrl(imagePath: string | undefined): string { return this.recipeImageService.getImageUrl(imagePath); }
   onImageError(event: Event): void { const image = event.target as HTMLImageElement; if (!image.src.endsWith('/images/recipe-placeholder.svg')) image.src = '/images/recipe-placeholder.svg'; }
   async toggleVisibility(item: Recipe): Promise<void> {
