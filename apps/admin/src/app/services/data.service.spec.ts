@@ -163,14 +163,14 @@ describe('DataService catalog visibility', () => {
     expect(created.total).toBe(5);
     expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
       'orders',
-      expect.stringMatching(/^SK-\d{8}-ADM/),
+      expect.stringMatching(/^SK-\d{8}-[A-F0-9]{6}$/),
       expect.objectContaining({
         customerId: 'customer-1',
         total: 5,
         lines: [
           { id: 'cookie-1', name: 'Brownie', qty: 2, price: 1.5 },
-          { id: 'shipping', name: 'Envío', qty: 1, price: 2 },
         ],
+        shippingFee: 2,
       }),
     );
   });

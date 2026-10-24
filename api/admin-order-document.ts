@@ -36,7 +36,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!snapshot.exists) { res.status(404).json({ message: 'No encontramos este pedido.' }); return; }
     const record = snapshot.data() as StoredOrder | undefined;
     if (!record) { res.status(404).json({ message: 'No encontramos los detalles del pedido.' }); return; }
-    const pdf = buildOrderPdf(record, orderId);
+    const customerId = typeof record.customerId === 'string' ? record.customerId : '';
+    const customerSnapshot = customerId ? await getDatabase().doc('customers/' + customerId).get() : null;
+    const customer = customerSnapshot?.exists() ? customerSnapshot.data() : undefined;
+    const pdfRecord: StoredOrder = {
+      ...record,
+      customer: typeof record.customer === 'string' && record.customer.trim() ? record.customer : customer?.['name'],
+      phone: typeof record.phone === 'string' && record.phone.trim() ? record.phone : customer?.['phone'],
+      address: typeof record.deliveryAddress === 'string' && record.deliveryAddress.trim()
+        ? record.deliveryAddress
+        : typeof record.address === 'string' && record.address.trim() ? record.address : customer?.['address'],
+      deliveryFee: record.shippingFee ?? record.deliveryFee,
+    };
+    const pdf = buildOrderPdf(pdfRecord, orderId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="pedido-' + orderId + '.pdf"');
     res.setHeader('Content-Length', String(pdf.length));

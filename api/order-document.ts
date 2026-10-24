@@ -20,9 +20,12 @@ interface OrderBox { presentationName?: unknown; title?: unknown; price?: unknow
 export interface StoredOrder {
   id?: unknown;
   code?: unknown;
+  customerId?: unknown;
   customer?: unknown;
   phone?: unknown;
   address?: unknown;
+  deliveryAddress?: unknown;
+  deliveryMethod?: unknown;
   zone?: unknown;
   deliveryDate?: unknown;
   date?: unknown;
@@ -34,6 +37,9 @@ export interface StoredOrder {
   lines?: unknown;
   boxes?: unknown;
   deliveryFee?: unknown;
+  shippingFee?: unknown;
+  isPaid?: unknown;
+  paymentMethod?: unknown;
   status?: unknown;
 }
 
@@ -160,13 +166,13 @@ export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   // Customer details in a compact two-column card.
   rect(42, 584, 511, 115, '1 1 1', line);
   drawText('Cliente', 56, 675, 8, 'F2', muted);
-  drawText(order.customer, 56, 658, 10, 'F2');
+  drawText(order.customer ?? order.customerId ?? 'Cliente desconocido', 56, 658, 10, 'F2');
   drawText('En la caja', 310, 675, 8, 'F2', muted);
   drawText(order.cookieName || 'N/A', 310, 658, 10);
   drawText('Teléfono', 56, 631, 8, 'F2', muted);
   drawText(order.phone, 56, 614, 10);
   drawText('Sector / punto', 310, 631, 8, 'F2', muted);
-  drawText(order.zone ?? order.address, 310, 614, 10);
+  drawText(String(order.zone ?? '').trim() || String(order.deliveryMethod ?? '').trim() || order.address, 310, 614, 10);
   drawText(order.zone === 'Retiro en tienda' || order.address === 'Retiro en tienda' ? 'Fecha de retiro' : 'Fecha de entrega', 56, 600, 8, 'F2', muted);
   drawText(formatDate(safeDate), 150, 600, 9);
 
@@ -204,10 +210,10 @@ export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
     }
   }
 
+  const deliveryFee = Number(order.shippingFee ?? order.deliveryFee ?? 0);
   const boxSubtotal = boxes.length
     ? boxes.reduce((sum, box) => sum + Number(box.price ?? 0), 0)
-    : Number(order.total ?? 0) - Number(order.deliveryFee ?? 0);
-  const deliveryFee = Number(order.deliveryFee ?? 0);
+    : Number(order.total ?? 0) - deliveryFee;
   const summaryTop = Math.max(y - 3, 105);
   rule(300, summaryTop + 21, 553);
   drawText('Valor de las cajas', 365, summaryTop + 7, 9, 'F1', muted);
@@ -218,7 +224,7 @@ export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   drawText('Total estimado', 312, summaryTop - 35, 10, 'F2', purple);
   drawText(money(order.total), 492, summaryTop - 35, 11, 'F2', purple);
 
-  const isPickup = String(order.zone ?? '').toLowerCase().includes('retiro') || String(order.address ?? '').toLowerCase().includes('retiro en tienda');
+  const isPickup = String(order.deliveryMethod ?? '').toLowerCase().includes('retiro') || String(order.zone ?? '').toLowerCase().includes('retiro') || String(order.deliveryAddress ?? order.address ?? '').toLowerCase().includes('retiro en tienda');
   rect(42, 76, 511, 48, pale);
   drawText(isPickup ? 'RETIRO' : 'ENTREGA', 56, 106, 9, 'F2', purple);
   drawText(isPickup

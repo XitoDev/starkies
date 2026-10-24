@@ -568,9 +568,8 @@ export class DataService implements OnDestroy {
     const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const total = Math.round((subtotal + shippingFee) * 100) / 100;
     const lines: RawRecord[] = items.map(item => ({ id: item.recipeId, name: item.name ?? '', qty: item.quantity, price: item.unitPrice }));
-    if (shippingFee > 0) lines.push({ id: 'shipping', name: 'Envío' + (zone ? ' — ' + zone : ''), qty: 1, price: shippingFee });
     const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replace(/-/g, '');
-    const orderId = 'SK-' + dateKey + '-ADM' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const orderId = 'SK-' + dateKey + '-' + Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0').toUpperCase();
     const createdAt = new Date().toISOString();
     const isPaid = input.isPaid === true;
     const orderRecord: RawRecord = {
@@ -680,7 +679,6 @@ export class DataService implements OnDestroy {
     const paymentMethod = isPaid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '';
     const subtotal = productLines.reduce((sum, line) => sum + Number(line['qty'] ?? line['quantity'] ?? 0) * Number(line['price'] ?? line['unitPrice'] ?? 0), 0);
     const updatedLines = [...productLines];
-    if (shippingFee > 0) updatedLines.push({ id: 'shipping', name: 'Envío' + (zone ? ' — ' + zone : ''), qty: 1, price: shippingFee });
     const updated: RawRecord = {
       ...current,
       id: orderId,
