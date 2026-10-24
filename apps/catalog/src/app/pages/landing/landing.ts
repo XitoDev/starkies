@@ -92,6 +92,12 @@ import { FormsModule, NgForm } from '@angular/forms';
     .brand-name { color:#735363; font-family:'Shrikhand',Georgia,serif; font-size:clamp(1.8rem,3vw,2.4rem); line-height:1; }
     .brand-name span { font-family:Georgia,serif; }
     nav { display:flex; align-items:center; gap:26px; } .nav-link { padding:10px 0; } .nav-link.active { font-weight:700; }
+
+    .hero::before, .hero::after { content:none !important; display:none !important; }
+    .hero { min-height: min(690px, calc(100svh - 76px)); padding-top: 76px; padding-bottom: 88px; }
+    .hero-copy { margin-inline:auto; }
+    .hero h1 { display:block; position:relative; margin-top:0; }
+
     .hero { position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; min-height:min(690px,calc(100svh - 76px)); padding:78px 24px 96px; text-align:center; background:linear-gradient(115deg,#fff9f7 0%,#f8eaf0 56%,#f0d9e4 100%); }
     .hero-copy { position:relative; z-index:1; max-width:920px; } .eyebrow { margin:0 0 18px; color:var(--mauve); font-size:.78rem; font-weight:700; letter-spacing:.25em; }
     h1 { margin:0; color:#5c4253; font-family:'Shrikhand',Georgia,serif; font-size:clamp(3.7rem,7.4vw,6.4rem); font-weight:400; line-height:1.06; }
