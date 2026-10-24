@@ -10,5 +10,9 @@ export const routes: Routes = [
     path: 'menu',
     loadComponent: () => import('./pages/catalog/catalog').then(m => m.Catalog)
   },
+  {
+    path: 'privacy-policy',
+    loadComponent: () => import('./pages/privacy-policy/privacy-policy').then(m => m.PrivacyPolicy)
+  },
   { path: '**', redirectTo: '' }
 ];
