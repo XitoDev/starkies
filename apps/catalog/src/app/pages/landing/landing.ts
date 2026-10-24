@@ -88,7 +88,7 @@ import { FormsModule, NgForm } from '@angular/forms';
     :host { display:block; --cream:#fbf8f5; --rose:#f0d9e4; --mauve:#806c79; --ink:#4a3f4b; --line:#e9dfe5; color:var(--ink); background:var(--cream); font-family:'DM Sans',Arial,sans-serif; }
     * { box-sizing:border-box; }
     a { color:inherit; text-decoration:none; }
-    .site-header { min-height:76px; padding:12px clamp(20px,6vw,76px); display:flex; justify-content:space-between; align-items:center; gap:20px; background:#fff; border-bottom:1px solid var(--line); position:relative; z-index:2; }
+    .site-header { position:sticky; top:0; z-index:10; min-height:76px; backdrop-filter:blur(14px);  padding:12px clamp(20px,6vw,76px); display:flex; justify-content:space-between; align-items:center; gap:20px; background:#fff; border-bottom:1px solid var(--line); position:relative; z-index:2; }
     .brand-name { color:#735363; font-family:'Shrikhand',Georgia,serif; font-size:clamp(1.8rem,3vw,2.4rem); line-height:1; }
     .brand-name span { font-family:Georgia,serif; }
     nav { display:flex; align-items:center; gap:26px; } .nav-link { padding:10px 0; } .nav-link.active { font-weight:700; }
