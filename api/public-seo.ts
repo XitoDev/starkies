@@ -42,13 +42,14 @@ export function absolutePublicImage(value?: string): string | undefined {
 }
 
 export function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, character => ({
+  const entities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;',
-  })[character] ?? character);
+  };
+  return value.replace(/[&<>"']/g, character => entities[character] ?? character);
 }
 
 export function safeJsonLd(value: unknown): string {
@@ -59,11 +60,12 @@ export function safeJsonLd(value: unknown): string {
 }
 
 export function escapeXml(value: string): string {
-  return value.replace(/[&<>"']/g, character => ({
+  const entities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&apos;',
-  })[character] ?? character);
+  };
+  return value.replace(/[&<>"']/g, character => entities[character] ?? character);
 }
