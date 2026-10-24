@@ -56,7 +56,7 @@
         </div>
         @if (isBoxComplete()) {
           <div class="add-box-row">
-            <button matButton="outlined" type="button" class="add-box-button" (click)="finishBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : '＋ Agregar otra caja' }}</button>
+            <button matButton="outlined" type="button" class="add-box-button" (click)="addAnotherBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : '＋ Agregar otra caja' }}</button>
           </div>
         }
       </div>
