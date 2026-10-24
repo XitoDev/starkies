@@ -406,6 +406,15 @@ export class FirestoreBusinessRepository {
       const previousRef = doc(this.firebase.firestore, 'customerPhoneLookup', previousHash);
       const previousLookup = await getDoc(previousRef);
       if (previousLookup.exists() && String(previousLookup.data()?.['customerId'] ?? '') === customerId) await deleteDoc(previousRef);
+      const previousOrderLookupRef = doc(this.firebase.firestore, 'orderPhoneLookup', previousHash);
+      const previousOrderLookup = await getDoc(previousOrderLookupRef);
+      const previousOrderId = String(previousOrderLookup.data()?.['orderId'] ?? '');
+      if (previousOrderLookup.exists() && previousOrderId) {
+        const previousOrder = await getDoc(doc(this.firebase.firestore, 'orders', previousOrderId));
+        if (previousOrder.exists() && String(previousOrder.data()?.['customerId'] ?? '') === customerId) {
+          await deleteDoc(previousOrderLookupRef);
+        }
+      }
     }
     if (!nextHash) return;
     if (!allowReassign) await this.assertCustomerPhoneAvailable(customerId, nextPhone);

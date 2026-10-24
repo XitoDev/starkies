@@ -163,7 +163,7 @@ describe('DataService catalog visibility', () => {
     expect(created.total).toBe(5);
     expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
       'orders',
-      expect.stringMatching(/^SK-\\d{8}-ADM/),
+      expect.stringMatching(/^SK-\d{8}-ADM/),
       expect.objectContaining({
         customerId: 'customer-1',
         total: 5,
