@@ -24,16 +24,17 @@ export class Catalogo {
   private readonly router = inject(Router);
   readonly recipes = this.dataService.recipes;
   readonly categoryFilter = signal('Todos');
-  readonly showHidden = signal(false);
   readonly openMenuId = signal<string | null>(null);
   readonly settingsOpen = signal(false);
   readonly zones = signal<DeliveryZone[]>([]);
   readonly saving = signal(false);
+  readonly visibilityUpdatingId = signal<string | null>(null);
+  readonly deletingId = signal<string | null>(null);
   readonly notice = signal('');
   readonly error = signal('');
   private readonly initialized = signal(false);
   readonly categories = computed(() => Array.from(new Set(this.recipes().filter(item => !item.archived).map(item => item.category.trim() || 'Sin categoría'))).sort((a,b) => a.localeCompare(b,'es')));
-  readonly catalogItems = computed(() => this.recipes().filter(item => !item.archived && (this.showHidden() || item.catalogVisible !== false) && (this.categoryFilter() === 'Todos' || item.category === this.categoryFilter())));
+  readonly catalogItems = computed(() => this.recipes().filter(item => !item.archived && (this.categoryFilter() === 'Todos' || (item.category.trim() || 'Sin categoría') === this.categoryFilter())));
   readonly visibleCount = computed(() => this.recipes().filter(item => !item.archived && item.catalogVisible !== false).length);
   constructor() {
     void this.dataService.loadCollections(['recipes', 'catalogDrafts', 'deliveryZones']);
@@ -59,15 +60,42 @@ export class Catalogo {
       }
     });
   }
-  categoryCount(category: string): number { return this.recipes().filter(recipe => !recipe.archived && recipe.category === category).length; }
+  categoryCount(category: string): number { return this.recipes().filter(recipe => !recipe.archived && (recipe.category.trim() || 'Sin categoría') === category).length; }
   labelBackground(color?: string): string { return ({'Morado':'#8056ad','Rosa suave':'#f5d8d1','Crema':'#eee5f2','Arena':'#e9ddd3','Azul':'#4f6f9f','Verde':'#55775f','Coral':'#a65b50','Dorado':'#b58a3e','Ciruela':'#7b5678'} as Record<string,string>)[color ?? 'Morado'] ?? '#8056ad'; }
   labelForeground(color?: string): string { return ['Morado','Azul','Verde','Coral','Ciruela'].includes(color ?? 'Morado') ? '#fff' : '#51445b'; }
   getImageUrl(imagePath: string | undefined): string { return this.recipeImageService.getImageUrl(imagePath); }
   onImageError(event: Event): void { const image = event.target as HTMLImageElement; if (!image.src.endsWith('/images/recipe-placeholder.svg')) image.src = '/images/recipe-placeholder.svg'; }
   async toggleVisibility(item: Recipe): Promise<void> {
-    this.openMenuId.set(null); this.error.set(''); this.notice.set('');
-    try { await this.dataService.setRecipeCatalogVisibility(item.id, item.catalogVisible===false); this.notice.set(item.catalogVisible===false ? 'Producto visible en el catálogo.' : 'Producto oculto del catálogo.'); }
-    catch(error) { this.error.set(error instanceof Error?error.message:'No se pudo cambiar la visibilidad.'); }
+    if (this.visibilityUpdatingId()) return;
+    const visible = item.catalogVisible === false;
+    this.visibilityUpdatingId.set(item.id);
+    this.error.set('');
+    this.notice.set('');
+    try {
+      await this.dataService.setRecipeCatalogVisibility(item.id, visible);
+      this.notice.set(visible ? 'Producto visible en el catálogo público.' : 'Producto oculto del catálogo público.');
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudo cambiar la visibilidad.');
+    } finally {
+      this.visibilityUpdatingId.set(null);
+    }
+  }
+
+  async deleteProduct(item: Recipe): Promise<void> {
+    if (this.deletingId()) return;
+    const confirmed = window.confirm('¿Eliminar "' + item.name + '"? Esta acción eliminará la receta y su publicación del catálogo público. No se puede deshacer.');
+    if (!confirmed) return;
+    this.deletingId.set(item.id);
+    this.error.set('');
+    this.notice.set('');
+    try {
+      await this.dataService.deleteRecipe(item.id);
+      this.notice.set('"' + item.name + '" se eliminó correctamente.');
+    } catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'No se pudo eliminar el producto.');
+    } finally {
+      this.deletingId.set(null);
+    }
   }
   addZone(): void { this.zones.update(zones => [...zones,{id:crypto.randomUUID(),name:'Nueva zona',fee:0}]); }
   removeZone(index:number):void { if(!window.confirm('¿Eliminar esta zona de entrega?')) return; this.zones.update(zones=>zones.filter((_,i)=>i!==index)); }
