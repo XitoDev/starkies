@@ -38,24 +38,9 @@
         </a>
       </div>
     </div>
-    <small class="contact-note">© {{ currentYear }} StarKies · La estrella eres tú. <button type="button" class="privacy-preferences-link" (click)="customerDataConsent.openPreferences()">Preferencias de datos</button></small>
+    <div class="footer-bottom">
+      <small class="contact-note">© 2026 StarKies</small>
+      <a class="privacy-policy-link" routerLink="/privacy-policy">Ver Política de Privacidad</a>
+    </div>
   </footer>
-
-  @if (customerDataConsent.preferencesOpen()) {
-    <section class="privacy-consent" role="dialog" aria-labelledby="privacy-consent-title" aria-describedby="privacy-consent-description">
-      <div class="privacy-consent-copy">
-        <p class="privacy-consent-eyebrow">Tu privacidad importa</p>
-        <h2 id="privacy-consent-title">¿Quieres guardar tus datos para tu próxima compra?</h2>
-        <p id="privacy-consent-description">Usamos una cookie para recordar tu elección. Si aceptas, podremos guardar en Firebase tu nombre, teléfono y dirección para facilitar el próximo pedido y completar tus datos cuando vuelvas a ingresar tu teléfono. Si rechazas, no consultaremos esos datos ni crearemos o actualizaremos una ficha de cliente para autocompletar.</p>
-        <small>Para gestionar y entregar cada pedido, los datos que ingreses seguirán asociados a ese pedido. Puedes cambiar esta elección desde “Preferencias de datos”.</small>
-      </div>
-      <div class="privacy-consent-actions">
-        @if (customerDataConsent.status() !== 'unknown') {
-          <button type="button" class="privacy-button privacy-keep" (click)="customerDataConsent.keepCurrentChoice()">Mantener mi elección</button>
-        }
-        <button type="button" class="privacy-button privacy-reject" (click)="customerDataConsent.decline()">Rechazar</button>
-        <button type="button" class="privacy-button privacy-accept" (click)="customerDataConsent.accept()">Aceptar y guardar mis datos</button>
-      </div>
-    </section>
-  }
 </div>
