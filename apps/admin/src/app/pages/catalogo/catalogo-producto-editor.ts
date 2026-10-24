@@ -37,7 +37,7 @@ import { ImageCdnUploadService } from '../../services/image-cdn-upload.service';
           <label>Descripción para clientes<textarea rows="4" maxlength="500" [(ngModel)]="description" name="description" placeholder="Describe la galleta para tus clientes"></textarea></label>
           <div class="price"><span>Precio de venta sincronizado con Finanzas</span><strong>{{ item.price | currency:'USD' }}</strong><small>Se actualiza automáticamente desde Productos y precios.</small></div>
           @if(error()){<p class="error" role="alert">{{ error() }}</p>}
-          <footer>@if(saving()){<span class="saving-status" role="status" aria-live="polite">{{savingMessage()}}</span>}<a matButton="outlined" class="secondary" routerLink="/catalogo">Cancelar</a><button matButton="elevated" type="submit" [disabled]="saving()">{{ saving()?'Guardando…':'Guardar cambios' }}</button></footer>
+          <footer class="admin-sticky-actions">@if(saving()){<span class="saving-status" role="status" aria-live="polite">{{savingMessage()}}</span>}<a matButton="outlined" class="secondary" routerLink="/catalogo">Cancelar</a><button matButton="elevated" type="submit" [disabled]="saving()">{{ saving()?'Guardando…':'Guardar cambios' }}</button></footer>
         </form>
       </section>
     } @else {
