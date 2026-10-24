@@ -48,11 +48,11 @@ describe('Catalog', () => {
     expect(component.zones).toEqual(TEST_ZONES);
   });
 
-  it('renders concise category headings without the repeated eyebrow', () => {
-    const headings = [...fixture.nativeElement.querySelectorAll('.category-title') as NodeListOf<HTMLElement>]
-      .map(heading => heading.textContent?.trim());
-    expect(headings).toEqual(['Clásicas', 'NY Style']);
-    expect(fixture.nativeElement.querySelectorAll('.category-title .category-eyebrow')).toHaveLength(0);
+  it('renders the approved compact category filter row', () => {
+    const filters = [...fixture.nativeElement.querySelectorAll('.filter-button') as NodeListOf<HTMLElement>]
+      .map(button => button.textContent?.trim());
+    expect(filters).toEqual(['Todas', 'Clásicas', 'NY Style']);
+    expect(fixture.nativeElement.querySelectorAll('.category-title')).toHaveLength(0);
   });
 
   it('places new cookies first, the best seller second, and least-sold cookies before the second best seller', () => {
@@ -69,6 +69,20 @@ describe('Catalog', () => {
     expect(ranked.map(product => product.id)).toEqual(['new', 'top', 'least', 'middle', 'second']);
     expect(ranked[0].tag).toBe('Nuevo');
     expect(ranked[1].tag).toBe('Más vendida');
+  });
+
+  it('filters products by the selected category', () => {
+    component.setCategoryFilter('Galletas NY');
+    expect(component.filteredProducts().every(product => product.isNy)).toBe(true);
+    component.setCategoryFilter('Todas');
+    expect(component.filteredProducts().length).toBeGreaterThan(1);
+  });
+
+  it('counts the selected cookies and marks a completed box for the cart tooltip', () => {
+    component.selectPresentation(BOX_PRESENTATIONS[0]);
+    for (let index = 0; index < 10; index += 1) component.changeQuantity('1', 1);
+    expect(component.cartItemCount()).toBe(10);
+    expect(component.isBoxComplete()).toBe(true);
   });
 
   it('filters products by name and description', () => {
