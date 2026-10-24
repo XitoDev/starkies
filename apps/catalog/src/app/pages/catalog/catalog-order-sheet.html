@@ -26,6 +26,7 @@
           @if (catalog.fulfillmentMode() === 'delivery') {
             <div class="field-group"><label class="field-label" for="order-zone">Sector de entrega</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><mat-select id="order-zone" required [ngModel]="catalog.orderForm.zone" (ngModelChange)="catalog.setDeliveryZone($event)" name="zone"><mat-option [value]="null" disabled>Selecciona tu sector</mat-option>@for (z of catalog.zones; track z.id) { @if (!catalog.isPickupZone(z)) { <mat-option [value]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</mat-option> } }</mat-select></mat-form-field></div>
             <div class="field-group"><label class="field-label" for="order-address">Dirección exacta</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><textarea id="order-address" matInput required autocomplete="street-address" maxlength="250" [(ngModel)]="catalog.orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></mat-form-field></div>
+            <p class="location-note">📍 Recuerda enviar tu ubicación por WhatsApp para coordinar la entrega.</p>
           } @else {
             <div class="pickup-note" role="status"><strong>Retiro en local</strong><p>No se cobrará envío. Coordinaremos contigo los detalles de la recogida por WhatsApp.</p>@if (catalog.orderForm.zone) { <span>{{ catalog.orderForm.zone.name }} · Sin costo de envío</span> }</div>
           }
@@ -33,47 +34,61 @@
           <div class="optional-name-toggle"><mat-checkbox id="wantsCookieName" [ngModel]="catalog.wantsCookieName()" (ngModelChange)="catalog.wantsCookieName.set($event)" name="wantsCookieName">¿Quieres agregar un nombre a la caja?</mat-checkbox></div>
           @if (catalog.wantsCookieName()) { <div class="field-group"><label class="field-label" for="order-cookie-name">Nombre en la caja</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><input id="order-cookie-name" matInput type="text" maxlength="80" [(ngModel)]="catalog.orderForm.cookieName" name="cookieName" placeholder="Nombre que escribimos en la caja"></mat-form-field></div> }
           <div class="field-group"><label class="field-label" for="order-notes">Notas · opcional</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><textarea id="order-notes" matInput [(ngModel)]="catalog.orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></mat-form-field></div>
-          <div class="summary"><h3>Resumen de tu pedido</h3>
-            @if (catalog.hasUnavailableBox()) { <p class="summary-warning">Hay un sabor agotado o no disponible. Usa Editar sabores en la caja correspondiente antes de confirmar.</p> }
-            @for (box of catalog.completedBoxes(); track $index) { <div class="packed-box">
-              <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
-              <ul>@for (key of catalog.getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ catalog.getProductName(key) }}</li> }</ul>
-              <div class="box-actions"><button matButton="text" type="button" (click)="catalog.editBox($index)">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="catalog.removeBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon> Quitar caja</button></div>
-            </div> }
-            @if (catalog.completedBoxes().length > 0) { <button matButton="outlined" class="add-box-button" type="button" (click)="catalog.closeOrderSheet()">Añadir otra caja</button> }
-            <div class="cart-row"><span>Valor de las cajas</span><strong>{{ catalog.boxesTotalSum() | currency:'USD' }}</strong></div>
-            <div class="cart-row"><span>Envío</span><strong>{{ catalog.orderForm.zone ? (catalog.shippingFee() | currency:'USD') : 'Por confirmar' }}</strong></div>
-          </div>
           @if (catalog.orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ catalog.orderError() }}</p><a matButton="elevated" class="button whatsapp-fallback" [href]="catalog.getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
 
           } @else {
-
-          <section class="summary summary-review" aria-labelledby="order-review-title">
-            <p class="review-intro">Revisa las cajas que elegiste antes de completar tus datos de entrega.</p>
-            <h3 id="order-review-title">Tu selección</h3>
-            @if (catalog.completedBoxes().length === 0) {
-              <p class="review-empty">Todavía no has guardado ninguna caja. Vuelve al catálogo para completar una.</p>
-            }
-            @for (box of catalog.completedBoxes(); track $index) {
-              <div class="packed-box">
-                <div class="packed-box-heading"><strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong><strong>{{ box.presentation.price | currency:'USD' }}</strong></div>
-                <ul>@for (key of catalog.getObjectKeys(box.items); track key) { <li>{{ box.items[key] }} {{ catalog.getProductName(key) }}</li> }</ul>
-                <div class="box-actions"><button matButton="text" type="button" (click)="catalog.editBox($index); catalog.closeOrderSheet()">Editar sabores</button><button matButton="outlined" type="button" class="remove-box-action" (click)="catalog.removeBox($index)">Quitar caja</button></div>
-              </div>
-            }
-            @if (catalog.completedBoxes().length > 0) {
-              <button matButton="outlined" class="add-box-button" type="button" (click)="catalog.closeOrderSheet()">Añadir otra caja</button>
-            }
-          </section>
-        
+            <section class="summary cart-step" aria-labelledby="cart-summary-title">
+              @if (catalog.cartItemCount() === 0) {
+                <div class="empty">Todavía no has añadido galletas.</div>
+                <p class="muted" id="cart-hint">Añade tus favoritas para comenzar.</p>
+              } @else {
+                <p class="review-intro">Revisa las cajas y sabores que has elegido.</p>
+                @for (box of catalog.completedBoxes(); track $index) {
+                  <section class="cart-box">
+                    <div class="cart-box-title">
+                      <strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong>
+                      <small>{{ box.presentation.price | currency:'USD' }}</small>
+                    </div>
+                    @for (key of catalog.getObjectKeys(box.items); track key) {
+                      <div class="cart-item">
+                        <div><strong>{{ catalog.getProductName(key) }}</strong><div class="muted">{{ box.items[key] }} unidad(es)</div></div>
+                        <div class="cart-item-actions">
+                          <button matIconButton type="button" aria-label="Editar caja" (click)="catalog.editBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">edit</mat-icon></button>
+                          <button matIconButton type="button" aria-label="Quitar caja" (click)="catalog.removeBox($index)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete</mat-icon></button>
+                        </div>
+                      </div>
+                    }
+                  </section>
+                }
+                @if (catalog.totalBoxCurrent() > 0) {
+                  <section class="cart-box current-cart-box">
+                    <div class="cart-box-title">
+                      <strong>{{ catalog.editingBoxIndex() !== null ? 'Editando caja' : 'Tu caja actual' }} · {{ catalog.selectedPresentation().name }}</strong>
+                      <small>{{ catalog.totalBoxCurrent() }}/{{ catalog.totalBoxRequired() }} galletas</small>
+                    </div>
+                    @for (key of catalog.getObjectKeys(catalog.currentBoxItems()); track key) {
+                      <div class="cart-item">
+                        <div><strong>{{ catalog.getProductName(key) }}</strong><div class="muted">{{ catalog.currentBoxItems()[key] }} unidad(es)</div></div>
+                        <div class="cart-item-actions">
+                          <button matIconButton type="button" [attr.aria-label]="'Quitar una unidad de ' + catalog.getProductName(key)" (click)="catalog.changeQuantity(key, -1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">remove</mat-icon></button>
+                          <span>{{ catalog.currentBoxItems()[key] }}</span>
+                          <button matIconButton type="button" [attr.aria-label]="'Añadir una unidad de ' + catalog.getProductName(key)" [disabled]="!catalog.canAddProduct(key)" (click)="catalog.changeQuantity(key, 1)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon></button>
+                        </div>
+                      </div>
+                    }
+                    <p class="muted">Completa la caja y guárdala antes de revisar el pedido.</p>
+                  </section>
+                }
+              }
+            </section>
           }
         </div>
         <div class="sheet-footer">
           <div class="sheet-total"><span>{{ catalog.orderForm.zone ? 'Total con envío' : 'Total de las cajas' }}</span><strong>{{ catalog.grandTotal() | currency:'USD' }}</strong></div>
           @if (catalog.orderFormVisible()) {
-            <button matButton="elevated" type="submit" class="button full" [disabled]="catalog.savingOrder() || catalog.hasUnavailableBox()">{{ catalog.savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
+            <button matButton="elevated" type="submit" class="button full" [disabled]="catalog.savingOrder() || catalog.hasUnavailableBox() || catalog.totalBoxCurrent() > 0">{{ catalog.savingOrder() ? 'Registrando pedido…' : 'Confirmar pedido' }}</button>
           } @else {
-            <button matButton="elevated" type="button" class="button full" [disabled]="catalog.completedBoxes().length === 0" (click)="catalog.orderFormVisible.set(true)">Revisar pedido</button>
+            <button matButton="elevated" type="button" class="button full" [disabled]="catalog.completedBoxes().length === 0 || catalog.totalBoxCurrent() > 0" (click)="catalog.orderFormVisible.set(true)">Revisar pedido</button>
           }
         </div>
       </form>
