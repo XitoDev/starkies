@@ -419,7 +419,7 @@ export class DataService implements OnDestroy {
     if (draftIndex >= 0) nextDrafts[draftIndex] = updatedDraft;
     else nextDrafts.push(updatedDraft);
     const nextState = { ...state, catalogDrafts: nextDrafts };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipeId, updatedRecipe));
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipeId, updatedRecipe, true));
   }
 
   async saveCustomer(customer: Customer): Promise<void> {
