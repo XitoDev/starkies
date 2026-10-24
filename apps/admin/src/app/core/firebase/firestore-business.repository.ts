@@ -335,13 +335,13 @@ export class FirestoreBusinessRepository {
         const nextSnapshot = await getDoc(doc(this.firebase.firestore, 'customers', nextCustomerId));
         if (nextSnapshot.exists()) nextCustomerData = nextSnapshot.data();
       }
-      previousPhone = this.normalizePhone(String(existingData['phone'] ?? previousCustomerData?.['phone'] ?? ''));
-      nextPhone = this.normalizePhone(String(safeValue['phone'] ?? nextCustomerData?.['phone'] ?? ''));
+      previousPhone = this.normalizePhone(String(previousCustomerData?.['phone'] ?? existingData['phone'] ?? ''));
+      nextPhone = this.normalizePhone(String(nextCustomerData?.['phone'] ?? safeValue['phone'] ?? ''));
       if (nextCustomerId && nextCustomerData) await this.assertCustomerPhoneAvailable(nextCustomerId, nextPhone);
       safeValue['searchTokens'] = this.searchTokensFor({
         ...safeValue,
-        customer: safeValue['customer'] ?? nextCustomerData?.['name'] ?? previousCustomerData?.['name'],
-        phone: safeValue['phone'] ?? nextCustomerData?.['phone'] ?? previousCustomerData?.['phone'],
+        customer: nextCustomerData?.['name'] ?? safeValue['customer'] ?? previousCustomerData?.['name'],
+        phone: nextCustomerData?.['phone'] ?? safeValue['phone'] ?? previousCustomerData?.['phone'],
         address: safeValue['address'] ?? safeValue['deliveryAddress'],
       });
     }
@@ -699,7 +699,7 @@ export class FirestoreBusinessRepository {
       const customerId = String(matchingData['customerId'] ?? '');
       const customerSnapshot = customerId ? await getDoc(doc(this.firebase.firestore, 'customers', customerId)) : null;
       const customerPhone = customerSnapshot?.exists() ? customerSnapshot.data()?.['phone'] : '';
-      const orderPhone = this.normalizePhone(String(matchingData['phone'] ?? customerPhone ?? ''));
+      const orderPhone = this.normalizePhone(String(customerPhone ?? matchingData['phone'] ?? ''));
       await this.syncOrderPhoneLookup(recordId, orderPhone, '', false);
     }
     const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
