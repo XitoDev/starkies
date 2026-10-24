@@ -26,12 +26,15 @@ describe('Pedidos', () => {
           ordersPageHasMore: signal(false),
           ordersPageLoading: signal(false),
           loadOrdersPage: vi.fn(async () => undefined),
+          loadCollections: vi.fn(async () => undefined),
           refreshPendingOrderCount: vi.fn(async () => undefined),
           loadAllOrders: vi.fn(async () => undefined),
           searchOrders: vi.fn(async () => []),
           searchCustomers: vi.fn(async () => []),
           loadFromCloud: vi.fn(async () => undefined),
           deleteOrder: deleteOrderMock,
+          updateOrderStatus: vi.fn(async () => undefined),
+          deleteCustomer: vi.fn(async () => undefined),
         } },
       ],
     }).compileComponents();
@@ -61,9 +64,18 @@ describe('Pedidos', () => {
     const deleteButton = fixture.nativeElement.querySelector('button.order-delete-button') as HTMLButtonElement;
 
     expect(editLink).toBeTruthy();
-    expect(editLink.getAttribute('href')).toContain('/pedidos/order-123/editar');
+    expect(editLink.getAttribute('href')).toContain('/pedidos/order-123');
     expect(deleteButton).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.order-inline-actions')).toBeNull();
+  });
+
+
+  it('shows the matching register CTA for the active tab', () => {
+    const button = fixture.nativeElement.querySelector('button.register-button') as HTMLButtonElement;
+    expect(button.textContent).toContain('Registrar pedido');
+    component.setTab('clientes');
+    fixture.detectChanges();
+    expect(button.textContent).toContain('Registrar cliente');
   });
 
   it('requires confirmation before deleting an order', async () => {

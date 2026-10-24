@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, signal } from '@angular/core';
 import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
-import { Ingredient, Recipe, Order, Customer, CashMovement } from 'shared';
+import { Ingredient, Recipe, Order, OrderItem, Customer, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
 
@@ -75,12 +75,13 @@ export class DataService implements OnDestroy {
     void this.refreshPendingOrders().catch(() => undefined);
   }
 
-  async loadFromCloud(collectionKeys?: string[]): Promise<void> {
+  async loadFromCloud(collectionKeys?: string[], forceRefresh = false): Promise<void> {
     if (!this.firebase.isConfigured) {
       this.error.set(this.firebase.configurationMessage);
       return;
     }
 
+    if (forceRefresh && !collectionKeys) this.repository.invalidateStateCache();
     this.loading.set(true);
     this.error.set('');
     const revisionAtStart = this.cloudRevision;
@@ -422,69 +423,190 @@ export class DataService implements OnDestroy {
     await this.applyOptimisticState(state, nextState, () => this.repository.upsertRecipeAndCatalogProjection(recipeId, updatedRecipe, true));
   }
 
-  async saveCustomer(customer: Customer): Promise<void> {
-    const state = this.rawState();
-    if (!state) throw new Error('No hay datos de StarKies cargados.');
-    const rawOrders = this.asArray(state['orders']);
-    const related = rawOrders.filter((item) => {
-      const name = this.asString(item['customer'], 'Cliente sin nombre');
-      const phone = this.asOptionalString(item['phone']);
-      const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
-      return key === customer.id;
-    });
-    if (!related.length) throw new Error('No se encontraron pedidos vinculados a este cliente.');
-    for (const order of related) {
-      const id = this.asString(order['id'] ?? order['code']);
-      await this.repository.upsertCollectionRecord('orders', id, {
-        ...order,
-        customer: customer.name.trim(),
-        phone: customer.phone?.trim() ?? '',
-        address: customer.address?.trim() ?? '',
-      });
-    }
-    const nextState = {
-      ...state,
-      orders: rawOrders.map((order) => {
-        const name = this.asString(order['customer'], 'Cliente sin nombre');
-        const phone = this.asOptionalString(order['phone']);
-        const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
-        return key === customer.id ? { ...order, customer: customer.name.trim(), phone: customer.phone?.trim() ?? '', address: customer.address?.trim() ?? '' } : order;
-      }),
-    };
+  async loadOrderById(orderId: string): Promise<void> {
+    await this.loadCollections(['customers', 'recipes']);
+    const order = await this.repository.getCollectionRecord('orders', orderId);
+    if (!order) return;
+    const state = this.rawState() ?? {};
+    const orders = this.asArray(state['orders']);
+    const index = orders.findIndex(item => this.asString(item['id'] ?? item['code']) === orderId);
+    const nextOrders = [...orders];
+    if (index >= 0) nextOrders[index] = order;
+    else nextOrders.push(order);
+    const nextState = { ...state, orders: nextOrders };
     this.rawState.set(nextState);
     this.loadViewModels(nextState);
   }
 
-  async deleteCustomer(customerId: string): Promise<void> {
+  async createCustomer(input: Omit<Customer, 'id'>): Promise<Customer> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
-    const rawOrders = this.asArray(state['orders']);
-    const related = rawOrders.filter((order) => {
-      const name = this.asString(order['customer'], 'Cliente sin nombre');
-      const phone = this.asOptionalString(order['phone']);
-      return (phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`) === customerId;
-    });
-    if (!related.length) throw new Error('No se encontraron pedidos vinculados a este cliente.');
-    for (const order of related) {
-      const id = this.asString(order['id'] ?? order['code']);
-      await this.repository.upsertCollectionRecord('orders', id, {
-        ...order,
-        customer: `Cliente eliminado · ${id}`,
-        phone: '',
-        address: '',
-      });
+    const name = input.name.trim();
+    if (!name) throw new Error('El nombre del cliente es obligatorio.');
+    const phone = (input.phone ?? '').trim();
+    const address = (input.address ?? '').trim();
+    const normalizedPhone = this.normalizePhone(phone);
+    const customers = this.asArray(state['customers']);
+    if (normalizedPhone.length >= 7 && customers.some(item => this.normalizePhone(this.asString(item['phone'])) === normalizedPhone)) {
+      throw new Error('Ya existe un cliente con ese teléfono. Busca su ficha y reutilízala.');
     }
+    const id = 'admin-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const customer: Customer = { id, name, phone, address };
+    const nextState = { ...state, customers: [...customers, customer as unknown as RawRecord] };
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('customers', id, customer as unknown as RawRecord));
+    return customer;
+  }
+
+  async saveCustomer(customer: Customer): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    if (!customer.id || customer.id === 'nuevo') throw new Error('No se identificó el cliente que deseas actualizar.');
+    const name = customer.name.trim();
+    if (!name) throw new Error('El nombre del cliente es obligatorio.');
+    const phone = (customer.phone ?? '').trim();
+    const address = (customer.address ?? '').trim();
+    const normalizedPhone = this.normalizePhone(phone);
+    const customers = this.asArray(state['customers']);
+    if (!customers.some(item => this.asString(item['id'] ?? item['customerId']) === customer.id)) {
+      throw new Error('No se encontró el cliente. Actualiza la pantalla e inténtalo de nuevo.');
+    }
+    if (normalizedPhone.length >= 7 && customers.some(item =>
+      this.asString(item['id'] ?? item['customerId']) !== customer.id
+      && this.normalizePhone(this.asString(item['phone'])) === normalizedPhone,
+    )) {
+      throw new Error('Ese teléfono ya está asociado a otro cliente.');
+    }
+    const saved: Customer = { ...customer, name, phone, address };
+    const nextCustomers = customers.map(item =>
+      this.asString(item['id'] ?? item['customerId']) === customer.id ? saved as unknown as RawRecord : item,
+    );
+    const nextState = { ...state, customers: nextCustomers };
+    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('customers', customer.id, saved as unknown as RawRecord));
+  }
+
+  async deleteCustomer(customerId: string): Promise<void> {
+    await this.loadAllOrders();
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const customers = this.asArray(state['customers']);
+    const customer = customers.find(item => this.asString(item['id'] ?? item['customerId']) === customerId);
+    if (!customer) throw new Error('No se encontró el cliente que intentas eliminar.');
+    const rawOrders = this.asArray(state['orders']);
+    const normalizedPhone = this.normalizePhone(this.asString(customer['phone']));
+    const normalizedName = this.asString(customer['name']).trim().toLocaleLowerCase('es');
+    const related = rawOrders.filter(order => {
+      if (this.asString(order['customerId']) === customerId) return true;
+      const phone = this.normalizePhone(this.asString(order['phone']));
+      const name = this.asString(order['customer']).trim().toLocaleLowerCase('es');
+      return normalizedPhone.length >= 7 ? phone === normalizedPhone : name === normalizedName;
+    });
+    const updatedRelated: RawRecord[] = related.map((order): RawRecord => {
+      const id = this.asString(order['id'] ?? order['code']);
+      return { ...order, customerId: 'deleted-' + id, customer: 'Cliente eliminado · ' + id, phone: '', address: '' };
+    });
+    const replacements = new Map(updatedRelated.map(order => [this.asString(order['id'] ?? order['code']), order]));
     const nextState = {
       ...state,
-      orders: rawOrders.map((order) => {
-        const name = this.asString(order['customer'], 'Cliente sin nombre');
-        const phone = this.asOptionalString(order['phone']);
-        const key = phone ? `phone:${phone}` : `name:${name.trim().toLocaleLowerCase()}`;
-        return key === customerId ? { ...order, customer: `Cliente eliminado · ${this.asString(order['id'] ?? order['code'])}`, phone: '', address: '' } : order;
-      }),
+      customers: customers.filter(item => this.asString(item['id'] ?? item['customerId']) !== customerId),
+      orders: rawOrders.map(order => replacements.get(this.asString(order['id'] ?? order['code'])) ?? order),
     };
-    this.rawState.set(nextState);
-    this.loadViewModels(nextState);
+    await this.applyOptimisticState(state, nextState, async () => {
+      for (const order of updatedRelated) {
+        const id = this.asString(order['id'] ?? order['code']);
+        await this.repository.upsertCollectionRecord('orders', id, order);
+      }
+      await this.repository.deleteCollectionRecord('customers', customerId);
+    });
+  }
+
+  async createOrder(input: {
+    customerId: string;
+    items: OrderItem[];
+    deliveryDate?: string;
+    deliveryMethod?: string;
+    deliveryAddress?: string;
+    deliveryTime?: string;
+    zone?: string;
+    notes?: string;
+    shippingFee?: number;
+    isPaid?: boolean;
+    paymentMethod?: Order['paymentMethod'];
+  }): Promise<Order> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const customers = this.asArray(state['customers']);
+    const rawCustomer = customers.find(item => this.asString(item['id'] ?? item['customerId']) === input.customerId);
+    if (!rawCustomer) throw new Error('Selecciona un cliente válido para el pedido.');
+    if (!input.items.length) throw new Error('Agrega al menos un producto al pedido.');
+    const items: OrderItem[] = input.items.map(item => {
+      const recipe = this.asArray(state['recipes']).find(value => this.asString(value['id']) === item.recipeId);
+      if (!recipe) throw new Error('No se encontró el producto ' + item.recipeId + '. Actualiza el catálogo e inténtalo de nuevo.');
+      const quantity = Number(item.quantity);
+      const unitPrice = Number(item.unitPrice);
+      if (!Number.isInteger(quantity) || quantity < 1 || !Number.isFinite(unitPrice) || unitPrice < 0) {
+        throw new Error('Revisa las cantidades y los precios del pedido.');
+      }
+      return {
+        recipeId: item.recipeId,
+        name: (item.name ?? '').trim() || this.asString(recipe['name'], 'Producto'),
+        quantity,
+        unitPrice: Math.round(unitPrice * 100) / 100,
+      };
+    });
+    const feeValue = Number(input.shippingFee ?? 0);
+    if (!Number.isFinite(feeValue) || feeValue < 0) throw new Error('El costo de envío debe ser un valor válido igual o mayor que cero.');
+    const shippingFee = Math.round(feeValue * 100) / 100;
+    const deliveryMethod = (input.deliveryMethod ?? '').trim();
+    const zone = (input.zone ?? '').trim();
+    const isPickup = deliveryMethod.toLocaleLowerCase('es').includes('retiro') || zone.toLocaleLowerCase('es') === 'retiro en tienda';
+    const inputAddress = (input.deliveryAddress ?? '').trim();
+    const customerDefaultAddress = this.asString(rawCustomer['address']).trim();
+    const deliveryAddress = inputAddress || (isPickup ? '' : customerDefaultAddress);
+    const customerWithDefault = !customerDefaultAddress && deliveryAddress && !isPickup
+      ? { ...rawCustomer, address: deliveryAddress }
+      : rawCustomer;
+    const nextCustomers = customers.map(item =>
+      this.asString(item['id'] ?? item['customerId']) === input.customerId ? customerWithDefault : item,
+    );
+    const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const total = Math.round((subtotal + shippingFee) * 100) / 100;
+    const lines: RawRecord[] = items.map(item => ({ id: item.recipeId, name: item.name ?? '', qty: item.quantity, price: item.unitPrice }));
+    const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()).replace(/-/g, '');
+    const orderId = 'SK-' + dateKey + '-' + Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0').toUpperCase();
+    const createdAt = new Date().toISOString();
+    const isPaid = input.isPaid === true;
+    const orderRecord: RawRecord = {
+      id: orderId,
+      customerId: input.customerId,
+      lines,
+      total,
+      status: 'PENDING',
+      createdAt,
+      deliveryDate: (input.deliveryDate ?? '').trim(),
+      deliveryMethod,
+      deliveryTime: (input.deliveryTime ?? '').trim(),
+      zone,
+      notes: (input.notes ?? '').trim(),
+      shippingFee,
+      isPaid,
+      paymentStatus: isPaid ? 'PAID' : 'PENDING',
+      paymentMethod: isPaid ? (input.paymentMethod ?? '') : '',
+      orderChannel: 'admin',
+    };
+    if (deliveryAddress && deliveryAddress !== this.asString(customerWithDefault['address']).trim()) orderRecord['deliveryAddress'] = deliveryAddress;
+    const nextState = { ...state, customers: nextCustomers, orders: [...this.asArray(state['orders']), orderRecord] };
+    await this.applyOptimisticState(state, nextState, async () => {
+      if (customerWithDefault !== rawCustomer) {
+        await this.repository.upsertCollectionRecord('customers', input.customerId, customerWithDefault);
+      }
+      await this.repository.upsertCollectionRecord('orders', orderId, orderRecord);
+    });
+    void this.refreshPendingOrderCount().catch(() => undefined);
+    return this.orders().find(order => order.id === orderId) ?? {
+      id: orderId, customerId: input.customerId, items, total, status: 'PENDING', createdAt,
+      deliveryDate: (input.deliveryDate ?? '').trim(), deliveryMethod, deliveryAddress, deliveryTime: (input.deliveryTime ?? '').trim(),
+      zone, notes: (input.notes ?? '').trim(), shippingFee, isPaid, paymentMethod: isPaid ? input.paymentMethod : undefined,
+    };
   }
 
   async deleteOrder(orderId: string): Promise<void> {
@@ -496,6 +618,8 @@ export class DataService implements OnDestroy {
   }
 
   async saveOrderDetails(orderId: string, changes: {
+    customerId?: string;
+    items?: OrderItem[];
     deliveryDate?: string;
     deliveryMethod?: string;
     deliveryAddress?: string;
@@ -510,49 +634,92 @@ export class DataService implements OnDestroy {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawOrders = this.asArray(state['orders']);
-    const index = rawOrders.findIndex((order) => this.asString(order['id'] ?? order['code']) === orderId);
+    const index = rawOrders.findIndex(order => this.asString(order['id'] ?? order['code']) === orderId);
     if (index < 0) throw new Error('No se encontró el pedido.');
     const current = rawOrders[index];
-    const deliveryDate = changes.deliveryDate ?? this.asString(current['deliveryDate'] ?? current['date']);
-    const shippingFee = changes.shippingFee === undefined
-      ? this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0)
-      : Math.max(0, Math.round(changes.shippingFee * 100) / 100);
-    const paid = changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid');
+    const customerId = changes.customerId ?? this.asString(current['customerId']);
+    const customers = this.asArray(state['customers']);
+    const rawCustomer = customers.find(item => this.asString(item['id'] ?? item['customerId']) === customerId);
+    if (!rawCustomer) throw new Error('Selecciona un cliente válido para el pedido.');
     const rawLines = this.asArray(current['lines']).length
       ? this.asArray(current['lines'])
       : this.asArray(current['boxOrders']).flatMap(box => this.asArray(box['lines']));
-    const currentShippingLine = rawLines.find(line => this.asString(line['id']).toLocaleLowerCase() === 'shipping'
-      || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
-    const currentShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? currentShippingLine?.['price'] ?? 0);
-    const subtotal = Math.max(0, this.asNumber(current['total']) - currentShippingFee);
-    const zone = changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea']);
-    const updatedLines = rawLines.length
-      ? [
-          ...rawLines.filter(line => this.asString(line['id']).toLocaleLowerCase() !== 'shipping'
-            && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío')),
-          ...(shippingFee > 0 ? [{ id: 'shipping', name: 'Envío — ' + zone, qty: 1, price: shippingFee }] : []),
-        ]
-      : rawLines;
+    const currentProductLines = rawLines.filter(line =>
+      this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase() !== 'shipping'
+      && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío'),
+    );
+    const productLines: RawRecord[] = changes.items !== undefined
+      ? changes.items.map(item => ({
+          id: item.recipeId,
+          name: (item.name ?? '').trim(),
+          qty: Number(item.quantity),
+          price: Math.round(Number(item.unitPrice) * 100) / 100,
+        }))
+      : currentProductLines.length
+        ? currentProductLines
+        : this.asArray(current['items']).map(item => ({
+            id: item['recipeId'] ?? item['id'],
+            name: item['name'],
+            qty: item['quantity'] ?? item['qty'],
+            price: item['unitPrice'] ?? item['price'],
+          }));
+    if (productLines.some(line => !this.asString(line['id'] ?? line['recipeId']) || !Number.isInteger(Number(line['qty'] ?? line['quantity'])) || Number(line['qty'] ?? line['quantity']) < 1 || !Number.isFinite(Number(line['price'] ?? line['unitPrice'])) || Number(line['price'] ?? line['unitPrice']) < 0)) {
+      throw new Error('Revisa los productos, cantidades y precios del pedido.');
+    }
+    const feeValue = changes.shippingFee === undefined
+      ? this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? rawLines.find(line => this.asString(line['id']).toLocaleLowerCase() === 'shipping')?.['price'] ?? 0)
+      : Number(changes.shippingFee);
+    if (!Number.isFinite(feeValue) || feeValue < 0) throw new Error('El costo de envío debe ser un valor válido igual o mayor que cero.');
+    const shippingFee = Math.round(feeValue * 100) / 100;
+    const deliveryDate = (changes.deliveryDate ?? this.asString(current['deliveryDate'] ?? current['date'])).trim();
+    const deliveryMethod = (changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption'])).trim();
+    const deliveryTime = (changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot'])).trim();
+    const zone = (changes.zone ?? this.asString(current['zone'] ?? current['deliveryZone'] ?? current['deliveryArea'])).trim();
+    const isPickup = deliveryMethod.toLocaleLowerCase('es').includes('retiro') || zone.toLocaleLowerCase('es') === 'retiro en tienda';
+    const requestedDeliveryAddress = (changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address'])).trim();
+    const deliveryAddress = requestedDeliveryAddress || (isPickup ? '' : this.asString(rawCustomer['address']).trim());
+    const notes = (changes.notes ?? this.asString(current['notes'])).trim();
+    const status = changes.status ?? this.normalizeOrderStatus(this.asString(current['status']));
+    const isPaid = changes.isPaid ?? (current['isPaid'] === true || current['paymentStatus'] === 'PAID' || current['paymentStatus'] === 'paid');
+    const paymentMethod = isPaid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '';
+    const subtotal = productLines.reduce((sum, line) => sum + Number(line['qty'] ?? line['quantity'] ?? 0) * Number(line['price'] ?? line['unitPrice'] ?? 0), 0);
+    const updatedLines = [...productLines];
     const updated: RawRecord = {
       ...current,
-      ...changes,
-      ...(rawLines.length ? { lines: updatedLines } : {}),
+      id: orderId,
+      customerId,
+      lines: updatedLines,
       deliveryDate,
-      date: deliveryDate || current['date'],
-      deliveryMethod: changes.deliveryMethod ?? this.asString(current['deliveryMethod'] ?? current['deliveryType'] ?? current['deliveryOption']),
-      deliveryAddress: changes.deliveryAddress ?? this.asString(current['deliveryAddress'] ?? current['shippingAddress'] ?? current['address']),
-      deliveryTime: changes.deliveryTime ?? this.asString(current['deliveryTime'] ?? current['deliverySlot']),
+      deliveryMethod,
+      deliveryTime,
       zone,
+      notes,
+      status,
       shippingFee,
-      total: rawLines.length ? Math.round((subtotal + shippingFee) * 100) / 100 : this.asNumber(current['total']),
-      isPaid: paid,
-      paymentStatus: paid ? 'PAID' : 'PENDING',
-      paymentMethod: paid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '',
+      total: Math.round((subtotal + shippingFee) * 100) / 100,
+      isPaid,
+      paymentStatus: isPaid ? 'PAID' : 'PENDING',
+      paymentMethod,
     };
+    for (const key of ['customer', 'phone', 'address', 'deliveryAddress', 'code', 'date', 'deliveryFee', 'shipping', 'shippingAddress', 'deliveryType', 'deliveryOption', 'paymentType', 'items']) delete updated[key];
+    if (changes.items !== undefined) {
+      delete updated['boxes'];
+      delete updated['boxOrders'];
+    }
+    const customerWithDefault = !this.asString(rawCustomer['address']).trim() && deliveryAddress && !isPickup
+      ? { ...rawCustomer, address: deliveryAddress }
+      : rawCustomer;
+    if (deliveryAddress && deliveryAddress !== this.asString(customerWithDefault['address']).trim()) updated['deliveryAddress'] = deliveryAddress;
+    const nextCustomers = customers.map(item =>
+      this.asString(item['id'] ?? item['customerId']) === customerId ? customerWithDefault : item,
+    );
     const nextOrders = [...rawOrders];
     nextOrders[index] = updated;
-    const nextState = { ...state, orders: nextOrders };
-    await this.applyOptimisticState(state, nextState, () => this.repository.upsertCollectionRecord('orders', orderId, updated));
+    const nextState = { ...state, customers: nextCustomers, orders: nextOrders };
+    await this.applyOptimisticState(state, nextState, async () => {
+      if (customerWithDefault !== rawCustomer) await this.repository.upsertCollectionRecord('customers', customerId, customerWithDefault);
+      await this.repository.upsertCollectionRecord('orders', orderId, updated);
+    });
     void this.refreshPendingOrderCount().catch(() => undefined);
   }
 
@@ -566,25 +733,13 @@ export class DataService implements OnDestroy {
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const state = this.rawState();
-    if (!state) {
-      throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
-    }
-
+    if (!state) throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
     const rawOrders = this.asArray(state['orders']);
-    const orderIndex = rawOrders.findIndex(
-      (item) => this.asString(item['id'] ?? item['code']) === orderId,
-    );
-    if (orderIndex < 0) {
-      throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
-    }
-
+    const orderIndex = rawOrders.findIndex(item => this.asString(item['id'] ?? item['code']) === orderId);
+    if (orderIndex < 0) throw new Error('No se encontró el pedido. Actualiza la pantalla e inténtalo de nuevo.');
     const currentOrder = rawOrders[orderIndex];
     const currentStatus = this.normalizeOrderStatus(this.asString(currentOrder['status']));
     if (currentStatus === status) return;
-    if (currentStatus !== 'PENDING') {
-      throw new Error('Solo se pueden actualizar pedidos que todavía están pendientes.');
-    }
-
     const updatedOrder: RawRecord = { ...currentOrder, status };
     const nextOrders = [...rawOrders];
     nextOrders[orderIndex] = updatedOrder;
@@ -704,6 +859,7 @@ export class DataService implements OnDestroy {
     }
 
     const customerMap = new Map<string, Customer>();
+    const customersById = new Map(this.asArray(state['customers']).map(customer => [this.asString(customer['id'] ?? customer['customerId']), customer]));
     const normalizedOrders = rawOrders.map((item) => {
       const name = this.asString(item['customer'], 'Cliente sin nombre');
       const phone = this.asOptionalString(item['phone']);
@@ -730,11 +886,17 @@ export class DataService implements OnDestroy {
       const shippingLine = lines.find(line => this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase() === 'shipping'
         || this.asString(line['name']).toLocaleLowerCase().startsWith('envío'));
       const shippingFee = this.asNumber(item['shippingFee'] ?? item['deliveryFee'] ?? item['shipping'] ?? shippingLine?.['price'] ?? 0);
-      const rawAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
+      const linkedCustomer = customersById.get(this.asString(item['customerId']));
+      const explicitAddress = this.asOptionalString(item['deliveryAddress'] ?? item['shippingAddress'] ?? item['address']);
       const addressPrefix = zone ? zone + ' — ' : '';
-      const deliveryAddress = rawAddress?.startsWith(addressPrefix) && addressPrefix
-        ? rawAddress.slice(addressPrefix.length)
-        : rawAddress;
+      const cleanedAddress = explicitAddress?.startsWith(addressPrefix) && addressPrefix
+        ? explicitAddress.slice(addressPrefix.length)
+        : explicitAddress;
+      const isPickup = (zone ?? '').toLocaleLowerCase('es').includes('retiro') || this.asString(item['deliveryMethod'] ?? item['deliveryType']).toLocaleLowerCase('es').includes('retiro');
+      const defaultAddress = this.asOptionalString(linkedCustomer?.['address']);
+      const addressMatchesDefault = Boolean(cleanedAddress && defaultAddress
+        && cleanedAddress.trim().toLocaleLowerCase('es') === defaultAddress.trim().toLocaleLowerCase('es'));
+      const deliveryAddress = addressMatchesDefault ? defaultAddress : cleanedAddress ?? (!isPickup ? defaultAddress : undefined);
       const cookieLines = lines.filter(line => {
         const id = this.asString(line['id'] ?? line['recipeId']).toLocaleLowerCase();
         return id !== 'shipping' && !this.asString(line['name']).toLocaleLowerCase().startsWith('envío');
@@ -805,6 +967,8 @@ export class DataService implements OnDestroy {
   private asString(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value : value == null ? fallback : String(value);
   }
+
+  private normalizePhone(value: string): string { return value.replace(/\D/g, '').replace(/^593/, '0'); }
 
   private asOptionalNumber(value: unknown): number | undefined {
     return typeof value === 'number' && Number.isFinite(value) ? value : undefined;

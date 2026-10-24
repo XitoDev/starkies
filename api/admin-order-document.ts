@@ -31,12 +31,24 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const url = new URL(req.url ?? '/', 'https://starkies.lat');
     const orderId = url.searchParams.get('orderId') ?? '';
-    if (!/^SK-\d{8}-[A-F0-9]{6}$/.test(orderId)) { res.status(400).json({ message: 'Identificador de pedido no válido.' }); return; }
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) { res.status(400).json({ message: 'Identificador de pedido no válido.' }); return; }
     const snapshot = await getDatabase().doc(['orders',orderId].join('/')).get();
     if (!snapshot.exists) { res.status(404).json({ message: 'No encontramos este pedido.' }); return; }
     const record = snapshot.data() as StoredOrder | undefined;
     if (!record) { res.status(404).json({ message: 'No encontramos los detalles del pedido.' }); return; }
-    const pdf = buildOrderPdf(record, orderId);
+    const customerId = typeof record.customerId === 'string' ? record.customerId : '';
+    const customerSnapshot = customerId ? await getDatabase().doc('customers/' + customerId).get() : null;
+    const customer = customerSnapshot?.exists ? customerSnapshot.data() : undefined;
+    const pdfRecord: StoredOrder = {
+      ...record,
+      customer: typeof record.customer === 'string' && record.customer.trim() ? record.customer : customer?.['name'],
+      phone: typeof record.phone === 'string' && record.phone.trim() ? record.phone : customer?.['phone'],
+      address: typeof record.deliveryAddress === 'string' && record.deliveryAddress.trim()
+        ? record.deliveryAddress
+        : typeof record.address === 'string' && record.address.trim() ? record.address : customer?.['address'],
+      deliveryFee: record.shippingFee ?? record.deliveryFee,
+    };
+    const pdf = buildOrderPdf(pdfRecord, orderId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="pedido-' + orderId + '.pdf"');
     res.setHeader('Content-Length', String(pdf.length));

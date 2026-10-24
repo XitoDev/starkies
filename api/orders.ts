@@ -105,7 +105,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       id: customerId,
       name: order.name,
       phone: order.phone,
-      address: order.zoneName === 'Retiro en tienda' ? (existingCustomerValue?.['address'] ?? '') : order.address,
+      // Keep the first real delivery address as the customer default; later orders retain their own address on the order record.
+      address: order.zoneName === 'Retiro en tienda' ? (existingCustomerValue?.['address'] ?? '') : (String(existingCustomerValue?.['address'] ?? '').trim() || order.address),
     };
 
     const orderRecord = {

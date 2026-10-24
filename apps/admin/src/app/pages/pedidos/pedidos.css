@@ -29,3 +29,23 @@
 .order-row-actions .order-delete-button { color: #a44855 !important; }
 .order-row-actions .order-delete-button:hover { border-color: #f0d3d5 !important; background: #fff2f2 !important; color: #a44855 !important; }
 .order-row-actions mat-icon { width: 19px; height: 19px; font-size: 19px; }
+
+
+/* Acciones y vistas unificadas de pedidos y clientes. */
+.tabs-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.register-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;white-space:nowrap}
+.register-button mat-icon{width:19px;height:19px;font-size:19px}
+.customer-view-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:0 13px;border:1px solid #e8e0ed;border-radius:10px;background:#fff;color:#6c5b79;white-space:nowrap}
+.customer-view-toggle mat-icon{width:19px;height:19px;font-size:19px}
+.status-trigger{display:inline-flex;align-items:center;gap:4px;border:0;cursor:pointer;font:inherit}
+.status-trigger mat-icon{width:15px;height:15px;font-size:15px}
+.customer-name-link,.customer-table-link{color:inherit;text-decoration:none}
+.customer-name-link:hover,.customer-table-link:hover strong{color:#8056ad;text-decoration:underline}
+.customers-table-card{overflow:visible;border:1px solid #eee7f2;border-radius:14px;background:#fff}
+.customers-table{min-width:760px}
+.customers-table td{vertical-align:middle}
+.customers-table .customer-table-link{display:flex;align-items:center;gap:10px;min-width:160px}
+.customers-table .customer-table-link strong{color:#5c4b66;font-weight:600}
+.customers-table .small-avatar{width:35px;height:35px;flex:0 0 35px;border-radius:12px;font-size:11px}
+.customers-table .customer-address-cell{max-width:260px;white-space:normal;line-height:1.5}
+@media(max-width:760px){.tabs-row{align-items:stretch;flex-direction:column}.tabs-row .tabs{width:100%}.tabs-row .tabs button{flex:1}.register-button{width:100%}.toolbar{flex-wrap:wrap}.customer-view-toggle{width:100%}}
