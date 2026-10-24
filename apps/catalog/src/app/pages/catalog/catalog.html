@@ -7,7 +7,7 @@
   <nav class="main-nav" aria-label="Navegación principal">
     <a matButton="text" class="nav-link" href="/">Inicio</a>
     <a matButton="text" class="nav-link active" href="/menu">Catálogo</a>
-    <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Ir al catálogo y preparar pedido" (click)="openOrderSheet(); $event.preventDefault()">
+    <a matButton="text" class="header-cart" href="#presentaciones" aria-label="Abrir el pedido" (click)="openOrderSheet(); $event.preventDefault()">
       <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
       <span class="cart-count">{{ completedBoxes().length }}</span>
     </a>
@@ -20,21 +20,6 @@
       <button matIconButton type="button" class="success-close" aria-label="Cerrar confirmación" (click)="orderSuccess.set(null)"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
     </section>
   }
-<section class="about-section" id="sobre-starkies" aria-labelledby="about-title">
-    <div class="about-art">
-      <span class="about-orbit" aria-hidden="true"></span>
-      <img src="/images/chispas-chocolate-classic.webp" alt="Galleta artesanal con chispas de chocolate" loading="lazy">
-      <span class="about-spark" aria-hidden="true">✦</span>
-    </div>
-    <div class="about-copy">
-      <div class="eyebrow">UN POCO DE NOSOTROS</div>
-      <h2 id="about-title">Hechas con cariño,<br><span>para compartir.</span></h2>
-      <p>En StarKies creemos que los mejores momentos empiezan con algo dulce. Preparamos galletas artesanales con sabores especiales, texturas irresistibles y ese toque casero que convierte cada bocado en un pequeño motivo para sonreír.</p>
-      <p>Elige tus favoritas, combina tus sabores y crea una caja hecha a tu manera.</p>
-      <a matButton="elevated" class="editorial-button" href="#presentaciones">Conoce el catálogo <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
-    </div>
-  </section>
-
   <section class="presentation-section" id="presentaciones" aria-labelledby="box-title">
     <div class="section-title">
       <div><div class="eyebrow">HECHAS PARA COMPARTIR</div><h2 id="box-title">Elige tu caja</h2><p class="small">Combina tus favoritas y crea una caja tan única como tú.</p></div>
@@ -81,17 +66,7 @@
     @if (!catalogLoading() && !catalogLoadError() && filteredProducts().length === 0) { <div class="empty-results"><span aria-hidden="true">♡</span><h3>{{ products().length === 0 ? 'Estamos preparando nuestro catálogo' : 'No encontramos ese sabor' }}</h3><p>{{ products().length === 0 ? 'En este momento no hay sabores publicados. Vuelve a intentarlo más tarde.' : 'Prueba con otro nombre o cambia tu búsqueda.' }}</p><button matButton="outlined" type="button" (click)="retryCatalog()">Actualizar catálogo</button></div> }
   </section>
 
-<section class="order-cta" id="como-pedir" aria-labelledby="order-cta-title">
-    <div class="order-cta-copy">
-      <div class="eyebrow">LA ESTRELLA ERES TÚ</div>
-      <h2 id="order-cta-title">¿Lista para pedir?</h2>
-      <p>Arma tu caja con tus sabores favoritos y sigue los pasos para coordinar tu pedido con StarKies.</p>
-      <a matButton="elevated" class="cta-button" href="#presentaciones">Armar mi caja <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></a>
-    </div>
-    <div class="order-cta-art" aria-hidden="true"><img src="/images/choco-meteor.webp" alt="" loading="lazy"></div>
-  </section>
-
-</main>
+  </main>
 
 \n<footer class="site-footer" id="contacto" aria-label="Información y contacto de StarKies">
   <div class="footer-content footer-contact-content">
