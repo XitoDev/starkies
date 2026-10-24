@@ -1,0 +1,36 @@
+:host { display:block; background:#fbf8f5; color:#261f29; font-family:'DM Sans',Arial,sans-serif; }
+    * { box-sizing:border-box; }
+    .privacy-page { min-height:60vh; padding:0 6% 80px; }
+    .privacy-hero { max-width:960px; margin:0 auto; padding:40px 0 34px; border-bottom:1px solid #e9dfe5; }
+    .back-link { display:inline-flex; margin-bottom:32px; color:#604a59; font-size:13px; font-weight:700; text-decoration:none; }
+    .back-link:hover, .policy-content a:not(.primary-link):hover { text-decoration:underline; text-underline-offset:3px; }
+    .eyebrow { margin:0 0 12px; color:#806c79; font-size:11px; font-weight:800; letter-spacing:2px; }
+    h1 { margin:0; color:#604a59; font:clamp(38px,6vw,62px)/1.12 'Shrikhand',Georgia,serif; font-weight:400; }
+    .intro { max-width:760px; margin:18px 0 14px; color:#655963; font-size:clamp(15px,2vw,18px); line-height:1.8; }
+    .updated { margin:0; color:#837781; font-size:12px; }
+    .policy-content { max-width:820px; margin:0 auto; padding-top:16px; }
+    .policy-content section { padding:22px 0; border-bottom:1px solid #e9dfe5; }
+    h2 { margin:0 0 12px; color:#604a59; font-size:20px; line-height:1.4; }
+    p, li { color:#5f5660; font-size:14px; line-height:1.85; }
+    p { margin:0 0 12px; }
+    p:last-child { margin-bottom:0; }
+    ul { margin:0 0 12px; padding-left:22px; }
+    li { margin:0 0 7px; padding-left:3px; }
+    .policy-content a:not(.primary-link) { color:#604a59; text-underline-offset:3px; }
+    .policy-actions { display:flex; flex-wrap:wrap; gap:12px; padding-top:28px; }
+    .primary-link, .secondary-link { display:inline-flex; min-height:44px; align-items:center; justify-content:center; padding:12px 18px; border:1px solid #604a59; border-radius:8px; font-size:13px; font-weight:700; text-decoration:none; }
+    .primary-link { background:#604a59; color:#fff; }
+    .primary-link:hover { background:#4a3745; }
+    .secondary-link { background:transparent; color:#604a59; }
+    .secondary-link:hover { background:#f0e5eb; }
+    .primary-link:focus-visible, .secondary-link:focus-visible, .back-link:focus-visible { outline:3px solid #b89cab; outline-offset:3px; }
+    @media (max-width:560px) {
+      .privacy-page { padding:0 5% 54px; }
+      .privacy-hero { padding-top:28px; }
+      .back-link { margin-bottom:24px; }
+      .policy-content section { padding:19px 0; }
+      h2 { font-size:18px; }
+      p, li { font-size:13px; }
+      .policy-actions { flex-direction:column; }
+      .primary-link, .secondary-link { width:100%; }
+    }

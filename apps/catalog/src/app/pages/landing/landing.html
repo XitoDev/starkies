@@ -1,0 +1,64 @@
+<div class="landing-content">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="side-stars" aria-hidden="true">
+      <span class="left s1">✦</span><span class="left s2">✧</span><span class="left s3">✦</span><span class="left s4">✧</span><span class="left s5">✦</span><span class="left s6">✧</span>
+      <span class="right s1">✧</span><span class="right s2">✦</span><span class="right s3">✧</span><span class="right s4">✦</span><span class="right s5">✧</span><span class="right s6">✦</span>
+    </div>
+    <div class="hero-copy">
+      <p class="eyebrow">GALLETAS HECHAS CON AMOR</p>
+      <h1 id="hero-title">La estrella<br>eres tú.</h1>
+      <p class="hero-description">Galletas irresistibles para los momentos que merecen algo especial. Elige tus favoritas, arma tu caja y disfruta cada mordida.</p>
+      <a class="primary-button" routerLink="/menu">Ver catálogo</a>
+    </div>
+  </section>
+
+  <section class="section brownie-story" aria-labelledby="brownie-story-title">
+    <div class="story-image-wrap">
+      <img src="/images/starkies-brownie-cookie.webp" alt="Brownie Classic, la galleta de chocolate insignia de StarKies" width="1000" height="1000" loading="lazy">
+    </div>
+    <div class="story-copy">
+      <p class="eyebrow">Nuestra historia</p>
+      <span class="story-label">Nuestra más vendida</span>
+      <h2 id="brownie-story-title">La galleta con la que empezó todo</h2>
+      <p>Brownie Classic fue la primera galleta que horneamos en StarKies. Nació de una idea sencilla: llevar el sabor reconfortante de un brownie a una galleta que puedas disfrutar en cualquier momento.</p>
+      <p>Su sabor suave y su apariencia evocan un brownie tradicional, con ese aspecto casero que la hace tan especial, pero hecho galleta. Hoy es nuestra galleta insignia y la más vendida de StarKies.</p>
+      <a class="primary-button" routerLink="/menu">Prueba Brownie Classic</a>
+    </div>
+  </section>
+
+  <section class="quote-section" id="pedido-personalizado" aria-labelledby="quote-title">
+    <div class="quote-inner">
+      <div class="quote-intro">
+        <p class="eyebrow">Momentos especiales</p>
+        <h2 id="quote-title">¿Tienes una ocasión especial?</h2>
+        <p>Cuéntanos tu idea y cotizamos galletas personalizadas para cumpleaños, celebraciones, regalos y mucho más.</p>
+      </div>
+      <form #quoteForm="ngForm" class="quote-form" (ngSubmit)="sendQuote(quoteForm)">
+        <div class="field">
+          <label for="quote-phone">Teléfono / WhatsApp <span aria-hidden="true">*</span></label>
+          <input id="quote-phone" name="phone" [(ngModel)]="phone" required minlength="7" maxlength="20" pattern="[0-9+() .-]{7,20}" autocomplete="tel" placeholder="Tu número de contacto">
+        </div>
+        <div class="field">
+          <label for="quote-name">Nombre <span aria-hidden="true">*</span></label>
+          <input id="quote-name" name="name" [(ngModel)]="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="¿Cómo te llamas?">
+        </div>
+        <div class="field">
+          <label for="quote-quantity">Cantidad aproximada (opcional)</label>
+          <input id="quote-quantity" name="quantity" [(ngModel)]="quantity" type="number" min="1" max="5000" step="1" placeholder="Ej. 24">
+        </div>
+        <div class="field">
+          <label for="quote-type">Tipo de galletas (opcional)</label>
+          <select id="quote-type" name="cookieType" [(ngModel)]="cookieType">
+            <option value="">Aún no lo sé</option><option value="Clásicas">Clásicas</option><option value="NY Style">NY Style</option><option value="Mixtas">Mixtas</option><option value="Decoradas / personalizadas">Decoradas / personalizadas</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="quote-notes">Cuéntanos qué tienes en mente <span aria-hidden="true">*</span></label>
+          <textarea id="quote-notes" name="notes" [(ngModel)]="notes" required rows="3" maxlength="2000" placeholder="Ocasión, temática, colores, fecha y cualquier detalle que quieras compartir..."></textarea>
+        </div>
+        <button class="primary-button full submit-button" type="submit">Solicitar cotización</button>
+        @if (formError) { <p class="form-error full" role="alert">{{ formError }}</p> }
+      </form>
+    </div>
+  </section>
+</div>
