@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Component, computed, effect, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Component, computed, effect, inject, signal, PLATFORM_ID, PendingTasks } from '@angular/core';
 import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
@@ -23,6 +23,7 @@ let publicCatalogCache: CachedPublicCatalog | null = null;
 export class Catalog {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
+  private readonly pendingTasks = inject(PendingTasks);
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
   zones: DeliveryZone[] = [];
@@ -206,6 +207,7 @@ export class Catalog {
       this.catalogLoading.set(false);
       return;
     }
+    const finishPendingTask = this.pendingTasks.add();
     try {
       const apiUrl = baseUri ? new URL('/api/catalog', baseUri).toString() : '/api/catalog';
       const response = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
@@ -236,6 +238,7 @@ export class Catalog {
       }
     } finally {
       this.catalogLoading.set(false);
+      finishPendingTask();
     }
   }
   private applyPublicCatalog(cache: CachedPublicCatalog): void {
