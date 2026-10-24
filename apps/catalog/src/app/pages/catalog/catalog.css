@@ -474,3 +474,123 @@
   z-index: 15;
   backdrop-filter: blur(14px);
 }
+
+
+/* Final menu direction: simple, classic and aligned with the approved landing. */
+:host .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 76px;
+  padding: 12px clamp(20px, 5vw, 76px);
+  background: rgb(255 255 255 / 94%);
+  border-bottom: 1px solid #e9dfe5;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 5%);
+  backdrop-filter: blur(14px);
+}
+:host .brand-symbol { display: none; }
+:host .brand-lockup { gap: 0; }
+:host .wordmark {
+  color: #735363;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+:host .wordmark-star { color: #735363; }
+:host .brand-tagline { display: none; }
+:host .main-nav { gap: 26px; }
+:host .main-nav a.nav-link { font-size: 1rem; font-weight: 500; }
+:host .main-nav a.nav-link.active::after { background: #806c79; }
+:host .header-cart {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border-radius: 50%;
+  color: #604a59;
+}
+:host .header-cart mat-icon { width: 26px; height: 26px; font-size: 26px; }
+:host .cart-count {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #604a59;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+:host .presentation-section {
+  padding: clamp(38px, 5vw, 64px) clamp(20px, 6vw, 88px);
+  background: #fbf8f5;
+  color: #4a3f4b;
+}
+:host .presentation-section .section-title,
+:host .presentation-section .catalog-heading { color: #4a3f4b; }
+:host .presentation-section .eyebrow { color: #806c79; }
+:host .presentation-section .section-title h2,
+:host .presentation-section .catalog-heading h2 {
+  color: #5c4253;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-weight: 400;
+}
+:host .presentation-section .small,
+:host .presentation-section .catalog-count { color: #806c79; }
+:host .presentation-section .presentation-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: none;
+}
+:host .presentation-section .presentation-card.active {
+  border: 2px solid #806c79;
+  background: #f7eff3;
+}
+:host .presentation-section .presentation-description,
+:host .presentation-section .choose-label { color: #806c79; }
+:host .presentation-section .catalog-hint {
+  border: 1px solid #e9dfe5;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a3f4b;
+}
+:host .presentation-section .catalog-hint strong { color: #4a3f4b; }
+:host .presentation-section .category-title { color: #5c4253; }
+:host .presentation-section .product {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 4%);
+}
+:host .presentation-section .product:hover {
+  border-color: #c1a0ac;
+  box-shadow: 0 8px 24px rgb(74 63 75 / 9%);
+}
+:host .presentation-section .add-button,
+:host .presentation-section .dock-continue,
+:host .presentation-section .dock-order {
+  border-radius: 9px;
+  background: #604a59;
+  color: #fff;
+}
+:host .cart-dock .dock-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: 0 10px 32px rgb(74 63 75 / 12%);
+}
+:host .cart-dock progress { accent-color: #806c79; }
+@media (max-width: 520px) {
+  :host .site-header { padding: 12px 16px; }
+  :host .main-nav { gap: 12px; }
+  :host .main-nav a.nav-link { font-size: .9rem; }
+}
