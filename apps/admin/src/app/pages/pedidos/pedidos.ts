@@ -190,7 +190,7 @@ export class Pedidos implements OnDestroy {
     this.notice.set('');
     this.error.set('');
     try {
-      await this.data.loadFromCloud();
+      await this.data.loadFromCloud(undefined, true);
       if (this.data.error()) this.error.set(this.data.error());
       else this.notice.set('Datos actualizados desde Firebase.');
     } catch (error) {

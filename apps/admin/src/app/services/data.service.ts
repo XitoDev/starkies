@@ -75,12 +75,13 @@ export class DataService implements OnDestroy {
     void this.refreshPendingOrders().catch(() => undefined);
   }
 
-  async loadFromCloud(collectionKeys?: string[]): Promise<void> {
+  async loadFromCloud(collectionKeys?: string[], forceRefresh = false): Promise<void> {
     if (!this.firebase.isConfigured) {
       this.error.set(this.firebase.configurationMessage);
       return;
     }
 
+    if (forceRefresh && !collectionKeys) this.repository.invalidateStateCache();
     this.loading.set(true);
     this.error.set('');
     const revisionAtStart = this.cloudRevision;
