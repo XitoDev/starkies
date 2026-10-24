@@ -69,3 +69,24 @@ export function escapeXml(value: string): string {
   };
   return value.replace(/[&<>"']/g, character => entities[character] ?? character);
 }
+
+export function buildShippingDetails(zones: Array<{ name: string; fee: number }>): Array<Record<string, unknown>> {
+  return zones
+    .filter(zone => {
+      const name = zone.name.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('es');
+      return !name.includes('retiro') && Number.isFinite(zone.fee) && zone.fee >= 0;
+    })
+    .map(zone => ({
+      '@type': 'OfferShippingDetails',
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'EC',
+        name: zone.name,
+      },
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: zone.fee.toFixed(2),
+        currency: 'USD',
+      },
+    }));
+}
