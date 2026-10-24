@@ -93,6 +93,7 @@ describe('DataService catalog visibility', () => {
     expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       '000015',
       expect.objectContaining({ id: '000015', catalogVisible: false }),
+      true,
     );
     expect(service.rawState()?.['catalogDrafts']).toEqual([expect.objectContaining({ id: '000015', visible: false })]);
     expect(service.recipes()[0].catalogVisible).toBe(false);
@@ -110,6 +111,7 @@ describe('DataService catalog visibility', () => {
     expect(repository.upsertRecipeAndCatalogProjection).toHaveBeenCalledWith(
       '000015',
       expect.objectContaining({ catalogVisible: true, catalogLabel: 'Favorita' }),
+      true,
     );
     expect(service.rawState()?.['catalogDrafts']).toEqual([expect.objectContaining({ id: '000015', visible: true, label: 'Favorita' })]);
     expect(service.recipes()[0].catalogVisible).toBe(true);
