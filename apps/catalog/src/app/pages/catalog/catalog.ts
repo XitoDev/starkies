@@ -140,7 +140,22 @@ export class Catalog {
       this.catalogLoading.set(false);
     }
   }
-  formatPresentationPrice(price: number): string { return '$' + price.toFixed(2).replace('.', ','); }
+  getPresentationTitle(presentation: BoxPresentation): string {
+    switch (presentation.id) {
+      case 'clasicas': return 'Caja de 10 clásicas';
+      case 'ny': return 'Caja de 6 NY Style';
+      case 'mixta': return 'Caja mixta';
+      default: return presentation.name;
+    }
+  }
+  getPresentationDescription(presentation: BoxPresentation): string {
+    switch (presentation.id) {
+      case 'clasicas': return '10 galletas clásicas';
+      case 'ny': return '6 galletas NY Style';
+      case 'mixta': return '4 clásicas + 4 NY Style';
+      default: return presentation.desc;
+    }
+  }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
   setCategoryFilter(value: string): void {
     if (value === 'Todas') { this.categoryFilter.set('Todas'); return; }
