@@ -46,13 +46,30 @@ describe('Catalog', () => {
     expect(component.products().length).toBe(13);
     expect(component.presentations).toEqual(BOX_PRESENTATIONS);
     expect(component.zones).toEqual(TEST_ZONES);
+    expect(component.fulfillmentMode()).toBe('pickup');
+    expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
   });
 
-  it('renders concise category headings without the repeated eyebrow', () => {
-    const headings = [...fixture.nativeElement.querySelectorAll('.category-title') as NodeListOf<HTMLElement>]
-      .map(heading => heading.textContent?.trim());
-    expect(headings).toEqual(['Clásicas', 'NY Style']);
-    expect(fixture.nativeElement.querySelectorAll('.category-title .category-eyebrow')).toHaveLength(0);
+  it('renders the approved compact category filter row', () => {
+    const filters = [...fixture.nativeElement.querySelectorAll('.filter-button') as NodeListOf<HTMLElement>]
+      .map(button => button.textContent?.trim());
+    expect(filters).toEqual(['Todas', 'Clásicas', 'NY Style']);
+    expect(fixture.nativeElement.querySelectorAll('.category-title')).toHaveLength(0);
+  });
+
+  it('matches the approved HTML box-card labels without adding price rows', () => {
+    const choices = [...fixture.nativeElement.querySelectorAll('.box-choice') as NodeListOf<HTMLElement>];
+    expect(choices.map(choice => choice.querySelector('strong')?.textContent?.trim())).toEqual([
+      'Caja de 10 clásicas',
+      'Caja de 6 NY Style',
+      'Caja mixta',
+    ]);
+    expect(choices.map(choice => choice.querySelector('small')?.textContent?.trim())).toEqual([
+      '10 galletas clásicas',
+      '6 galletas NY Style',
+      '4 clásicas + 4 NY Style',
+    ]);
+    expect(fixture.nativeElement.querySelectorAll('.box-choice-bottom')).toHaveLength(0);
   });
 
   it('places new cookies first, the best seller second, and least-sold cookies before the second best seller', () => {
@@ -71,22 +88,41 @@ describe('Catalog', () => {
     expect(ranked[1].tag).toBe('Más vendida');
   });
 
+  it('filters products by the selected category', () => {
+    component.setCategoryFilter('Galletas NY');
+    expect(component.filteredProducts().every(product => product.isNy)).toBe(true);
+    component.setCategoryFilter('Todas');
+    expect(component.filteredProducts().length).toBeGreaterThan(1);
+  });
+
+  it('counts the selected cookies and marks a completed box for the cart tooltip', () => {
+    component.selectPresentation(BOX_PRESENTATIONS[0]);
+    for (let index = 0; index < 10; index += 1) component.changeQuantity('1', 1);
+    expect(component.cartItemCount()).toBe(10);
+    expect(component.isBoxComplete()).toBe(true);
+  });
+
   it('filters products by name and description', () => {
     component.setTabSearch('carrot');
     expect(component.filteredProducts().map(product => product.name)).toEqual(['Sunny Carrot']);
   });
 
-  it('shows only the cookie category allowed by the selected box', () => {
-    component.selectPresentation(BOX_PRESENTATIONS[0]);
-    expect(component.categories()).toEqual(['Galletas clásicas']);
-    expect(component.filteredProducts().every(product => !product.isNy)).toBe(true);
+  it('keeps both category filters visible and disables flavours incompatible with the selected box', () => {
+    expect(component.selectedPresentation().id).toBe('clasicas');
+    expect(component.categories()).toEqual(['Galletas clásicas', 'Galletas NY']);
+    expect(component.filteredProducts()).toHaveLength(13);
+    expect(component.canAddProduct('6')).toBe(false);
 
-    component.selectPresentation(BOX_PRESENTATIONS[1]);
-    expect(component.categories()).toEqual(['Galletas NY']);
+    component.setCategoryFilter('Galletas NY');
     expect(component.filteredProducts().every(product => product.isNy)).toBe(true);
 
+    component.selectPresentation(BOX_PRESENTATIONS[1]);
+    expect(component.categoryFilter()).toBe('Galletas NY');
+    expect(component.canAddProduct('6')).toBe(true);
+
     component.selectPresentation(BOX_PRESENTATIONS[2]);
-    expect(component.categories()).toEqual(['Galletas clásicas', 'Galletas NY']);
+    expect(component.categoryFilter()).toBe('Todas');
+    expect(component.filteredProducts()).toHaveLength(13);
   });
 
   it('prevents adding unavailable cookies', () => {

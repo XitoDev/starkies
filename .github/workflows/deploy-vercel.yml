@@ -89,9 +89,9 @@ jobs:
             npx ng test admin --watch=false
           else
             npx ng build catalog --configuration production
-            HTML_FILE="$(find dist/catalog -type f -name index.html -exec grep -li 'Elige tu caja' {} + | head -n 1)"
+            HTML_FILE="$(find dist/catalog -type f -name index.html -exec grep -liE 'Elige (tu caja|tus galletas)' {} + | head -n 1)"
             if [ -z "$HTML_FILE" ]; then
-              echo "::error::No prerendered catalog page containing 'Elige tu caja' was found."
+              echo "::error::No prerendered catalog page containing the expected catalog heading was found."
               find dist/catalog -type f -name index.html -print
               exit 1
             fi

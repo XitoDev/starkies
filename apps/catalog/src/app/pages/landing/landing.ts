@@ -1,31 +1,29 @@
 import { Component } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { FormsModule, NgForm } from '@angular/forms';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, MatIconModule],
   template: `
     <header class="site-header">
       <a class="brand" href="/" aria-label="StarKies, inicio"><span class="brand-name">StarKies <span aria-hidden="true">✦</span></span></a>
       <nav aria-label="Navegación principal">
         <a class="nav-link active" href="/">Inicio</a>
         <a class="nav-link" href="/menu">Catálogo</a>
+        <a class="cart-trigger" href="/menu" aria-label="Ir al catálogo para revisar tu pedido" title="Mi pedido">
+          <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon><span class="cart-badge">0</span>
+        </a>
       </nav>
     </header>
+    <div class="side-stars" aria-hidden="true">
+      <span class="left s1">✦</span><span class="left s2">✧</span><span class="left s3">✦</span><span class="left s4">✧</span>
+      <span class="right s1">✧</span><span class="right s2">✦</span><span class="right s3">✧</span><span class="right s4">✦</span>
+    </div>
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
-        <div class="starfield" aria-hidden="true">
-          <span class="star star-a">✦</span><span class="star star-b">✧</span><span class="star star-c">✦</span>
-          <span class="star star-d">✧</span><span class="star star-e">✦</span><span class="star star-f">✧</span>
-          <span class="star star-g">✦</span><span class="star star-h">✧</span><span class="star star-i">✦</span>
-          <span class="star star-j">✧</span><span class="star star-k">✦</span><span class="star star-l">✧</span>
-          <span class="star star-m">✦</span><span class="star star-n">✧</span><span class="star star-o">✦</span>
-          <span class="star star-p">✧</span><span class="star star-q">✦</span><span class="star star-r">✧</span>
-          <span class="star star-s">✦</span><span class="star star-t">✧</span><span class="star star-u">✦</span>
-          <span class="star star-v">✧</span><span class="star star-w">✦</span><span class="star star-x">✧</span>
-        </div>
         <div class="hero-copy">
           <p class="eyebrow">GALLETAS HECHAS CON AMOR</p>
           <h1 id="hero-title">La estrella<br>eres tú.</h1>
@@ -34,85 +32,150 @@ import { FormsModule, NgForm } from '@angular/forms';
         </div>
       </section>
 
-      <section class="quote-section" id="cotizar" aria-labelledby="quote-title">
-        <div class="quote-copy">
-          <p class="eyebrow">PARA TUS MOMENTOS ESPECIALES</p>
-          <h2 id="quote-title">¿Tienes una idea dulce en mente?</h2>
-          <p>Cuéntanos qué imaginas para tu cumpleaños, celebración, regalo o evento. Te ayudaremos a convertirlo en galletas especiales.</p>
+      <section class="section features-section" aria-labelledby="features-title">
+        <p class="eyebrow">Una experiencia deliciosa</p>
+        <h2 id="features-title">Pequeños momentos, grandes sabores</h2>
+        <div class="features">
+          <article class="feature"><span aria-hidden="true">🍪</span><h3>Recién hechas</h3><p>Galletas preparadas con dedicación.</p></article>
+          <article class="feature"><span aria-hidden="true">🎁</span><h3>Tu caja, a tu gusto</h3><p>Combina tus sabores favoritos.</p></article>
+          <article class="feature"><span aria-hidden="true">✨</span><h3>Un detalle especial</h3><p>Perfectas para regalar o consentirte.</p></article>
         </div>
-        <form #quoteForm="ngForm" class="quote-form" (ngSubmit)="sendQuote(quoteForm)">
-          <div class="field">
-            <label for="quote-phone">Teléfono / WhatsApp <span aria-hidden="true">*</span></label>
-            <input id="quote-phone" name="phone" [(ngModel)]="phone" required minlength="7" maxlength="20" pattern="[0-9+() .-]{7,20}" autocomplete="tel" placeholder="Tu número de contacto">
+      </section>
+
+      <section class="quote-section" id="pedido-personalizado" aria-labelledby="quote-title">
+        <div class="quote-inner">
+          <div class="quote-intro">
+            <p class="eyebrow">Momentos especiales</p>
+            <h2 id="quote-title">¿Tienes una ocasión especial?</h2>
+            <p>Cuéntanos tu idea y cotizamos galletas personalizadas para cumpleaños, celebraciones, regalos y mucho más.</p>
           </div>
-          <div class="field">
-            <label for="quote-name">Nombre <span aria-hidden="true">*</span></label>
-            <input id="quote-name" name="name" [(ngModel)]="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="¿Cómo te llamas?">
-          </div>
-          <div class="field">
-            <label for="quote-quantity">Cantidad aproximada de galletas</label>
-            <input id="quote-quantity" name="quantity" [(ngModel)]="quantity" type="number" min="1" max="5000" step="1" placeholder="Ej. 24">
-          </div>
-          <div class="field">
-            <label for="quote-type">Tipo de galletas</label>
-            <select id="quote-type" name="cookieType" [(ngModel)]="cookieType">
-              <option value="">Todavía no lo sé</option>
-              <option value="Clásicas">Clásicas</option>
-              <option value="NY Style">NY Style</option>
-              <option value="Mixtas">Mixtas</option>
-              <option value="Personalizadas y decoradas">Personalizadas y decoradas</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label for="quote-notes">Cuéntanos cómo te gustaría que fueran</label>
-            <textarea id="quote-notes" name="notes" [(ngModel)]="notes" rows="5" maxlength="2000" placeholder="Ocasión, temática, colores, fecha del evento y cualquier detalle que debamos conocer…"></textarea>
-          </div>
-          <p class="form-hint full">Al enviar, se abrirá WhatsApp con los datos de tu solicitud para que puedas revisarlos y mandarlos.</p>
-          <button class="primary-button full submit-button" type="submit">Cotizar por WhatsApp <span aria-hidden="true">↗</span></button>
-          @if (formError) { <p class="form-error full" role="alert">{{ formError }}</p> }
-        </form>
+          <form #quoteForm="ngForm" class="quote-form" (ngSubmit)="sendQuote(quoteForm)">
+            <div class="field">
+              <label for="quote-phone">Teléfono / WhatsApp <span aria-hidden="true">*</span></label>
+              <input id="quote-phone" name="phone" [(ngModel)]="phone" required minlength="7" maxlength="20" pattern="[0-9+() .-]{7,20}" autocomplete="tel" placeholder="Tu número de contacto">
+            </div>
+            <div class="field">
+              <label for="quote-name">Nombre <span aria-hidden="true">*</span></label>
+              <input id="quote-name" name="name" [(ngModel)]="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="¿Cómo te llamas?">
+            </div>
+            <div class="field">
+              <label for="quote-quantity">Cantidad aproximada (opcional)</label>
+              <input id="quote-quantity" name="quantity" [(ngModel)]="quantity" type="number" min="1" max="5000" step="1" placeholder="Ej. 24">
+            </div>
+            <div class="field">
+              <label for="quote-type">Tipo de galletas (opcional)</label>
+              <select id="quote-type" name="cookieType" [(ngModel)]="cookieType">
+                <option value="">Aún no lo sé</option><option value="Clásicas">Clásicas</option><option value="NY Style">NY Style</option><option value="Mixtas">Mixtas</option><option value="Decoradas / personalizadas">Decoradas / personalizadas</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="quote-notes">Cuéntanos qué tienes en mente <span aria-hidden="true">*</span></label>
+              <textarea id="quote-notes" name="notes" [(ngModel)]="notes" required rows="3" maxlength="2000" placeholder="Ocasión, temática, colores, fecha y cualquier detalle que quieras compartir..."></textarea>
+            </div>
+             <button class="primary-button full submit-button" type="submit">Solicitar cotización</button>
+            @if (formError) { <p class="form-error full" role="alert">{{ formError }}</p> }
+          </form>
+        </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <div class="footer-brand"><span class="brand-name">StarKies <span aria-hidden="true">✦</span></span><p>La estrella eres tú.<br>Galletas artesanales para tus momentos especiales.</p></div>
-      <div class="footer-contact"><strong>Contacto y redes sociales</strong>
-        <a href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer">WhatsApp · 0979075202</a>
-        <a href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer">Instagram · @starkies.ec</a>
-        <a href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer">TikTok · @starkies.ec</a>
+      <div class="footer-inner">
+        <div class="footer-brand"><span class="brand-name">StarKies <span aria-hidden="true">✦</span></span><p>La estrella eres tú.</p></div>
+        <div class="footer-contact">
+          <strong>Contacto</strong>
+          <a href="https://wa.me/593979075202" target="_blank" rel="noopener noreferrer">WhatsApp · 0979075202</a>
+          <a href="https://www.instagram.com/starkies.ec/" target="_blank" rel="noopener noreferrer">Instagram · @starkies.ec</a>
+          <a href="https://www.tiktok.com/@starkies.ec" target="_blank" rel="noopener noreferrer">TikTok · @starkies.ec</a>
+        </div>
       </div>
-      <small>© {{ currentYear }} StarKies · La estrella eres tú.</small>
+      <small class="contact-note">© {{ currentYear }} StarKies · La estrella eres tú.</small>
     </footer>
   `,
   styles: [`
-    :host { display:block; --cream:#fbf8f5; --rose:#f0d9e4; --mauve:#806c79; --ink:#4a3f4b; --line:#e9dfe5; color:var(--ink); background:var(--cream); font-family:'DM Sans',Arial,sans-serif; }
+    :host { display:block; --cream:#fbf8f5; --rose:#f0d9e4; --mauve:#806c79; --ink:#261f29; --line:#e9dfe5; color:var(--ink); background:var(--cream); font-family:'DM Sans',Arial,sans-serif; }
     * { box-sizing:border-box; }
     a { color:inherit; text-decoration:none; }
-    .site-header { position:sticky; top:0; z-index:10; min-height:76px; backdrop-filter:blur(14px); padding:12px clamp(20px,6vw,76px); display:flex; justify-content:space-between; align-items:center; gap:20px; background:#ffffffed; border-bottom:1px solid var(--line); }
-    .brand-name { color:#735363; font-family:'Shrikhand',Georgia,serif; font-size:clamp(1.8rem,3vw,2.4rem); line-height:1; }
+    .site-header { position:sticky; top:0; z-index:15; min-height:64px; padding:14px max(6%,calc((100% - 1180px)/2)); display:flex; justify-content:space-between; align-items:center; gap:20px; background:#ffffffed; border:1px solid var(--line); backdrop-filter:blur(14px); box-shadow:0 6px 24px #2417200c; }
+    .brand-name { color:#735363; font:32px/1 'Shrikhand',Georgia,serif; white-space:nowrap; }
     .brand-name span { font-family:Georgia,serif; }
-    nav { display:flex; align-items:center; gap:26px; } .nav-link { padding:10px 0; } .nav-link.active { font-weight:700; }
-
-    .hero { position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; box-sizing:border-box; width:100%; min-height:min(690px,calc(100svh - 76px)); padding:78px 24px 96px; scroll-margin-top:76px; text-align:center; background:linear-gradient(115deg,#fff9f7 0%,#f8eaf0 56%,#f0d9e4 100%); }
-    .hero-copy { position:relative; z-index:1; width:min(100%,920px); margin:0 auto; } .eyebrow { margin:0 0 18px; color:var(--mauve); font-size:.78rem; font-weight:700; letter-spacing:.25em; }
-    h1 { display:block; margin:0; color:#5c4253; font-family:'Shrikhand',Georgia,serif; font-size:clamp(3.2rem,7.4vw,6.4rem); font-weight:400; line-height:1.06; overflow-wrap:normal; }
-    .hero-description { max-width:900px; margin:28px auto 22px; color:#665c64; font-size:clamp(1rem,1.6vw,1.2rem); line-height:1.8; }
-    .primary-button { display:inline-flex; justify-content:center; align-items:center; gap:10px; min-height:54px; padding:0 28px; border:0; border-radius:10px; background:#604a59; color:white; font:700 1rem 'DM Sans',Arial,sans-serif; cursor:pointer; transition:background .18s ease,transform .18s ease; }
-    .primary-button:hover { background:#4a3f4b; transform:translateY(-1px); }
-    .starfield { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; color:#a9829a; }
-    .star { position:absolute; display:block; line-height:1; opacity:.78; user-select:none; }
-    .star-a{left:7%;top:12%;font-size:28px}.star-b{left:18%;top:26%;font-size:18px}.star-c{left:31%;top:8%;font-size:22px}.star-d{left:42%;top:18%;font-size:15px}.star-e{left:56%;top:9%;font-size:25px}.star-f{left:72%;top:20%;font-size:19px}.star-g{left:87%;top:12%;font-size:31px}.star-h{left:94%;top:36%;font-size:18px}.star-i{left:4%;top:47%;font-size:22px}.star-j{left:15%;top:65%;font-size:18px}.star-k{left:28%;top:82%;font-size:27px}.star-l{left:39%;top:72%;font-size:16px}.star-m{left:51%;top:88%;font-size:20px}.star-n{left:63%;top:75%;font-size:28px}.star-o{left:76%;top:87%;font-size:19px}.star-p{left:91%;top:70%;font-size:23px}.star-q{left:11%;top:90%;font-size:25px}.star-r{left:23%;top:43%;font-size:13px}.star-s{left:68%;top:43%;font-size:17px}.star-t{left:82%;top:52%;font-size:14px}.star-u{left:35%;top:53%;font-size:15px}.star-v{left:48%;top:33%;font-size:18px}.star-w{left:59%;top:57%;font-size:12px}.star-x{left:97%;top:91%;font-size:20px}
-    .quote-section { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:clamp(30px,6vw,80px); align-items:start; padding:clamp(54px,8vw,100px) clamp(20px,8vw,110px); max-width:1300px; margin:auto; }
-    .quote-copy { position:sticky; top:36px; } h2 { margin:0 0 18px; color:#5c4253; font:400 clamp(2.2rem,4vw,3.6rem)/1.1 'Shrikhand',Georgia,serif; } .quote-copy>p:last-child { color:#665c64; line-height:1.8; }
-    .quote-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; padding:28px; border:1px solid var(--line); border-radius:18px; background:white; box-shadow:0 14px 40px #4a3f4b0a; }
-    .field { min-width:0; } .field label { display:block; margin:0 0 8px; font-size:.88rem; font-weight:700; } .field label span { color:#a43d67; }
-    .field input,.field select,.field textarea { width:100%; min-height:48px; padding:12px 13px; border:1px solid #d9cbd4; border-radius:8px; background:#fff; color:var(--ink); font:inherit; } .field textarea { min-height:140px; resize:vertical; line-height:1.6; }
-    .field input:focus,.field select:focus,.field textarea:focus { outline:3px solid #c1a0ac55; border-color:var(--mauve); } .full { grid-column:1/-1; } .form-hint { margin:0; color:#766a73; font-size:.85rem; line-height:1.6; } .submit-button { width:100%; } .form-error { margin:0; color:#9b294b; }
-    .site-footer { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; padding:38px clamp(20px,6vw,76px) 24px; background:#4a3f4b; color:#f8eef3; } .footer-brand p { color:#e9dfe5; line-height:1.7; } .footer-contact { display:flex; flex-direction:column; gap:10px; } .footer-contact strong { margin-bottom:4px; } .footer-contact a { color:#f8eef3; text-decoration:underline; text-underline-offset:3px; } .site-footer small { grid-column:1/-1; padding-top:18px; border-top:1px solid #ffffff30; }
-    @media(max-width:760px) { .hero { min-height:590px; padding:68px 24px; } .quote-section { grid-template-columns:1fr; } .quote-copy { position:static; } }
-    @media(max-width:520px) { .site-header { padding:14px 18px; } nav { gap:16px; font-size:.9rem; } .hero { min-height:580px; } .hero-description { font-size:1rem; } .quote-form { grid-template-columns:1fr; padding:20px; } .full { grid-column:auto; } .site-footer { grid-template-columns:1fr; } .site-footer small { grid-column:auto; } }
-    @media(prefers-reduced-motion:reduce) { .primary-button { transition:none; } }
-  `]
+    nav { display:flex; align-items:center; gap:24px; }
+    .nav-link { padding:10px 0; color:#261f29; font-size:14px; }
+    .nav-link.active { font-weight:700; }
+    .cart-trigger { position:relative; display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; padding:0; border-radius:50%; color:#604a59; }
+    .cart-trigger:hover { background:#f7eff3; }
+    .cart-trigger mat-icon { width:23px; height:23px; font-size:23px; }
+    .cart-badge { position:absolute; top:0; right:-1px; display:grid; place-items:center; min-width:19px; height:19px; padding:0 4px; border:2px solid white; border-radius:99px; background:#604a59; color:white; font-size:10px; line-height:1; }
+    .side-stars { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; color:#c1a0ac; }
+    .side-stars span { position:absolute; display:block; line-height:1; user-select:none; }
+    .side-stars .left { left:clamp(8px,2.2vw,32px); }
+    .side-stars .right { right:clamp(8px,2.2vw,32px); }
+    .side-stars .s1 { top:15%; font-size:clamp(26px,3.6vw,48px); transform:rotate(-18deg); }
+    .side-stars .s2 { top:36%; font-size:clamp(18px,2.5vw,34px); transform:rotate(15deg); }
+    .side-stars .s3 { top:60%; font-size:clamp(30px,4vw,52px); transform:rotate(12deg); }
+    .side-stars .s4 { top:82%; font-size:clamp(20px,2.8vw,38px); transform:rotate(-12deg); }
+    .side-stars .right.s1 { top:20%; transform:rotate(16deg); }
+    .side-stars .right.s2 { top:43%; transform:rotate(-15deg); }
+    .side-stars .right.s3 { top:68%; transform:rotate(-8deg); }
+    .side-stars .right.s4 { top:90%; transform:rotate(18deg); }
+    main { display:block; }
+    .hero { position:relative; min-height:620px; display:grid; grid-template-columns:minmax(0,1fr); align-items:center; justify-items:center; padding:70px max(6%,calc((100% - 1180px)/2)); background:linear-gradient(120deg,#fff9f7,#f0d9e4); text-align:center; }
+    .hero-copy { max-width:900px; }
+    .eyebrow { margin:0 0 8px; text-transform:uppercase; letter-spacing:3px; font-size:12px; font-weight:700; color:#806c79; }
+    h1 { font:clamp(52px,6vw,90px)/1.06 'Shrikhand',Georgia,serif; color:#5c4253; margin:18px 0; font-weight:400; }
+    p { line-height:1.8; color:#665c64; }
+    .hero-description { max-width:900px; margin:22px auto; font-size:clamp(1rem,1.6vw,1.2rem); }
+    .primary-button { display:inline-flex; align-items:center; justify-content:center; min-height:45px; padding:14px 22px; border:0; border-radius:8px; background:#604a59; color:white; font:600 14px 'DM Sans',Arial,sans-serif; cursor:pointer; }
+    .section { max-width:1250px; margin:auto; padding:70px 6%; text-align:center; }
+    h2 { margin:10px 0; color:#604a59; font:42px/1.2 'Shrikhand',Georgia,serif; font-weight:400; }
+    .features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:35px; }
+    .feature { padding:28px; border:1px solid var(--line); border-radius:14px; background:white; }
+    .feature>span { font-size:36px; }
+    .feature h3 { margin:12px 0 6px; color:#4a3f4b; font-size:17px; }
+    .feature p { margin:0; font-size:14px; }
+    .quote-section { border-top:1px solid var(--line); padding:72px 6%; background:#fff; }
+    .quote-inner { max-width:820px; margin:auto; }
+    .quote-intro { margin-bottom:28px; text-align:center; }
+    .quote-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:26px; border:1px solid var(--line); border-radius:16px; background:#fff; }
+    .field { min-width:0; }
+    .field label { display:block; margin-bottom:6px; font-size:13px; font-weight:700; }
+    .field label span { color:#a43d67; }
+    .field input,.field select,.field textarea { width:100%; padding:13px; border:1px solid #d7cbd2; border-radius:8px; background:#fff; color:var(--ink); font:inherit; }
+    .field input,.field select { min-height:46px; }
+    .field textarea { min-height:140px; resize:vertical; }
+    .field input:focus,.field select:focus,.field textarea:focus { outline:2px solid #c1a0ac; outline-offset:1px; }
+    .full { grid-column:1/-1; }
+     .submit-button { width:100%; }
+    .form-error { margin:0; color:#9b294b; font-size:13px; }
+    .site-footer { padding:32px 6% 18px; background:#4a3f4b; color:white; }
+    .footer-inner { display:flex; justify-content:space-between; gap:32px; max-width:1180px; margin:auto; text-align:left; }
+    .footer-brand p { color:#f1e7ee; font-size:14px; }
+    .footer-contact { display:flex; flex-direction:column; gap:8px; min-width:180px; }
+    .footer-contact strong { margin-bottom:5px; }
+    .footer-contact a { color:#f1e7ee; font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+    .contact-note { display:block; max-width:1180px; margin:20px auto 0; padding-top:16px; border-top:1px solid #ffffff30; color:#f1e7ee; font-size:11px; opacity:.8; }
+    @media(max-width:850px) { .hero { min-height:560px; padding:60px 6%; } .section { padding:58px 6%; } .quote-section { padding:58px 6%; } }
+    @media(max-width:560px) {
+      .site-header { padding:12px 5%; }
+      .brand-name { font-size:25px; }
+      nav { gap:12px; font-size:13px; }
+      .nav-link { font-size:13px; }
+      .cart-trigger { width:38px; height:38px; }
+      .cart-badge { top:-1px; right:-3px; }
+      .hero { min-height:580px; padding:55px 6%; }
+      h1 { font-size:clamp(46px,12vw,66px); }
+      .hero-description { font-size:1rem; }
+      .section { padding:55px 6%; }
+      h2 { font-size:34px; }
+      .features { grid-template-columns:1fr; }
+      .quote-section { padding:50px 6%; }
+      .quote-form { grid-template-columns:1fr; padding:18px; }
+      .full { grid-column:auto; }
+      .footer-inner { flex-direction:column; text-align:center; align-items:center; }
+      .footer-contact { align-items:center; }
+      .contact-note { text-align:center; }
+    }
+   `]
 })
 export class Landing {
   readonly currentYear = new Date().getFullYear();

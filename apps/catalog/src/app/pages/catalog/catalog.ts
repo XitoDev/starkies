@@ -25,11 +25,15 @@ export class Catalog {
   zones: DeliveryZone[] = [];
   readonly catalogLoading = signal(true);
   readonly catalogLoadError = signal('');
-  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[2]);
+  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[0]);
   readonly currentBoxItems = signal<{ [productId: string]: number }>({});
   readonly completedBoxes = signal<PackedBox[]>([]);
   readonly searchQuery = signal('');
-  readonly showBoxChoiceModal = signal(false);
+  readonly categoryFilter = signal<'Todas' | 'Galletas clásicas' | 'Galletas NY'>('Todas');
+  readonly boxSelectionError = signal('');
+  readonly showCartTip = signal(false);
+  private cartTipShowTimer: ReturnType<typeof setTimeout> | null = null;
+  private cartTipHideTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly bottomSheet = inject(MatBottomSheet);
   private orderSheetRef: MatBottomSheetRef<CatalogOrderSheetComponent> | null = null;
   readonly orderFormVisible = signal(false);
@@ -41,26 +45,19 @@ export class Catalog {
   readonly editingBoxIndex = signal<number | null>(null);
   readonly wantsCookieName = signal(false);
   readonly selectedDeliveryZone = signal<DeliveryZone | null>(null);
-  readonly fulfillmentMode = signal<'delivery' | 'pickup'>('delivery');
+  readonly fulfillmentMode = signal<'delivery' | 'pickup'>('pickup');
   orderForm = this.emptyOrderForm();
-  readonly categories = computed(() => {
-    const presentation = this.selectedPresentation();
-    const visible: string[] = [];
-    if (presentation.reqClasicas > 0) visible.push('Galletas clásicas');
-    if (presentation.reqNY > 0) visible.push('Galletas NY');
-    return visible;
-  });
+  readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
   readonly filteredProducts = computed(() => {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
-    const presentation = this.selectedPresentation();
-    const availableProducts = this.products().filter(product =>
-      product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0,
-    );
-    if (!query) return availableProducts;
-    return availableProducts.filter(product =>
-      product.name.toLocaleLowerCase('es').includes(query)
-      || product.description.toLocaleLowerCase('es').includes(query),
-    );
+    const category = this.categoryFilter();
+    return this.products().filter(product => {
+      const matchesCategory = category === 'Todas' || product.category === category;
+      const matchesQuery = !query
+        || product.name.toLocaleLowerCase('es').includes(query)
+        || product.description.toLocaleLowerCase('es').includes(query);
+      return matchesCategory && matchesQuery;
+    });
   });
   readonly currentClasicasCount = computed(() => {
     let count = 0;
@@ -79,8 +76,14 @@ export class Catalog {
     return this.currentClasicasCount() === presentation.reqClasicas && this.currentNYCount() === presentation.reqNY;
   });
   readonly boxesTotalSum = computed(() => this.completedBoxes().reduce((total, box) => total + box.presentation.price, 0));
+  readonly cartItemCount = computed(() => this.completedBoxes().reduce(
+    (total, box) => total + Object.values(box.items).reduce((boxTotal, quantity) => boxTotal + quantity, 0),
+    this.totalBoxCurrent(),
+  ));
   readonly shippingFee = computed(() => this.selectedDeliveryZone()?.fee ?? 0);
-  readonly grandTotal = computed(() => this.boxesTotalSum() + this.shippingFee());
+  readonly grandTotal = computed(() => this.boxesTotalSum()
+    + (this.totalBoxCurrent() > 0 && this.editingBoxIndex() === null ? this.selectedPresentation().price : 0)
+    + this.shippingFee());
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   constructor() {
     const title = inject(Title), meta = inject(Meta);
@@ -127,9 +130,46 @@ export class Catalog {
       this.catalogLoading.set(false);
     }
   }
-  formatPresentationPrice(price: number): string { return '$' + price.toFixed(2).replace('.', ','); }
+  getPresentationTitle(presentation: BoxPresentation): string {
+    switch (presentation.id) {
+      case 'clasicas': return 'Caja de 10 clásicas';
+      case 'ny': return 'Caja de 6 NY Style';
+      case 'mixta': return 'Caja mixta';
+      default: return presentation.name;
+    }
+  }
+  getPresentationDescription(presentation: BoxPresentation): string {
+    switch (presentation.id) {
+      case 'clasicas': return '10 galletas clásicas';
+      case 'ny': return '6 galletas NY Style';
+      case 'mixta': return '4 clásicas + 4 NY Style';
+      default: return presentation.desc;
+    }
+  }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
-  selectPresentation(presentation: BoxPresentation): void { this.selectedPresentation.set(presentation); this.currentBoxItems.set({}); }
+  setCategoryFilter(value: string): void {
+    if (value === 'Todas') { this.categoryFilter.set('Todas'); return; }
+    if ((value === 'Galletas clásicas' || value === 'Galletas NY') && this.categories().includes(value)) {
+      this.categoryFilter.set(value);
+      return;
+    }
+    this.categoryFilter.set('Todas');
+  }
+  selectPresentation(presentation: BoxPresentation): void {
+    const isCurrentPresentation = presentation.id === this.selectedPresentation().id;
+    if (!isCurrentPresentation && this.totalBoxCurrent() > 0) {
+      this.boxSelectionError.set('Termina o guarda la caja actual antes de cambiar su presentación.');
+      return;
+    }
+    if (!isCurrentPresentation) {
+      this.selectedPresentation.set(presentation);
+      this.currentBoxItems.set({});
+    }
+    this.categoryFilter.set(presentation.id === 'clasicas'
+      ? 'Galletas clásicas'
+      : presentation.id === 'ny' ? 'Galletas NY' : 'Todas');
+    this.boxSelectionError.set('');
+  }
   setDeliveryZone(zone: DeliveryZone | null): void {
     this.orderForm.zone = zone;
     this.selectedDeliveryZone.set(zone);
@@ -153,14 +193,32 @@ export class Catalog {
     return (zone?.name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').includes('retiro');
   }
   getQuantity(productId: string): number { return this.currentBoxItems()[productId] || 0; }
+  canAddProduct(productId: string): boolean {
+    const product = this.products().find(item => item.id === productId);
+    if (!product || !product.stock || this.isBoxComplete()) return false;
+    return product.isNy
+      ? this.currentNYCount() < this.selectedPresentation().reqNY
+      : this.currentClasicasCount() < this.selectedPresentation().reqClasicas;
+  }
   changeQuantity(productId: string, delta: number): void {
     const product = this.products().find(item => item.id === productId);
     if (!product || !product.stock) return;
-    const presentation = this.selectedPresentation();
-    if (delta > 0 && ((!product.isNy && this.currentClasicasCount() >= presentation.reqClasicas) || (product.isNy && this.currentNYCount() >= presentation.reqNY))) return;
+    const wasComplete = this.isBoxComplete();
+    if (delta > 0 && !this.canAddProduct(productId)) return;
     const nextItems = { ...this.currentBoxItems() }, nextQuantity = (nextItems[productId] || 0) + delta;
     if (nextQuantity <= 0) delete nextItems[productId]; else nextItems[productId] = nextQuantity;
     this.currentBoxItems.set(nextItems);
+    if (!wasComplete && this.isBoxComplete()) this.triggerCartTip();
+    if (delta < 0) this.boxSelectionError.set('');
+  }
+  private triggerCartTip(): void {
+    this.showCartTip.set(false);
+    if (this.cartTipShowTimer) clearTimeout(this.cartTipShowTimer);
+    if (this.cartTipHideTimer) clearTimeout(this.cartTipHideTimer);
+    this.cartTipShowTimer = setTimeout(() => {
+      this.showCartTip.set(true);
+      this.cartTipHideTimer = setTimeout(() => this.showCartTip.set(false), 2800);
+    }, 10);
   }
   finishBox(): void {
     if (!this.isBoxComplete()) return;
@@ -172,7 +230,17 @@ export class Catalog {
     } else {
       this.completedBoxes.update(previous => [...previous, box]);
     }
-    this.currentBoxItems.set({}); this.showBoxChoiceModal.set(true); this.orderError.set(''); this.orderSuccess.set(null);
+    this.currentBoxItems.set({});
+    this.selectedPresentation.set(this.presentations[0]);
+    this.categoryFilter.set('Todas');
+    this.boxSelectionError.set('');
+    this.showCartTip.set(false);
+    this.orderError.set('');
+    this.orderSuccess.set(null);
+  }
+  addAnotherBox(): void {
+    this.finishBox();
+    this.categoryFilter.set('Galletas clásicas');
   }
   editBox(index: number): void {
     const box = this.completedBoxes()[index];
@@ -219,7 +287,7 @@ export class Catalog {
     }
   }
   openOrderSheet(): void {
-    this.showBoxChoiceModal.set(false);
+    if (this.isBoxComplete() && this.totalBoxCurrent() > 0) this.finishBox();
     this.orderFormVisible.set(false);
     this.orderError.set('');
     if (this.orderSheetRef) return;
@@ -250,6 +318,7 @@ export class Catalog {
   }
   async submitOrder(): Promise<void> {
     if (this.savingOrder()) return;
+    if (this.totalBoxCurrent() > 0) { this.orderError.set('Completa y guarda la caja actual antes de confirmar el pedido.'); return; }
     if (!this.completedBoxes().length) { this.orderError.set('Agrega al menos una caja antes de confirmar tu pedido.'); return; }
     if (!this.orderForm.zone) { this.orderError.set(this.fulfillmentMode() === 'pickup' ? 'No encontramos la opción de retiro en local. Intenta más tarde o contáctanos por WhatsApp.' : 'Selecciona tu sector de entrega.'); return; }
     if (this.fulfillmentMode() === 'delivery' && !this.orderForm.address.trim()) { this.orderError.set('Escribe tu dirección exacta para la entrega.'); return; }
@@ -297,7 +366,7 @@ export class Catalog {
     this.wantsCookieName.set(false);
     this.customerLookupMessage.set('');
     this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('delivery');
+    this.fulfillmentMode.set('pickup');
     return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
   }
   private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
