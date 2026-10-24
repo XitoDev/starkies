@@ -29,6 +29,37 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       res.status(403).send('Este enlace del pedido no es válido o ha caducado. Solicita a StarKies un nuevo enlace.');
       return;
     }
+    const userAgent = headerValue(req.headers['user-agent']);
+    if (isSocialPreviewBot(userAgent)) {
+      const canonicalUrl = 'https://starkies.lat/p/' + encodeURIComponent(code);
+      const title = 'Un mensaje amigable de pedido | StarKies';
+      const description = 'Tu pedido de StarKies está listo para revisar. Abre el enlace para consultar el PDF y coordinar la entrega por WhatsApp.';
+      const html = '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+        + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<title>' + escapeHtml(title) + '</title>'
+        + '<meta name="description" content="' + escapeHtml(description) + '">'
+        + '<meta name="robots" content="noindex,nofollow">'
+        + '<link rel="canonical" href="' + canonicalUrl + '">'
+        + '<meta property="og:type" content="website">'
+        + '<meta property="og:site_name" content="StarKies">'
+        + '<meta property="og:locale" content="es_EC">'
+        + '<meta property="og:title" content="' + escapeHtml(title) + '">'
+        + '<meta property="og:description" content="' + escapeHtml(description) + '">'
+        + '<meta property="og:url" content="' + canonicalUrl + '">'
+        + '<meta property="og:image" content="https://starkies.lat/images/starkies-brownie-cookie.svg">'
+        + '<meta property="og:image:alt" content="Galleta Brownie Classic de StarKies">'
+        + '<meta name="twitter:card" content="summary_large_image">'
+        + '<meta name="twitter:title" content="' + escapeHtml(title) + '">'
+        + '<meta name="twitter:description" content="' + escapeHtml(description) + '">'
+        + '</head><body><main><h1>' + escapeHtml(title) + '</h1><p>' + escapeHtml(description) + '</p>'
+        + '<p>Este enlace permite consultar el documento del pedido.</p></main></body></html>';
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', String(Buffer.byteLength(html)));
+      res.status(200);
+      if (req.method === 'HEAD') { res.end(); return; }
+      res.send(html);
+      return;
+    }
     res.setHeader('Location', '/api/order-document?token=' + encodeURIComponent(token));
     res.status(302).end();
   } catch (error) {
@@ -65,4 +96,14 @@ function getDatabase() {
     credential: cert({ projectId: account.project_id, clientEmail: account.client_email, privateKey: account.private_key.replace(/\\n/g, '\n') }),
   }, appName);
   return getFirestore(app);
+}
+
+function headerValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+function isSocialPreviewBot(userAgent: string): boolean {
+  return /WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Pinterestbot/i.test(userAgent);
+}
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
