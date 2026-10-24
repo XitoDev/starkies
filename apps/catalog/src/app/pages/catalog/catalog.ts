@@ -187,7 +187,9 @@ export class Catalog {
     const finishPendingTask = this.pendingTasks.add();
     try {
       const apiUrl = baseUri ? new URL('/api/catalog', baseUri).toString() : '/api/catalog';
-      const response = await fetch(apiUrl, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      const requestOptions: RequestInit = { headers: { Accept: 'application/json' }, cache: 'no-store' };
+      if (!isPlatformBrowser(this.platformId)) requestOptions.signal = AbortSignal.timeout(8000);
+      const response = await fetch(apiUrl, requestOptions);
       const result: unknown = await response.json().catch(() => null);
       const record = this.asRecord(result);
       if (!response.ok) throw new Error(typeof record['message'] === 'string' ? record['message'] : 'No pudimos cargar el catálogo.');
