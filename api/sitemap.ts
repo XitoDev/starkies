@@ -29,26 +29,29 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
+  let productUrls: string[] = [];
   try {
     const catalog = await readPublicCatalog(getPublicCatalogDatabase());
-    const urls = [
-      ...STATIC_URLS.map(url => '<url><loc>' + escapeXml(url.loc) + '</loc><lastmod>' + url.lastmod + '</lastmod></url>'),
-      ...catalog.products.map(product => {
-        const url = 'https://starkies.lat' + productDetailPath(product.name, product.id);
-        return '<url><loc>' + escapeXml(url) + '</loc></url>';
-      }),
-    ];
-    const xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-      + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-      + urls.map(url => '  ' + url).join('\n')
-      + '\n</urlset>\n';
-    if (req.method === 'HEAD') {
-      res.status(200).send('');
-      return;
-    }
-    res.status(200).send(xml);
+    productUrls = catalog.products.map(product => {
+      const url = 'https://starkies.lat' + productDetailPath(product.name, product.id);
+      return '<url><loc>' + escapeXml(url) + '</loc></url>';
+    });
   } catch (error) {
-    console.error('Public sitemap generation failed:', error);
-    res.status(503).send('<?xml version="1.0" encoding="UTF-8"?><error>Sitemap temporalmente no disponible</error>');
+    // Keep the main site routes discoverable even during a temporary catalog outage.
+    console.error('Public product URLs could not be added to the sitemap:', error);
   }
+
+  const urls = [
+    ...STATIC_URLS.map(url => '<url><loc>' + escapeXml(url.loc) + '</loc><lastmod>' + url.lastmod + '</lastmod></url>'),
+    ...productUrls,
+  ];
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    + urls.map(url => '  ' + url).join('\n')
+    + '\n</urlset>\n';
+  if (req.method === 'HEAD') {
+    res.status(200).send('');
+    return;
+  }
+  res.status(200).send(xml);
 }
