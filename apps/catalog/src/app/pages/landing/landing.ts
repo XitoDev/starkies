@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 
 @Component({
   selector: 'app-landing',
@@ -122,7 +122,7 @@ export class Landing {
   notes = '';
   formError = '';
 
-  sendQuote(form: { valid: boolean; control?: { get: (name: string) => { valid: boolean } | null }; controls?: Record<string, { valid: boolean }> }): void {
+  sendQuote(form: NgForm): void {
     this.formError = '';
     if (!form.valid) {
       this.formError = 'Revisa los campos obligatorios y asegúrate de que el teléfono y la cantidad sean válidos.';
