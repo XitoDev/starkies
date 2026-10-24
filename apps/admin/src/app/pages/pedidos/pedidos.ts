@@ -26,12 +26,10 @@ export class Pedidos implements OnDestroy {
   readonly searchOrderResults = signal<Order[] | null>(null);
   readonly searchCustomerResults = signal<import('shared').Customer[] | null>(null);
   readonly searchPending = signal(false);
-  readonly openOrderActions = signal<string | null>(null);
   displayOrderId(id: string): string { return id.replace(/-/g, '').slice(-6).toUpperCase(); }
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
   private searchRequestId = 0;
   readonly statusFilter = signal<'ALL' | Order['status']>('ALL');
-  readonly orderMenuId = signal<string|null>(null);
   readonly customerMenuId = signal<string|null>(null);
   readonly notice = signal('');
   readonly error = signal('');
@@ -79,7 +77,7 @@ export class Pedidos implements OnDestroy {
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchRequestId++;
   }
-  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.setSearchTerm('');this.orderMenuId.set(null);this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true,this.statusFilter());}
+  setTab(tab:'pedidos'|'clientes'):void{this.activeTab.set(tab);this.setSearchTerm('');this.customerMenuId.set(null);if(tab==='clientes')void this.data.loadAllOrders();else void this.data.loadOrdersPage(true,this.statusFilter());}
   setStatusFilter(value: string): void { this.statusFilter.set(value as 'ALL' | Order['status']); const term=this.searchTerm().trim(); if(term.length>=2) this.setSearchTerm(term); else void this.data.loadOrdersPage(true, this.statusFilter()); }
   getCustomerName(id:string):string{return this.customers().find(customer=>customer.id===id)?.name??'Cliente desconocido';}
   getCustomerOrderCount(id:string):number{return this.orders().filter(order=>order.customerId===id).length;}
@@ -89,6 +87,6 @@ export class Pedidos implements OnDestroy {
   getInitials(name:string):string{return name.trim().split(/\s+/).slice(0,2).map(part=>part[0]??'').join('').toLocaleUpperCase('es');}
   statusLabel(status:Order['status']):string{return status==='PENDING'?'Pendiente':status==='PREPARING'?'En preparación':status==='READY'?'Listo':status==='DELIVERED'?'Entregado':'Cancelado';}
   async syncCatalog():Promise<void>{this.notice.set('');this.error.set('');await this.data.loadFromCloud();if(this.data.error())this.error.set(this.data.error());else this.notice.set('Datos sincronizados correctamente.');}
-  async deleteOrder(order:Order):Promise<void>{this.orderMenuId.set(null);if(!window.confirm(`¿Eliminar el pedido #${order.id}? Esta acción no se puede deshacer.`))return;try{await this.data.deleteOrder(order.id);this.notice.set(`Pedido #${order.id} eliminado.`);}catch(error){this.error.set(error instanceof Error?error.message:'No se pudo eliminar el pedido.');}}
+  async deleteOrder(order:Order):Promise<void>{this.error.set('');this.notice.set('');if(!window.confirm(`¿Eliminar el pedido #${order.id}? Esta acción no se puede deshacer.`))return;try{await this.data.deleteOrder(order.id);this.notice.set(`Pedido #${order.id} eliminado.`);}catch(error){this.error.set(error instanceof Error?error.message:'No se pudo eliminar el pedido.');}}
   async deleteCustomer(customerId:string,name:string):Promise<void>{this.customerMenuId.set(null);if(!window.confirm(`¿Eliminar los datos de ${name}? Se conservará el historial de pedidos, pero se quitarán el teléfono y la dirección.`))return;try{await this.data.deleteCustomer(customerId);this.notice.set('Datos personales del cliente eliminados; el historial de pedidos se conservó.');}catch(error){this.error.set(error instanceof Error?error.message:'No se pudo eliminar el cliente.');}}
 }
