@@ -892,7 +892,7 @@ export class DataService implements OnDestroy {
       const cleanedAddress = explicitAddress?.startsWith(addressPrefix) && addressPrefix
         ? explicitAddress.slice(addressPrefix.length)
         : explicitAddress;
-      const isPickup = (zone ?? '').toLocaleLowerCase('es').includes('retiro');
+      const isPickup = (zone ?? '').toLocaleLowerCase('es').includes('retiro') || this.asString(item['deliveryMethod'] ?? item['deliveryType']).toLocaleLowerCase('es').includes('retiro');
       const defaultAddress = this.asOptionalString(linkedCustomer?.['address']);
       const addressMatchesDefault = Boolean(cleanedAddress && defaultAddress
         && cleanedAddress.trim().toLocaleLowerCase('es') === defaultAddress.trim().toLocaleLowerCase('es'));

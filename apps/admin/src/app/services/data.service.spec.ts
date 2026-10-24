@@ -173,6 +173,8 @@ describe('DataService catalog visibility', () => {
         shippingFee: 2,
       }),
     );
+    const savedOrder = repository.upsertCollectionRecord.mock.calls.find(([collectionKey]) => collectionKey === 'orders');
+    expect(savedOrder?.[2]).not.toHaveProperty('deliveryAddress');
   });
 
   it('stores a changed delivery address on the order without overwriting the customer default', async () => {
