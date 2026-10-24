@@ -172,6 +172,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       '      <p>StarKies prepara galletas artesanales clásicas y estilo New York. Revisa la disponibilidad y el precio de ' + name + ' y explora los sabores publicados en nuestro catálogo.</p>',
       '      <p>Los productos que aparecen en esta página corresponden al catálogo público de StarKies. Si una galleta deja de estar publicada, su página dejará de figurar en el sitemap.</p>',
       '      <a href="/menu">Explorar todas las galletas de StarKies</a>',
+      '      <p><a href="/privacy-policy#entregas-reembolsos">Consultar condiciones de entrega, cancelación y reembolso</a></p>',
       '    </section>',
       '  </main>',
       '  <footer>© 2026 StarKies · Guayaquil, Ecuador</footer>',
