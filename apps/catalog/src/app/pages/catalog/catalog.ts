@@ -142,8 +142,13 @@ export class Catalog {
   }
   formatPresentationPrice(price: number): string { return '$' + price.toFixed(2).replace('.', ','); }
   setTabSearch(value: string): void { this.searchQuery.set(value); }
-  setCategoryFilter(value: 'Todas' | 'Galletas clásicas' | 'Galletas NY'): void {
-    this.categoryFilter.set(value === 'Todas' || this.categories().includes(value) ? value : 'Todas');
+  setCategoryFilter(value: string): void {
+    if (value === 'Todas') { this.categoryFilter.set('Todas'); return; }
+    if ((value === 'Galletas clásicas' || value === 'Galletas NY') && this.categories().includes(value)) {
+      this.categoryFilter.set(value);
+      return;
+    }
+    this.categoryFilter.set('Todas');
   }
   selectPresentation(presentation: BoxPresentation): void {
     if (presentation.id === this.selectedPresentation().id) return;
