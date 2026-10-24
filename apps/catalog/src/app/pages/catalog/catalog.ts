@@ -141,45 +141,13 @@ export class Catalog {
       '@type': 'ItemList',
       name: 'Galletas artesanales disponibles en el catálogo de StarKies',
       numberOfItems: products.length,
-      itemListElement: products.map((product, index) => {
-        const url = pageUrl + '#galleta-' + encodeURIComponent(product.id);
-        return {
-          '@type': 'ListItem',
-          position: index + 1,
-          item: {
-            '@type': 'Thing',
-            name: product.name,
-            url,
-            ...(product.description ? { description: product.description } : {}),
-          },
-        };
-      }),
-    };
-    const productEntities = products.flatMap(product => {
-      if (!product.image) return [];
-      let image: string;
-      try { image = new URL(product.image, 'https://starkies.lat/').toString(); }
-      catch { return []; }
-      const url = pageUrl + '#galleta-' + encodeURIComponent(product.id);
-      return [{
-        '@type': 'Product',
-        '@id': url,
+      itemListElement: products.map((product, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
         name: product.name,
-        image,
-        ...(product.description ? { description: product.description } : {}),
-        category: product.category,
-        sku: product.id,
-        brand: { '@type': 'Brand', name: 'StarKies' },
-        offers: {
-          '@type': 'Offer',
-          price: product.price.toFixed(2),
-          priceCurrency: 'USD',
-          availability: product.stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-          url,
-          seller: { '@id': 'https://starkies.lat/#bakery' },
-        },
-      }];
-    });
+        url: new URL(this.getProductDetailUrl(product), pageUrl).toString(),
+      })),
+    };
     const graph = [{
       '@type': 'CollectionPage',
       '@id': pageUrl + '#webpage',
@@ -188,7 +156,7 @@ export class Catalog {
       description: 'Galletas clásicas y NY Style disponibles en Guayaquil, Ecuador.',
       inLanguage: 'es-EC',
       mainEntity: itemList,
-    }, ...productEntities];
+    }];
     let script = this.document.getElementById('starkies-catalog-structured-data') as HTMLScriptElement | null;
     if (!script) {
       script = this.document.createElement('script');
@@ -197,6 +165,15 @@ export class Catalog {
       this.document.head.appendChild(script);
     }
     script.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+  }
+
+  getProductDetailUrl(product: Product): string {
+    const slug = product.name.normalize('NFD')
+      .replace(/[\\u0300-\\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'galleta';
+    return '/galletas/' + slug + '/' + encodeURIComponent(product.id);
   }
   retryCatalog(): void { publicCatalogCache = null; void this.loadCatalog(isPlatformBrowser(this.platformId) ? this.document.baseURI : undefined); }
   private async loadCatalog(baseUri?: string): Promise<void> {
