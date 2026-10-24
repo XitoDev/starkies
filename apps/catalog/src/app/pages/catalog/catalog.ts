@@ -25,7 +25,7 @@ export class Catalog {
   zones: DeliveryZone[] = [];
   readonly catalogLoading = signal(true);
   readonly catalogLoadError = signal('');
-  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[2]);
+  readonly selectedPresentation = signal<BoxPresentation>(this.presentations[0]);
   readonly currentBoxItems = signal<{ [productId: string]: number }>({});
   readonly completedBoxes = signal<PackedBox[]>([]);
   readonly searchQuery = signal('');
@@ -47,21 +47,11 @@ export class Catalog {
   readonly selectedDeliveryZone = signal<DeliveryZone | null>(null);
   readonly fulfillmentMode = signal<'delivery' | 'pickup'>('delivery');
   orderForm = this.emptyOrderForm();
-  readonly categories = computed(() => {
-    const presentation = this.selectedPresentation();
-    const visible: string[] = [];
-    if (presentation.reqClasicas > 0) visible.push('Galletas clásicas');
-    if (presentation.reqNY > 0) visible.push('Galletas NY');
-    return visible;
-  });
+  readonly categories = computed(() => ['Galletas clásicas', 'Galletas NY']);
   readonly filteredProducts = computed(() => {
     const query = this.searchQuery().toLocaleLowerCase('es').trim();
     const category = this.categoryFilter();
-    const presentation = this.selectedPresentation();
-    const availableProducts = this.products().filter(product =>
-      product.isNy ? presentation.reqNY > 0 : presentation.reqClasicas > 0,
-    );
-    return availableProducts.filter(product => {
+    return this.products().filter(product => {
       const matchesCategory = category === 'Todas' || product.category === category;
       const matchesQuery = !query
         || product.name.toLocaleLowerCase('es').includes(query)
@@ -166,14 +156,18 @@ export class Catalog {
     this.categoryFilter.set('Todas');
   }
   selectPresentation(presentation: BoxPresentation): void {
-    if (presentation.id === this.selectedPresentation().id) return;
-    if (this.totalBoxCurrent() > 0) {
+    const isCurrentPresentation = presentation.id === this.selectedPresentation().id;
+    if (!isCurrentPresentation && this.totalBoxCurrent() > 0) {
       this.boxSelectionError.set('Termina o guarda la caja actual antes de cambiar su presentación.');
       return;
     }
-    this.selectedPresentation.set(presentation);
-    this.currentBoxItems.set({});
-    this.categoryFilter.set('Todas');
+    if (!isCurrentPresentation) {
+      this.selectedPresentation.set(presentation);
+      this.currentBoxItems.set({});
+    }
+    this.categoryFilter.set(presentation.id === 'clasicas'
+      ? 'Galletas clásicas'
+      : presentation.id === 'ny' ? 'Galletas NY' : 'Todas');
     this.boxSelectionError.set('');
   }
   setDeliveryZone(zone: DeliveryZone | null): void {
@@ -243,6 +237,10 @@ export class Catalog {
     this.showCartTip.set(false);
     this.orderError.set('');
     this.orderSuccess.set(null);
+  }
+  addAnotherBox(): void {
+    this.finishBox();
+    this.categoryFilter.set('Galletas clásicas');
   }
   editBox(index: number): void {
     const box = this.completedBoxes()[index];
