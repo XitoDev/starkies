@@ -1,25 +1,23 @@
 import { MatIconModule } from '@angular/material/icon';
-import { siInstagram, siTiktok, siWhatsapp } from 'simple-icons';
-import { MatBottomSheet, MatBottomSheetModule, MatBottomSheetRef } from '@angular/material/bottom-sheet';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { CatalogOrderSheetComponent } from './catalog-order-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Component, computed, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Component, computed, effect, inject, signal, PLATFORM_ID } from '@angular/core';
 import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
 import { BOX_PRESENTATIONS } from './catalog.data';
+import { CatalogUiService } from '../../catalog-ui.service';
 interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
-@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatBottomSheetModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
+@Component({ selector: 'app-catalog', standalone: true, imports: [CommonModule, FormsModule, NgOptimizedImage, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatDialogModule], templateUrl: './catalog.html', styleUrls: ['./catalog.css'] })
 export class Catalog {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
-  readonly currentYear = new Date().getFullYear();
-  readonly socialIcons = { whatsapp: siWhatsapp, instagram: siInstagram, tiktok: siTiktok };
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
   zones: DeliveryZone[] = [];
@@ -34,8 +32,10 @@ export class Catalog {
   readonly showCartTip = signal(false);
   private cartTipShowTimer: ReturnType<typeof setTimeout> | null = null;
   private cartTipHideTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly bottomSheet = inject(MatBottomSheet);
-  private orderSheetRef: MatBottomSheetRef<CatalogOrderSheetComponent> | null = null;
+  private readonly dialog = inject(MatDialog);
+  private readonly catalogUi = inject(CatalogUiService);
+  private orderSheetRef: MatDialogRef<CatalogOrderSheetComponent> | null = null;
+  private lastOpenOrderRequest = this.catalogUi.openOrderRequest();
   readonly orderFormVisible = signal(false);
   readonly savingOrder = signal(false);
   readonly orderError = signal('');
@@ -80,6 +80,16 @@ export class Catalog {
     (total, box) => total + Object.values(box.items).reduce((boxTotal, quantity) => boxTotal + quantity, 0),
     this.totalBoxCurrent(),
   ));
+  private readonly cartCountEffect = effect(() => {
+    this.catalogUi.cartItemCount.set(this.cartItemCount());
+  });
+  private readonly openOrderEffect = effect(() => {
+    const request = this.catalogUi.openOrderRequest();
+    if (request !== this.lastOpenOrderRequest) {
+      this.lastOpenOrderRequest = request;
+      this.openOrderSheet();
+    }
+  });
   readonly shippingFee = computed(() => this.selectedDeliveryZone()?.fee ?? 0);
   readonly grandTotal = computed(() => this.boxesTotalSum()
     + (this.totalBoxCurrent() > 0 && this.editingBoxIndex() === null ? this.selectedPresentation().price : 0)
@@ -291,25 +301,36 @@ export class Catalog {
     this.orderFormVisible.set(false);
     this.orderError.set('');
     if (this.orderSheetRef) return;
-    const sheetRef = this.bottomSheet.open(CatalogOrderSheetComponent, {
+    const sheetRef = this.dialog.open(CatalogOrderSheetComponent, {
       data: { catalog: this },
-      panelClass: 'catalog-order-bottom-sheet',
-      ariaLabel: 'Tu pedido',
+      panelClass: 'order-drawer-panel',
+      backdropClass: 'order-drawer-backdrop',
+      ariaLabel: 'Mi pedido',
+      position: { top: '0', right: '0' },
+      width: '600px',
+      maxWidth: '100vw',
+      height: '100dvh',
+      maxHeight: '100dvh',
+      autoFocus: false,
+      restoreFocus: true,
+      enterAnimationDuration: '240ms',
+      exitAnimationDuration: '180ms',
       disableClose: true,
     });
     this.orderSheetRef = sheetRef;
+    sheetRef.beforeClosed().subscribe(() => sheetRef.addPanelClass('order-drawer-closing'));
     sheetRef.backdropClick().subscribe(() => this.closeOrderSheet());
     sheetRef.keydownEvents().subscribe(event => {
       if (event.key === 'Escape') this.closeOrderSheet();
     });
-    sheetRef.afterDismissed().subscribe(() => {
+    sheetRef.afterClosed().subscribe(() => {
       if (this.orderSheetRef === sheetRef) this.orderSheetRef = null;
       this.orderError.set('');
     });
   }
   closeOrderSheet(): void {
     if (this.savingOrder() || !this.orderSheetRef) return;
-    this.orderSheetRef.dismiss();
+    this.orderSheetRef.close();
   }
   getProductName(id: string): string { return this.products().find(product => product.id === id)?.name ?? 'Producto'; }
   getObjectKeys(object: Record<string, number>): string[] { return Object.keys(object); }
