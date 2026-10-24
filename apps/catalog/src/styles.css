@@ -2213,3 +2213,180 @@ app-catalog .site-footer p,app-catalog .site-footer small,app-catalog .footer-li
 app-catalog .footer-bottom{border-top:1px solid #ecdde1}
 @media(max-width:900px){app-catalog .hero{padding-inline:5vw}app-catalog .about-section{gap:28px;padding-inline:5vw}}
 @media(max-width:620px){app-catalog .hero{grid-template-columns:1fr;min-height:0;padding:40px 22px 24px}app-catalog .hero h1{font-size:clamp(4.1rem,16vw,6rem)}app-catalog .hero-art{min-height:0;margin-top:12px}app-catalog .about-section{grid-template-columns:1fr;gap:16px;padding:38px 24px 44px}app-catalog .about-art{min-height:220px}app-catalog .about-art img{width:min(84%,330px)}app-catalog .about-copy h2{font-size:3rem}app-catalog .presentation-section{padding:42px 18px}app-catalog .presentation-section .box-presentations{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}app-catalog .presentation-card{min-height:220px;padding:16px 8px;border-radius:16px}app-catalog .presentation-photo{width:min(100%,110px)}app-catalog .presentation-card strong{font-size:1.2rem}app-catalog .values-band{grid-template-columns:1fr;gap:28px;padding:36px 24px}app-catalog .order-cta{grid-template-columns:1fr;padding:38px 24px 18px}app-catalog .order-cta-art img{width:min(100%,340px)}app-catalog .site-footer{padding:32px 22px 18px}}
+
+
+/* Order form behaves as a right-side drawer, not a centered modal. */
+.cdk-overlay-pane.catalog-order-bottom-sheet {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  width: min(480px, 100vw) !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+.catalog-order-bottom-sheet .mat-bottom-sheet-container {
+  width: 100% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  background: #fbf8f5 !important;
+  box-shadow: -18px 0 55px rgb(74 63 75 / 18%) !important;
+}
+.catalog-order-bottom-sheet .order-sheet,
+.catalog-order-bottom-sheet .sheet-panel {
+  width: 100% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+}
+.catalog-order-bottom-sheet .sheet-heading,
+.catalog-order-bottom-sheet .sheet-footer { background: #fbf8f5 !important; }
+.catalog-order-bottom-sheet .sheet-footer .full {
+  border-radius: 10px !important;
+  background: #604a59 !important;
+}
+@media (max-width: 520px) {
+  .cdk-overlay-pane.catalog-order-bottom-sheet { width: 100vw !important; }
+}
+
+
+/* Keep the accessible skip link hidden until keyboard users focus it. */
+.skip-link:not(:focus):not(:active) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+
+/* Final menu direction: classic styling moved global to stay within component CSS budget. */
+app-catalog .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 76px;
+  padding: 12px clamp(20px, 5vw, 76px);
+  background: rgb(255 255 255 / 94%);
+  border-bottom: 1px solid #e9dfe5;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 5%);
+  backdrop-filter: blur(14px);
+}
+app-catalog .brand-symbol { display: none; }
+app-catalog .brand-lockup { gap: 0; }
+app-catalog .wordmark {
+  color: #735363;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+app-catalog .wordmark-star { color: #735363; }
+app-catalog .brand-tagline { display: none; }
+app-catalog .main-nav { gap: 26px; }
+app-catalog .main-nav a.nav-link { font-size: 1rem; font-weight: 500; }
+app-catalog .main-nav a.nav-link.active::after { background: #806c79; }
+app-catalog .header-cart {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border-radius: 50%;
+  color: #604a59;
+}
+app-catalog .header-cart mat-icon { width: 26px; height: 26px; font-size: 26px; }
+app-catalog .cart-count {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #604a59;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+}
+app-catalog .presentation-section {
+  padding: clamp(38px, 5vw, 64px) clamp(20px, 6vw, 88px);
+  background: #fbf8f5;
+  color: #4a3f4b;
+}
+app-catalog .presentation-section .section-title,
+app-catalog .presentation-section .catalog-heading { color: #4a3f4b; }
+app-catalog .presentation-section .eyebrow { color: #806c79; }
+app-catalog .presentation-section .section-title h2,
+app-catalog .presentation-section .catalog-heading h2 {
+  color: #5c4253;
+  font-family: 'Shrikhand', Georgia, serif;
+  font-weight: 400;
+}
+app-catalog .presentation-section .small,
+app-catalog .presentation-section .catalog-count { color: #806c79; }
+app-catalog .presentation-section .presentation-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: none;
+}
+app-catalog .presentation-section .presentation-card.active {
+  border: 2px solid #806c79;
+  background: #f7eff3;
+}
+app-catalog .presentation-section .presentation-description,
+app-catalog .presentation-section .choose-label { color: #806c79; }
+app-catalog .presentation-section .catalog-hint {
+  border: 1px solid #e9dfe5;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a3f4b;
+}
+app-catalog .presentation-section .catalog-hint strong { color: #4a3f4b; }
+app-catalog .presentation-section .category-title { color: #5c4253; }
+app-catalog .presentation-section .product {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgb(74 63 75 / 4%);
+}
+app-catalog .presentation-section .product:hover {
+  border-color: #c1a0ac;
+  box-shadow: 0 8px 24px rgb(74 63 75 / 9%);
+}
+app-catalog .presentation-section .add-button,
+app-catalog .presentation-section .dock-continue,
+app-catalog .presentation-section .dock-order {
+  border-radius: 9px;
+  background: #604a59;
+  color: #fff;
+}
+app-catalog .cart-dock .dock-card {
+  border: 1px solid #e9dfe5;
+  border-radius: 14px;
+  background: #fff;
+  color: #4a3f4b;
+  box-shadow: 0 10px 32px rgb(74 63 75 / 12%);
+}
+app-catalog .cart-dock progress { accent-color: #806c79; }
+@media (max-width: 520px) {
+  app-catalog .site-header { padding: 12px 16px; }
+  app-catalog .main-nav { gap: 12px; }
+  app-catalog .main-nav a.nav-link { font-size: .9rem; }
+}
+
