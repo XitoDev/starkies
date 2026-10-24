@@ -70,6 +70,7 @@ describe('Catalog', () => {
     expect(data['@graph'].some(node => node['@type'] === 'Product')).toBe(false);
     expect(component.getProductDetailUrl(TEST_PRODUCTS[0])).toBe('/galletas/brownie-classic/1');
     expect(document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href).toBe('https://starkies.lat/menu');
+    expect(document.getElementById('starkies-site-structured-data')).toBeNull();
   });
 
   it('renders the approved compact category filter row', () => {
