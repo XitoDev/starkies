@@ -65,7 +65,7 @@
               <div class="row-actions">
                 <button matIconButton class="visibility-action" type="button"
                   [disabled]="visibilityUpdatingId() !== null"
-                  [attr.aria-label]="item.catalogVisible === false ? 'Mostrar ' + item.name + ' en el catálogo público' : 'Ocultar ' + item.name + ' del catálogo público"
+                  [attr.aria-label]="item.catalogVisible === false ? 'Mostrar ' + item.name + ' en el catálogo público' : 'Ocultar ' + item.name + ' del catálogo público'"
                   [title]="item.catalogVisible === false ? 'Mostrar en el catálogo' : 'Ocultar del catálogo'"
                   (click)="toggleVisibility(item)">
                   <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">{{item.catalogVisible === false ? 'visibility' : 'visibility_off'}}</mat-icon>
