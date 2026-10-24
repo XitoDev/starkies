@@ -130,4 +130,64 @@ describe('DataService catalog visibility', () => {
     expect(service.recipes()[0].catalogVisible).toBe(true);
   });
 
+
+  it('persists a customer by its document ID without requiring linked orders', async () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [],
+      customers: [{ id: 'customer-1', name: 'Ana', phone: '0991234567', address: 'Centro' }],
+      orders: [],
+    });
+    await service.saveCustomer({ id: 'customer-1', name: 'Ana María', phone: '0991234567', address: 'Centro' });
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'customers',
+      'customer-1',
+      expect.objectContaining({ id: 'customer-1', name: 'Ana María' }),
+    );
+  });
+
+  it('creates an admin order with linked customer, item lines and total including shipping', async () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [{ id: 'cookie-1', name: 'Brownie', price: 1.5 }],
+      customers: [{ id: 'customer-1', name: 'Ana', phone: '0991234567', address: 'Centro' }],
+      orders: [],
+    });
+    const created = await service.createOrder({
+      customerId: 'customer-1',
+      items: [{ recipeId: 'cookie-1', name: 'Brownie', quantity: 2, unitPrice: 1.5 }],
+      shippingFee: 2,
+      deliveryAddress: 'Centro',
+    });
+    expect(created.customerId).toBe('customer-1');
+    expect(created.total).toBe(5);
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'orders',
+      expect.stringMatching(/^SK-\\d{8}-ADM/),
+      expect.objectContaining({
+        customerId: 'customer-1',
+        total: 5,
+        lines: [
+          { id: 'cookie-1', name: 'Brownie', qty: 2, price: 1.5 },
+          { id: 'shipping', name: 'Envío', qty: 1, price: 2 },
+        ],
+      }),
+    );
+  });
+
+  it('allows moving an order from a delivered state back to pending and persists the status', async () => {
+    service.rawState.set({
+      ingredients: [],
+      recipes: [],
+      customers: [{ id: 'customer-1', name: 'Ana', phone: '0991234567', address: 'Centro' }],
+      orders: [{ id: 'order-1', customerId: 'customer-1', status: 'DELIVERED', total: 2, lines: [{ id: 'cookie-1', name: 'Brownie', qty: 2, price: 1 }] }],
+    });
+    await service.updateOrderStatus('order-1', 'PENDING');
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith(
+      'orders',
+      'order-1',
+      expect.objectContaining({ status: 'PENDING' }),
+    );
+  });
+
 });

@@ -99,13 +99,36 @@ export class FirestoreBusinessRepository {
   }
 
   /** Signals other Admin sessions that a root collection or setting changed. */
-  private async publishStateChange(changedKeys: string[] = []): Promise<void> {
+  private async publishStateChange(
+    changedKeys: string[] = [],
+    collectionChange?: { collectionKey: string; delta?: number },
+  ): Promise<void> {
     if (!this.firebase.isConfigured) return;
-    await setDoc(this.stateMetaRef(), {
+    const metaRef = this.stateMetaRef();
+    const snapshot = await getDoc(metaRef);
+    const metadata = snapshot.data() ?? {};
+    const update: Record<string, unknown> = {
       revision: increment(1),
       updatedAt: serverTimestamp(),
       changedKeys,
-    }, { merge: true });
+    };
+    if (collectionChange) {
+      const key = collectionChange.collectionKey;
+      const arrayKeys = Array.isArray(metadata['arrayKeys']) ? metadata['arrayKeys'] as string[] : [];
+      const stateKeys = Array.isArray(metadata['stateKeys']) ? metadata['stateKeys'] as string[] : [];
+      update['arrayKeys'] = Array.from(new Set([...arrayKeys, key]));
+      update['stateKeys'] = Array.from(new Set([...stateKeys, key]));
+      if (collectionChange.delta !== undefined) {
+        const counts = typeof metadata['recordCounts'] === 'object' && metadata['recordCounts'] !== null
+          ? metadata['recordCounts'] as Record<string, unknown>
+          : {};
+        update['recordCounts'] = {
+          ...counts,
+          [key]: Math.max(0, Number(counts[key] ?? 0) + collectionChange.delta),
+        };
+      }
+    }
+    await setDoc(metaRef, update, { merge: true });
   }
 
   invalidateStateCache(): void {
@@ -285,24 +308,159 @@ export class FirestoreBusinessRepository {
   ): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
     const safeValue = this.removeUndefinedFields(value);
-    if (collectionKey === 'customers' || collectionKey === 'orders') safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
-    if (collectionKey === 'customers') safeValue['nameSearchTokens'] = this.searchNameTokensFor({ ...safeValue, id: recordId });
     const recordRef = doc(this.firebase.firestore, collectionKey, recordId);
     const existing = await getDoc(recordRef);
-    const sortIndex = existing.exists()
-      ? Number(existing.data()['sortIndex'] ?? Date.now())
-      : Date.now();
+    const existingData = existing.data() ?? {};
+    let previousCustomerData: Record<string, unknown> | null = null;
+    let nextCustomerData: Record<string, unknown> | null = null;
+    let previousCustomerId = '';
+    let nextCustomerId = '';
+    let previousPhone = '';
+    let nextPhone = '';
+
+    if (collectionKey === 'customers') {
+      previousPhone = this.normalizePhone(String(existingData['phone'] ?? ''));
+      nextPhone = this.normalizePhone(String(safeValue['phone'] ?? ''));
+      await this.assertCustomerPhoneAvailable(recordId, nextPhone);
+      safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
+      safeValue['nameSearchTokens'] = this.searchNameTokensFor({ ...safeValue, id: recordId });
+    } else if (collectionKey === 'orders') {
+      previousCustomerId = String(existingData['customerId'] ?? '');
+      nextCustomerId = String(safeValue['customerId'] ?? previousCustomerId);
+      if (previousCustomerId) {
+        const previousSnapshot = await getDoc(doc(this.firebase.firestore, 'customers', previousCustomerId));
+        if (previousSnapshot.exists()) previousCustomerData = previousSnapshot.data();
+      }
+      if (nextCustomerId) {
+        const nextSnapshot = await getDoc(doc(this.firebase.firestore, 'customers', nextCustomerId));
+        if (nextSnapshot.exists()) nextCustomerData = nextSnapshot.data();
+      }
+      previousPhone = this.normalizePhone(String(existingData['phone'] ?? previousCustomerData?.['phone'] ?? ''));
+      nextPhone = this.normalizePhone(String(safeValue['phone'] ?? nextCustomerData?.['phone'] ?? ''));
+      safeValue['searchTokens'] = this.searchTokensFor({
+        ...safeValue,
+        customer: safeValue['customer'] ?? nextCustomerData?.['name'] ?? previousCustomerData?.['name'],
+        phone: safeValue['phone'] ?? nextCustomerData?.['phone'] ?? previousCustomerData?.['phone'],
+        address: safeValue['address'] ?? safeValue['deliveryAddress'],
+      });
+    } else {
+      safeValue['searchTokens'] = this.searchTokensFor({ ...safeValue, id: recordId });
+    }
+
+    const sortIndex = existing.exists() ? Number(existingData['sortIndex'] ?? Date.now()) : Date.now();
     let orderStatsChanges: { salesChanged: boolean; demandChanged: boolean } | null = null;
     if (collectionKey === 'orders') {
       orderStatsChanges = await this.persistOrderWithStats(recordRef, safeValue, sortIndex);
+      if (nextCustomerId && nextCustomerData) {
+        await this.syncCustomerPhoneLookup(nextCustomerId, nextPhone, nextPhone, true);
+      }
+      await this.syncOrderPhoneLookup(recordId, previousPhone, nextPhone, !existing.exists());
     } else {
       await setDoc(recordRef, { ...safeValue, sortIndex });
+      if (collectionKey === 'customers') {
+        await this.syncCustomerPhoneLookup(recordId, previousPhone, nextPhone);
+        await this.refreshLinkedOrderSearchTokens(recordId, safeValue);
+      }
     }
+
     this.invalidateStateCache();
-    const changedKeys = collectionKey === 'customers' ? ['customer:' + recordId] : [collectionKey];
+    const changedKeys = collectionKey === 'customers'
+      ? ['customers', 'customer:' + recordId, 'orders']
+      : collectionKey === 'orders'
+        ? ['orders', ...(nextCustomerId ? ['customer:' + nextCustomerId] : [])]
+        : [collectionKey];
     if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
     if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
-    await this.publishStateChange(changedKeys);
+    await this.publishStateChange(changedKeys, {
+      collectionKey,
+      delta: existing.exists() ? 0 : 1,
+    });
+  }
+
+  private normalizePhone(value: string): string {
+    return value.replace(/\D/g, '').replace(/^593/, '0');
+  }
+
+  private async phoneHash(normalizedPhone: string): Promise<string> {
+    if (normalizedPhone.length < 7 || normalizedPhone.length > 15) return '';
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalizedPhone));
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  private async assertCustomerPhoneAvailable(customerId: string, normalizedPhone: string): Promise<void> {
+    const hash = await this.phoneHash(normalizedPhone);
+    if (!hash) return;
+    const lookup = await getDoc(doc(this.firebase.firestore, 'customerPhoneLookup', hash));
+    if (lookup.exists() && String(lookup.data()?.['customerId'] ?? '') !== customerId) {
+      throw new Error('Ese teléfono ya está asociado a otro cliente.');
+    }
+  }
+
+  private async syncCustomerPhoneLookup(
+    customerId: string,
+    previousPhone: string,
+    nextPhone: string,
+    allowReassign = false,
+  ): Promise<void> {
+    const previousHash = await this.phoneHash(previousPhone);
+    const nextHash = await this.phoneHash(nextPhone);
+    if (previousHash && previousHash !== nextHash) {
+      const previousRef = doc(this.firebase.firestore, 'customerPhoneLookup', previousHash);
+      const previousLookup = await getDoc(previousRef);
+      if (previousLookup.exists() && String(previousLookup.data()?.['customerId'] ?? '') === customerId) await deleteDoc(previousRef);
+    }
+    if (!nextHash) return;
+    if (!allowReassign) await this.assertCustomerPhoneAvailable(customerId, nextPhone);
+    await setDoc(doc(this.firebase.firestore, 'customerPhoneLookup', nextHash), {
+      customerId,
+      normalizedPhone: nextPhone,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  private async syncOrderPhoneLookup(
+    orderId: string,
+    previousPhone: string,
+    nextPhone: string,
+    isNew: boolean,
+  ): Promise<void> {
+    const previousHash = await this.phoneHash(previousPhone);
+    const nextHash = await this.phoneHash(nextPhone);
+    if (previousHash && previousHash !== nextHash) {
+      const previousRef = doc(this.firebase.firestore, 'orderPhoneLookup', previousHash);
+      const previousLookup = await getDoc(previousRef);
+      if (previousLookup.exists() && String(previousLookup.data()?.['orderId'] ?? '') === orderId) await deleteDoc(previousRef);
+    }
+    if (!nextHash) return;
+    const nextRef = doc(this.firebase.firestore, 'orderPhoneLookup', nextHash);
+    const existing = await getDoc(nextRef);
+    if (isNew || !existing.exists() || String(existing.data()?.['orderId'] ?? '') === orderId) {
+      await setDoc(nextRef, { orderId, normalizedPhone: nextPhone, createdAt: new Date().toISOString() });
+    }
+  }
+
+  private async refreshLinkedOrderSearchTokens(customerId: string, customer: Record<string, unknown>): Promise<void> {
+    const linked = await getDocs(query(collection(this.firebase.firestore, 'orders'), where('customerId', '==', customerId)));
+    let batch = writeBatch(this.firebase.firestore);
+    let pending = 0;
+    for (const snapshot of linked.docs) {
+      const order = snapshot.data();
+      batch.set(snapshot.ref, {
+        searchTokens: this.searchTokensFor({
+          ...order,
+          customer: customer['name'],
+          phone: customer['phone'],
+          address: order['deliveryAddress'] ?? order['address'],
+        }),
+      }, { merge: true });
+      pending++;
+      if (pending >= 400) {
+        await batch.commit();
+        batch = writeBatch(this.firebase.firestore);
+        pending = 0;
+      }
+    }
+    if (pending) await batch.commit();
   }
 
   /**
@@ -525,6 +683,17 @@ export class FirestoreBusinessRepository {
       throw new Error('No se encontró el registro que intentas eliminar. Actualiza la pantalla e inténtalo de nuevo.');
     }
 
+    const matchingData = matching.data() ?? {};
+    if (collectionKey === 'customers') {
+      await this.syncCustomerPhoneLookup(recordId, this.normalizePhone(String(matchingData['phone'] ?? '')), '');
+    }
+    if (collectionKey === 'orders') {
+      const customerId = String(matchingData['customerId'] ?? '');
+      const customerSnapshot = customerId ? await getDoc(doc(this.firebase.firestore, 'customers', customerId)) : null;
+      const customerPhone = customerSnapshot?.exists() ? customerSnapshot.data()?.['phone'] : '';
+      const orderPhone = this.normalizePhone(String(matchingData['phone'] ?? customerPhone ?? ''));
+      await this.syncOrderPhoneLookup(recordId, orderPhone, '', false);
+    }
     const orderStatsChanges = collectionKey === 'orders' ? await this.deleteOrderWithStats(matching.ref) : null;
     if (collectionKey === 'recipes') {
       const batch = writeBatch(this.firebase.firestore);
@@ -540,7 +709,7 @@ export class FirestoreBusinessRepository {
       : collectionKey === 'recipes' ? ['recipes', 'catalogDrafts', 'publicCatalog'] : [collectionKey];
     if (orderStatsChanges?.salesChanged) changedKeys.push('stats:sales');
     if (orderStatsChanges?.demandChanged) changedKeys.push('stats:demand');
-    await this.publishStateChange(changedKeys);
+    await this.publishStateChange(changedKeys, { collectionKey, delta: -1 });
   }
 
   async upsertBusinessSetting(key: string, value: unknown): Promise<void> {
@@ -1105,7 +1274,7 @@ export class FirestoreBusinessRepository {
   }
 
   private searchTokensFor(record: Record<string, unknown>): string[] {
-    const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address']]
+    const values = [record['id'], record['code'], record['name'], record['customer'], record['phone'], record['address'], record['deliveryAddress'], record['zone']]
       .map(value => String(value ?? '').normalize('NFD').split('').filter(char => char.charCodeAt(0) < 768 || char.charCodeAt(0) > 879).join('').toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim())
       .filter(Boolean);
     const tokens = new Set<string>();
