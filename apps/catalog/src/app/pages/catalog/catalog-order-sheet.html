@@ -1,10 +1,7 @@
   <section class="order-sheet" aria-labelledby="order-sheet-title">
     <div class="sheet-panel">
       <div class="sheet-heading">
-        <div class="sheet-title-group">
-          <span class="sheet-eyebrow">TU SELECCIÓN</span>
-          <h2 id="order-sheet-title">Mi pedido</h2>
-        </div>
+        <h2 id="order-sheet-title">Mi pedido</h2>
         <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="catalog.savingOrder()" (click)="catalog.closeOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
       </div>
       <form (ngSubmit)="catalog.submitOrder()">
@@ -16,8 +13,8 @@
             <h3>Completa tus datos</h3>
             <p>Necesitamos esta información para continuar con tu pedido.</p>
           </section>
-          <div class="field-group"><label class="field-label" for="order-phone">Teléfono / WhatsApp</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><input id="order-phone" matInput required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="catalog.orderForm.phone" (blur)="catalog.lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567"></mat-form-field>@if (catalog.lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (catalog.customerLookupMessage()) { <small class="lookup-message">{{ catalog.customerLookupMessage() }}</small> }</div>
-          <div class="field-group"><label class="field-label" for="order-name">Nombre completo</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><input id="order-name" matInput required type="text" autocomplete="name" maxlength="80" [(ngModel)]="catalog.orderForm.name" name="name" placeholder="Escribe tu nombre"></mat-form-field></div>
+          <div class="field-group"><label class="field-label" for="order-phone">Teléfono / WhatsApp</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><input id="order-phone" matInput required type="tel" inputmode="tel" autocomplete="tel" maxlength="24" pattern="[0-9+() .-]{7,24}" [(ngModel)]="catalog.orderForm.phone" (blur)="catalog.lookupCustomerByPhone()" name="phone" placeholder="Ej. 0991234567"></mat-form-field>@if (catalog.lookingUpCustomer()) { <small class="lookup-message">Buscando tus datos…</small> } @else if (catalog.customerLookupMessage()) { <small class="lookup-message">{{ catalog.customerLookupMessage() }}</small> }</div>
+          <div class="field-group"><label class="field-label" for="order-name">Nombre completo</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><input id="order-name" matInput required type="text" autocomplete="name" maxlength="80" [(ngModel)]="catalog.orderForm.name" name="name" placeholder="Escribe tu nombre"></mat-form-field></div>
           <fieldset class="fulfillment-picker">
             <legend>Tipo de entrega</legend>
             <div class="fulfillment-options" role="group" aria-label="Tipo de entrega">
@@ -26,16 +23,16 @@
             </div>
           </fieldset>
           @if (catalog.fulfillmentMode() === 'delivery') {
-            <div class="field-group"><label class="field-label" for="order-zone">Sector de entrega</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><mat-select id="order-zone" required [ngModel]="catalog.orderForm.zone" (ngModelChange)="catalog.setDeliveryZone($event)" name="zone"><mat-option [value]="null" disabled>Selecciona tu sector</mat-option>@for (z of catalog.zones; track z.id) { @if (!catalog.isPickupZone(z)) { <mat-option [value]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</mat-option> } }</mat-select></mat-form-field></div>
-            <div class="field-group"><label class="field-label" for="order-address">Dirección exacta</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><textarea id="order-address" matInput required autocomplete="street-address" maxlength="250" [(ngModel)]="catalog.orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></mat-form-field></div>
+            <div class="field-group"><label class="field-label" for="order-zone">Sector de entrega</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-select id="order-zone" required [ngModel]="catalog.orderForm.zone" (ngModelChange)="catalog.setDeliveryZone($event)" name="zone"><mat-option [value]="null" disabled>Selecciona tu sector</mat-option>@for (z of catalog.zones; track z.id) { @if (!catalog.isPickupZone(z)) { <mat-option [value]="z">{{ z.name }} · {{ z.fee | currency:'USD' }}</mat-option> } }</mat-select></mat-form-field></div>
+            <div class="field-group"><label class="field-label" for="order-address">Dirección exacta</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><textarea id="order-address" matInput required autocomplete="street-address" maxlength="250" [(ngModel)]="catalog.orderForm.address" name="address" rows="2" placeholder="Calle, número, referencia..."></textarea></mat-form-field></div>
             <p class="location-note">📍 Recuerda enviar tu ubicación por WhatsApp para coordinar la entrega.</p>
           } @else {
             <div class="pickup-note" role="status"><strong>Retiro en local</strong><p>No se cobrará envío. Coordinaremos contigo los detalles de la recogida por WhatsApp.</p>@if (catalog.orderForm.zone) { <span>{{ catalog.orderForm.zone.name }} · Sin costo de envío</span> }</div>
           }
-          <div class="field-group"><label class="field-label" for="order-date">Fecha deseada</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><input id="order-date" matInput type="date" required [min]="catalog.today()" [(ngModel)]="catalog.orderForm.date" name="date"></mat-form-field></div>
+          <div class="field-group"><label class="field-label" for="order-date">Fecha deseada</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><input id="order-date" matInput type="date" required [min]="catalog.today()" [(ngModel)]="catalog.orderForm.date" name="date"></mat-form-field></div>
           <div class="optional-name-toggle"><mat-checkbox id="wantsCookieName" [ngModel]="catalog.wantsCookieName()" (ngModelChange)="catalog.wantsCookieName.set($event)" name="wantsCookieName">¿Quieres agregar un nombre a la caja?</mat-checkbox></div>
-          @if (catalog.wantsCookieName()) { <div class="field-group"><label class="field-label" for="order-cookie-name">Nombre en la caja</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><input id="order-cookie-name" matInput type="text" maxlength="80" [(ngModel)]="catalog.orderForm.cookieName" name="cookieName" placeholder="Nombre que escribimos en la caja"></mat-form-field></div> }
-          <div class="field-group"><label class="field-label" for="order-notes">Indicaciones (opcional)</label><mat-form-field appearance="fill" subscriptSizing="dynamic"><textarea id="order-notes" matInput [(ngModel)]="catalog.orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></mat-form-field></div>
+          @if (catalog.wantsCookieName()) { <div class="field-group"><label class="field-label" for="order-cookie-name">Nombre en la caja</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><input id="order-cookie-name" matInput type="text" maxlength="80" [(ngModel)]="catalog.orderForm.cookieName" name="cookieName" placeholder="Nombre que escribimos en la caja"></mat-form-field></div> }
+          <div class="field-group"><label class="field-label" for="order-notes">Indicaciones (opcional)</label><mat-form-field appearance="outline" subscriptSizing="dynamic"><textarea id="order-notes" matInput [(ngModel)]="catalog.orderForm.notes" name="notes" rows="3" maxlength="500" placeholder="¿Tienes alguna alergia o intolerancia alimentaria? Cuéntanos cuál para confirmar si podemos adaptar tu pedido."></textarea></mat-form-field></div>
           @if (catalog.orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ catalog.orderError() }}</p><a matButton="elevated" class="button whatsapp-fallback" [href]="catalog.getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
 
           } @else {
