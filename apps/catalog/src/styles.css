@@ -108,6 +108,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 
 .cdk-overlay-backdrop.order-drawer-backdrop { background: rgb(38 31 41 / 38%); }
 
+.menu-page .box-choice .mdc-button__label {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
 .order-drawer-panel .mat-mdc-form-field { width: 100%; }
 .order-drawer-panel .mat-mdc-text-field-wrapper { background: #fff !important; border-radius: 8px !important; }
 .order-drawer-panel .mdc-notched-outline__leading,
