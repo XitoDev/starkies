@@ -42,7 +42,7 @@ import { FormsModule, NgForm } from '@angular/forms';
         </div>
       </section>
 
-      <section class="quote-section" id="cotizar" aria-labelledby="quote-title">
+      <section class="quote-section" id="pedido-personalizado" aria-labelledby="quote-title">
         <div class="quote-inner">
           <div class="quote-intro">
             <p class="eyebrow">Momentos especiales</p>
@@ -65,15 +65,14 @@ import { FormsModule, NgForm } from '@angular/forms';
             <div class="field">
               <label for="quote-type">Tipo de galletas (opcional)</label>
               <select id="quote-type" name="cookieType" [(ngModel)]="cookieType">
-                <option value="">Aún no lo sé</option><option value="Clásicas">Clásicas</option><option value="NY Style">NY Style</option><option value="Mixtas">Mixtas</option><option value="Personalizadas y decoradas">Personalizadas y decoradas</option>
+                <option value="">Aún no lo sé</option><option value="Clásicas">Clásicas</option><option value="NY Style">NY Style</option><option value="Mixtas">Mixtas</option><option value="Decoradas / personalizadas">Decoradas / personalizadas</option>
               </select>
             </div>
             <div class="field full">
               <label for="quote-notes">Cuéntanos qué tienes en mente <span aria-hidden="true">*</span></label>
-              <textarea id="quote-notes" name="notes" [(ngModel)]="notes" required rows="5" maxlength="2000" placeholder="Ocasión, temática, colores, fecha del evento y cualquier detalle que quieras compartir…"></textarea>
+              <textarea id="quote-notes" name="notes" [(ngModel)]="notes" required rows="3" maxlength="2000" placeholder="Ocasión, temática, colores, fecha y cualquier detalle que quieras compartir..."></textarea>
             </div>
-            <p class="form-hint full">Al enviar, se abrirá WhatsApp con los datos de tu solicitud para que puedas revisarlos y mandarlos.</p>
-            <button class="primary-button full submit-button" type="submit">Cotizar por WhatsApp</button>
+             <button class="primary-button full submit-button" type="submit">Solicitar cotización</button>
             @if (formError) { <p class="form-error full" role="alert">{{ formError }}</p> }
           </form>
         </div>
@@ -126,8 +125,7 @@ import { FormsModule, NgForm } from '@angular/forms';
     h1 { font:clamp(52px,6vw,90px)/1.06 'Shrikhand',Georgia,serif; color:#5c4253; margin:18px 0; font-weight:400; }
     p { line-height:1.8; color:#665c64; }
     .hero-description { max-width:900px; margin:22px auto; font-size:clamp(1rem,1.6vw,1.2rem); }
-    .primary-button { display:inline-flex; align-items:center; justify-content:center; min-height:45px; padding:14px 22px; border:0; border-radius:8px; background:#604a59; color:white; font:600 14px 'DM Sans',Arial,sans-serif; cursor:pointer; transition:background .18s,transform .18s; }
-    .primary-button:hover { background:#4a3f4b; transform:translateY(-1px); }
+    .primary-button { display:inline-flex; align-items:center; justify-content:center; min-height:45px; padding:14px 22px; border:0; border-radius:8px; background:#604a59; color:white; font:600 14px 'DM Sans',Arial,sans-serif; cursor:pointer; }
     .section { max-width:1250px; margin:auto; padding:70px 6%; text-align:center; }
     h2 { margin:10px 0; color:#604a59; font:42px/1.2 'Shrikhand',Georgia,serif; font-weight:400; }
     .features { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:35px; }
@@ -147,8 +145,7 @@ import { FormsModule, NgForm } from '@angular/forms';
     .field textarea { min-height:140px; resize:vertical; }
     .field input:focus,.field select:focus,.field textarea:focus { outline:2px solid #c1a0ac; outline-offset:1px; }
     .full { grid-column:1/-1; }
-    .form-hint { margin:0; color:#766a73; font-size:12px; line-height:1.6; }
-    .submit-button { width:100%; }
+     .submit-button { width:100%; }
     .form-error { margin:0; color:#9b294b; font-size:13px; }
     .site-footer { padding:32px 6% 18px; background:#4a3f4b; color:white; }
     .footer-inner { display:flex; justify-content:space-between; gap:32px; max-width:1180px; margin:auto; text-align:left; }
@@ -178,8 +175,7 @@ import { FormsModule, NgForm } from '@angular/forms';
       .footer-contact { align-items:center; }
       .contact-note { text-align:center; }
     }
-    @media(prefers-reduced-motion:reduce) { .primary-button { transition:none; } }
-  `]
+   `]
 })
 export class Landing {
   readonly currentYear = new Date().getFullYear();
