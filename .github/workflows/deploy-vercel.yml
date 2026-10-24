@@ -89,13 +89,14 @@ jobs:
             npx ng test admin --watch=false
           else
             npx ng build catalog --configuration production
-            HTML_FILE="$(find dist/catalog -type f -name index.html -print -quit)"
+            HTML_FILE="$(find dist/catalog -type f -name index.html -exec grep -li 'Elige tu caja' {} + | head -n 1)"
             if [ -z "$HTML_FILE" ]; then
-              echo "::error::No prerendered index.html was produced."
+              echo "::error::No prerendered catalog page containing 'Elige tu caja' was found."
+              find dist/catalog -type f -name index.html -print
               exit 1
             fi
             grep -qi 'rel="canonical"' "$HTML_FILE"
-            grep -qi 'Elige tu caja' "$HTML_FILE"
+            echo "Verified canonical metadata and catalog shell in $HTML_FILE"
             npx ng test catalog --watch=false
             npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/order-short.ts api/admin-order-document.ts api/customer-lookup.ts
             rm -rf /tmp/starkies-catalog-esm
