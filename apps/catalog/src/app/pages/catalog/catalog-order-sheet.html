@@ -49,7 +49,7 @@
                 @for (box of catalog.completedBoxes(); track $index) {
                   <section class="cart-box">
                     <div class="cart-box-title">
-                      <strong>Caja {{ $index + 1 }} · {{ box.presentation.name }}</strong>
+                      <strong>Caja {{ $index + 1 }} · {{ catalog.getPresentationTitle(box.presentation) }}</strong>
                       <small>{{ box.presentation.price | currency:'USD' }}</small>
                     </div>
                     @for (key of catalog.getObjectKeys(box.items); track key) {
@@ -66,7 +66,7 @@
                 @if (catalog.totalBoxCurrent() > 0) {
                   <section class="cart-box current-cart-box">
                     <div class="cart-box-title">
-                      <strong>{{ catalog.editingBoxIndex() !== null ? 'Editando caja' : 'Tu caja actual' }} · {{ catalog.selectedPresentation().name }}</strong>
+                      <strong>{{ catalog.editingBoxIndex() !== null ? 'Editando caja' : 'Tu caja actual' }} · {{ catalog.getPresentationTitle(catalog.selectedPresentation()) }}</strong>
                       <small>{{ catalog.totalBoxCurrent() }}/{{ catalog.totalBoxRequired() }} galletas</small>
                     </div>
                     @for (key of catalog.getObjectKeys(catalog.currentBoxItems()); track key) {
