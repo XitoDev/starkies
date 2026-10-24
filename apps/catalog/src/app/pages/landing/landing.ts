@@ -93,14 +93,9 @@ import { FormsModule, NgForm } from '@angular/forms';
     .brand-name span { font-family:Georgia,serif; }
     nav { display:flex; align-items:center; gap:26px; } .nav-link { padding:10px 0; } .nav-link.active { font-weight:700; }
 
-    .hero::before, .hero::after { content:none !important; display:none !important; }
-    .hero { min-height: min(690px, calc(100svh - 76px)); padding-top: 76px; padding-bottom: 88px; }
-    .hero-copy { margin-inline:auto; }
-    .hero h1 { display:block; position:relative; margin-top:0; }
-
-    .hero { position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; min-height:min(690px,calc(100svh - 76px)); padding:78px 24px 96px; text-align:center; background:linear-gradient(115deg,#fff9f7 0%,#f8eaf0 56%,#f0d9e4 100%); }
-    .hero-copy { position:relative; z-index:1; max-width:920px; } .eyebrow { margin:0 0 18px; color:var(--mauve); font-size:.78rem; font-weight:700; letter-spacing:.25em; }
-    h1 { margin:0; color:#5c4253; font-family:'Shrikhand',Georgia,serif; font-size:clamp(3.7rem,7.4vw,6.4rem); font-weight:400; line-height:1.06; }
+    .hero { position:relative; isolation:isolate; overflow:hidden; display:grid; place-items:center; box-sizing:border-box; width:100%; min-height:min(690px,calc(100svh - 76px)); padding:78px 24px 96px; scroll-margin-top:76px; text-align:center; background:linear-gradient(115deg,#fff9f7 0%,#f8eaf0 56%,#f0d9e4 100%); }
+    .hero-copy { position:relative; z-index:1; width:min(100%,920px); margin:0 auto; } .eyebrow { margin:0 0 18px; color:var(--mauve); font-size:.78rem; font-weight:700; letter-spacing:.25em; }
+    h1 { display:block; margin:0; color:#5c4253; font-family:'Shrikhand',Georgia,serif; font-size:clamp(3.2rem,7.4vw,6.4rem); font-weight:400; line-height:1.06; overflow-wrap:normal; }
     .hero-description { max-width:900px; margin:28px auto 22px; color:#665c64; font-size:clamp(1rem,1.6vw,1.2rem); line-height:1.8; }
     .primary-button { display:inline-flex; justify-content:center; align-items:center; gap:10px; min-height:54px; padding:0 28px; border:0; border-radius:10px; background:#604a59; color:white; font:700 1rem 'DM Sans',Arial,sans-serif; cursor:pointer; transition:background .18s ease,transform .18s ease; }
     .primary-button:hover { background:#4a3f4b; transform:translateY(-1px); }

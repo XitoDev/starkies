@@ -32,6 +32,7 @@ export class Catalog {
   readonly showBoxChoiceModal = signal(false);
   private readonly bottomSheet = inject(MatBottomSheet);
   private orderSheetRef: MatBottomSheetRef<CatalogOrderSheetComponent> | null = null;
+  readonly orderFormVisible = signal(false);
   readonly savingOrder = signal(false);
   readonly orderError = signal('');
   readonly orderSuccess = signal<OrderConfirmation | null>(null);
@@ -219,6 +220,7 @@ export class Catalog {
   }
   openOrderSheet(): void {
     this.showBoxChoiceModal.set(false);
+    this.orderFormVisible.set(false);
     this.orderError.set('');
     if (this.orderSheetRef) return;
     const sheetRef = this.bottomSheet.open(CatalogOrderSheetComponent, {
