@@ -27,10 +27,10 @@ import { Order } from 'shared';
             <label>Estado del pedido<select [(ngModel)]="status" name="quickStatus"><option value="PENDING">Pendiente</option><option value="PREPARING">En preparación</option><option value="READY">Listo para entregar</option><option value="DELIVERED">Entregado</option><option value="CANCELLED">Cancelado</option></select></label>
             <label class="quick-paid"><input type="checkbox" [(ngModel)]="isPaid" name="quickPaid"> Pago recibido</label>
             @if (isPaid) { <label>Forma de pago<select [(ngModel)]="paymentMethod" name="quickPaymentMethod"><option value="TRANSFER">Transferencia</option><option value="CASH">Efectivo</option></select></label> }
-            <button matButton="elevated" type="button" class="primary" (click)="saveQuickStatusAndPayment()" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar estado y pago' }}</button>
+            
           </section>
           <section class="lines"><header><strong>Productos del pedido</strong><span>{{ item.items.length }} líneas</span></header>@for(line of item.items;track line.recipeId + '-' + $index){<div class="line">@if (recipeImage(line.recipeId); as image) { <img class="cookie-image" [src]="image" [alt]="line.name || recipeName(line.recipeId)" loading="lazy"> } @else { <span class="cookie-placeholder" aria-hidden="true"><mat-icon fontSet="material-symbols-rounded">cookie</mat-icon></span> }<div><strong>{{ line.name || recipeName(line.recipeId) }}</strong><small>{{ line.quantity }} × {{ line.unitPrice | currency:'USD' }}</small></div><b>{{ line.quantity * line.unitPrice | currency:'USD' }}</b></div>}<div class="total-row"><span>Subtotal de galletas</span><strong>{{ subtotal(item) | currency:'USD' }}</strong></div><div class="total-row"><span>Envío</span><strong>{{ (item.shippingFee ?? 0) | currency:'USD' }}</strong></div><div class="total"><span>Total del pedido</span><strong>{{ totalWithShipping(item) | currency:'USD' }}</strong></div></section>
-          <footer class="actions"><a matButton="outlined" class="secondary" routerLink="/pedidos">Volver</a><button matButton="outlined" class="danger" type="button" (click)="remove()">Eliminar pedido</button><button matButton="elevated" class="primary" type="button" (click)="editing.set(true)">Editar datos del pedido</button></footer>
+          <footer class="actions"><a matButton="outlined" class="secondary" routerLink="/pedidos">Cancelar</a><button matButton="elevated" class="primary" type="button" (click)="saveQuickStatusAndPayment()" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar' }}</button></footer>
         } @else {
           <form (ngSubmit)="save()">
             <label>Estado del pedido<select [(ngModel)]="status" name="status"><option value="PENDING">Pendiente</option><option value="PREPARING">En preparación</option><option value="READY">Listo</option><option value="DELIVERED">Entregado</option><option value="CANCELLED">Cancelado</option></select></label>
@@ -44,7 +44,7 @@ import { Order } from 'shared';
             <label>Forma de pago<select [(ngModel)]="paymentMethod" name="paymentMethod" [disabled]="!isPaid"><option value="TRANSFER">Transferencia</option><option value="CASH">Efectivo</option></select></label>
             <label>Notas adicionales<textarea rows="4" maxlength="1000" [(ngModel)]="notes" name="notes"></textarea></label>
             <div class="readonly-total"><span>Total con envío · los productos se conservan del catálogo</span><strong>{{ totalWithShipping(item) | currency:'USD' }}</strong></div>
-            <footer class="actions"><a matButton="outlined" class="secondary" [routerLink]="['/pedidos', item.id]">Cancelar</a><button matButton="elevated" class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar pedido' }}</button></footer>
+            <footer class="actions"><a matButton="outlined" class="secondary" [routerLink]="['/pedidos', item.id]">Cancelar</a><button matButton="elevated" class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar' }}</button></footer>
           </form>
         }
       </section>
@@ -186,11 +186,5 @@ export class PedidoRuta {
       await this.router.navigate(['/pedidos', this.orderId()]);
     } catch (error) { this.error.set(error instanceof Error ? error.message : 'No se pudo guardar el pedido.'); }
     finally { this.saving.set(false); }
-  }
-  async remove(): Promise<void> {
-    const item = this.order();
-    if (!item || !window.confirm(`¿Eliminar el pedido #${item.id}? Esta acción no se puede deshacer.`)) return;
-    try { await this.data.deleteOrder(item.id); await this.router.navigate(['/pedidos'], { queryParams: { eliminado: '1' } }); }
-    catch (error) { this.error.set(error instanceof Error ? error.message : 'No se pudo eliminar el pedido.'); }
   }
 }
