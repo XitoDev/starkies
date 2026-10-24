@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preload" as="image" href="/starkies-sketch.webp" fetchpriority="high">
   <title>StarKies · La estrella eres tú</title>
-  <meta name="description" content="La estrella eres tú. Descubre las galletas clásicas y New York de StarKies en Guayaquil y elige los sabores de tu caja.">
+  <meta name="description" content="Compra galletas artesanales en Guayaquil, Ecuador. Elige cajas de galletas clásicas y NY Style, sabores de chocolate y galletas personalizadas para eventos. Arma tu caja en línea con StarKies.">
+  <meta name="keywords" content="StarKies, galletas artesanales Guayaquil, galletas en Guayaquil, comprar galletas Guayaquil, cajas de galletas, galletas clásicas, galletas New York Guayaquil, galletas NY Style, galletas de chocolate, Brownie Classic, galletas personalizadas Guayaquil, galletas para eventos Guayaquil, galletas para regalar, postres Guayaquil, galletas artesanales Ecuador">
   <meta name="application-name" content="StarKies">
   <meta name="robots" content="index, follow">
   <meta name="googlebot" content="index, follow, max-image-preview:large">
@@ -21,7 +22,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap" rel="stylesheet">
 
   <meta property="og:title" content="StarKies · La estrella eres tú">
-  <meta property="og:description" content="La estrella eres tú. Descubre las galletas clásicas y New York de StarKies en Guayaquil y elige los sabores de tu caja.">
+  <meta property="og:description" content="Compra galletas artesanales en Guayaquil, Ecuador. Elige cajas de galletas clásicas y NY Style, sabores de chocolate y galletas personalizadas para eventos. Arma tu caja en línea con StarKies.">
   <meta property="og:url" content="https://starkies.lat/">
   <meta property="og:site_name" content="StarKies">
   <meta property="og:type" content="website">
@@ -33,7 +34,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="StarKies · La estrella eres tú">
-  <meta name="twitter:description" content="La estrella eres tú. Descubre las galletas clásicas y New York de StarKies en Guayaquil y elige los sabores de tu caja.">
+  <meta name="twitter:description" content="Compra galletas artesanales en Guayaquil, Ecuador. Elige cajas de galletas clásicas y NY Style, sabores de chocolate y galletas personalizadas para eventos. Arma tu caja en línea con StarKies.">
   <meta name="twitter:image" content="https://starkies.lat/starkies-social.png">
 
   <script type="application/ld+json">
@@ -46,13 +47,18 @@
         "name": "StarKies",
         "url": "https://starkies.lat/",
         "image": "https://starkies.lat/starkies-social.png",
-        "telephone": "+593985313438",
+        "telephone": "+593979075202",
+        "description": "Galletas artesanales, cajas clásicas y NY Style, y galletas personalizadas para ocasiones especiales en Guayaquil, Ecuador.",
+        "sameAs": [
+          "https://www.instagram.com/starkies.ec/",
+          "https://www.tiktok.com/@starkies.ec/"
+        ],
         "priceRange": "$",
         "currenciesAccepted": "USD",
         "areaServed": [
-          {"@type": "City", "name": "Guayaquil"},
-          {"@type": "City", "name": "Samborondón"},
-          {"@type": "Place", "name": "Daule"}
+          {"@type": "City", "name": "Guayaquil", "containedInPlace": {"@type": "Country", "name": "Ecuador"}},
+          {"@type": "City", "name": "Samborondón", "containedInPlace": {"@type": "Country", "name": "Ecuador"}},
+          {"@type": "Place", "name": "Daule, Guayas, Ecuador"}
         ]
       },
       {
@@ -69,9 +75,75 @@
         "itemListOrder": "https://schema.org/ItemListOrderAscending",
         "numberOfItems": 3,
         "itemListElement": [
-          {"@type":"ListItem","position":1,"item":{"@type":"Product","name":"Caja solo clásicas","description":"Caja con 10 galletas clásicas StarKies.","offers":{"@type":"Offer","price":"6.00","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://starkies.lat/#sabores"}}},
-          {"@type":"ListItem","position":2,"item":{"@type":"Product","name":"Caja solo New York","description":"Caja con 6 galletas estilo New York.","offers":{"@type":"Offer","price":"7.80","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://starkies.lat/#sabores"}}},
-          {"@type":"ListItem","position":3,"item":{"@type":"Product","name":"Caja mixta de galletas","description":"Caja con 4 galletas clásicas y 4 galletas estilo New York.","offers":{"@type":"Offer","price":"7.60","priceCurrency":"USD","availability":"https://schema.org/InStock","url":"https://starkies.lat/#sabores"}}}
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "Product",
+              "name": "Caja solo clásicas",
+              "description": "Caja con 10 galletas clásicas artesanales StarKies.",
+              "image": [
+                "https://starkies.lat/images/starkies-brownie-cookie.svg",
+                "https://starkies.lat/images/chispas-chocolate-classic.webp"
+              ],
+              "brand": { "@type": "Brand", "name": "StarKies" },
+              "category": "Caja de galletas clásicas",
+              "sku": "caja-solo-clasicas",
+              "offers": {
+                "@type": "Offer",
+                "price": "6.00",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://starkies.lat/menu#box-choices",
+                "seller": { "@id": "https://starkies.lat/#bakery" }
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "Product",
+              "name": "Caja solo New York",
+              "description": "Caja con 6 galletas artesanales estilo New York.",
+              "image": "https://starkies.lat/images/choco-meteor.webp",
+              "brand": { "@type": "Brand", "name": "StarKies" },
+              "category": "Caja de galletas NY Style",
+              "sku": "caja-solo-new-york",
+              "offers": {
+                "@type": "Offer",
+                "price": "7.80",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://starkies.lat/menu#box-choices",
+                "seller": { "@id": "https://starkies.lat/#bakery" }
+              }
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "item": {
+              "@type": "Product",
+              "name": "Caja mixta de galletas",
+              "description": "Caja con 4 galletas clásicas y 4 galletas artesanales estilo New York.",
+              "image": [
+                "https://starkies.lat/images/chispas-chocolate-classic.webp",
+                "https://starkies.lat/images/choco-meteor.webp"
+              ],
+              "brand": { "@type": "Brand", "name": "StarKies" },
+              "category": "Caja mixta de galletas clásicas y NY Style",
+              "sku": "caja-mixta",
+              "offers": {
+                "@type": "Offer",
+                "price": "7.60",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "url": "https://starkies.lat/menu#box-choices",
+                "seller": { "@id": "https://starkies.lat/#bakery" }
+              }
+            }
+          }
         ]
       }
     ]
