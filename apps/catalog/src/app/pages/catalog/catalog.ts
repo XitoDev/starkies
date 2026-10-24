@@ -366,7 +366,7 @@ export class Catalog {
     this.wantsCookieName.set(false);
     this.customerLookupMessage.set('');
     this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('delivery');
+    this.fulfillmentMode.set('pickup');
     return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
   }
   private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
