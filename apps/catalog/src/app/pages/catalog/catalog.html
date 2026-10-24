@@ -40,9 +40,8 @@
       <div class="box-choices" id="box-choices" role="group" aria-label="Presentaciones disponibles">
         @for (p of presentations; track p.id) {
           <button matButton="text" type="button" class="box-choice" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
-            <strong>{{ p.name }}</strong>
-            <small>{{ p.desc }}</small>
-            <span class="box-choice-bottom"><b>{{ formatPresentationPrice(p.price) }}</b><span>{{ p.id === selectedPresentation().id ? 'Seleccionada' : 'Elegir caja' }}</span></span>
+            <strong>{{ getPresentationTitle(p) }}</strong>
+            <small>{{ getPresentationDescription(p) }}</small>
           </button>
         }
       </div>
