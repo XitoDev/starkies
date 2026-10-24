@@ -10,6 +10,14 @@
     {
       "source": "/p/:code",
       "destination": "/api/order-short?code=:code"
+    },
+    {
+      "source": "/galletas/:slug/:id",
+      "destination": "/api/cookie-page?slug=:slug&id=:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
     }
   ]
 }
