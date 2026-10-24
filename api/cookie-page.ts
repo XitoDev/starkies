@@ -1,6 +1,7 @@
 import { readPublicCatalog } from './catalog-data.js';
 import {
   absolutePublicImage,
+  buildShippingDetails,
   escapeHtml,
   getPublicCatalogDatabase,
   productDetailPath,
@@ -71,6 +72,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         price,
         priceCurrency: 'USD',
         availability,
+        shippingDetails: buildShippingDetails(catalog.zones),
         seller: { '@id': 'https://starkies.lat/#bakery' },
       },
     } : {
