@@ -415,3 +415,62 @@
 @media (max-width: 380px) {
   :host .presentation-section .box-presentations { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* Menú público clásico y simple: conserva las tarjetas, datos y flujo de pedido existentes. */
+:host .presentation-section {
+  background: var(--sk-cream);
+  color: var(--sk-ink);
+}
+:host .presentation-section .eyebrow,
+:host .presentation-section .catalog-count,
+:host .presentation-section .section-title h2,
+:host .presentation-section .catalog-heading h2,
+:host .presentation-section .category-title,
+:host .presentation-section .category-title .category-heading {
+  color: var(--sk-ink);
+}
+:host .presentation-section .section-title .small,
+:host .presentation-section .catalog-heading .small {
+  color: var(--sk-muted);
+}
+:host .presentation-section .search-field {
+  background: #fff;
+  border-color: #d9cbd4;
+}
+:host .presentation-section .search-field input { color: var(--sk-ink); }
+:host .presentation-section .search-field input::placeholder { color: #857982; }
+:host .presentation-section .presentation-card {
+  border-color: var(--line, #e9dfe5);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+:host .presentation-section .presentation-card.active {
+  border: 2px solid var(--sk-mauve);
+  background: #f7eff3;
+}
+:host .presentation-section .presentation-card .presentation-description,
+:host .presentation-section .presentation-card .choose-label { color: var(--sk-muted); }
+:host .presentation-section .catalog-hint {
+  border-color: var(--line, #e9dfe5);
+  background: #fff;
+  color: var(--sk-ink);
+}
+:host .presentation-section .catalog-hint strong { color: var(--sk-ink); }
+:host .presentation-section .product {
+  border-color: var(--line, #e9dfe5);
+  border-radius: 12px;
+  box-shadow: none;
+}
+:host .presentation-section .product:hover {
+  border-color: #c7b4c0;
+  box-shadow: 0 5px 18px rgb(38 7 41 / 6%);
+}
+
+:host .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  backdrop-filter: blur(14px);
+}
