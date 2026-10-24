@@ -17,6 +17,17 @@
   --ds-color-text-muted: #806c79;
   --ds-color-outline: #806c79;
   --ds-color-outline-variant: #e9dfe5;
+  --ds-font-family: 'DM Sans', Arial, sans-serif;
+  --mdc-typography-font-family: 'DM Sans', Arial, sans-serif;
+  --mat-sys-body-large-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-body-medium-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-body-small-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-label-large-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-label-medium-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-label-small-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-title-large-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-title-medium-font: 'DM Sans', Arial, sans-serif;
+  --mat-sys-title-small-font: 'DM Sans', Arial, sans-serif;
 
   --mat-sys-primary: var(--ds-color-primary);
   --mat-sys-on-primary: var(--ds-color-on-primary);
