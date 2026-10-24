@@ -36,7 +36,7 @@
           @if (catalog.orderError()) { <div class="order-error" role="alert"><strong>No pudimos registrar tu pedido.</strong><p>{{ catalog.orderError() }}</p><a matButton="elevated" class="button whatsapp-fallback" [href]="catalog.getWhatsAppUrl()" target="_blank" rel="noopener noreferrer">Terminar pedido por WhatsApp</a></div> }
 
           } @else {
-            <section class="summary cart-step" aria-labelledby="cart-summary-title">
+            <section class="summary cart-step" aria-label="Resumen del pedido">
               @if (catalog.cartItemCount() === 0) {
                 <p class="empty-cart-message" id="cart-hint">Agrega tus galletas favoritas aquí</p>
               } @else {
