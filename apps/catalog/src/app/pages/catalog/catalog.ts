@@ -359,7 +359,6 @@ export class Catalog {
     this.selectedPresentation.set(this.presentations[0]);
     this.categoryFilter.set('Todas');
     this.boxSelectionError.set('');
-    this.showCartTip.set(false);
     this.orderError.set('');
     this.orderSuccess.set(null);
     this.persistCartDraft();
