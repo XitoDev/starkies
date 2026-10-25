@@ -114,3 +114,99 @@
 }
 .product-detail-link:hover { color: #806c79; }
 .product-detail-link:focus-visible { outline: 2px solid #b89cab; outline-offset: 3px; }
+
+
+/* Persistent next-step actions: the customer should never need to find the cart manually. */
+:host .menu-page.has-complete-box {
+  padding-bottom: calc(210px + env(safe-area-inset-bottom));
+}
+:host .complete-box-actions {
+  position: fixed;
+  z-index: 50;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, calc(100vw - 24px));
+  margin-inline: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgb(38 31 41 / 18%);
+}
+:host .complete-box-message {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+:host .complete-box-message strong {
+  color: var(--plum);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+:host .complete-box-message span {
+  color: #665c64;
+  font-size: 12px;
+  line-height: 1.4;
+}
+:host .complete-box-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+:host .next-box-button,
+:host .continue-cart-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: normal;
+  box-shadow: none;
+}
+:host .next-box-button {
+  border: 1px solid #cbb9c4;
+  background: #fff;
+  color: var(--plum);
+}
+:host .continue-cart-button {
+  border: 1px solid var(--plum);
+  background: var(--plum);
+  color: #fff;
+}
+:host .complete-box-buttons .ds-icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 20px;
+}
+@media (max-width: 560px) {
+  :host .menu-page.has-complete-box {
+    padding-bottom: calc(220px + env(safe-area-inset-bottom));
+  }
+  :host .complete-box-actions {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: auto;
+    padding: 13px;
+    border-radius: 14px;
+  }
+  :host .next-box-button,
+  :host .continue-cart-button {
+    min-height: 46px;
+    font-size: 13px;
+  }
+}

@@ -1,4 +1,4 @@
-<section class="menu-page">
+<section class="menu-page" [class.has-complete-box]="isBoxComplete()">
   @if (orderSuccess(); as confirmation) {
     <section class="order-success" role="status" aria-live="polite">
       <div>
@@ -40,11 +40,6 @@
             <button matButton="outlined" type="button" class="filter-button" [class.active]="categoryFilter() === cat" (click)="setCategoryFilter(cat)">{{ cat === 'Galletas clásicas' ? 'Clásicas' : 'NY Style' }}</button>
           }
         </div>
-        @if (isBoxComplete()) {
-          <div class="add-box-row">
-            <button matButton="outlined" type="button" class="add-box-button" (click)="addAnotherBox()">{{ editingBoxIndex() !== null ? 'Guardar cambios' : '＋ Agregar otra caja' }}</button>
-          </div>
-        }
       </div>
 
       @if (catalogLoading()) { <p class="catalog-message" role="status">Cargando el catálogo actualizado…</p> }
@@ -99,4 +94,23 @@
       }
     </section>
   </div>
+
+  @if (isBoxComplete()) {
+    <aside class="complete-box-actions" aria-labelledby="complete-box-title" aria-live="polite">
+      <div class="complete-box-message">
+        <strong id="complete-box-title">¡Tu caja está lista!</strong>
+        <span>¿Qué quieres hacer ahora?</span>
+      </div>
+      <div class="complete-box-buttons">
+        <button matButton="outlined" type="button" class="next-box-button" (click)="addAnotherBox()">
+          <span class="ds-icon" aria-hidden="true">add</span>
+          {{ editingBoxIndex() !== null ? 'Guardar cambios' : 'Agregar otra caja' }}
+        </button>
+        <button matButton="elevated" type="button" class="continue-cart-button" (click)="openOrderSheet()">
+          <span class="ds-icon" aria-hidden="true">shopping_cart</span>
+          Continuar al carrito
+        </button>
+      </div>
+    </aside>
+  }
 </section>

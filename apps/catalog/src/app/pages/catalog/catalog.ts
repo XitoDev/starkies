@@ -34,9 +34,6 @@ export class Catalog {
   readonly searchQuery = signal('');
   readonly categoryFilter = signal<'Todas' | 'Galletas clásicas' | 'Galletas NY'>('Todas');
   readonly boxSelectionError = signal('');
-  readonly showCartTip = signal(false);
-  private cartTipShowTimer: ReturnType<typeof setTimeout> | null = null;
-  private cartTipHideTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly dialog = inject(MatDialog);
   private readonly catalogUi = inject(CatalogUiService);
   private orderSheetRef: MatDialogRef<CatalogOrderSheetComponent> | null = null;
@@ -341,23 +338,12 @@ export class Catalog {
   changeQuantity(productId: string, delta: number): void {
     const product = this.products().find(item => item.id === productId);
     if (!product || !product.stock) return;
-    const wasComplete = this.isBoxComplete();
     if (delta > 0 && !this.canAddProduct(productId)) return;
     const nextItems = { ...this.currentBoxItems() }, nextQuantity = (nextItems[productId] || 0) + delta;
     if (nextQuantity <= 0) delete nextItems[productId]; else nextItems[productId] = nextQuantity;
     this.currentBoxItems.set(nextItems);
-    if (!wasComplete && this.isBoxComplete()) this.triggerCartTip();
     if (delta < 0) this.boxSelectionError.set('');
     this.persistCartDraft();
-  }
-  private triggerCartTip(): void {
-    this.showCartTip.set(false);
-    if (this.cartTipShowTimer) clearTimeout(this.cartTipShowTimer);
-    if (this.cartTipHideTimer) clearTimeout(this.cartTipHideTimer);
-    this.cartTipShowTimer = setTimeout(() => {
-      this.showCartTip.set(true);
-      this.cartTipHideTimer = setTimeout(() => this.showCartTip.set(false), 2800);
-    }, 10);
   }
   finishBox(): void {
     if (!this.isBoxComplete()) return;
@@ -373,7 +359,6 @@ export class Catalog {
     this.selectedPresentation.set(this.presentations[0]);
     this.categoryFilter.set('Todas');
     this.boxSelectionError.set('');
-    this.showCartTip.set(false);
     this.orderError.set('');
     this.orderSuccess.set(null);
     this.persistCartDraft();
@@ -381,6 +366,7 @@ export class Catalog {
   addAnotherBox(): void {
     this.finishBox();
     this.categoryFilter.set('Galletas clásicas');
+    this.document.getElementById('box-choices')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }
   editBox(index: number): void {
     const box = this.completedBoxes()[index];
