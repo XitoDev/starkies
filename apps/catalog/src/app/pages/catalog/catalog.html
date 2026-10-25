@@ -103,11 +103,11 @@
       </div>
       <div class="complete-box-buttons">
         <button matButton="outlined" type="button" class="next-box-button" (click)="addAnotherBox()">
-          <mat-icon aria-hidden="true">add</mat-icon>
+          <span class="ds-icon" aria-hidden="true">add</span>
           {{ editingBoxIndex() !== null ? 'Guardar cambios' : 'Agregar otra caja' }}
         </button>
         <button matButton="elevated" type="button" class="continue-cart-button" (click)="openOrderSheet()">
-          <mat-icon aria-hidden="true">shopping_cart</mat-icon>
+          <span class="ds-icon" aria-hidden="true">shopping_cart</span>
           Continuar al carrito
         </button>
       </div>
