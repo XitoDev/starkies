@@ -73,6 +73,46 @@ describe('Catalog', () => {
     expect(document.getElementById('starkies-site-structured-data')).toBeNull();
   });
 
+  it('shows the floating next-step panel only after the current box is complete', () => {
+    expect(fixture.nativeElement.querySelector('.complete-box-actions')).toBeNull();
+
+    for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
+    fixture.detectChanges();
+
+    const panel = fixture.nativeElement.querySelector('.complete-box-actions') as HTMLElement | null;
+    expect(panel).toBeTruthy();
+    expect(panel?.textContent).toContain('¡Tu caja está lista!');
+    expect(panel?.textContent).toContain('Agregar otra caja');
+    expect(panel?.textContent).toContain('Continuar al carrito');
+    expect(panel?.querySelector('.complete-box-buttons')?.children).toHaveLength(2);
+  });
+
+  it('saves the completed box and returns to box selection when adding another box', () => {
+    for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
+    fixture.detectChanges();
+
+    const addAnotherButton = fixture.nativeElement.querySelector('.next-box-button') as HTMLButtonElement;
+    addAnotherButton.click();
+    fixture.detectChanges();
+
+    expect(component.completedBoxes()).toHaveLength(1);
+    expect(component.totalBoxCurrent()).toBe(0);
+    expect(component.isBoxComplete()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.complete-box-actions')).toBeNull();
+    expect(component.categoryFilter()).toBe('Galletas clásicas');
+  });
+
+  it('opens the cart from the floating continue button', () => {
+    for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
+    fixture.detectChanges();
+    const openCart = vi.spyOn(component, 'openOrderSheet').mockImplementation(() => {});
+
+    const continueButton = fixture.nativeElement.querySelector('.continue-cart-button') as HTMLButtonElement;
+    continueButton.click();
+
+    expect(openCart).toHaveBeenCalledOnce();
+  });
+
   it('renders the approved compact category filter row', () => {
     const filters = [...fixture.nativeElement.querySelectorAll('.filter-button') as NodeListOf<HTMLElement>]
       .map(button => button.textContent?.trim());
