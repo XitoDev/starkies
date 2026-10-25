@@ -153,9 +153,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   from { transform: translateX(0); }
   to { transform: translateX(100%); }
 }
+/* Keep route transitions opacity-only. A transform on the routed page creates
+   a containing block for position: fixed descendants, which breaks viewport-
+   anchored UI such as the persistent catalog next-step panel on mobile. */
 @keyframes route-content-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 main.route-content > router-outlet + * {
   display: block;
