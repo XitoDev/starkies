@@ -139,8 +139,9 @@ export class Estadisticas {
   }
   private getOrderDate(order: Order): Date | null {
     const raw = this.rawOrdersById().get(order.id);
-    const candidates = [raw?.['createdAt'], raw?.['created'], raw?.['createdOn'], raw?.['orderDate'], order.createdAt, raw?.['date'], order.deliveryDate];
-    const value = candidates.find(candidate => typeof candidate === 'string' && candidate.trim());
+    const candidates = [raw?.['createdAt'], raw?.['created'], raw?.['createdOn'], raw?.['orderDate'], raw?.['orderCreatedAt']];
+    const explicitCreatedAt = candidates.find(candidate => typeof candidate === 'string' && candidate.trim());
+    const value = typeof explicitCreatedAt === 'string' ? explicitCreatedAt : raw ? undefined : order.createdAt;
     if (typeof value !== 'string') return null;
     const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     const parsed = dateOnly ? new Date(Date.UTC(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 12)) : new Date(value);
@@ -192,8 +193,8 @@ export class Estadisticas {
     const name = asText(box['presentationName'] ?? presentation['name'] ?? box['name']);
     if (name) return name;
     if (id === 'clasicas' || id === 'clasica' || id === 'classic') return 'Caja solo clásicas';
-    if (id === 'ny' || id === 'new-york' || id === 'newyork') return 'Caja solo NY Style';
-    if (id === 'mixta' || id === 'mixed') return 'Caja mixta';
+    if (id === 'ny' || id === 'new-york' || id === 'newyork') return 'Caja solo New York';
+    if (id === 'mixta' || id === 'mixed') return 'Caja mitad New York, mitad clásicas';
     return id ? 'Caja ' + id : 'Caja personalizada / sin presentación';
   }
   private recipeName(id: string): string {
