@@ -986,7 +986,7 @@ export class DataService implements OnDestroy {
         zone,
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
-        orderType: this.asString(item['orderType']) === 'CUSTOM' ? 'CUSTOM' : this.asString(item['orderType']) === 'STANDARD' ? 'STANDARD' : undefined,
+        orderType: (this.asString(item['orderType']) === 'CUSTOM' ? 'CUSTOM' : this.asString(item['orderType']) === 'STANDARD' ? 'STANDARD' : undefined) as Order['orderType'],
         shippingFee,
         isPaid: item['isPaid'] === true || item['paymentStatus'] === 'PAID' || item['paymentStatus'] === 'paid',
         paymentMethod: this.normalizePaymentMethod(this.asString(item['paymentMethod'] ?? item['paymentType'])),
