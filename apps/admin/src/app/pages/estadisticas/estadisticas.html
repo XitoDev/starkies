@@ -1,0 +1,52 @@
+<section class="stats-page">
+  <header class="page-heading">
+    <div><p class="eyebrow">Tu negocio</p><h1 class="page-title">Estadísticas</h1><p class="page-subtitle">Descubre qué se vende más y cuándo se concentra la demanda.</p></div>
+    <label class="period-filter"><span>Período</span><select [value]="period()" (change)="setPeriod($any($event.target).value)">
+      <option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el historial</option>
+    </select></label>
+  </header>
+  @if (loading()) { <p class="state-message" role="status">Cargando pedidos para calcular las estadísticas…</p> }
+  @if (error()) { <p class="state-message error-message" role="alert">{{ error() }}</p> }
+
+  <section class="metrics-grid" aria-label="Resumen del período">
+    <article class="metric-card"><span class="metric-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">shopping_bag</mat-icon></span><div><span>Pedidos válidos</span><strong>{{ orderCount() }}</strong><small>Sin pedidos cancelados</small></div></article>
+    <article class="metric-card"><span class="metric-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">cookie</mat-icon></span><div><span>Galletas solicitadas</span><strong>{{ unitsSold() }}</strong><small>Unidades en pedidos no cancelados</small></div></article>
+    <article class="metric-card"><span class="metric-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">payments</mat-icon></span><div><span>Ventas entregadas</span><strong>{{ deliveredRevenue() | currency:'USD' }}</strong><small>Solo pedidos entregados</small></div></article>
+    <article class="metric-card"><span class="metric-icon"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">pending_actions</mat-icon></span><div><span>Por preparar o entregar</span><strong>{{ pendingCount() }}</strong><small>Pedidos pendientes, en preparación o listos</small></div></article>
+  </section>
+
+  <div class="charts-grid">
+    <section class="panel" aria-labelledby="weekday-title">
+      <div class="panel-heading"><div><h2 id="weekday-title">¿Qué días hay más pedidos?</h2><p>Por fecha de creación del pedido, en hora de Ecuador.</p></div><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">calendar_month</mat-icon></div>
+      <div class="weekday-chart">
+        @for (day of weekdayCounts(); track day.key) {
+          <div class="weekday-row"><span class="weekday-label">{{ day.label }}</span><div class="bar-track"><span class="bar" [style.width.%]="barWidth(day.count, maxWeekdayCount())"></span></div><strong>{{ day.count }}</strong></div>
+        }
+      </div>
+      @if (busiestDay(); as peak) { <p class="peak-day">Tu día con más pedidos es <strong>{{ peak.label }}</strong>, con {{ peak.count }}.</p> }
+      @else { <p class="chart-empty">Todavía no hay pedidos con fecha suficiente para calcular este patrón.</p> }
+    </section>
+    <section class="panel" aria-labelledby="boxes-title">
+      <div class="panel-heading"><div><h2 id="boxes-title">Cajas más solicitadas</h2><p>{{ totalBoxes() }} cajas identificadas en el período.</p></div><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">inventory_2</mat-icon></div>
+      @if (boxRanking().length) {
+        <div class="ranking-list">
+          @for (box of boxRanking(); track box.id) {
+            <div class="ranking-row"><div class="ranking-copy"><strong>{{ box.label }}</strong><small>{{ box.quantity }} {{ box.quantity === 1 ? 'caja' : 'cajas' }}</small></div><div class="bar-track"><span class="bar" [style.width.%]="barWidth(box.quantity, maxBoxCount())"></span></div></div>
+          }
+        </div>
+      } @else { <p class="chart-empty">Aún no hay pedidos con una presentación de caja guardada. Los pedidos personalizados se contabilizan por sus galletas y no se atribuyen a una caja estándar.</p> }
+    </section>
+  </div>
+
+  <section class="panel product-panel" aria-labelledby="products-title">
+    <div class="panel-heading"><div><h2 id="products-title">Galletas más vendidas</h2><p>Ordenadas por unidades solicitadas, excluyendo pedidos cancelados.</p></div><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">trending_up</mat-icon></div>
+    @if (productRanking().length) {
+      <div class="product-ranking">
+        @for (product of productRanking(); track product.id; let index = $index) {
+          <div class="product-row"><span class="rank-number">{{ index + 1 }}</span><div class="product-copy"><strong>{{ product.name }}</strong><small>{{ product.quantity }} {{ product.quantity === 1 ? 'unidad' : 'unidades' }}</small></div><div class="bar-track"><span class="bar" [style.width.%]="barWidth(product.quantity, maxProductCount())"></span></div><strong class="product-quantity">{{ product.quantity }}</strong></div>
+        }
+      </div>
+    } @else { <p class="chart-empty">No hay unidades registradas para este período.</p> }
+  </section>
+  <p class="stats-note">Los rankings reflejan la demanda de pedidos no cancelados. El importe de ventas solo suma pedidos marcados como entregados. Las cajas se comparan cuando el pedido conserva la presentación con la que se creó.</p>
+</section>

@@ -20,24 +20,5 @@
         </a>
       }
     }
-    <button
-      type="button"
-      matButton="text"
-      class="settings-trigger nav-item"
-      [matMenuTriggerFor]="settingsMenu"
-      aria-label="Abrir configuración"
-    >
-      <mat-icon fontSet="material-symbols-rounded" class="nav-icon" aria-hidden="true">settings</mat-icon>
-      <span class="nav-label">Configuración</span>
-    </button>
-    <mat-menu #settingsMenu="matMenu" xPosition="after" yPosition="above">
-      <button mat-menu-item type="button" [disabled]="loggingOut()" (click)="logout()">
-        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">logout</mat-icon>
-        <span>{{ loggingOut() ? 'Cerrando sesión…' : 'Cerrar sesión' }}</span>
-      </button>
-      @if (logoutMessage()) {
-        <div class="settings-error" role="status" aria-live="polite">{{ logoutMessage() }}</div>
-      }
-    </mat-menu>
   </nav>
 </aside>

@@ -114,6 +114,11 @@ export class Pedidos implements OnDestroy {
     else void this.router.navigate(['/pedidos', 'clientes', 'nuevo']);
   }
 
+  registerCustomOrder(): void {
+    if (this.activeTab() !== 'pedidos') return;
+    void this.router.navigate(['/pedidos', 'nuevo'], { queryParams: { tipo: 'personalizado' } });
+  }
+
   toggleCustomerView(): void {
     this.customerView.update(view => view === 'grid' ? 'table' : 'grid');
   }

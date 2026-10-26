@@ -10,6 +10,13 @@ import { DataService } from '../../services/data.service';
 import { FirebaseClientService } from '../../core/firebase/firebase-client.service';
 import { Order, OrderItem, Recipe } from 'shared';
 
+interface DeliveryZoneOption { id: string; name: string; fee: number; }
+const DEFAULT_DELIVERY_ZONES: DeliveryZoneOption[] = [
+  { id: 'kennedy', name: 'Kennedy', fee: 0.99 }, { id: 'norte', name: 'Norte', fee: 3.5 },
+  { id: 'centro', name: 'Centro', fee: 3.99 }, { id: 'sur', name: 'Sur', fee: 4.5 },
+  { id: 'daule-samborondon', name: 'Daule/Samborondón', fee: 5.99 }, { id: 'retiro', name: 'Retiro en tienda', fee: 0 },
+];
+
 @Component({
   selector: 'app-pedido-ruta',
   standalone: true,
@@ -19,8 +26,8 @@ import { Order, OrderItem, Recipe } from 'shared';
       <section class="order-page">
         <header class="heading">
           <div class="heading-copy">
-            <h1>{{ creating() ? 'Registrar pedido' : 'Pedido ' + displayOrderId(order()!.id) }}</h1>
-            <p>{{ selectedCustomer()?.name || 'Selecciona un cliente' }} · {{ creating() ? 'Nuevo pedido' : 'Detalles y edición en una sola vista' }}</p>
+            <h1>{{ creating() ? (customOrder() ? 'Registrar pedido personalizado' : 'Registrar pedido') : 'Pedido ' + displayOrderId(order()!.id) }}</h1>
+            <p>{{ selectedCustomer()?.name || 'Selecciona un cliente' }} · {{ creating() ? (customOrder() ? 'Pedido armado manualmente, fuera de las cajas predefinidas del catálogo' : 'Nuevo pedido') : 'Detalles y edición en una sola vista' }}</p>
             @if (!creating()) {
               <div class="status-inline">
                 <span>Estado</span>
@@ -76,7 +83,7 @@ import { Order, OrderItem, Recipe } from 'shared';
 
           <section class="editor-section">
             <div class="section-heading">
-              <div><h2>Productos</h2><p>La cantidad y el precio se guardan en este pedido.</p></div>
+              <div><h2>{{ customOrder() ? 'Galletas y productos' : 'Productos' }}</h2><p>{{ customOrder() ? 'Combina los sabores que necesites, ajusta las cantidades y define el precio acordado.' : 'La cantidad y el precio se guardan en este pedido.' }}</p></div>
               <button matButton="outlined" class="secondary" type="button" (click)="addItem()" [disabled]="activeRecipes().length === 0"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">add</mat-icon> Agregar producto</button>
             </div>
             @if (items().length === 0) { <p class="hint">Agrega al menos un producto para registrar el pedido.</p> }
@@ -101,16 +108,33 @@ import { Order, OrderItem, Recipe } from 'shared';
           </section>
 
           <section class="editor-section">
-            <div class="section-heading"><div><h2>Entrega</h2><p>La dirección de este pedido puede ser distinta de la dirección predeterminada del cliente.</p></div></div>
-            <div class="form-grid">
-              <label>Fecha de entrega<input type="date" [(ngModel)]="deliveryDate" name="deliveryDate"></label>
-              <label>Modalidad<select [ngModel]="deliveryMethod" (ngModelChange)="onDeliveryMethodChange($event)" name="deliveryMethod"><option value="">Por confirmar</option><option value="Entrega a domicilio">Entrega a domicilio</option><option value="Retiro en tienda">Retiro en tienda</option></select></label>
-              <label>Sector de entrega<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Sector o zona"></label>
-              <label>Horario de entrega<input maxlength="100" [(ngModel)]="deliveryTime" name="deliveryTime" placeholder="Horario acordado"></label>
-              <label class="full-width">Dirección de entrega<textarea rows="2" maxlength="250" [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Se propone la dirección predeterminada del cliente; puedes cambiarla para este pedido"></textarea></label>
-              <label>Costo de envío ($)<input type="number" min="0" step="0.01" [(ngModel)]="shippingFee" name="shippingFee"></label>
-              <label class="full-width">Notas adicionales<textarea rows="3" maxlength="1000" [(ngModel)]="notes" name="notes" placeholder="Indicaciones para preparar o entregar el pedido"></textarea></label>
-            </div>
+            <div class="section-heading"><div><h2>Entrega</h2><p>{{ customOrder() ? 'Completa la fecha, la modalidad y las indicaciones igual que en el formulario público.' : 'La dirección de este pedido puede ser distinta de la dirección predeterminada del cliente.' }}</p></div></div>
+            @if (customOrder()) {
+              <div class="form-grid">
+                <label>Fecha deseada<input type="date" [(ngModel)]="deliveryDate" [min]="today()" name="deliveryDate" required></label>
+                <label>Tipo de entrega<select [ngModel]="deliveryMethod" (ngModelChange)="onCustomDeliveryMethodChange($event)" name="deliveryMethod" required><option value="">Selecciona una modalidad</option><option value="Retiro en tienda">Retiro en tienda</option><option value="Entrega a domicilio">A domicilio</option></select></label>
+                @if (deliveryMethod === 'Entrega a domicilio') {
+                  <label>Sector de entrega<select [ngModel]="zone" (ngModelChange)="onCustomZoneChange($event)" name="zone" required><option value="">Selecciona tu sector</option>@for (deliveryZone of deliveryZones(); track deliveryZone.id) {@if (!isPickupZone(deliveryZone.name)) {<option [value]="deliveryZone.name">{{ deliveryZone.name }} · {{ deliveryZone.fee | currency:'USD' }}</option>}}</select></label>
+                  <label class="full-width">Dirección exacta<textarea rows="2" maxlength="250" [(ngModel)]="deliveryAddress" name="deliveryAddress" required placeholder="Calle, número, referencia..."></textarea></label>
+                } @else if (deliveryMethod === 'Retiro en tienda') {
+                  <div class="pickup-note full-width" role="status"><strong>Retiro en local</strong><p>No se cobrará envío. Los detalles de recogida se coordinan por WhatsApp.</p></div>
+                }
+                <label>Horario de entrega (opcional)<input maxlength="100" [(ngModel)]="deliveryTime" name="deliveryTime" placeholder="Horario acordado"></label>
+                <label>Nombre en la caja (opcional)<input maxlength="80" [(ngModel)]="cookieName" name="cookieName" placeholder="Nombre que escribimos en la caja"></label>
+                <label class="full-width">Indicaciones, alergias o intolerancias<textarea rows="3" maxlength="1000" [(ngModel)]="notes" name="notes" placeholder="Cuéntanos si hay alergias, intolerancias o instrucciones especiales para preparar o entregar el pedido."></textarea></label>
+                <div class="shipping-summary full-width"><span>Costo de envío</span><strong>{{ normalizedShippingFee() | currency:'USD' }}</strong></div>
+              </div>
+            } @else {
+              <div class="form-grid">
+                <label>Fecha de entrega<input type="date" [(ngModel)]="deliveryDate" name="deliveryDate"></label>
+                <label>Modalidad<select [ngModel]="deliveryMethod" (ngModelChange)="onDeliveryMethodChange($event)" name="deliveryMethod"><option value="">Por confirmar</option><option value="Entrega a domicilio">Entrega a domicilio</option><option value="Retiro en tienda">Retiro en tienda</option></select></label>
+                <label>Sector de entrega<input maxlength="120" [(ngModel)]="zone" name="zone" placeholder="Sector o zona"></label>
+                <label>Horario de entrega<input maxlength="100" [(ngModel)]="deliveryTime" name="deliveryTime" placeholder="Horario acordado"></label>
+                <label class="full-width">Dirección de entrega<textarea rows="2" maxlength="250" [(ngModel)]="deliveryAddress" name="deliveryAddress" placeholder="Se propone la dirección predeterminada del cliente; puedes cambiarla para este pedido"></textarea></label>
+                <label>Costo de envío ($)<input type="number" min="0" step="0.01" [(ngModel)]="shippingFee" name="shippingFee"></label>
+                <label class="full-width">Notas adicionales<textarea rows="3" maxlength="1000" [(ngModel)]="notes" name="notes" placeholder="Indicaciones para preparar o entregar el pedido"></textarea></label>
+              </div>
+            }
           </section>
 
           <section class="editor-section payment-section">
@@ -143,6 +167,7 @@ import { Order, OrderItem, Recipe } from 'shared';
     .order-totals{display:grid;gap:11px;margin-left:auto;width:min(100%,360px)}.order-totals>div{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#776584;font-size:12px}.order-totals .grand-total{padding-top:12px;border-top:1px solid #eee7f2;color:#30263a;font-size:14px}.grand-total strong{color:#8056ad;font-size:22px}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full-width{grid-column:1/-1}.paid-toggle{display:flex;align-items:center;gap:10px}.paid-toggle input{width:18px;min-height:18px;height:18px;accent-color:#8056ad}.payment-section>label:not(.paid-toggle){max-width:380px}
     .actions{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:10px;margin-top:4px}.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 17px;border-radius:9px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}.secondary{border:1px solid #e8e0ed;background:#fff;color:#65586d}.message{padding:12px;border-radius:9px;background:#f7f0fb;color:#704795;font-size:12px}.error{background:#fff0f0;color:#a44855}.success{background:#eff8f0;color:#39744b}
+    .pickup-note{padding:13px 15px;border:1px solid #e8e0ed;border-radius:10px;background:#faf7fc;color:#6c5b79;font-size:12px}.pickup-note strong{display:block;margin-bottom:5px}.pickup-note p{margin:0;color:#95899d;line-height:1.5}.shipping-summary{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #eee7f2;color:#776584;font-size:12px}.shipping-summary strong{color:#8056ad;font-size:15px}
     @media(max-width:700px){.heading{flex-direction:column}.pdf-download{width:100%}.section-heading{flex-direction:column}.customer-details-link{width:100%}.customer-summary{grid-template-columns:1fr}.item-editor-row{grid-template-columns:minmax(0,1fr) minmax(80px,.7fr);align-items:end}.item-editor-row label:first-child{grid-column:1/-1}.remove-item{grid-column:2;justify-self:end}.form-grid{grid-template-columns:1fr}.full-width{grid-column:auto}.actions{align-items:stretch;flex-direction:column-reverse}.actions>*{width:100%;box-sizing:border-box}}
   `]
 })
@@ -152,9 +177,25 @@ export class PedidoRuta implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private routeSubscription: Subscription | null = null;
+  private querySubscription: Subscription | null = null;
   readonly orderId = signal(this.route.snapshot.paramMap.get('orderId') ?? 'nuevo');
   readonly creating = computed(() => this.orderId() === 'nuevo');
   readonly order = computed(() => this.data.orders().find(order => order.id === this.orderId()) ?? null);
+  readonly customModeRequested = signal(this.route.snapshot.queryParamMap.get('tipo') === 'personalizado');
+  readonly customOrder = computed(() => this.customModeRequested() || this.order()?.orderType === 'CUSTOM');
+  readonly deliveryZones = computed<DeliveryZoneOption[]>(() => {
+    const state = this.data.rawState() as Record<string, unknown> | null;
+    const settings = typeof state?.['catalogSettings'] === 'object' && state['catalogSettings'] !== null ? state['catalogSettings'] as Record<string, unknown> : {};
+    const configured = Array.isArray(state?.['deliveryZones']) && (state['deliveryZones'] as unknown[]).length
+      ? state['deliveryZones'] as unknown[]
+      : Array.isArray(settings['deliveryZones']) && (settings['deliveryZones'] as unknown[]).length
+        ? settings['deliveryZones'] as unknown[]
+        : DEFAULT_DELIVERY_ZONES;
+    return configured.filter(item => typeof item === 'object' && item !== null && !Array.isArray(item)).map((value, index) => {
+      const item = value as Record<string, unknown>;
+      return { id: String(item['id'] ?? 'zone-' + (index + 1)), name: String(item['name'] ?? '').trim(), fee: Math.max(0, Number(item['fee'] ?? 0)) };
+    }).filter(item => item.name);
+  });
   readonly customers = this.data.customers;
   readonly activeRecipes = computed(() => this.data.recipes().filter(recipe => recipe.archived !== true));
   readonly selectedCustomer = computed(() => this.customers().find(customer => customer.id === this.customerId()) ?? null);
@@ -176,6 +217,7 @@ export class PedidoRuta implements OnDestroy {
   deliveryAddress = '';
   deliveryTime = '';
   zone = '';
+  cookieName = '';
   notes = '';
   status: Order['status'] = 'PENDING';
   shippingFee = 0;
@@ -183,6 +225,13 @@ export class PedidoRuta implements OnDestroy {
   paymentMethod: NonNullable<Order['paymentMethod']> = 'TRANSFER';
 
   constructor() {
+    this.querySubscription = this.route.queryParamMap.subscribe(params => {
+      const requested = params.get('tipo') === 'personalizado';
+      if (this.customModeRequested() !== requested) {
+        this.customModeRequested.set(requested);
+        if (this.orderId() === 'nuevo') this.resetForm();
+      }
+    });
     this.routeSubscription = this.route.paramMap.subscribe(params => {
       const id = params.get('orderId') ?? 'nuevo';
       this.orderId.set(id);
@@ -191,12 +240,12 @@ export class PedidoRuta implements OnDestroy {
       if (id === 'nuevo') { this.resetForm(); return; }
       void this.loadOrder(id);
     });
-    void this.data.loadCollections(['customers', 'recipes']).catch(error => {
+    void this.data.loadCollections(['customers', 'recipes', 'deliveryZones']).catch(error => {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar los clientes y productos.');
     });
   }
 
-  ngOnDestroy(): void { this.routeSubscription?.unsubscribe(); }
+  ngOnDestroy(): void { this.routeSubscription?.unsubscribe(); this.querySubscription?.unsubscribe(); }
 
   private async loadOrder(id: string): Promise<void> {
     this.loadingOrder.set(true);
@@ -212,8 +261,8 @@ export class PedidoRuta implements OnDestroy {
 
   private resetForm(): void {
     this.customerId.set(''); this.items.set([]);
-    this.deliveryDate = ''; this.deliveryMethod = ''; this.deliveryAddress = ''; this.deliveryTime = '';
-    this.zone = ''; this.notes = ''; this.status = 'PENDING'; this.shippingFee = 0;
+    this.deliveryDate = this.customModeRequested() ? this.today() : ''; this.deliveryMethod = ''; this.deliveryAddress = ''; this.deliveryTime = '';
+    this.zone = ''; this.cookieName = ''; this.notes = ''; this.status = 'PENDING'; this.shippingFee = 0;
     this.isPaid = false; this.paymentMethod = 'TRANSFER'; this.saved.set(false); this.error.set('');
   }
 
@@ -224,7 +273,7 @@ export class PedidoRuta implements OnDestroy {
     this.deliveryMethod = item.deliveryMethod ?? '';
     const isPickup = this.deliveryMethod.toLocaleLowerCase('es').includes('retiro') || (item.zone ?? '').toLocaleLowerCase('es').includes('retiro');
     this.deliveryAddress = item.deliveryAddress ?? (isPickup ? '' : this.selectedCustomer()?.address ?? '');
-    this.deliveryTime = item.deliveryTime ?? ''; this.zone = item.zone ?? ''; this.notes = item.notes ?? '';
+    this.deliveryTime = item.deliveryTime ?? ''; this.zone = item.zone ?? ''; this.cookieName = item.cookieName && item.cookieName !== 'N/A' ? item.cookieName : ''; this.notes = item.notes ?? '';
     this.status = item.status; this.shippingFee = item.shippingFee ?? 0;
     this.isPaid = item.isPaid ?? false; this.paymentMethod = item.paymentMethod ?? 'TRANSFER';
   }
@@ -250,6 +299,32 @@ export class PedidoRuta implements OnDestroy {
     this.saved.set(false);
   }
 
+  onCustomDeliveryMethodChange(value: string): void {
+    this.deliveryMethod = value;
+    if (value.toLocaleLowerCase('es').includes('retiro')) {
+      this.zone = this.deliveryZones().find(zone => this.isPickupZone(zone.name))?.name ?? 'Retiro en tienda';
+      this.shippingFee = 0;
+      this.deliveryAddress = '';
+    } else if (value.toLocaleLowerCase('es').includes('domicilio')) {
+      if (this.isPickupZone(this.zone)) this.zone = '';
+      this.shippingFee = this.deliveryZones().find(zone => zone.name === this.zone)?.fee ?? 0;
+      if (!this.deliveryAddress.trim()) this.deliveryAddress = this.selectedCustomer()?.address ?? '';
+    }
+    this.saved.set(false);
+  }
+  onCustomZoneChange(name: string): void {
+    const selected = this.deliveryZones().find(zone => zone.name === name);
+    if (!selected) return;
+    this.zone = selected.name;
+    this.shippingFee = selected.fee;
+    this.saved.set(false);
+  }
+  isPickupZone(name: string): boolean {
+    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').includes('retiro');
+  }
+  today(): string {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
   addItem(): void {
     const recipe = this.activeRecipes()[0];
     this.items.update(items => [...items, { recipeId: recipe?.id ?? '', name: recipe?.name ?? '', quantity: 1, unitPrice: Math.max(0, Number(recipe?.price ?? 0)) }]);
@@ -328,13 +403,20 @@ export class PedidoRuta implements OnDestroy {
       this.error.set('Revisa los productos, cantidades y precios del pedido.'); return;
     }
     if (!Number.isFinite(Number(this.shippingFee)) || Number(this.shippingFee) < 0) { this.error.set('Ingresa un costo de envío válido, igual o mayor que cero.'); return; }
+    if (this.customOrder()) {
+      if (!this.deliveryDate.trim()) { this.error.set('Selecciona la fecha deseada para el pedido personalizado.'); return; }
+      if (!this.deliveryMethod.trim()) { this.error.set('Selecciona si el pedido se retira en tienda o se entrega a domicilio.'); return; }
+      if (this.deliveryMethod.toLocaleLowerCase('es').includes('domicilio') && !this.zone.trim()) { this.error.set('Selecciona el sector de entrega.'); return; }
+      if (this.deliveryMethod.toLocaleLowerCase('es').includes('domicilio') && !this.deliveryAddress.trim()) { this.error.set('Escribe la dirección exacta para la entrega.'); return; }
+    }
     this.saving.set(true); this.error.set(''); this.saved.set(false);
     try {
       const changes = {
         customerId: customer.id,
         items: currentItems.map(item => ({ recipeId: item.recipeId, name: item.name || this.recipeName(item.recipeId), quantity: Number(item.quantity), unitPrice: Math.round(Number(item.unitPrice) * 100) / 100 } as OrderItem)),
         deliveryDate: this.deliveryDate, deliveryMethod: this.deliveryMethod.trim(), deliveryAddress: this.deliveryAddress.trim(),
-        deliveryTime: this.deliveryTime.trim(), zone: this.zone.trim(), notes: this.notes.trim(), status: this.status,
+        deliveryTime: this.deliveryTime.trim(), zone: this.zone.trim(), cookieName: this.cookieName.trim(), notes: this.notes.trim(), status: this.status,
+        orderType: this.customOrder() ? 'CUSTOM' as const : undefined,
         shippingFee: this.normalizedShippingFee(), isPaid: this.isPaid, paymentMethod: this.isPaid ? this.paymentMethod : undefined,
       };
       if (this.creating()) {
