@@ -579,6 +579,8 @@ export class DataService implements OnDestroy {
     deliveryTime?: string;
     zone?: string;
     notes?: string;
+    cookieName?: string;
+    orderType?: Order['orderType'];
     shippingFee?: number;
     isPaid?: boolean;
     paymentMethod?: Order['paymentMethod'];
@@ -638,6 +640,8 @@ export class DataService implements OnDestroy {
       deliveryTime: (input.deliveryTime ?? '').trim(),
       zone,
       notes: (input.notes ?? '').trim(),
+      ...(input.cookieName?.trim() ? { cookieName: input.cookieName.trim() } : {}),
+      ...(input.orderType ? { orderType: input.orderType } : {}),
       shippingFee,
       isPaid,
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
@@ -656,7 +660,8 @@ export class DataService implements OnDestroy {
     return this.orders().find(order => order.id === orderId) ?? {
       id: orderId, customerId: input.customerId, items, total, status: 'PENDING', createdAt,
       deliveryDate: (input.deliveryDate ?? '').trim(), deliveryMethod, deliveryAddress, deliveryTime: (input.deliveryTime ?? '').trim(),
-      zone, notes: (input.notes ?? '').trim(), shippingFee, isPaid, paymentMethod: isPaid ? input.paymentMethod : undefined,
+      zone, notes: (input.notes ?? '').trim(), cookieName: input.cookieName?.trim() || undefined, orderType: input.orderType,
+      shippingFee, isPaid, paymentMethod: isPaid ? input.paymentMethod : undefined,
     };
   }
 
@@ -677,6 +682,8 @@ export class DataService implements OnDestroy {
     deliveryTime?: string;
     zone?: string;
     notes?: string;
+    cookieName?: string;
+    orderType?: Order['orderType'];
     status?: Order['status'];
     shippingFee?: number;
     isPaid?: boolean;
@@ -752,6 +759,12 @@ export class DataService implements OnDestroy {
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
       paymentMethod,
     };
+    if (changes.cookieName !== undefined) {
+      const cookieName = changes.cookieName.trim();
+      if (cookieName) updated['cookieName'] = cookieName;
+      else delete updated['cookieName'];
+    }
+    if (changes.orderType !== undefined) updated['orderType'] = changes.orderType;
     for (const key of ['customer', 'phone', 'address', 'deliveryAddress', 'code', 'date', 'deliveryFee', 'shipping', 'shippingAddress', 'deliveryType', 'deliveryOption', 'paymentType', 'items']) delete updated[key];
     if (changes.items !== undefined) {
       delete updated['boxes'];
@@ -973,6 +986,7 @@ export class DataService implements OnDestroy {
         zone,
         notes: this.asOptionalString(item['notes']),
         cookieName: this.asOptionalString(item['cookieName']),
+        orderType: this.asString(item['orderType']) === 'CUSTOM' ? 'CUSTOM' : this.asString(item['orderType']) === 'STANDARD' ? 'STANDARD' : undefined,
         shippingFee,
         isPaid: item['isPaid'] === true || item['paymentStatus'] === 'PAID' || item['paymentStatus'] === 'paid',
         paymentMethod: this.normalizePaymentMethod(this.asString(item['paymentMethod'] ?? item['paymentType'])),

@@ -78,6 +78,15 @@ describe('Pedidos', () => {
     expect(button.textContent).toContain('Registrar cliente');
   });
 
+  it('offers a personalized order shortcut only in the orders tab', () => {
+    const customButton = fixture.nativeElement.querySelector('button.custom-order-button') as HTMLButtonElement;
+    expect(customButton).toBeTruthy();
+    expect(customButton.textContent).toContain('Pedido personalizado');
+    component.setTab('clientes');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('button.custom-order-button')).toBeNull();
+  });
+
   it('requires confirmation before deleting an order', async () => {
     ordersState.set([{
       id: 'order-123',

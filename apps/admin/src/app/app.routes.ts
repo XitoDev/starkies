@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: 'migracion', loadComponent: () => import('./pages/migration/migration').then(module => module.Migration), canActivate: [adminAuthGuard] },
   { path: '', redirectTo: 'resumen', pathMatch: 'full' },
   { path: 'resumen', loadComponent: () => import('./pages/resumen/resumen').then(module => module.Resumen), canActivate: [adminAuthGuard, businessDataReadyGuard] },
+  { path: 'estadisticas', loadComponent: () => import('./pages/estadisticas/estadisticas').then(module => module.Estadisticas), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/nueva', loadComponent: () => import('./pages/recetas/masa-base-editor').then(module => module.MasaBaseEditor), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/masas-base/:baseId/editar', loadComponent: () => import('./pages/recetas/masa-base-editor').then(module => module.MasaBaseEditor), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'recetas/:recipeId/editar', loadComponent: () => import('./pages/recetas/recetas').then(module => module.Recetas), canActivate: [adminAuthGuard, businessDataReadyGuard] },

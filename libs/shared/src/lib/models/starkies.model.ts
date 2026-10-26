@@ -77,6 +77,7 @@ export interface Order {
   zone?: string;
   notes?: string;
   cookieName?: string;
+  orderType?: 'CUSTOM' | 'STANDARD';
   shippingFee?: number;
   isPaid?: boolean;
   paymentMethod?: OrderPaymentMethod;

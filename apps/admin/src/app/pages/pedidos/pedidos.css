@@ -35,6 +35,9 @@
 .tabs-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .register-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;white-space:nowrap}
 .register-button mat-icon{width:19px;height:19px;font-size:19px}
+.tabs-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px}
+.custom-order-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 15px;border:1px solid #e8e0ed;border-radius:10px;background:#fff;color:#6c5b79;font-size:12px;font-weight:600;white-space:nowrap}
+.custom-order-button mat-icon{width:19px;height:19px;font-size:19px}
 .customer-view-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px;padding:0 13px;border:1px solid #e8e0ed;border-radius:10px;background:#fff;color:#6c5b79;white-space:nowrap}
 .customer-view-toggle mat-icon{width:19px;height:19px;font-size:19px}
 .status-trigger{display:inline-flex;align-items:center;gap:4px;border:0;cursor:pointer;font:inherit}
@@ -48,4 +51,4 @@
 .customers-table .customer-table-link strong{color:#5c4b66;font-weight:600}
 .customers-table .small-avatar{width:35px;height:35px;flex:0 0 35px;border-radius:12px;font-size:11px}
 .customers-table .customer-address-cell{max-width:260px;white-space:normal;line-height:1.5}
-@media(max-width:760px){.tabs-row{align-items:stretch;flex-direction:column}.tabs-row .tabs{width:100%}.tabs-row .tabs button{flex:1}.register-button{width:100%}.toolbar{flex-wrap:wrap}.customer-view-toggle{width:100%}}
+@media(max-width:760px){.tabs-row{align-items:stretch;flex-direction:column}.tabs-row .tabs{width:100%}.tabs-row .tabs button{flex:1}.register-button{width:100%}.tabs-actions{width:100%;flex-direction:column}.tabs-actions>*{width:100%}.toolbar{flex-wrap:wrap}.customer-view-toggle{width:100%}}
