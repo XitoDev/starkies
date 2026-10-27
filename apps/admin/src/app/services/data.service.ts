@@ -888,20 +888,52 @@ export class DataService implements OnDestroy {
       }
 
       const rawSections = this.asArray(item['sections']);
-      const sections = rawSections.length
-        ? rawSections.map((section) => {
-            const name = this.asString(section['name'], 'masa');
-            const storedIngredients = this.asArray(section['ingredients']).map((ingredient) => ({
-              ingredientId: this.asString(ingredient['ingredientId'] ?? ingredient['id']),
-              quantity: this.asNumber(ingredient['quantity'] ?? ingredient['qty']),
-            })).filter(ingredient => ingredient.ingredientId && ingredient.quantity > 0);
-            // Older recipes may have empty section shells while the formula
-            // still lives in the flattened items array. Restore those rows.
-            const sectionKey = this.recipeSectionKey(name);
-            const legacyIngredients = grouped.get(sectionKey) ?? [];
-            return { name, ingredients: storedIngredients.length ? storedIngredients : legacyIngredients };
-          })
-        : Array.from(grouped.entries()).map(([name, ingredients]) => ({ name, ingredients }));
+      const sectionMap = new Map<string, { name: string; ingredients: { ingredientId: string; quantity: number }[] }>();
+      for (const section of rawSections) {
+        const name = this.asString(section['name'], 'masa');
+        const key = this.recipeSectionKey(name);
+        const storedIngredients = this.asArray(section['ingredients']).map((ingredient) => ({
+          ingredientId: this.asString(ingredient['ingredientId'] ?? ingredient['id']),
+          quantity: this.asNumber(ingredient['quantity'] ?? ingredient['qty']),
+        })).filter(ingredient => ingredient.ingredientId && ingredient.quantity > 0);
+        const current = sectionMap.get(key);
+        if (current) current.ingredients.push(...storedIngredients);
+        else sectionMap.set(key, { name, ingredients: storedIngredients });
+      }
+
+      // Reconcile canonical sections with the flattened legacy list. Merge missing rows
+      // rather than only falling back when an entire section is empty; older documents
+      // can contain partial sections or omit a section while items still has its rows.
+      for (const [key, legacyIngredients] of grouped.entries()) {
+        const current = sectionMap.get(key);
+        if (!current) {
+          sectionMap.set(key, { name: key, ingredients: [...legacyIngredients] });
+          continue;
+        }
+        const storedCounts = new Map<string, number>();
+        for (const ingredient of current.ingredients) {
+          const signature = ingredient.ingredientId + '|' + ingredient.quantity;
+          storedCounts.set(signature, (storedCounts.get(signature) ?? 0) + 1);
+        }
+        const seenLegacy = new Map<string, number>();
+        for (const ingredient of legacyIngredients) {
+          const signature = ingredient.ingredientId + '|' + ingredient.quantity;
+          const occurrence = (seenLegacy.get(signature) ?? 0) + 1;
+          seenLegacy.set(signature, occurrence);
+          if (occurrence > (storedCounts.get(signature) ?? 0)) current.ingredients.push(ingredient);
+        }
+      }
+      const sectionOrder = ['masa', 'anadidos', 'relleno', 'decoracion'];
+      const sections = Array.from(sectionMap.entries())
+        .sort(([a], [b]) => {
+          const ai = sectionOrder.indexOf(this.recipeSectionKey(a));
+          const bi = sectionOrder.indexOf(this.recipeSectionKey(b));
+          return (ai < 0 ? sectionOrder.length : ai) - (bi < 0 ? sectionOrder.length : bi);
+        })
+        .map(([key, section]) => ({
+          name: sectionOrder.includes(key) ? ({ masa: 'masa', anadidos: 'añadidos', relleno: 'relleno', decoracion: 'decoración' } as Record<string, string>)[key] : section.name,
+          ingredients: section.ingredients,
+        }));
 
       return {
         id: this.asString(item['id']),
