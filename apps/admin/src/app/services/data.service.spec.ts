@@ -129,6 +129,44 @@ describe('DataService catalog visibility', () => {
     ]);
   });
 
+  it('merges legacy items into partial recipe sections and restores missing sections', () => {
+    const legacyState = {
+      ingredients: [
+        { id: 'flour', name: 'Harina', unit: 'g', costPerUnit: 0.002 },
+        { id: 'chocolate', name: 'Chocolate', unit: 'g', costPerUnit: 0.01 },
+        { id: 'sugar', name: 'Azúcar', unit: 'g', costPerUnit: 0.002 },
+      ],
+      orders: [],
+      recipes: [{
+        id: 'partial-legacy-cookie',
+        name: 'Galleta antigua',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        sections: [
+          { name: 'Masa', ingredients: [{ ingredientId: 'flour', quantity: 100 }] },
+          { name: 'Relleno · por galleta', ingredients: [] },
+        ],
+        items: [
+          { id: 'flour', qty: 100, section: 'masa' },
+          { id: 'chocolate', qty: 5, section: 'relleno' },
+          { id: 'sugar', qty: 3, section: 'decoracion' },
+        ],
+      }],
+    };
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels(legacyState);
+    const sections = service.recipes()[0].sections;
+    expect(sections.find(section => section.name === 'masa')?.ingredients).toEqual([
+      { ingredientId: 'flour', quantity: 100 },
+    ]);
+    expect(sections.find(section => section.name === 'relleno')?.ingredients).toEqual([
+      { ingredientId: 'chocolate', quantity: 5 },
+    ]);
+    expect(sections.find(section => section.name === 'decoración')?.ingredients).toEqual([
+      { ingredientId: 'sugar', quantity: 3 },
+    ]);
+  });
+
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
