@@ -232,12 +232,15 @@ describe('DataService catalog visibility', () => {
       }],
     });
 
-    await service.saveRecipe(service.recipes()[0]);
+    await service.saveRecipe({
+      id: 'brownie-classic', name: 'Brownie Classic', category: 'Clásicas', yield: 12, price: 1,
+      image: 'legacy/brownie-recipe.webp', sections: [],
+    } as never);
 
     const saved = repository.upsertRecipeAndCatalogProjection.mock.calls.at(-1)?.[1] as Record<string, unknown>;
     expect(saved['image']).toBe('catalog/brownie-classic.webp');
     expect(saved).not.toHaveProperty('catalogImage');
-    expect(service.recipes()[0].image).toBe('catalog/brownie-classic.webp');
+    expect((service.rawState()?.['recipes'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic')?.['image']).toBe('catalog/brownie-classic.webp');
     expect(service.rawState()?.['catalogDrafts']).toEqual([
       expect.objectContaining({ id: 'brownie-classic', image: 'catalog/brownie-classic.webp' }),
     ]);
