@@ -495,7 +495,7 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists() ? Number(existing.data()['sortIndex'] ?? Date.now()) : Date.now();
     const previousDraft = existingDraft.data() ?? {};
 
-    const catalogImage = String(previousDraft['image'] ?? safeValue['catalogImage'] ?? safeValue['image'] ?? '');
+    const catalogImage = String(updateCatalogDraft ? (safeValue['image'] ?? safeValue['catalogImage'] ?? previousDraft['image'] ?? '') : (previousDraft['image'] ?? safeValue['catalogImage'] ?? safeValue['image'] ?? ''));
     const recipeData: Record<string, unknown> = { ...safeValue, image: catalogImage };
     for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete recipeData[key];
