@@ -369,16 +369,15 @@ export class DataService implements OnDestroy {
       visible: (existingDraft['visible'] ?? savedRecord['catalogVisible']) !== false,
     };
     const nextDrafts = [...rawDrafts];
-    if (updateCatalogFields) {
-      if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
-      else nextDrafts.push(draftRecord);
-    }
+    // The Firestore transaction always writes catalogDrafts, even when only
+    // recipe fields change. Mirror that image reconciliation in optimistic
+    // state so the editor never reverts to an empty, stale draft image.
+    if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
+    else nextDrafts.push(draftRecord);
     const nextRecipes = [...rawRecipes];
     if (existingIndex >= 0) nextRecipes[existingIndex] = internalRecord;
     else nextRecipes.push(internalRecord);
-    const nextState = updateCatalogFields
-      ? { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts }
-      : { ...state, recipes: nextRecipes };
+    const nextState = { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts };
     await this.applyOptimisticState(state, nextState, () =>
       this.repository.upsertRecipeAndCatalogProjection(recipe.id, savedRecord, updateCatalogFields));
   }
