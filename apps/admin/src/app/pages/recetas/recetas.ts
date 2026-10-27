@@ -2,6 +2,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { Component, computed, effect, inject, signal } from '@angular/core';
@@ -28,7 +29,7 @@ type DoughBase = { id?: string; name?: string; weight?: number; notes?: string; 
 @Component({
   selector: 'app-recetas',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, MasasBaseList, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatMenuModule],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DecimalPipe, MasasBaseList, MatButtonModule, MatIconModule, MatInputModule, MatSelectModule, MatAutocompleteModule, MatCheckboxModule, MatMenuModule],
   templateUrl: './recetas.html',
   styleUrls: ['./recetas.css']
 })
@@ -58,6 +59,7 @@ export class Recetas {
   readonly imagePreview = signal('');
   readonly selectedFile = signal<File | null>(null);
   readonly form = signal<RecipeForm>(this.emptyForm());
+  readonly ingredientSearches = signal<Record<string, string>>({});
 
   constructor() {
     void this.dataService.loadCollections(['recipes', 'ingredients', 'doughBases']);
@@ -196,24 +198,28 @@ export class Recetas {
     this.editingId.set(null); this.form.set(this.emptyForm()); this.imagePreview.set(''); this.selectedFile.set(null);
     this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
   }
+  private recipeSectionKey(value: string): string {
+    const normalized = value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+      .toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
+    if (normalized.includes('relleno')) return 'filling';
+    if (normalized.includes('decoracion')) return 'decoration';
+    if (normalized.includes('anadido')) return 'additions';
+    if (normalized.includes('masa')) return 'dough';
+    return normalized;
+  }
+
   openEditRecipe(recipe: Recipe): void {
     this.editingId.set(recipe.id);
-    const section = (...names: string[]) => recipe.sections
-      .filter(item => names.some(name => {
-        const sectionName = item.name.trim().toLocaleLowerCase('es');
-        const expected = name.trim().toLocaleLowerCase('es');
-        return sectionName === expected
-          || (expected === 'masa' && sectionName.includes('masa'))
-          || (expected.includes('añad') && sectionName.includes('añad'))
-          || (expected === 'relleno' && sectionName.includes('relleno'));
-      }))
-      .flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
+    const section = (key: 'dough' | 'additions' | 'filling' | 'decoration') =>
+      recipe.sections.filter(item => this.recipeSectionKey(item.name) === key)
+        .flatMap(item => item.ingredients.map(row => ({ ingredientId: row.ingredientId, quantity: row.quantity })));
+    this.ingredientSearches.set({});
     this.form.set({
       name: recipe.name, category: recipe.category, gramsPerCookie: recipe.baseGramsPerCookie ?? null,
       price: recipe.price, kind: recipe.baseId ? 'base' : 'own', baseId: recipe.baseId ?? '',
       image: recipe.image ?? '', notes: String((recipe as Recipe & { notes?: string }).notes ?? ''),
-      dough: section('masa'), additions: section('añadidos', 'añadidos a la masa'),
-      filling: section('relleno'), decoration: section('decoración'),
+      dough: section('dough'), additions: section('additions'),
+      filling: section('filling'), decoration: section('decoration'),
     });
     this.imagePreview.set(recipe.image ? this.getImageUrl(recipe.image) : '');
     this.selectedFile.set(null); this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
@@ -231,10 +237,48 @@ export class Recetas {
     this.form.update(form => ({ ...form, [field]: parsed === null ? null : Number.isFinite(parsed) ? Math.max(0, parsed) : 0 }));
   }
   setRecipeKind(value: string): void { if (value === 'own' || value === 'base') this.form.update(form => ({ ...form, kind: value, baseId: value === 'base' ? (form.baseId || this.doughBases()[0]?.id || '') : '' })); }
+  private ingredientSearchKey(section: string, index: number): string { return section + ':' + index; }
+  ingredientInputValue(section: string, index: number, row: IngredientRow): string {
+    const key = this.ingredientSearchKey(section, index);
+    const searches = this.ingredientSearches();
+    if (Object.prototype.hasOwnProperty.call(searches, key)) return searches[key];
+    const ingredient = this.ingredients().find(item => item.id === row.ingredientId);
+    return ingredient ? ingredient.name + ' (' + ingredient.unit + ')' : '';
+  }
+  filteredIngredients(section: string, index: number): Ingredient[] {
+    const query = (this.ingredientSearches()[this.ingredientSearchKey(section, index)] ?? '').trim().toLocaleLowerCase('es');
+    if (!query) return this.ingredients();
+    return this.ingredients().filter(item => (item.name + ' ' + item.unit).toLocaleLowerCase('es').includes(query));
+  }
+  onIngredientSearch(section: string, index: number, value: string): void {
+    const key = this.ingredientSearchKey(section, index);
+    this.ingredientSearches.update(searches => ({ ...searches, [key]: value }));
+    const formSection = section as 'dough' | 'additions' | 'filling' | 'decoration';
+    const selectedId = this.form()[formSection][index]?.ingredientId;
+    const selected = this.ingredients().find(item => item.id === selectedId);
+    if (selected && value !== selected.name + ' (' + selected.unit + ')') {
+      this.updateIngredient(formSection, index, 'ingredientId', '');
+    }
+  }
+  selectIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number, ingredientId: string): void {
+    this.updateIngredient(section, index, 'ingredientId', ingredientId);
+    const key = this.ingredientSearchKey(section, index);
+    this.ingredientSearches.update(searches => { const next = { ...searches }; delete next[key]; return next; });
+  }
   addIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration'): void {
+    this.ingredientSearches.update(searches => {
+      const next = { ...searches };
+      for (const key of Object.keys(next)) if (key.startsWith(section + ':')) delete next[key];
+      return next;
+    });
     this.form.update(form => ({ ...form, [section]: [...form[section], { ingredientId: '', quantity: null }] }));
   }
   removeIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number): void {
+    this.ingredientSearches.update(searches => {
+      const next = { ...searches };
+      for (const key of Object.keys(next)) if (key.startsWith(section + ':')) delete next[key];
+      return next;
+    });
     this.form.update(form => ({ ...form, [section]: form[section].filter((_, i) => i !== index) }));
   }
   updateIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number, field: 'ingredientId' | 'quantity', value: string): void {
