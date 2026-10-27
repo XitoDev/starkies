@@ -341,7 +341,7 @@ export class DataService implements OnDestroy {
     // The catalog image is the canonical image for both the public product and its recipe.
     // Keep an existing catalog image first; only adopt the recipe image for older records
     // that have no catalog image yet, so previously uploaded catalog photos are never lost.
-    const canonicalImage = this.asString(existingDraft['image'] ?? existing['catalogImage'] ?? existing['image'] ?? recipe.image);
+    const canonicalImage = this.asString(updateCatalogFields ? (recipe.image ?? existingDraft['image'] ?? existing['catalogImage']) : (existingDraft['image'] ?? existing['catalogImage'] ?? existing['image'] ?? recipe.image));
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
