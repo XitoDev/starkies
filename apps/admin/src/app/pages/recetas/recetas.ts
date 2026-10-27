@@ -199,7 +199,7 @@ export class Recetas {
     this.formError.set(''); this.notice.set(''); this.openMenuId.set(null); this.editorOpen.set(true);
   }
   private recipeSectionKey(value: string): string {
-    const normalized = value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+    const normalized = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLocaleLowerCase('es').replace(/[^a-z0-9]+/g, ' ').trim();
     if (normalized.includes('relleno')) return 'filling';
     if (normalized.includes('decoracion')) return 'decoration';
