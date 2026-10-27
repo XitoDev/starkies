@@ -167,6 +167,48 @@ describe('DataService catalog visibility', () => {
     ]);
   });
 
+  it('keeps a selected legacy filling ingredient after save and reopen', async () => {
+    const ingredients = [{ id: 'chocolate', name: 'Chocolate', unit: 'g', costPerUnit: 0.01 }];
+    const legacyState = {
+      ingredients,
+      orders: [],
+      recipes: [{
+        id: 'legacy-roundtrip-cookie',
+        name: 'Galleta rellena',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        sections: [{ name: 'Relleno · por galleta', ingredients: [] }],
+        items: [{ id: 'chocolate', qty: 5, section: 'relleno' }],
+      }],
+    };
+
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels(legacyState);
+    const recipeBeforeSave = service.recipes()[0];
+    expect(recipeBeforeSave.sections.find(section => section.name === 'relleno')?.ingredients).toEqual([
+      { ingredientId: 'chocolate', quantity: 5 },
+    ]);
+
+    await service.saveRecipe(recipeBeforeSave);
+
+    const savedRecord = repository.upsertRecipeAndCatalogProjection.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    expect(savedRecord['sections']).toEqual([
+      { name: 'relleno', ingredients: [{ ingredientId: 'chocolate', quantity: 5 }] },
+    ]);
+    expect(savedRecord['items']).toEqual([
+      expect.objectContaining({ id: 'chocolate', qty: 5, section: 'relleno' }),
+    ]);
+
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels({
+      ingredients,
+      orders: [],
+      recipes: [savedRecord],
+    });
+    expect(service.recipes()[0].sections.find(section => section.name === 'relleno')?.ingredients).toEqual([
+      { ingredientId: 'chocolate', quantity: 5 },
+    ]);
+  });
+
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
