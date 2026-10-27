@@ -252,13 +252,25 @@ export class Recetas {
   }
   onIngredientSearch(section: string, index: number, value: string): void {
     const key = this.ingredientSearchKey(section, index);
-    this.ingredientSearches.update(searches => ({ ...searches, [key]: value }));
     const formSection = section as 'dough' | 'additions' | 'filling' | 'decoration';
     const selectedId = this.form()[formSection][index]?.ingredientId;
     const selected = this.ingredients().find(item => item.id === selectedId);
-    if (selected && value !== selected.name + ' (' + selected.unit + ')') {
-      this.updateIngredient(formSection, index, 'ingredientId', '');
+    const selectedLabel = selected ? selected.name + ' (' + selected.unit + ')' : '';
+
+    // Material may emit an input event with the option value (the ingredient ID)
+    // while committing a selection. Do not interpret that event as the user
+    // replacing the chosen ingredient with free text, or the row gets saved empty.
+    if (selected && (value === selected.id || value === selectedLabel)) {
+      this.ingredientSearches.update(searches => {
+        const next = { ...searches };
+        delete next[key];
+        return next;
+      });
+      return;
     }
+
+    this.ingredientSearches.update(searches => ({ ...searches, [key]: value }));
+    if (selected) this.updateIngredient(formSection, index, 'ingredientId', '');
   }
   selectIngredient(section: 'dough' | 'additions' | 'filling' | 'decoration', index: number, ingredientId: string): void {
     this.updateIngredient(section, index, 'ingredientId', ingredientId);
