@@ -335,29 +335,37 @@ export class DataService implements OnDestroy {
       quantity: item.quantity,
       section: section.name,
     })));
+    const rawDrafts = this.asArray(state['catalogDrafts']);
+    const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
+    const existingDraft = draftIndex >= 0 ? rawDrafts[draftIndex] : {};
+    // The catalog image is the canonical image for both the public product and its recipe.
+    // Keep an existing catalog image first; only adopt the recipe image for older records
+    // that have no catalog image yet, so previously uploaded catalog photos are never lost.
+    const canonicalImage = this.asString(existingDraft['image'] ?? existing['catalogImage'] ?? existing['image'] ?? recipe.image);
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
+      image: canonicalImage,
       sections: recipe.sections.map(section => ({
         name: section.name,
         ingredients: section.ingredients.map(item => ({ ingredientId: item.ingredientId, quantity: item.quantity })),
       })),
       items: flattenedItems,
     };
+    delete savedRecord['catalogImage'];
     const internalRecord: RawRecord = { ...savedRecord };
-    for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
+    for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete internalRecord[key];
     }
-    const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftRecord: RawRecord = {
+      ...existingDraft,
       id: recipe.id,
-      description: this.asString(savedRecord['catalogDescription'] ?? savedRecord['description']),
-      image: this.asString(savedRecord['catalogImage']),
-      label: this.asString(savedRecord['catalogLabel']),
-      labelColor: this.asString(savedRecord['catalogLabelColor'], 'Morado'),
-      visible: savedRecord['catalogVisible'] !== false,
+      description: this.asString(existingDraft['description'] ?? savedRecord['catalogDescription'] ?? savedRecord['description']),
+      image: canonicalImage,
+      label: this.asString(existingDraft['label'] ?? savedRecord['catalogLabel']),
+      labelColor: this.asString(existingDraft['labelColor'] ?? savedRecord['catalogLabelColor'], 'Morado'),
+      visible: (existingDraft['visible'] ?? savedRecord['catalogVisible']) !== false,
     };
-    const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const nextDrafts = [...rawDrafts];
     if (updateCatalogFields) {
       if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
@@ -941,8 +949,7 @@ export class DataService implements OnDestroy {
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(item['image']),
-        catalogImage: this.asOptionalString(draft['image'] ?? item['catalogImage']),
+        image: this.asOptionalString(draft['image'] ?? item['image'] ?? item['catalogImage']),
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',
