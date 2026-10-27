@@ -341,7 +341,9 @@ export class DataService implements OnDestroy {
     // The catalog image is the canonical image for both the public product and its recipe.
     // Keep an existing catalog image first; only adopt the recipe image for older records
     // that have no catalog image yet, so previously uploaded catalog photos are never lost.
-    const canonicalImage = this.asString(updateCatalogFields ? (recipe.image ?? existingDraft['image'] ?? existing['catalogImage']) : (existingDraft['image'] ?? existing['catalogImage'] ?? existing['image'] ?? recipe.image));
+    const canonicalImage = updateCatalogFields
+      ? (this.asString(recipe.image) || this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']))
+      : (this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']) || this.asString(recipe.image));
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
@@ -949,7 +951,7 @@ export class DataService implements OnDestroy {
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(draft['image'] ?? item['image'] ?? item['catalogImage']),
+        image: this.asOptionalString(draft['image']) || this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',
