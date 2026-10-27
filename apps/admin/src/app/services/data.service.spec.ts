@@ -87,6 +87,48 @@ describe('DataService catalog visibility', () => {
     expect(service.recipes()[0].sections[0].ingredients).toEqual([{ ingredientId: 'flour', quantity: 125 }]);
   });
 
+  it('recovers legacy filling rows when the section labels differ', () => {
+    const legacyState = {
+      ingredients: [{ id: 'chocolate', name: 'Chocolate', unit: 'g', costPerUnit: 0.01 }],
+      orders: [],
+      recipes: [{
+        id: 'legacy-filling-cookie',
+        name: 'Galleta rellena',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        sections: [{ name: 'Relleno · por galleta', ingredients: [] }],
+        items: [{ id: 'chocolate', qty: 5, section: 'relleno' }],
+      }],
+    };
+
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels(legacyState);
+    expect(service.recipes()[0].sections[0].ingredients).toEqual([
+      { ingredientId: 'chocolate', quantity: 5 },
+    ]);
+  });
+
+  it('normalizes accents when recovering legacy decoration rows', () => {
+    const legacyState = {
+      ingredients: [{ id: 'sugar', name: 'Azúcar', unit: 'g', costPerUnit: 0.002 }],
+      orders: [],
+      recipes: [{
+        id: 'legacy-decorated-cookie',
+        name: 'Galleta decorada',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        sections: [{ name: 'Decoración · por galleta', ingredients: [] }],
+        items: [{ id: 'sugar', qty: 3, section: 'decoracion' }],
+      }],
+    };
+
+    (service as unknown as { loadViewModels: (state: Record<string, unknown>) => void }).loadViewModels(legacyState);
+    expect(service.recipes()[0].sections[0].ingredients).toEqual([
+      { ingredientId: 'sugar', quantity: 3 },
+    ]);
+  });
+
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
