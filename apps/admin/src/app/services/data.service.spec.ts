@@ -226,7 +226,7 @@ describe('DataService catalog visibility', () => {
       }],
       catalogDrafts: [{
         id: 'brownie-classic',
-        image: 'catalog/brownie-classic.webp',
+        image: '',
         description: 'Brownie clásico',
         visible: true,
       }],
