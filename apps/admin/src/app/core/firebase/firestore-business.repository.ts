@@ -495,14 +495,17 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists() ? Number(existing.data()['sortIndex'] ?? Date.now()) : Date.now();
     const previousDraft = existingDraft.data() ?? {};
 
-    const recipeData: Record<string, unknown> = { ...safeValue };
+    const catalogImage = String(updateCatalogDraft ? (safeValue['image'] ?? safeValue['catalogImage'] ?? previousDraft['image'] ?? '') : (previousDraft['image'] ?? safeValue['catalogImage'] ?? safeValue['image'] ?? ''));
+    const recipeData: Record<string, unknown> = { ...safeValue, image: catalogImage };
     for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete recipeData[key];
     }
     const draft = {
       id: recordId,
       description: String(updateCatalogDraft ? (safeValue['catalogDescription'] ?? safeValue['description'] ?? '') : (previousDraft['description'] ?? safeValue['catalogDescription'] ?? safeValue['description'] ?? '')),
-      image: String(updateCatalogDraft ? (safeValue['catalogImage'] ?? '') : (previousDraft['image'] ?? safeValue['catalogImage'] ?? '')),
+      // Keep the existing catalog photo; fall back to the legacy recipe photo only
+      // when no catalog photo exists, then use the same path on the recipe and public product.
+      image: catalogImage,
       label: String(updateCatalogDraft ? (safeValue['catalogLabel'] ?? '') : (previousDraft['label'] ?? safeValue['catalogLabel'] ?? '')),
       labelColor: String(updateCatalogDraft ? (safeValue['catalogLabelColor'] ?? 'Morado') : (previousDraft['labelColor'] ?? safeValue['catalogLabelColor'] ?? 'Morado')),
       visible: updateCatalogDraft ? safeValue['catalogVisible'] !== false : (previousDraft['visible'] !== false),

@@ -209,6 +209,43 @@ describe('DataService catalog visibility', () => {
     ]);
   });
 
+  it('uses the existing catalog photo as the single recipe image and removes catalogImage', async () => {
+    service.rawState.set({
+      ingredients: [],
+      orders: [],
+      recipes: [{
+        id: 'brownie-classic',
+        name: 'Brownie Classic',
+        category: 'Clásicas',
+        yield: 12,
+        price: 1,
+        image: 'legacy/brownie-recipe.webp',
+        catalogImage: 'catalog/brownie-classic.webp',
+        sections: [],
+        items: [],
+      }],
+      catalogDrafts: [{
+        id: 'brownie-classic',
+        image: 'catalog/brownie-classic.webp',
+        description: 'Brownie clásico',
+        visible: true,
+      }],
+    });
+
+    await service.saveRecipe({
+      id: 'brownie-classic', name: 'Brownie Classic', category: 'Clásicas', yield: 12, price: 1,
+      image: 'legacy/brownie-recipe.webp', sections: [],
+    } as never);
+
+    const saved = repository.upsertRecipeAndCatalogProjection.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    expect(saved['image']).toBe('catalog/brownie-classic.webp');
+    expect(saved).not.toHaveProperty('catalogImage');
+    expect((service.rawState()?.['recipes'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic')?.['image']).toBe('catalog/brownie-classic.webp');
+    expect(service.rawState()?.['catalogDrafts']).toEqual([
+      expect.objectContaining({ id: 'brownie-classic', image: 'catalog/brownie-classic.webp' }),
+    ]);
+  });
+
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
     await service.setRecipeCatalogVisibility('000015', false);
 
