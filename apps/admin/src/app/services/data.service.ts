@@ -1027,7 +1027,7 @@ export class DataService implements OnDestroy {
 
   private recipeSectionKey(value: string): string {
     const normalized = value.normalize('NFD')
-      .replace(/[\\u0300-\\u036f]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')
       .toLocaleLowerCase('es')
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
