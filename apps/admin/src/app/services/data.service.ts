@@ -875,7 +875,10 @@ export class DataService implements OnDestroy {
       const items = this.asArray(item['items']);
       const grouped = new Map<string, { ingredientId: string; quantity: number }[]>();
       for (const recipeItem of items) {
-        const section = this.asString(recipeItem['section'], 'masa');
+        // Legacy formulas have used labels such as "Relleno · por galleta"
+        // while the editor stores the canonical section name "relleno".
+        // Group by a canonical key so those rows survive the next save/reload.
+        const section = this.recipeSectionKey(this.asString(recipeItem['section'], 'masa'));
         const entries = grouped.get(section) ?? [];
         entries.push({
           ingredientId: this.asString(recipeItem['id'] ?? recipeItem['ingredientId']),
@@ -894,9 +897,8 @@ export class DataService implements OnDestroy {
             })).filter(ingredient => ingredient.ingredientId && ingredient.quantity > 0);
             // Older recipes may have empty section shells while the formula
             // still lives in the flattened items array. Restore those rows.
-            const legacyIngredients = Array.from(grouped.entries())
-              .filter(([legacyName]) => legacyName.trim().toLocaleLowerCase('es') === name.trim().toLocaleLowerCase('es'))
-              .flatMap(([, ingredients]) => ingredients);
+            const sectionKey = this.recipeSectionKey(name);
+            const legacyIngredients = grouped.get(sectionKey) ?? [];
             return { name, ingredients: storedIngredients.length ? storedIngredients : legacyIngredients };
           })
         : Array.from(grouped.entries()).map(([name, ingredients]) => ({ name, ingredients }));
@@ -1021,6 +1023,19 @@ export class DataService implements OnDestroy {
     if (normalized.includes('transf') || normalized.includes('transfer')) return 'TRANSFER';
     if (normalized.includes('efect') || normalized.includes('cash')) return 'CASH';
     return undefined;
+  }
+
+  private recipeSectionKey(value: string): string {
+    const normalized = value.normalize('NFD')
+      .replace(/[\\u0300-\\u036f]/g, '')
+      .toLocaleLowerCase('es')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    if (normalized.includes('relleno')) return 'relleno';
+    if (normalized.includes('decoracion')) return 'decoracion';
+    if (normalized.includes('anadido')) return 'anadidos';
+    if (normalized.includes('masa')) return 'masa';
+    return normalized;
   }
 
   private asArray(value: unknown): RawRecord[] {
