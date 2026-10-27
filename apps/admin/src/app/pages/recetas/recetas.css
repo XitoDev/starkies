@@ -29,3 +29,9 @@
 
 .recipe-form-footer .btn-secondary{border:1px solid #e8e0ed;background:#fff;color:#65586d;}
 @media(max-width:620px){.recipe-form-footer{flex-direction:column-reverse;align-items:stretch}.recipe-form-footer>*{width:100%;}}
+
+
+/* Compact recipe row actions and searchable ingredient fields. */
+:host ::ng-deep .ingredient-row .row-remove.mat-mdc-icon-button{width:32px;height:32px;min-width:32px;padding:4px;flex:0 0 32px;}
+:host ::ng-deep .ingredient-row .row-remove .mat-icon{width:20px;height:20px;font-size:20px;line-height:20px;}
+:host ::ng-deep .ingredient-row .mat-mdc-autocomplete-trigger{min-width:0;}
