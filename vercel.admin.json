@@ -5,11 +5,5 @@
   "outputDirectory": "dist/admin/browser",
   "git": {
     "deploymentEnabled": false
-  },
-  "rewrites": [
-    {
-      "source": "/api/admin-order-document",
-      "destination": "/api/order-document?mode=admin"
-    }
-  ]
+  }
 }
