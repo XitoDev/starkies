@@ -17,7 +17,7 @@ describe('RecipeImageService legacy image resolution', () => {
   });
 
   it('uses the product ID when a legacy filename ID is not mapped', () => {
-    expect(service.getImageUrl('/images/recipe-legacy-image-document.png', productId))
+    expect(service.getImageUrl('/images/recipe-11111111-1111-4111-8111-111111111111.png', productId))
       .toBe(cdnBase + productId + '.png');
   });
 });
