@@ -24,7 +24,7 @@ interface PromotionRecord extends Record<string, unknown> {
 }
 interface PromotionForm {
   id: string; name: string; title: string; description: string; code: string;
-  status: PromotionStatus; type: PromotionType; productId: string; presentationId: string;
+  status: PromotionStatus; type: PromotionType; productIds: string[]; requireAllProducts: boolean; presentationId: string;
   buyQuantity: number; rewardQuantity: number; discountType: 'percentage' | 'fixed';
   discountValue: number; minimumSubtotal: number; maxApplications: number;
   startsAt: string; endsAt: string; bannerImage: string; showInCatalog: boolean;
@@ -105,10 +105,10 @@ function normalize(value: string): string {
                   <option value="fixed_amount">Descuento de valor fijo</option>
                   <option value="minimum_subtotal">Descuento por compra mínima</option>
                 </select></label>
-                <label>Producto participante<select [(ngModel)]="form.productId" name="productId">
-                  <option value="">Todos los productos</option>
+                <label>Productos participantes<select multiple size="5" [(ngModel)]="form.productIds" name="productIds">
                   @for (recipe of eligibleProducts(); track recipe.id) { <option [value]="recipe.id">{{ recipe.name }}</option> }
-                </select></label>
+                </select><small>Selecciona uno o varios. Sin selección, participan todos los productos.</small></label>
+                @if (form.productIds.length > 1) { <label class="inline-check"><input type="checkbox" [(ngModel)]="form.requireAllProducts" name="requireAllProducts"> La caja debe incluir todos los productos seleccionados</label> }
                 <label>Presentación<select [(ngModel)]="form.presentationId" name="presentationId">
                   <option value="">Todas las presentaciones</option><option value="clasicas">Solo clásicas · 10</option><option value="ny">Solo NY · 6</option><option value="mixta">Mixta · 8</option>
                 </select></label>
@@ -190,7 +190,7 @@ export class Promociones {
   private emptyForm(): PromotionForm {
     return {
       id: '', name: '', title: '', description: '', code: '', status: 'DRAFT', type: 'percentage',
-      productId: '', presentationId: '', buyQuantity: 1, rewardQuantity: 1, discountType: 'percentage',
+      productIds: [], requireAllProducts: false, presentationId: '', buyQuantity: 1, rewardQuantity: 1, discountType: 'percentage',
       discountValue: 10, minimumSubtotal: 0, maxApplications: 1, startsAt: '', endsAt: '',
       bannerImage: '', showInCatalog: true, maxUses: 0, maxUsesPerCustomer: 0,
     };
@@ -206,7 +206,7 @@ export class Promociones {
       form.description = 'Lleva una caja de Brownie Classic y disfruta la segunda con 50 % de descuento.';
       form.code = 'BROWNIE50';
       form.type = 'buy_x_get_y_discount';
-      form.productId = brownie?.id ?? '';
+      form.productIds = brownie ? [brownie.id] : [];
       form.presentationId = 'clasicas';
       form.buyQuantity = 1;
       form.rewardQuantity = 1;
@@ -231,7 +231,8 @@ export class Promociones {
       code: promotion.code,
       status: promotion.status,
       type: (asText(mechanic['type']) || 'percentage') as PromotionType,
-      productId: typeof productIds[0] === 'string' ? productIds[0] : '',
+      productIds: productIds.filter((value): value is string => typeof value === 'string'),
+      requireAllProducts: mechanic['requireAllProducts'] === true,
       presentationId: asText(mechanic['presentationId']),
       buyQuantity: asNumber(mechanic['buyQuantity'], 1),
       rewardQuantity: asNumber(mechanic['rewardQuantity'], 1),
@@ -293,7 +294,7 @@ export class Promociones {
         return;
       }
     }
-    if (this.form.type === 'buy_x_get_y_discount' && (!this.form.productId || !this.form.presentationId)) {
+    if (this.form.type === 'buy_x_get_y_discount' && (!this.form.productIds.length || !this.form.presentationId)) {
       this.error.set('La promoción de segunda caja necesita un producto y una presentación específicos.');
       return;
     }
@@ -310,7 +311,8 @@ export class Promociones {
       const existing = this.promotions().find(item => item.id === this.form.id);
       const mechanic: Record<string, unknown> = {
         type: this.form.type,
-        productIds: this.form.productId ? [this.form.productId] : [],
+        productIds: [...this.form.productIds],
+        requireAllProducts: this.form.requireAllProducts,
         ...(this.form.presentationId ? { presentationId: this.form.presentationId } : {}),
         buyQuantity: Math.max(1, Math.floor(this.form.buyQuantity)),
         rewardQuantity: Math.max(1, Math.floor(this.form.rewardQuantity)),

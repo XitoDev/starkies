@@ -38,7 +38,9 @@ function isEligibleBox(box: PromotionCartBox, mechanic: PromotionMechanic): bool
   const entries = Object.entries(box.items).filter(([, quantity]) => Number(quantity) > 0);
   if (!entries.length) return false;
   const allowedProducts = Array.isArray(mechanic.productIds) ? mechanic.productIds.filter(Boolean) : [];
-  return !allowedProducts.length || entries.every(([productId]) => allowedProducts.includes(productId));
+  if (allowedProducts.length && !entries.every(([productId]) => allowedProducts.includes(productId))) return false;
+  if (mechanic.requireAllProducts && allowedProducts.some(productId => !entries.some(([entryId, quantity]) => entryId === productId && Number(quantity) > 0))) return false;
+  return true;
 }
 function discountForAmount(amount: number, mechanic: PromotionMechanic): number {
   const value = Math.max(0, numberValue(mechanic.discountValue));

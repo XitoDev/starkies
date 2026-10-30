@@ -141,6 +141,7 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const publicMechanic: PromotionMechanic = {
       type: type as PromotionMechanicType,
       productIds,
+      requireAllProducts: mechanic['requireAllProducts'] === true,
       ...(stringValue(mechanic['presentationId']) ? { presentationId: stringValue(mechanic['presentationId']) } : {}),
       buyQuantity: Math.max(1, Math.floor(numberValue(mechanic['buyQuantity'], 1))),
       rewardQuantity: Math.max(1, Math.floor(numberValue(mechanic['rewardQuantity'], 1))),

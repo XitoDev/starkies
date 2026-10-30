@@ -11,6 +11,7 @@ export type PromotionDiscountType = 'percentage' | 'fixed';
 export interface PromotionMechanic {
   type: PromotionMechanicType;
   productIds?: string[];
+  requireAllProducts?: boolean;
   presentationId?: string;
   buyQuantity?: number;
   rewardQuantity?: number;

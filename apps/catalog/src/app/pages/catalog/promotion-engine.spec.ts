@@ -34,6 +34,24 @@ describe('promotion engine', () => {
     ]).discountAmount).toBe(0);
   });
 
+  it('can require every selected product in a qualifying bundle box', () => {
+    const bundlePromotion = {
+      mechanic: {
+        type: 'percentage' as const,
+        productIds: ['brownie-classic', 'vanilla'],
+        requireAllProducts: true,
+        discountType: 'percentage' as const,
+        discountValue: 10,
+      },
+    };
+    expect(calculatePromotionDiscount(bundlePromotion, [
+      { ...brownieBox, items: { 'brownie-classic': 10 } },
+    ]).discountAmount).toBe(0);
+    expect(calculatePromotionDiscount(bundlePromotion, [
+      { ...brownieBox, items: { 'brownie-classic': 5, vanilla: 5 } },
+    ]).discountAmount).toBe(0.6);
+  });
+
   it('supports minimum-subtotal percentage promotions', () => {
     const promotion = { mechanic: { type: 'minimum_subtotal' as const, discountType: 'percentage' as const, discountValue: 10, minimumSubtotal: 15 } };
     expect(calculatePromotionDiscount(promotion, [brownieBox, brownieBox]).discountAmount).toBe(0);
