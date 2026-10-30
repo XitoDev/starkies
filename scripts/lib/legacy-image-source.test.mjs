@@ -31,7 +31,7 @@ test('retrieves and validates a legacy WebP image', async () => {
 test('rejects redirects and upstream HTTP errors without following them', async () => {
   await assert.rejects(fetchLegacyImage(legacyUrl, {
     fetchImpl: async () => new Response(null, { status: 302, headers: { location: 'https://evil.example/image.jpg' } }),
-  }), /redireccionó/);
+  }), /redirigió/);
   await assert.rejects(fetchLegacyImage(legacyUrl, {
     fetchImpl: async () => new Response('missing', { status: 404 }),
   }), /HTTP 404/);
