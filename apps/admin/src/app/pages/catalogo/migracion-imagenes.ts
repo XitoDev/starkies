@@ -94,10 +94,23 @@ export class ImageMigration {
     const value = this.data.rawState()?.['promotions'];
     return Array.isArray(value) ? value.map(asRecord) : [];
   });
-  readonly productCount = computed(() => this.recipes().filter(recipe => Boolean(recipe.image?.trim())).length);
+  readonly catalogFallbackProducts = computed(() => {
+    const value = this.data.rawState()?.['publicCatalog'];
+    const records = Array.isArray(value) ? value.map(asRecord) : [];
+    const recipesById = new Map(this.recipes().map(recipe => [recipe.id, recipe]));
+    return records.filter(item => {
+      const id = String(item['id'] ?? '');
+      const image = String(item['image'] ?? '').trim();
+      if (!id || id === 'catalog-settings' || !image) return false;
+      const recipe = recipesById.get(id);
+      return !recipe || !String(recipe.image ?? '').trim();
+    });
+  });
+  readonly productCount = computed(() => this.recipes().filter(recipe => Boolean(recipe.image?.trim())).length + this.catalogFallbackProducts().length);
   readonly promotionCount = computed(() => this.promotions().filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).length);
   readonly alreadyMigrated = computed(() => [
     ...this.recipes().filter(recipe => this.imageUpload.isManagedUrl(recipe.image)).map(recipe => recipe.id),
+    ...this.catalogFallbackProducts().filter(item => this.imageUpload.isManagedUrl(String(item['image'] ?? ''))).map(item => String(item['id'] ?? '')),
     ...this.promotions().filter(item => this.imageUpload.isManagedUrl(String(item['bannerImage'] ?? ''))).map(item => String(item['id'] ?? '')),
   ].length);
   readonly remaining = computed(() => this.productCount() + this.promotionCount() - this.alreadyMigrated());
@@ -127,6 +140,11 @@ export class ImageMigration {
     const promotions = this.promotions().map(item => ({ ...item }));
     const jobs = [
       ...recipes.filter(recipe => Boolean(recipe.image?.trim())).map(recipe => ({ kind: 'product' as const, id: recipe.id, label: recipe.name, url: recipe.image ?? '', recipe })),
+      ...this.catalogFallbackProducts().map(item => {
+        const id = String(item['id'] ?? '');
+        const recipe = recipes.find(candidate => candidate.id === id);
+        return { kind: 'product' as const, id, label: String(item['name'] ?? id), url: String(item['image'] ?? ''), ...(recipe ? { recipe } : { catalogOnlyProduct: item }) };
+      }),
       ...promotions.filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).map(item => ({ kind: 'promotion' as const, id: String(item['id'] ?? ''), label: String(item['name'] ?? item['title'] ?? item['id'] ?? 'Promoción'), url: String(item['bannerImage'] ?? ''), promotion: item })),
     ];
     this.total.set(jobs.length);
@@ -163,6 +181,9 @@ export class ImageMigration {
           const imageUrl = await this.imageUpload.upload(file, job.kind, job.id);
           if (job.kind === 'product' && job.recipe) {
             await this.data.saveRecipe({ ...job.recipe, image: imageUrl } as Recipe);
+            await this.imageUpload.syncReference('product', job.id, job.url, imageUrl);
+          } else if (job.kind === 'product' && job.catalogOnlyProduct) {
+            await this.data.savePublicCatalogImage(job.id, imageUrl);
             await this.imageUpload.syncReference('product', job.id, job.url, imageUrl);
           } else if (job.kind === 'promotion' && job.promotion) {
             await this.promotionsService.savePromotion({ ...job.promotion, bannerImage: imageUrl });
