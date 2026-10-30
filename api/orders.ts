@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot } from 'firebase-admin/firestore';
-import { readPublicCatalog } from './catalog-data.js';
+import { readPublicCatalog } from '../server/catalog-data.js';
 import { calculatePromotionDiscount, isPromotionActive, type PromotionCartBox } from '../apps/catalog/src/app/pages/catalog/promotion-engine.js';
 
 type HeaderValue = string | string[] | undefined;
