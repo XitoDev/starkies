@@ -42,7 +42,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const oldRef = oldAsset ? db.collection('imageAssets').doc(oldAsset.hash) : null;
     const newRef = newAsset ? db.collection('imageAssets').doc(newAsset.hash) : null;
-    let deleteCandidate: { hash: string; key: string } | null = null;
+    const deletionCandidates: { hash: string; key: string }[] = [];
 
     await db.runTransaction(async transaction => {
       const oldSnapshot = oldRef ? await transaction.get(oldRef) : null;
@@ -68,7 +68,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           updatedAt: new Date().toISOString(),
           ...(nextReferences.length ? {} : { deleteRequestedAt: new Date().toISOString() }),
         });
-        if (!nextReferences.length) deleteCandidate = { hash: oldAsset!.hash, key: oldAsset!.key };
+        if (!nextReferences.length) deletionCandidates.push({ hash: oldAsset!.hash, key: oldAsset!.key });
       }
 
       if (newRef && newSnapshot?.exists) {
@@ -87,6 +87,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     let deleted = false;
     let cleanupPending = false;
+    const deleteCandidate = deletionCandidates[0];
     if (deleteCandidate) {
       try {
         await deleteR2Object(deleteCandidate.key);
