@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
 interface ApiRequest {
@@ -49,6 +50,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
+  const host = headerValue(req.headers['host'] ?? req.headers['x-forwarded-host']) || 'starkies.lat';
+  const requestUrl = new URL(req.url ?? '/', 'https://' + host);
+  if (requestUrl.searchParams.get('mode') === 'admin') {
+    await handleAdminOrderDocument(req, res, requestUrl);
+    return;
+  }
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD');
@@ -109,6 +117,94 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     res.status(500);
     res.send('No pudimos generar el PDF de este pedido en este momento.');
   }
+}
+
+
+async function handleAdminOrderDocument(req: ApiRequest, res: ApiResponse, url: URL): Promise<void> {
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    res.status(405).json({ message: 'Método no permitido.' });
+    return;
+  }
+
+  try {
+    const authorization = headerValue(req.headers['authorization']);
+    const match = /^Bearer\\s+(.+)$/i.exec(authorization);
+    if (!match) {
+      res.status(401).json({ message: 'Inicia sesión para descargar el PDF.' });
+      return;
+    }
+
+    const app = getAdminApp();
+    const decoded = await getAuth(app).verifyIdToken(match[1]);
+    const database = getFirestore(app);
+    const admin = await database.doc('adminUsers/' + decoded.uid).get();
+    if (!admin.exists) {
+      res.status(403).json({ message: 'No tienes permiso para descargar este documento.' });
+      return;
+    }
+
+    const orderId = url.searchParams.get('orderId') ?? '';
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(orderId)) {
+      res.status(400).json({ message: 'Identificador de pedido no válido.' });
+      return;
+    }
+
+    const snapshot = await database.doc(['orders', orderId].join('/')).get();
+    if (!snapshot.exists) {
+      res.status(404).json({ message: 'No encontramos este pedido.' });
+      return;
+    }
+
+    const record = snapshot.data() as StoredOrder | undefined;
+    if (!record) {
+      res.status(404).json({ message: 'No encontramos los detalles de este pedido.' });
+      return;
+    }
+
+    const customerId = typeof record.customerId === 'string' ? record.customerId : '';
+    const customerSnapshot = customerId ? await database.doc('customers/' + customerId).get() : null;
+    const customer = customerSnapshot?.exists ? customerSnapshot.data() : undefined;
+    const pdfRecord: StoredOrder = {
+      ...record,
+      customer: typeof record.customer === 'string' && record.customer.trim() ? record.customer : customer?.['name'],
+      phone: typeof record.phone === 'string' && record.phone.trim() ? record.phone : customer?.['phone'],
+      address: typeof record.deliveryAddress === 'string' && record.deliveryAddress.trim()
+        ? record.deliveryAddress
+        : typeof record.address === 'string' && record.address.trim() ? record.address : customer?.['address'],
+      deliveryFee: record.shippingFee ?? record.deliveryFee,
+    };
+
+    const pdf = buildOrderPdf(pdfRecord, orderId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="pedido-' + orderId + '.pdf"');
+    res.setHeader('Content-Length', String(pdf.length));
+    res.status(200).send(pdf);
+  } catch (error) {
+    if (error instanceof Error && /Firebase ID token|Decoding Firebase ID token|expired/i.test(error.message)) {
+      res.status(401).json({ message: 'Tu sesión ha caducado. Inicia sesión nuevamente.' });
+      return;
+    }
+    console.error('Admin order PDF download failed:', error);
+    res.status(500).json({ message: 'No pudimos descargar el PDF de este pedido.' });
+  }
+}
+
+function getAdminApp() {
+  const raw = process.env['FIREBASE_SERVICE_ACCOUNT_JSON'];
+  if (!raw) throw new Error('Missing Firebase service account configuration');
+  const account = JSON.parse(raw) as { project_id?: string; client_email?: string; private_key?: string };
+  if (account.project_id !== 'starkies' || !account.client_email || !account.private_key) {
+    throw new Error('Invalid Firebase service account configuration');
+  }
+  const name = 'starkies-admin-pdf-auth';
+  return getApps().find(app => app.name === name) ?? initializeApp({
+    credential: cert({
+      projectId: account.project_id,
+      clientEmail: account.client_email,
+      privateKey: account.private_key.replace(/\\\\n/g, '\\n'),
+    }),
+  }, name);
 }
 
 function getSigningKey(): string {
