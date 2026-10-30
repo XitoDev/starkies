@@ -22,7 +22,7 @@ Los archivos actuales se identifican con el ID del producto. Cuando existe un su
 | `e9005152-d579-444f-905f-a06a5ad3d74b` | `products/e9005152-d579-444f-905f-a06a5ad3d74b.jpg` |
 | `f126ae46-9eee-4ac2-8cff-d2f954d708e9` | `products/f126ae46-9eee-4ac2-8cff-d2f954d708e9.png` |
 
-El mapeo operativo está en `image-map.json`. Las referencias heredadas `/api/recipe-image?id=...` se resuelven temporalmente mediante `libs/shared/src/lib/recipe-image-map.ts`, apuntando a estos mismos archivos.
+El mapeo operativo está en `image-map.json`. Las referencias heredadas `/api/recipe-image?id=...` y los nombres `recipe-*`/`catalog-*` se pueden resolver cuando su UUID coincide con una clave `product:<id>` del mapa. El migrador aplica esta equivalencia aunque el ID de la imagen antigua sea distinto al ID del documento de Recetas. Si no existe una correspondencia verificable, el producto queda sin resolver y la migración no escribe ningún cambio.
 
 ## Banners de promociones
 
@@ -42,4 +42,4 @@ El comando anterior solo muestra un resumen (*dry run*). Para aplicar los cambio
 npm run migrate:product-images -- --apply
 ```
 
-Configura `FIREBASE_SERVICE_ACCOUNT_JSON` con la cuenta de servicio del proyecto `starkies`. La prioridad es: mapa `product:<id>` (archivo actual de `products/`), imagen del borrador de catálogo, imagen de catálogo heredada en Recetas, imagen publicada en `publicCatalog` y, solo si no existe ninguna imagen de catálogo, `recipes.image`. El *dry run* muestra conflictos y referencias sin resolver. Con `--apply`, el script sincroniza `recipes.image` y `publicCatalog.image`, elimina `recipes.catalogImage`, elimina `catalogDrafts.image` y cualquier `catalogImage` residual de esas colecciones. Si hay referencias de catálogo que no puede resolver, cancela toda la escritura; no borra archivos ni documentos.
+Configura `FIREBASE_SERVICE_ACCOUNT_JSON` con la cuenta de servicio del proyecto `starkies`. La prioridad es: mapa `product:<id>` (archivo actual de `products/`), imagen del borrador de catálogo, imagen de catálogo heredada en Recetas, imagen publicada en `publicCatalog` y, solo si no existe ninguna imagen de catálogo, `recipes.image`. El *dry run* muestra conflictos, las referencias antiguas recuperadas mediante el mapa y las referencias sin resolver. Con `--apply`, el script sincroniza `recipes.image` y `publicCatalog.image`, elimina `recipes.catalogImage`, elimina `catalogDrafts.image` y cualquier `catalogImage` residual de esas colecciones. Si hay referencias de catálogo que no puede resolver, cancela toda la escritura; no borra archivos ni documentos.

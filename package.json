@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "api:dev": "npx vercel dev --listen 3000",
-    "migrate:product-images": "node scripts/migrate-product-image-references.mjs"
+    "migrate:product-images": "node scripts/migrate-product-image-references.mjs",
+    "test:migrate:product-images": "node --test scripts/product-image-migration-utils.test.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

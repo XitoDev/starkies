@@ -1,6 +1,7 @@
 import { access, readFile } from 'node:fs/promises';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { resolveCanonicalImage } from './product-image-migration-utils.mjs';
 
 const APPLY = process.argv.includes('--apply');
 const IMAGE_MAP_URL = new URL('../public/images/image-map.json', import.meta.url);
@@ -12,78 +13,6 @@ function asRecord(value) {
 function text(value) { return typeof value === 'string' ? value.trim() : ''; }
 function isProductUrl(value) {
   return /\/public\/images\/products\/|\/images\/products\//.test(text(value));
-}
-function isLegacyImageUrl(value) {
-  return /\/api\/recipe-image(?:[?#]|$)|\/public\/images\/(?:recipe-|catalog-)|\/images\/(?:recipe-|catalog-)/i.test(text(value));
-}
-function isUsableImageUrl(value) {
-  const image = text(value);
-  if (!image || isLegacyImageUrl(image)) return false;
-  return /^https?:\/\//i.test(image) || /^\/images\/products\//i.test(image);
-}
-function hasOwn(record, key) { return Object.prototype.hasOwnProperty.call(record, key); }
-
-async function loadProductImages(mapEntries) {
-  const images = new Map();
-  for (const [key, rawValue] of Object.entries(mapEntries)) {
-    if (!key.startsWith('product:')) continue;
-    const entry = asRecord(rawValue);
-    const path = text(entry.path);
-    const url = text(entry.url);
-    if (!/^public\/images\/products\/[^/]+$/.test(path) || !isProductUrl(url)) {
-      throw new Error('La entrada ' + key + ' no apunta a un archivo válido de products/.');
-    }
-    try {
-      await access(new URL('../' + path, import.meta.url));
-    } catch {
-      throw new Error('La imagen canónica no existe en el repositorio: ' + path + ' (' + key + ').');
-    }
-    images.set(key.slice('product:'.length), url);
-  }
-  if (!images.size) throw new Error('No se encontraron imágenes canónicas product:* en public/images/image-map.json.');
-  return images;
-}
-
-function resolveCanonicalImage(recipe, draft, publicProduct, mappedImage) {
-  const catalogCandidates = [
-    { source: 'catalogDrafts.image', value: draft['image'] },
-    { source: 'recipes.' + LEGACY_CATALOG_IMAGE_FIELD, value: recipe[LEGACY_CATALOG_IMAGE_FIELD] },
-    { source: 'publicCatalog.image', value: publicProduct['image'] },
-    { source: 'publicCatalog.' + LEGACY_CATALOG_IMAGE_FIELD, value: publicProduct[LEGACY_CATALOG_IMAGE_FIELD] },
-    { source: 'catalogDrafts.' + LEGACY_CATALOG_IMAGE_FIELD, value: draft[LEGACY_CATALOG_IMAGE_FIELD] },
-  ];
-  const recipeCandidate = { source: 'recipes.image', value: recipe['image'] };
-  const allCandidates = [
-    ...(mappedImage ? [{ source: 'image-map:product', value: mappedImage }] : []),
-    ...catalogCandidates,
-    recipeCandidate,
-  ];
-  const nonEmpty = allCandidates.filter(candidate => text(candidate.value));
-  const selected = mappedImage
-    ? { source: 'image-map:product', value: mappedImage }
-    : catalogCandidates.find(candidate => isUsableImageUrl(candidate.value))
-      ?? (catalogCandidates.some(candidate => text(candidate.value))
-        ? null
-        : (isUsableImageUrl(recipeCandidate.value) ? recipeCandidate : null));
-  if (!selected && nonEmpty.length) {
-    return {
-      canonical: '',
-      source: '',
-      unresolved: nonEmpty.map(candidate => ({ source: candidate.source, value: text(candidate.value) })),
-      conflicts: [],
-    };
-  }
-  const canonical = text(selected?.value);
-  const uniqueValues = [...new Set(nonEmpty.map(candidate => text(candidate.value)))];
-  return {
-    canonical,
-    source: selected?.source ?? '',
-    unresolved: [],
-    conflicts: uniqueValues.length > 1
-      ? nonEmpty.filter(candidate => text(candidate.value) !== canonical)
-        .map(candidate => ({ source: candidate.source, value: text(candidate.value) }))
-      : [],
-  };
 }
 
 async function main() {
@@ -122,14 +51,16 @@ async function main() {
   const canonicalById = new Map();
   const unresolved = [];
   const conflicts = [];
+  const legacyImageResolutions = [];
 
   for (const id of allIds) {
     const recipe = asRecord(recipes.get(id));
     const draft = asRecord(drafts.get(id));
     const publicProduct = asRecord(publicProducts.get(id));
-    const result = resolveCanonicalImage(recipe, draft, publicProduct, productImages.get(id));
+    const result = resolveCanonicalImage(recipe, draft, publicProduct, productImages.get(id), productImages);
     if (result.canonical) canonicalById.set(id, result.canonical);
     if (result.unresolved.length) unresolved.push({ id, references: result.unresolved });
+    if (result.legacyImageResolutions.length) legacyImageResolutions.push({ id, references: result.legacyImageResolutions });
     if (result.conflicts.length) conflicts.push({
       id,
       selectedSource: result.source,
@@ -193,6 +124,8 @@ async function main() {
     ])),
     conflictCount: conflicts.length,
     conflicts,
+    legacyImageProductCount: legacyImageResolutions.length,
+    legacyImageResolutions,
     unresolvedCount: unresolved.length,
     unresolved,
     sampleChanges: changes.slice(0, 30).map(({ collection, id, patch }) => ({
