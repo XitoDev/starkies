@@ -42,3 +42,25 @@ The existing `FIREBASE_SERVICE_ACCOUNT_JSON` variable is still required by the a
 6. Only after the previous checks, run the separate Git-history cleanup procedure for old dynamic image files. Do not delete the originals or rewrite Git history before this verification.
 
 The migration intentionally does not delete old repository images or rewrite Git history. Those are separate destructive steps and must wait until every live reference has been verified against R2.
+
+
+## GitHub secrets for the final history purge
+
+The repository includes a separate, manually triggered workflow that refuses to rewrite history until a live migration audit succeeds. Before using it, add these repository Actions secrets:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: the StarKies Firebase service account JSON.
+- `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`, `R2_PUBLIC_BASE_URL`: the same account, bucket and public URL used by Vercel.
+- `R2_AUDIT_ACCESS_KEY_ID` and `R2_AUDIT_SECRET_ACCESS_KEY`: a **separate R2 Object Read-only token** scoped to the StarKies bucket. Do not reuse the write token if you can avoid it.
+- Optionally, `GH_HISTORY_REWRITE_TOKEN`: a GitHub token with Contents: Read and write that is allowed to force-push the repository branches. If omitted, the workflow uses its `GITHUB_TOKEN`; branch protection may block that push.
+
+After the migration page reports zero pending images and zero failures, and the storefront and promotion banners have been visually checked:
+
+1. Merge the R2 implementation PR and wait for the production deployment.
+2. Run the Admin image migration and let the daily orphan cleanup remove any abandoned uploads.
+3. Confirm the R2 migration audit secrets above are configured in GitHub.
+4. Open Actions → **Purge migrated image history** → Run workflow, on `main`.
+5. Enter exactly `PURGE_MIGRATED_IMAGES` as the confirmation.
+
+The workflow independently checks every product, public catalog projection, promotion banner and image-index reference; it also issues a signed R2 HEAD request for every referenced object. It stops if any live image is still outside R2, any reference count differs, any R2 object is missing, or any unreferenced indexed object remains.
+
+Only then does it rewrite all fetched branches and tags to remove the old dynamic image paths from Git history and force-push the rewritten refs. This invalidates old commit hashes and existing clones; collaborators must re-clone or carefully reset their local branches afterward. If GitHub branch protection prevents force-pushes, an administrator must temporarily allow the authorized rewrite token to bypass that restriction for this one operation.
