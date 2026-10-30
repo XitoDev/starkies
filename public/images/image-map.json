@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-30T05:16:14.348Z",
+  "updatedAt": "2026-10-30T05:16:26.891Z",
   "images": {
     "recipe:6539b2bd-5e58-4485-8ff9-b625d1aa6147": {
       "fileName": "recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
@@ -53,9 +53,9 @@
       "legacy": true
     },
     "recipe:0a783c0b-8993-41a0-b986-b03b57674ca9": {
-      "fileName": "recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-2e3d61be-ea43-4fe1-ac41-4e91d1667b0d.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@44fe693216a1b3d8bb5bcefe4656d6735f44e39f/public/images/recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-2e3d61be-ea43-4fe1-ac41-4e91d1667b0d.png",
-      "commitSha": "44fe693216a1b3d8bb5bcefe4656d6735f44e39f",
+      "fileName": "recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
+      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@8e89282bc8eff07cbbe96c4939b5cf789629657b/public/images/recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
+      "commitSha": "8e89282bc8eff07cbbe96c4939b5cf789629657b",
       "contentType": "image/png",
       "size": 1388679
     },
