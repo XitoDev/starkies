@@ -312,7 +312,7 @@ export class Recetas {
     if (!file) return this.form().image;
     this.uploadingImage.set(true);
     try {
-      return await this.imageUpload.upload(file, 'recipe', recipeId);
+      return await this.imageUpload.upload(file, 'product', recipeId);
     } finally {
       this.uploadingImage.set(false);
     }
@@ -362,7 +362,7 @@ export class Recetas {
       const recipe: Recipe & { notes?: string } = {
         ...(this.editingRecipe() ?? {} as Recipe),
         id, name, category, yield: this.batchYield(), price: Math.max(0, Number(form.price ?? 0)),
-        image: image || undefined, ...(isNewRecipe ? { catalogLabel: 'Nuevo' } : {}),
+        image, ...(isNewRecipe ? { catalogLabel: 'Nuevo' } : {}),
         archived: this.editingRecipe()?.archived ?? false,
         baseId: form.kind === 'base' ? form.baseId : undefined,
         baseGramsPerCookie: form.gramsPerCookie ?? undefined, sections, notes: form.notes.trim() || undefined,

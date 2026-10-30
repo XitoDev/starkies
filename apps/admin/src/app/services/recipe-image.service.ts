@@ -8,10 +8,9 @@ export class RecipeImageService {
   getImageUrl(imagePath: string | undefined): string {
     if (!imagePath?.trim()) return '/images/recipe-placeholder.svg';
 
-    if (imagePath.startsWith('/api/recipe-image')) {
-      return resolveLegacyRecipeImage(imagePath) ?? ORIGINAL_SITE + imagePath;
-    }
-
+    const resolved = resolveLegacyRecipeImage(imagePath);
+    if (resolved && resolved !== imagePath) return resolved;
+    if (imagePath.startsWith('/api/recipe-image')) return ORIGINAL_SITE + imagePath;
     if (/^https?:\/\//i.test(imagePath)) return imagePath;
     return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
   }

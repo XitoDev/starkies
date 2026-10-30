@@ -338,12 +338,11 @@ export class DataService implements OnDestroy {
     const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const existingDraft = draftIndex >= 0 ? rawDrafts[draftIndex] : {};
-    // The catalog image is the canonical image for both the public product and its recipe.
-    // Keep an existing catalog image first; only adopt the recipe image for older records
-    // that have no catalog image yet, so previously uploaded catalog photos are never lost.
-    const canonicalImage = updateCatalogFields
-      ? (this.asString(recipe.image) || this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']))
-      : (this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']) || this.asString(recipe.image));
+    // One canonical product image is stored on recipes.image. The catalog projection
+    // receives that same URL; legacy fields are only a temporary fallback before migration.
+    const canonicalImage = typeof recipe.image === 'string'
+      ? recipe.image.trim()
+      : (this.asString(existing['image']) || this.asString(existing['catalogImage']) || this.asString(existingDraft['image']));
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
@@ -359,19 +358,18 @@ export class DataService implements OnDestroy {
     for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete internalRecord[key];
     }
+    const { image: _legacyDraftImage, ...draftMetadata } = existingDraft;
     const draftRecord: RawRecord = {
-      ...existingDraft,
+      ...draftMetadata,
       id: recipe.id,
       description: this.asString(existingDraft['description'] ?? savedRecord['catalogDescription'] ?? savedRecord['description']),
-      image: canonicalImage,
       label: this.asString(existingDraft['label'] ?? savedRecord['catalogLabel']),
       labelColor: this.asString(existingDraft['labelColor'] ?? savedRecord['catalogLabelColor'], 'Morado'),
       visible: (existingDraft['visible'] ?? savedRecord['catalogVisible']) !== false,
     };
     const nextDrafts = [...rawDrafts];
     // The Firestore transaction always writes catalogDrafts, even when only
-    // recipe fields change. Mirror that image reconciliation in optimistic
-    // state so the editor never reverts to an empty, stale draft image.
+    // recipe fields change. This metadata-only document does not store image URLs.
     if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
     else nextDrafts.push(draftRecord);
     const nextRecipes = [...rawRecipes];
@@ -419,11 +417,12 @@ export class DataService implements OnDestroy {
       ...rawRecipes[recipeIndex],
       catalogVisible: visible,
       catalogDescription: this.asString(currentDraft['description']),
-      catalogImage: this.asString(currentDraft['image']),
       catalogLabel: this.asString(currentDraft['label']),
       catalogLabelColor: this.asString(currentDraft['labelColor'], 'Morado'),
     };
-    const updatedDraft = { ...currentDraft, id: recipeId, visible };
+    delete updatedRecipe['catalogImage'];
+    const { image: _legacyDraftImage, ...draftMetadata } = currentDraft;
+    const updatedDraft = { ...draftMetadata, id: recipeId, visible };
     const nextDrafts = [...drafts];
     const draftIndex = nextDrafts.findIndex(item => this.asString(item['id']) === recipeId);
     if (draftIndex >= 0) nextDrafts[draftIndex] = updatedDraft;
@@ -993,7 +992,7 @@ export class DataService implements OnDestroy {
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(draft['image']) || this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
+        image: this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',

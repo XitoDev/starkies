@@ -1,91 +1,84 @@
 {
-  "version": 1,
-  "updatedAt": "2026-10-30T05:16:26.891Z",
+  "version": 2,
+  "updatedAt": "2026-10-30T07:30:00.000Z",
   "images": {
-    "recipe:6539b2bd-5e58-4485-8ff9-b625d1aa6147": {
-      "fileName": "recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
-      "legacy": true
+    "product:02885ca5-c58c-48a7-b116-cd614290c697": {
+      "fileName": "02885ca5-c58c-48a7-b116-cd614290c697.png",
+      "path": "public/images/products/02885ca5-c58c-48a7-b116-cd614290c697.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/02885ca5-c58c-48a7-b116-cd614290c697.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:202edec5-9b83-4e9b-a466-c32bd1a05d44": {
-      "fileName": "recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg",
-      "legacy": true
+    "product:0794f338-588b-460d-b002-ee4e614826c9": {
+      "fileName": "0794f338-588b-460d-b002-ee4e614826c9.png",
+      "path": "public/images/products/0794f338-588b-460d-b002-ee4e614826c9.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/0794f338-588b-460d-b002-ee4e614826c9.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:85e499f3-37c9-4701-bf89-5176007ce546": {
-      "fileName": "recipe-85e499f3-37c9-4701-bf89-5176007ce546.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-85e499f3-37c9-4701-bf89-5176007ce546.png",
-      "legacy": true
+    "product:0a783c0b-8993-41a0-b986-b03b57674ca9": {
+      "fileName": "0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
+      "path": "public/images/products/0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:02885ca5-c58c-48a7-b116-cd614290c697": {
-      "fileName": "recipe-02885ca5-c58c-48a7-b116-cd614290c697.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-02885ca5-c58c-48a7-b116-cd614290c697.png",
-      "legacy": true
+    "product:1b601e8d-17da-4f66-909d-5324bce3acfe": {
+      "fileName": "1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png",
+      "path": "public/images/products/1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:f126ae46-9eee-4ac2-8cff-d2f9543d708e9": {
-      "fileName": "recipe-f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png",
-      "legacy": true
+    "product:202edec5-9b83-4e9b-a466-c32bd1a05d44": {
+      "fileName": "202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg",
+      "path": "public/images/products/202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:5cbf3e5f-edb0-490b-b544-8741ba6cffe7": {
-      "fileName": "recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png",
-      "legacy": true
+    "product:5954e0af-d58c-40ce-a79d-cbcff10c7b78": {
+      "fileName": "5954e0af-d58c-40ce-a79d-cbcff10c7b78.png",
+      "path": "public/images/products/5954e0af-d58c-40ce-a79d-cbcff10c7b78.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/5954e0af-d58c-40ce-a79d-cbcff10c7b78.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:99e32e0c-61fb-41b1-8018-fa18ef655750": {
-      "fileName": "recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png",
-      "legacy": true
+    "product:5cbf3e5f-edb0-490b-b544-8741ba6cffe7": {
+      "fileName": "5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png",
+      "path": "public/images/products/5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:0794f338-588b-460d-b002-ee4e614826c9": {
-      "fileName": "recipe-0794f338-588b-460d-b002-ee4e614826c9.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-0794f338-588b-460d-b002-ee4e614826c9.png",
-      "legacy": true
+    "product:6539b2bd-5e58-4485-8ff9-b625d1aa6147": {
+      "fileName": "6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
+      "path": "public/images/products/6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:5954e0af-d58c-40ce-a79d-cbcff10c7b78": {
-      "fileName": "recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png",
-      "legacy": true
+    "product:85e499f3-37c9-4701-bf89-5176007ce546": {
+      "fileName": "85e499f3-37c9-4701-bf89-5176007ce546.png",
+      "path": "public/images/products/85e499f3-37c9-4701-bf89-5176007ce546.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/85e499f3-37c9-4701-bf89-5176007ce546.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:e9005152-d579-444f-905f-a06a5ad3d74b": {
-      "fileName": "recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
-      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
-      "legacy": true
+    "product:93492b6c-f402-4ca3-9ccd-9dfbd957c40a": {
+      "fileName": "93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png",
+      "path": "public/images/products/93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:0a783c0b-8993-41a0-b986-b03b57674ca9": {
-      "fileName": "recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@8e89282bc8eff07cbbe96c4939b5cf789629657b/public/images/recipe-0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png",
-      "commitSha": "8e89282bc8eff07cbbe96c4939b5cf789629657b",
-      "contentType": "image/png",
-      "size": 1388679
+    "product:99e32e0c-61fb-41b1-8018-fa18ef655750": {
+      "fileName": "99e32e0c-61fb-41b1-8018-fa18ef655750.png",
+      "path": "public/images/products/99e32e0c-61fb-41b1-8018-fa18ef655750.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/99e32e0c-61fb-41b1-8018-fa18ef655750.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:1b601e8d-17da-4f66-909d-5324bce3acfe": {
-      "fileName": "recipe-1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@b0f4124bcbe875821737d7ced1791fc46ca65ae2/public/images/recipe-1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png",
-      "commitSha": "b0f4124bcbe875821737d7ced1791fc46ca65ae2",
-      "contentType": "image/png",
-      "size": 2679297
+    "product:e9005152-d579-444f-905f-a06a5ad3d74b": {
+      "fileName": "e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
+      "path": "public/images/products/e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/e9005152-d579-444f-905f-a06a5ad3d74b.jpg",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     },
-    "recipe:93492b6c-f402-4ca3-9ccd-9dfbd957c40a": {
-      "fileName": "recipe-93492b6c-f402-4ca3-9ccd-9dfbd957c40a-29e77a2c-bc31-41b2-bdae-3f97cf1005b3.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@55e3bd5012cb9ca3d33def9224d7b43881dff093/public/images/recipe-93492b6c-f402-4ca3-9ccd-9dfbd957c40a-29e77a2c-bc31-41b2-bdae-3f97cf1005b3.png",
-      "commitSha": "55e3bd5012cb9ca3d33def9224d7b43881dff093",
-      "contentType": "image/png",
-      "size": 1351406
-    },
-    "catalog:93492b6c-f402-4ca3-9ccd-9dfbd957c40a": {
-      "fileName": "catalog-93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@ac41e8a11f95f3eb1cada62b65ee3cfcaf68ecdd/public/images/catalog-93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png",
-      "commitSha": "ac41e8a11f95f3eb1cada62b65ee3cfcaf68ecdd",
-      "contentType": "image/png",
-      "size": 312524
-    },
-    "catalog:0a783c0b-8993-41a0-b986-b03b57674ca9": {
-      "fileName": "catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-1788e3f3-6697-47a4-8f1f-c1af2ac78381.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@7eec5e2ef7e8a68807d02e885b797bb941d20c51/public/images/catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-1788e3f3-6697-47a4-8f1f-c1af2ac78381.png",
-      "commitSha": "7eec5e2ef7e8a68807d02e885b797bb941d20c51",
-      "contentType": "image/png",
-      "size": 1388679
+    "product:f126ae46-9eee-4ac2-8cff-d2f9543d708e9": {
+      "fileName": "f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png",
+      "path": "public/images/products/f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png",
+      "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
     }
   }
 }

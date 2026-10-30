@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 type HeaderValue = string | string[] | undefined;
 interface ApiRequest { method?: string; headers: Record<string, HeaderValue>; body?: unknown; }
 interface ApiResponse { status(code: number): ApiResponse; setHeader(name: string, value: string): void; json(body: unknown): void; }
-type UploadKind = 'recipe' | 'catalog' | 'promotion';
+type UploadKind = 'product' | 'promotion';
 const REPO = 'XitoDev/starkies';
 const BRANCH = 'main';
 const MAX_BYTES = 3 * 1024 * 1024;
@@ -35,7 +35,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const recordId = stringValue(body['recordId']);
     const contentType = stringValue(body['contentType']);
     const base64 = stringValue(body['imageBase64']);
-    if (!['recipe', 'catalog', 'promotion'].includes(kind) || !/^[a-zA-Z0-9_-]{1,100}$/.test(recordId)) {
+    if (!['product', 'promotion'].includes(kind) || !/^[a-zA-Z0-9_-]{1,100}$/.test(recordId)) {
       throw new HttpError(400, 'Datos de imagen no válidos.');
     }
     const extension = contentType === 'image/jpeg' ? 'jpg'
@@ -52,19 +52,21 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       throw new HttpError(503, 'Falta configurar GITHUB_IMAGE_UPLOAD_TOKEN en Vercel para publicar imágenes en el CDN.');
     }
 
-    const prefix = kind === 'recipe' ? 'recipe' : kind === 'catalog' ? 'catalog' : 'promotion';
-    const fileName = `${prefix}-${recordId}-${randomUUID()}.${extension}`;
-    const filePath = 'public/images/' + fileName;
+    const directory = kind === 'product' ? 'products' : 'promotions';
+    const fileName = `${recordId}-${randomUUID()}.${extension}`;
+    const filePath = `public/images/${directory}/${fileName}`;
     const imageCommit = await githubJson(
       `https://api.github.com/repos/${REPO}/contents/${filePath}`,
       'PUT',
-      { message: `feat(${kind === 'recipe' ? 'recipes' : 'catalog'}): add ${kind} image for ${recordId}`, content: bytes.toString('base64'), branch: BRANCH },
+      { message: kind === 'product'
+        ? `feat(catalog): add shared product image for ${recordId}`
+        : `feat(catalog): add promotion banner for ${recordId}`, content: bytes.toString('base64'), branch: BRANCH },
     );
     const commitSha = stringValue(asRecord(imageCommit['commit'])['sha']);
     if (!/^[a-f0-9]{40}$/i.test(commitSha)) throw new Error('GitHub no devolvió el commit de la imagen.');
 
-    const imageUrl = `https://cdn.jsdelivr.net/gh/${REPO}@${commitSha}/public/images/${fileName}`;
-    await updateImageMap({ key: `${kind}:${recordId}`, fileName, imageUrl, commitSha, contentType, size: bytes.length });
+    const imageUrl = `https://cdn.jsdelivr.net/gh/${REPO}@${commitSha}/${filePath}`;
+    await updateImageMap({ key: `${kind}:${recordId}`, fileName, path: filePath, url: imageUrl, commitSha, contentType, size: bytes.length });
     res.status(200).json({ imageUrl, fileName, commitSha });
   } catch (error) {
     const status = error instanceof HttpError ? error.statusCode : 500;
@@ -126,9 +128,14 @@ async function updateImageMap(entry: Record<string, unknown>): Promise<void> {
   const images = asRecord(existing['images']);
   const key = stringValue(entry['key']);
   delete entry['key'];
+  if (key.startsWith('product:')) {
+    const productId = key.slice('product:'.length);
+    delete images[`recipe:${productId}`];
+    delete images[`catalog:${productId}`];
+  }
   images[key] = entry;
-  const content = Buffer.from(JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), images }, null, 2) + '\n').toString('base64');
+  const content = Buffer.from(JSON.stringify({ version: 2, updatedAt: new Date().toISOString(), images }, null, 2) + '\n').toString('base64');
   await githubJson(`https://api.github.com/repos/${REPO}/contents/${path}`, 'PUT', {
-    message: `feat(${key.startsWith('recipe:') ? 'recipes' : 'catalog'}): update CDN image map for ${key}`, content, branch: BRANCH, ...(sha ? { sha } : {}),
+    message: `chore(catalog): update canonical image map for ${key}`, content, branch: BRANCH, ...(sha ? { sha } : {}),
   });
 }
