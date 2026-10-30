@@ -338,11 +338,14 @@ export class DataService implements OnDestroy {
     const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const existingDraft = draftIndex >= 0 ? rawDrafts[draftIndex] : {};
-    // One canonical product image is stored on recipes.image. The catalog projection
-    // receives that same URL; legacy fields are only a temporary fallback before migration.
-    const canonicalImage = typeof recipe.image === 'string'
-      ? recipe.image.trim()
-      : (this.asString(existing['image']) || this.asString(existing['catalogImage']) || this.asString(existingDraft['image']));
+    // Prefer an uploaded/current products/ URL. Until migration runs, preserve an
+    // existing catalog photo over an older recipe-only URL; new writes still store one image.
+    const canonicalImage = this.resolveProductImage(
+      recipe.image,
+      existing['image'],
+      existing['catalogImage'],
+      existingDraft['image'],
+    );
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
@@ -413,8 +416,10 @@ export class DataService implements OnDestroy {
 
     const drafts = this.asArray(state['catalogDrafts']);
     const currentDraft = drafts.find(item => this.asString(item['id']) === recipeId) ?? {};
+    const existingRecipe = rawRecipes[recipeIndex];
     const updatedRecipe: RawRecord = {
-      ...rawRecipes[recipeIndex],
+      ...existingRecipe,
+      image: this.resolveProductImage(existingRecipe['image'], existingRecipe['image'], existingRecipe['catalogImage'], currentDraft['image']),
       catalogVisible: visible,
       catalogDescription: this.asString(currentDraft['description']),
       catalogLabel: this.asString(currentDraft['label']),
@@ -986,13 +991,17 @@ export class DataService implements OnDestroy {
           ingredients: section.ingredients,
         }));
 
+      const recipeImage = this.asOptionalString(item['image']);
+      const catalogImage = this.asOptionalString(draft['image']) || this.asOptionalString(item['catalogImage']);
+      const productImage = this.isCanonicalProductImage(recipeImage) ? recipeImage : catalogImage || recipeImage;
+
       return {
         id: this.asString(item['id']),
         name: this.asString(item['name'], 'Receta sin nombre'),
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(draft['image']) || this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
+        image: productImage,
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',
@@ -1128,6 +1137,18 @@ export class DataService implements OnDestroy {
 
   private asString(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value : value == null ? fallback : String(value);
+  }
+
+  private isCanonicalProductImage(value: unknown): boolean {
+    const image = this.asString(value);
+    return image.includes('/public/images/products/') || image.includes('/images/products/');
+  }
+
+  private resolveProductImage(requested: unknown, existing: unknown, catalogImage: unknown, draftImage: unknown): string {
+    const requestedImage = this.asString(requested).trim();
+    if (typeof requested === 'string' && !requestedImage) return '';
+    if (this.isCanonicalProductImage(requestedImage)) return requestedImage;
+    return this.asString(draftImage) || this.asString(catalogImage) || this.asString(existing) || requestedImage;
   }
 
   private normalizePhone(value: string): string { return value.replace(/\D/g, '').replace(/^593/, '0'); }

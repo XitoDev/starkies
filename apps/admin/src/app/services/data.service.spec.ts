@@ -241,9 +241,8 @@ describe('DataService catalog visibility', () => {
     expect(saved['image']).toBe('catalog/brownie-classic.webp');
     expect(saved).not.toHaveProperty('catalogImage');
     expect((service.rawState()?.['recipes'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic')?.['image']).toBe('catalog/brownie-classic.webp');
-    expect(service.rawState()?.['catalogDrafts']).toEqual([
-      expect.objectContaining({ id: 'brownie-classic', image: 'catalog/brownie-classic.webp' }),
-    ]);
+    const savedDraft = (service.rawState()?.['catalogDrafts'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic');
+    expect(savedDraft).not.toHaveProperty('image');
   });
 
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {
