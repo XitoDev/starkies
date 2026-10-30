@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-30T05:14:31.133Z",
+  "updatedAt": "2026-10-30T05:15:46.713Z",
   "images": {
     "recipe:6539b2bd-5e58-4485-8ff9-b625d1aa6147": {
       "fileName": "recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg",
@@ -81,9 +81,9 @@
       "size": 312524
     },
     "catalog:0a783c0b-8993-41a0-b986-b03b57674ca9": {
-      "fileName": "catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-e0c176eb-1057-4f90-a74d-68a50ae9c8d1.png",
-      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@64cb92df626353fa657ffb32e02b8ecb762f3edf/public/images/catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-e0c176eb-1057-4f90-a74d-68a50ae9c8d1.png",
-      "commitSha": "64cb92df626353fa657ffb32e02b8ecb762f3edf",
+      "fileName": "catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-1788e3f3-6697-47a4-8f1f-c1af2ac78381.png",
+      "imageUrl": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@7eec5e2ef7e8a68807d02e885b797bb941d20c51/public/images/catalog-0a783c0b-8993-41a0-b986-b03b57674ca9-1788e3f3-6697-47a4-8f1f-c1af2ac78381.png",
+      "commitSha": "7eec5e2ef7e8a68807d02e885b797bb941d20c51",
       "contentType": "image/png",
       "size": 1388679
     }
