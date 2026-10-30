@@ -2,6 +2,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 // Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
 import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES, rankCatalogProducts } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
 import { isPromotionActive } from '../apps/catalog/src/app/pages/catalog/promotion-engine.js';
+import { resolveLegacyProductImage } from '../scripts/lib/legacy-product-image-resolver.mjs';
 import type { PromotionMechanic, PromotionMechanicType, PublicPromotion } from '../apps/catalog/src/app/pages/catalog/catalog.models.js';
 
 // Keep this small resolver local to the API entrypoint. Vercel's native Node ESM
@@ -26,20 +27,7 @@ const LEGACY_PRODUCT_IMAGE_CDN_BASE =
   'https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/';
 
 function resolvePublicProductImage(imagePath: string, fallbackId: string): string | undefined {
-  if (!imagePath) return undefined;
-  const isLegacyApiPath = imagePath.startsWith('/api/recipe-image');
-  const isLegacyFilePath = imagePath.startsWith('recipe-') || imagePath.startsWith('catalog-')
-    || imagePath.includes('/recipe-') || imagePath.includes('/catalog-');
-  if (!isLegacyApiPath && !isLegacyFilePath) return imagePath;
-  let imageId = fallbackId;
-  if (isLegacyApiPath) {
-    try { imageId = new URL(imagePath, 'https://starkies.lat').searchParams.get('id') || imageId; } catch { /* use fallback */ }
-  }
-  if (!LEGACY_PRODUCT_IMAGE_FILES[imageId]) {
-    imageId = Object.keys(LEGACY_PRODUCT_IMAGE_FILES).find(id => imagePath.includes(id)) ?? '';
-  }
-  const fileName = LEGACY_PRODUCT_IMAGE_FILES[imageId];
-  return fileName ? LEGACY_PRODUCT_IMAGE_CDN_BASE + encodeURIComponent(fileName) : undefined;
+  return resolveLegacyProductImage(imagePath, fallbackId, LEGACY_PRODUCT_IMAGE_FILES, LEGACY_PRODUCT_IMAGE_CDN_BASE);
 }
 
 export interface PublicProduct {
