@@ -131,7 +131,7 @@ export class ImageMigration {
     ];
     this.total.set(jobs.length);
     this.completed.set(0);
-    if (!pending.length) { this.finished.set(true); return; }
+    if (!jobs.length) { this.finished.set(true); return; }
 
     this.running.set(true);
     try {
