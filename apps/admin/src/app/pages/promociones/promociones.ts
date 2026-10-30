@@ -113,15 +113,15 @@ function normalize(value: string): string {
                   <option value="">Todas las presentaciones</option><option value="clasicas">Solo clásicas · 10</option><option value="ny">Solo NY · 6</option><option value="mixta">Mixta · 8</option>
                 </select></label>
                 @if (form.type === 'buy_x_get_y_discount') {
-                  <label>Unidades que debe comprar<input type="number" min="1" max="10" step="1" [(ngModel)]="form.buyQuantity" name="buyQuantity"></label>
-                  <label>Unidades con descuento<input type="number" min="1" max="10" step="1" [(ngModel)]="form.rewardQuantity" name="rewardQuantity"></label>
+                  <label>Cajas que debe comprar<input type="number" min="1" max="10" step="1" [(ngModel)]="form.buyQuantity" name="buyQuantity"></label>
+                  <label>Cajas con descuento<input type="number" min="1" max="10" step="1" [(ngModel)]="form.rewardQuantity" name="rewardQuantity"></label>
                   <label>Máximo de aplicaciones por pedido<input type="number" min="0" max="10" step="1" [(ngModel)]="form.maxApplications" name="maxApplications"><small>0 significa sin límite.</small></label>
                 }
                 @if (form.type === 'minimum_subtotal') {
                   <label>Compra mínima ($)<input type="number" min="0.01" step="0.01" [(ngModel)]="form.minimumSubtotal" name="minimumSubtotal"></label>
                 }
-                <label>Tipo de beneficio<select [(ngModel)]="form.discountType" name="discountType"><option value="percentage">Porcentaje</option><option value="fixed">Valor fijo ($)</option></select></label>
-                <label>Valor del descuento<input type="number" min="0.01" [max]="form.discountType === 'percentage' ? 100 : 9999" step="0.01" [(ngModel)]="form.discountValue" name="discountValue"></label>
+                @if (form.type === 'buy_x_get_y_discount' || form.type === 'minimum_subtotal') { <label>Tipo de beneficio<select [(ngModel)]="form.discountType" name="discountType"><option value="percentage">Porcentaje</option><option value="fixed">Valor fijo ($)</option></select></label> }
+                <label>{{ form.type === 'fixed_amount' || (form.type !== 'percentage' && form.discountType === 'fixed') ? 'Descuento ($)' : 'Descuento (%)' }}<input type="number" min="0.01" [max]="form.discountType === 'percentage' ? 100 : 9999" step="0.01" [(ngModel)]="form.discountValue" name="discountValue"></label>
               </div>
             </section>
 
@@ -274,6 +274,7 @@ export class Promociones {
     this.error.set('');
     this.notice.set('');
     const code = this.form.code.trim().toLocaleUpperCase('es').replace(/\s+/g, '');
+    const discountType = this.form.type === 'fixed_amount' ? 'fixed' : this.form.type === 'percentage' ? 'percentage' : this.form.discountType;
     if (!this.form.name.trim() || !this.form.title.trim() || !/^[A-Z0-9_-]{3,40}$/.test(code)) {
       this.error.set('Completa el nombre, título público y un código de 3 a 40 caracteres (letras, números, guion o guion bajo).');
       return;
@@ -300,7 +301,7 @@ export class Promociones {
       this.error.set('Define un importe mínimo mayor que cero.');
       return;
     }
-    if (this.form.discountValue <= 0 || (this.form.discountType === 'percentage' && this.form.discountValue > 100)) {
+    if (this.form.discountValue <= 0 || (discountType === 'percentage' && this.form.discountValue > 100)) {
       this.error.set('El descuento debe ser mayor que cero y no puede superar el 100 %.');
       return;
     }
@@ -313,7 +314,7 @@ export class Promociones {
         ...(this.form.presentationId ? { presentationId: this.form.presentationId } : {}),
         buyQuantity: Math.max(1, Math.floor(this.form.buyQuantity)),
         rewardQuantity: Math.max(1, Math.floor(this.form.rewardQuantity)),
-        discountType: this.form.discountType,
+        discountType,
         discountValue: Number(this.form.discountValue),
         minimumSubtotal: Math.max(0, Number(this.form.minimumSubtotal) || 0),
         maxApplications: Math.max(0, Math.floor(Number(this.form.maxApplications) || 0)),
@@ -372,7 +373,7 @@ export class Promociones {
     const mechanic = promotion.mechanic;
     const value = asNumber(mechanic['discountValue']);
     const benefit = mechanic['discountType'] === 'fixed' ? '$' + value.toFixed(2) : value + '%';
-    if (mechanic['type'] === 'buy_x_get_y_discount') return 'Compra ' + asNumber(mechanic['buyQuantity'], 1) + ' y obtén ' + asNumber(mechanic['rewardQuantity'], 1) + ' con ' + benefit + ' de descuento';
+    if (mechanic['type'] === 'buy_x_get_y_discount') return 'Compra ' + asNumber(mechanic['buyQuantity'], 1) + ' caja(s) y obtén ' + asNumber(mechanic['rewardQuantity'], 1) + ' caja(s) con ' + benefit + ' de descuento';
     if (mechanic['type'] === 'minimum_subtotal') return 'Desde $' + asNumber(mechanic['minimumSubtotal']).toFixed(2) + ' · ' + benefit;
     return mechanic['type'] === 'fixed_amount' ? 'Descuento fijo de ' + benefit : benefit + ' de descuento';
   }
