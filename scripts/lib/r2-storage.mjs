@@ -47,7 +47,7 @@ export function parseManagedImageUrl(value, config = getR2Config()) {
   const basePath = config.publicUrl.pathname.replace(/\/+$/, '');
   if (basePath && candidate.pathname !== basePath && !candidate.pathname.startsWith(basePath + '/')) return null;
   const relativePath = candidate.pathname.slice(basePath.length).replace(/^\/+/, '');
-  const match = /^images\/([a-f0-9]{64})\\.webp$/i.exec(relativePath);
+  const match = /^images\/([a-f0-9]{64})\.webp$/i.exec(relativePath);
   if (!match) return null;
   const hash = match[1].toLowerCase();
   return { hash, key: imageObjectKey(hash) };
@@ -71,7 +71,7 @@ export async function createR2Authorization({ method, key, body = Buffer.alloc(0
     body: method.toUpperCase() === 'PUT' ? payload : undefined,
     service: 's3',
     region: 'auto',
-    datetime: now.toISOString().replace(/[:-]|\\.\\d{3}/g, ''),
+    datetime: now.toISOString().replace(/[:-]|\.\d{3}/g, ''),
     allHeaders: true,
   });
   const signed = await signer.sign();
