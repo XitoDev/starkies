@@ -129,7 +129,7 @@ async function handleAdminOrderDocument(req: ApiRequest, res: ApiResponse, url: 
 
   try {
     const authorization = headerValue(req.headers['authorization']);
-    const match = /^Bearer\\s+(.+)$/i.exec(authorization);
+    const match = /^Bearer\s+(.+)$/i.exec(authorization);
     if (!match) {
       res.status(401).json({ message: 'Inicia sesión para descargar el PDF.' });
       return;
