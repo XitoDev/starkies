@@ -14,7 +14,7 @@ const env = {
   R2_ACCOUNT_ID: 'account123',
   R2_ACCESS_KEY_ID: 'access-key',
   R2_SECRET_ACCESS_KEY: 'secret-key',
-  R2_BUCKET_NAME: 'starkies-images',
+  R2_BUCKET_NAME: 'starkies',
   R2_PUBLIC_BASE_URL: 'https://images.example.test',
 };
 
@@ -51,7 +51,7 @@ test('signs an R2 PUT request using the S3-compatible endpoint and immutable cac
     config,
     now: new Date('2026-10-30T12:00:00.000Z'),
   });
-  assert.match(signed.url, /^https:\/\/account123\.r2\.cloudflarestorage\.com\/starkies-images\/images\//);
+  assert.match(signed.url, /^https:\/\/account123\.r2\.cloudflarestorage\.com\/starkies\/images\//);
   assert.match(signed.headers.Authorization, /^AWS4-HMAC-SHA256 Credential=access-key\/20261030\/auto\/s3\/aws4_request/);
   assert.equal(signed.headers['Content-Type'], 'image/webp');
   assert.equal(signed.headers['Cache-Control'], 'public, max-age=31536000, immutable');
