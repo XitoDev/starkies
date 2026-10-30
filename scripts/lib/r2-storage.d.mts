@@ -22,7 +22,7 @@ export function createR2Authorization(options: {
   contentType?: string;
   config: R2Config;
   now?: Date;
-}): { url: string; headers: Record<string, string>; body?: Buffer };
+}): Promise<{ url: string; headers: Record<string, string>; body?: Buffer }>;
 export function r2Request(method: string, key: string, options?: {
   body?: Uint8Array;
   contentType?: string;
