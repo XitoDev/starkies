@@ -16,7 +16,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   try {
     const secret = String(process.env['CRON_SECRET'] ?? '');
     const authorization = first(req.headers['authorization']) ?? '';
-    const supplied = authorization.replace(/^Bearer\\s+/i, '');
+    const supplied = authorization.replace(/^Bearer\s+/i, '');
     if (!secret || !safeEqual(supplied, secret)) {
       res.status(401).json({ message: 'No autorizado.' });
       return;
