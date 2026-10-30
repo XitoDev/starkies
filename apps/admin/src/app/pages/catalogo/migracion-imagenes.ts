@@ -208,10 +208,8 @@ export class ImageMigration {
         }
         this.currentTask.set(job.label);
         try {
-          const sourceUrl = job.kind === 'product' ? this.recipeImages.getImageUrl(job.url) : job.url;
-          const response = await fetch(sourceUrl, { mode: 'cors', credentials: 'omit' });
-          if (!response.ok) throw new Error('La imagen original respondió HTTP ' + response.status + '.');
-          const blob = await response.blob();
+          const sourceUrl = job.kind === 'product' ? this.recipeImages.getImageUrl(job.url, job.id) : job.url;
+          const blob = await this.fetchSourceImage(sourceUrl);
           const mime = blob.type || this.mimeFromUrl(sourceUrl);
           if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) {
             throw new Error('El archivo original no es JPG, PNG o WebP (' + (mime || 'tipo desconocido') + ').');
@@ -245,6 +243,31 @@ export class ImageMigration {
       this.running.set(false);
       this.currentTask.set('');
     }
+  }
+
+  private async fetchSourceImage(sourceUrl: string): Promise<Blob> {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(sourceUrl, window.location.origin);
+    } catch {
+      throw new Error('La dirección de la imagen original no es válida.');
+    }
+
+    if (parsedUrl.origin === 'https://starkies-admin.milkyflame1.chatgpt.site'
+      && parsedUrl.pathname === '/api/recipe-image') {
+      return this.imageUpload.fetchLegacyImage(parsedUrl.toString());
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(parsedUrl, { mode: 'cors', credentials: 'omit' });
+    } catch {
+      throw new Error('No se pudo descargar la imagen desde ' + parsedUrl.origin + '. El servidor puede bloquear solicitudes CORS o no estar disponible.');
+    }
+    if (!response.ok) {
+      throw new Error('La imagen original respondió HTTP ' + response.status + ' desde ' + parsedUrl.origin + '.');
+    }
+    return response.blob();
   }
 
   private mimeFromUrl(value: string): string {
