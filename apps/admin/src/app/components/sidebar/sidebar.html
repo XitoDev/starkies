@@ -14,6 +14,10 @@
         }
       </a>
       @if (item.label === 'Catálogo') {
+        <a routerLink="/catalogo/promociones" routerLinkActive="active" class="nav-subitem" aria-label="Administrar promociones del catálogo">
+          <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">local_offer</mat-icon>
+          <span>Promociones</span>
+        </a>
         <a matButton="filled" class="business-card nav-item" href="https://starkies.lat/" target="_blank" rel="noopener noreferrer" aria-label="Mi tienda (abre en una pestaña nueva)">
           <mat-icon class="business-external" fontSet="material-symbols-rounded" aria-hidden="true">shopping_cart</mat-icon>
           <span class="business-copy"><strong>Mi tienda</strong></span>

@@ -8,7 +8,18 @@
 .weekday-chart,.ranking-list,.product-ranking{display:grid;gap:15px}.weekday-row{display:grid;grid-template-columns:34px minmax(0,1fr) 28px;align-items:center;gap:10px}.weekday-label{color:#776982;font-size:11px}.weekday-row>strong{color:#5b4d65;font-size:11px;text-align:right;font-variant-numeric:tabular-nums}
 .bar-track{height:9px;overflow:hidden;border-radius:999px;background:#f3edf7}.bar{display:block;height:100%;min-width:0;border-radius:inherit;background:#8056ad;transition:width .2s ease}.peak-day{margin:20px 0 0;padding-top:15px;border-top:1px solid #f0eaf4;color:#82768d;font-size:12px;line-height:1.5}.peak-day strong{color:#8056ad}.chart-empty{margin:0;color:#95899d;font-size:12px;line-height:1.6}
 .ranking-row{display:grid;gap:9px}.ranking-copy{display:flex;align-items:center;justify-content:space-between;gap:12px}.ranking-copy strong{color:#5b4d65;font-size:12px;font-weight:600}.ranking-copy small{flex:0 0 auto;color:#95899d;font-size:10px}.product-panel{padding-bottom:16px}
+.promotion-stats-panel{display:grid;gap:18px}
+.promotion-stats-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.promotion-stats-metrics article{display:grid;gap:7px;padding:15px;border:1px solid #f0eaf4;border-radius:11px;background:#fdfbfe}
+.promotion-stats-metrics span{color:#82768d;font-size:11px}
+.promotion-stats-metrics strong{color:#30263a;font-size:23px;font-weight:650;font-variant-numeric:tabular-nums}
+.promotion-ranking{display:grid;gap:0}
+.promotion-ranking-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid #f2edf5}
+.promotion-ranking-row>div{display:grid;gap:4px;min-width:0}
+.promotion-ranking-row>div strong{color:#5b4d65;font-size:12px;font-weight:600}
+.promotion-ranking-row small{color:#95899d;font-size:10px}
+.promotion-ranking-row>strong{flex:0 0 auto;color:#55775f;font-size:12px;font-variant-numeric:tabular-nums}
 .product-row{display:grid;grid-template-columns:28px minmax(120px,1.2fr) minmax(80px,1fr) 38px;align-items:center;gap:13px;padding:12px 0;border-top:1px solid #f2edf5}.product-row:first-child{border-top:0;padding-top:0}.rank-number{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:#f2edf7;color:#8056ad;font-size:11px;font-weight:750}.product-copy{display:grid;gap:4px;min-width:0}.product-copy strong{color:#5b4d65;font-size:12px;font-weight:600;overflow-wrap:anywhere}.product-copy small{color:#95899d;font-size:10px}.product-quantity{color:#5b4d65;font-size:12px;text-align:right;font-variant-numeric:tabular-nums}.stats-note{margin:0;color:#95899d;font-size:11px;line-height:1.6}.state-message{margin:0;padding:12px 15px;border:1px solid #e8e0ed;border-radius:10px;background:#fff;color:#776982;font-size:12px}.error-message{border-color:#f0d3d5;background:#fff2f2;color:#a44855}
 @media(max-width:1150px){.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.charts-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.page-heading{flex-direction:column}.period-filter{width:100%}.metrics-grid{gap:10px}.metric-card{padding:13px;gap:9px}.metric-icon{flex-basis:32px;width:32px;height:32px;border-radius:10px}.metric-icon mat-icon{width:19px;height:19px;font-size:19px}.metric-card strong{font-size:22px}.panel{padding:16px}.product-row{grid-template-columns:26px minmax(90px,1fr) minmax(60px,.8fr) 28px;gap:8px}.product-copy strong{font-size:11px}}
-@media(max-width:430px){.metrics-grid{grid-template-columns:1fr}.metric-card{align-items:center}.product-row{grid-template-columns:25px minmax(0,1fr) 28px}.product-row>.bar-track{display:none}}
+@media(max-width:430px){.metrics-grid{grid-template-columns:1fr}.metric-card{align-items:center}.promotion-stats-metrics{grid-template-columns:1fr}.product-row{grid-template-columns:25px minmax(0,1fr) 28px}.product-row>.bar-track{display:none}}

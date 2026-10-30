@@ -38,6 +38,24 @@
     </section>
   </div>
 
+  <section class="panel promotion-stats-panel" aria-labelledby="promotions-stats-title">
+    <div class="panel-heading"><div><h2 id="promotions-stats-title">Rendimiento de promociones</h2><p>Uso de códigos y descuentos concedidos en el período seleccionado.</p></div><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">local_offer</mat-icon></div>
+    <div class="promotion-stats-metrics">
+      <article><span>Pedidos con promoción</span><strong>{{ promotionOrderCount() }}</strong></article>
+      <article><span>Descuentos concedidos</span><strong>{{ promotionDiscountTotal() | currency:'USD' }}</strong></article>
+    </div>
+    @if (promotionRanking().length) {
+      <div class="promotion-ranking">
+        @for (promotion of promotionRanking(); track promotion.id) {
+          <div class="promotion-ranking-row">
+            <div><strong>{{ promotion.name }}</strong><small>{{ promotion.code }} · {{ promotion.orders }} {{ promotion.orders === 1 ? 'pedido' : 'pedidos' }}</small></div>
+            <strong>{{ promotion.discount | currency:'USD' }}</strong>
+          </div>
+        }
+      </div>
+    } @else { <p class="chart-empty">Todavía no hay pedidos con promociones aplicadas en este período.</p> }
+  </section>
+
   <section class="panel product-panel" aria-labelledby="products-title">
     <div class="panel-heading"><div><h2 id="products-title">Galletas más vendidas</h2><p>Ordenadas por unidades solicitadas, excluyendo pedidos cancelados.</p></div><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">trending_up</mat-icon></div>
     @if (productRanking().length) {
