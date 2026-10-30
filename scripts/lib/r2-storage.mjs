@@ -82,14 +82,8 @@ export function createR2Authorization({ method, key, body = Buffer.alloc(0), con
   const names = Object.keys(headers).sort();
   const canonicalHeaders = names.map(name => name + ':' + String(headers[name]).trim() + '\n').join('');
   const signedHeaders = names.join(';');
-  const canonicalRequest = [
-    method.toUpperCase(),
-    canonicalUri,
-    '',
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n');
+  const canonicalRequest = method.toUpperCase() + '\n' + canonicalUri + '\n\n'
+    + canonicalHeaders + signedHeaders + '\n' + payloadHash;
   const scope = dateStamp + '/auto/s3/aws4_request';
   const stringToSign = [
     'AWS4-HMAC-SHA256',
