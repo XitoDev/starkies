@@ -139,11 +139,11 @@ export class ImageMigration {
     const recipes = [...this.data.recipes()];
     const promotions = this.promotions().map(item => ({ ...item }));
     const jobs = [
-      ...recipes.filter(recipe => Boolean(recipe.image?.trim())).map(recipe => ({ kind: 'product' as const, id: recipe.id, label: recipe.name, url: recipe.image ?? '', recipe })),
+      ...recipes.filter(recipe => Boolean(recipe.image?.trim())).map(recipe => ({ kind: 'product' as const, id: recipe.id, label: recipe.name, url: recipe.image ?? '', recipe, catalogOnlyProduct: undefined as Record<string, unknown> | undefined })),
       ...this.catalogFallbackProducts().map(item => {
         const id = String(item['id'] ?? '');
         const recipe = recipes.find(candidate => candidate.id === id);
-        return { kind: 'product' as const, id, label: String(item['name'] ?? id), url: String(item['image'] ?? ''), ...(recipe ? { recipe } : { catalogOnlyProduct: item }) };
+        return { kind: 'product' as const, id, label: String(item['name'] ?? id), url: String(item['image'] ?? ''), recipe, catalogOnlyProduct: recipe ? undefined : item };
       }),
       ...promotions.filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).map(item => ({ kind: 'promotion' as const, id: String(item['id'] ?? ''), label: String(item['name'] ?? item['title'] ?? item['id'] ?? 'Promoción'), url: String(item['bannerImage'] ?? ''), promotion: item })),
     ];
