@@ -90,26 +90,33 @@ export class ImageMigration {
   readonly currentTask = signal('');
   readonly failures = signal<MigrationFailure[]>([]);
   readonly recipes = computed(() => this.data.recipes());
+  readonly publicCatalog = computed(() => {
+    const value = this.data.rawState()?.['publicCatalog'];
+    return Array.isArray(value) ? value.map(asRecord).filter(item => String(item['id'] ?? '') !== 'catalog-settings') : [];
+  });
   readonly promotions = computed(() => {
     const value = this.data.rawState()?.['promotions'];
     return Array.isArray(value) ? value.map(asRecord) : [];
   });
-  readonly catalogFallbackProducts = computed(() => {
-    const value = this.data.rawState()?.['publicCatalog'];
-    const records = Array.isArray(value) ? value.map(asRecord) : [];
-    const recipesById = new Map(this.recipes().map(recipe => [recipe.id, recipe]));
-    return records.filter(item => {
-      const id = String(item['id'] ?? '');
-      const image = String(item['image'] ?? '').trim();
-      if (!id || id === 'catalog-settings' || !image) return false;
-      const recipe = recipesById.get(id);
-      return !recipe || !String(recipe.image ?? '').trim();
+  readonly productImageJobs = computed(() => {
+    const publicById = new Map(this.publicCatalog().map(item => [String(item['id'] ?? ''), item]));
+    return this.recipes().flatMap(recipe => {
+      const catalogImage = String(publicById.get(recipe.id)?.['image'] ?? '').trim();
+      const canonicalImage = catalogImage || String(recipe.image ?? '').trim();
+      return canonicalImage ? [{ id: recipe.id, label: recipe.name, url: canonicalImage, recipe }] : [];
     });
   });
-  readonly productCount = computed(() => this.recipes().filter(recipe => Boolean(recipe.image?.trim())).length + this.catalogFallbackProducts().length);
+  readonly catalogFallbackProducts = computed(() => {
+    const recipeIds = new Set(this.recipes().map(recipe => recipe.id));
+    return this.publicCatalog().filter(item => {
+      const id = String(item['id'] ?? '');
+      return Boolean(id && !recipeIds.has(id) && String(item['image'] ?? '').trim());
+    });
+  });
+  readonly productCount = computed(() => this.productImageJobs().length + this.catalogFallbackProducts().length);
   readonly promotionCount = computed(() => this.promotions().filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).length);
   readonly alreadyMigrated = computed(() => [
-    ...this.recipes().filter(recipe => this.imageUpload.isManagedUrl(recipe.image)).map(recipe => recipe.id),
+    ...this.productImageJobs().filter(job => this.imageUpload.isManagedUrl(job.url)).map(job => job.id),
     ...this.catalogFallbackProducts().filter(item => this.imageUpload.isManagedUrl(String(item['image'] ?? ''))).map(item => String(item['id'] ?? '')),
     ...this.promotions().filter(item => this.imageUpload.isManagedUrl(String(item['bannerImage'] ?? ''))).map(item => String(item['id'] ?? '')),
   ].length);
@@ -139,12 +146,15 @@ export class ImageMigration {
     const recipes = [...this.data.recipes()];
     const promotions = this.promotions().map(item => ({ ...item }));
     const jobs = [
-      ...recipes.filter(recipe => Boolean(recipe.image?.trim())).map(recipe => ({ kind: 'product' as const, id: recipe.id, label: recipe.name, url: recipe.image ?? '', recipe, catalogOnlyProduct: undefined as Record<string, unknown> | undefined })),
-      ...this.catalogFallbackProducts().map(item => {
-        const id = String(item['id'] ?? '');
-        const recipe = recipes.find(candidate => candidate.id === id);
-        return { kind: 'product' as const, id, label: String(item['name'] ?? id), url: String(item['image'] ?? ''), recipe, catalogOnlyProduct: recipe ? undefined : item };
-      }),
+      ...this.productImageJobs().map(job => ({ ...job, kind: 'product' as const, catalogOnlyProduct: undefined as Record<string, unknown> | undefined })),
+      ...this.catalogFallbackProducts().map(item => ({
+        kind: 'product' as const,
+        id: String(item['id'] ?? ''),
+        label: String(item['name'] ?? item['id'] ?? 'Producto'),
+        url: String(item['image'] ?? ''),
+        recipe: undefined as Recipe | undefined,
+        catalogOnlyProduct: item,
+      })),
       ...promotions.filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).map(item => ({ kind: 'promotion' as const, id: String(item['id'] ?? ''), label: String(item['name'] ?? item['title'] ?? item['id'] ?? 'Promoción'), url: String(item['bannerImage'] ?? ''), promotion: item })),
     ];
     this.total.set(jobs.length);
@@ -157,7 +167,7 @@ export class ImageMigration {
         if (this.imageUpload.isManagedUrl(job.url)) {
           this.currentTask.set(job.label);
           try {
-            if (job.kind === 'product' && job.recipe && !String(job.recipe.image ?? '').trim()) {
+            if (job.kind === 'product' && job.recipe && String(job.recipe.image ?? '').trim() !== job.url) {
               await this.data.saveRecipe({ ...job.recipe, image: job.url } as Recipe);
             }
             await this.imageUpload.syncReference(job.kind, job.id, job.url, job.url);
