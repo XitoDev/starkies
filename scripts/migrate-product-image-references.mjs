@@ -60,7 +60,7 @@ async function main() {
     const references = [recipe.image, recipe.catalogImage, draft.image, publicProduct.image].map(text).filter(Boolean);
     const mapped = productImages.get(id);
     const existingProductUrl = references.find(isProductUrl);
-    const canonical = references.length && mapped ? mapped : text(existingProductUrl);
+    const canonical = text(existingProductUrl) || (references.length ? mapped ?? '' : '');
     if (canonical) canonicalById.set(id, canonical);
   }
 
