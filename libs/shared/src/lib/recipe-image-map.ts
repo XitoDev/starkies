@@ -18,17 +18,23 @@ export const LEGACY_PRODUCT_IMAGE_CDN_BASE =
 
 export function resolveLegacyRecipeImage(imagePath: string, fallbackId?: string): string | undefined {
   if (!imagePath) return undefined;
-  const isLegacyApiPath = imagePath.startsWith('/api/recipe-image');
-  const isLegacyFilePath = imagePath.startsWith('recipe-') || imagePath.startsWith('catalog-')
-    || imagePath.includes('/recipe-') || imagePath.includes('/catalog-');
-  if (!isLegacyApiPath && !isLegacyFilePath) return imagePath;
-  let imageId = fallbackId ?? '';
-  if (isLegacyApiPath) {
-    try { imageId = new URL(imagePath, 'https://starkies.lat').searchParams.get('id') || imageId; } catch { /* use fallback */ }
+
+  let pathname = imagePath;
+  let legacyImageId = '';
+  try {
+    const parsed = new URL(imagePath, 'https://starkies.lat');
+    pathname = parsed.pathname;
+    if (pathname === '/api/recipe-image') legacyImageId = parsed.searchParams.get('id') ?? '';
+  } catch {
+    // Keep the original path for legacy filename matching.
   }
-  if (!LEGACY_PRODUCT_IMAGE_FILES[imageId]) {
-    imageId = Object.keys(LEGACY_PRODUCT_IMAGE_FILES).find(id => imagePath.includes(id)) ?? '';
-  }
-  const fileName = LEGACY_PRODUCT_IMAGE_FILES[imageId];
+
+  const legacyFileMatch = pathname.match(/(?:^|\\/)(?:recipe|catalog)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[.-]|$)/i);
+  const isLegacyApiPath = pathname === '/api/recipe-image';
+  if (!isLegacyApiPath && !legacyFileMatch) return imagePath;
+
+  const candidates = [legacyImageId, legacyFileMatch?.[1] ?? '', fallbackId ?? ''];
+  const imageId = candidates.find(candidate => candidate && Object.prototype.hasOwnProperty.call(LEGACY_PRODUCT_IMAGE_FILES, candidate));
+  const fileName = imageId ? LEGACY_PRODUCT_IMAGE_FILES[imageId] : undefined;
   return fileName ? LEGACY_PRODUCT_IMAGE_CDN_BASE + encodeURIComponent(fileName) : undefined;
 }
