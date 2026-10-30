@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-30T07:30:00.000Z",
+  "updatedAt": "2026-10-30T15:01:19.248Z",
   "images": {
     "product:02885ca5-c58c-48a7-b116-cd614290c697": {
       "fileName": "02885ca5-c58c-48a7-b116-cd614290c697.png",
@@ -79,6 +79,14 @@
       "path": "public/images/products/f126ae46-9eee-4ac2-8cff-d2f954d708e9.png",
       "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/f126ae46-9eee-4ac2-8cff-d2f954d708e9.png",
       "commitSha": "85d0471f159ead399e104254ee7af1890e7d502f"
+    },
+    "promotion:d12acb71-9ce2-4772-a5fc-f130af24824a": {
+      "fileName": "d12acb71-9ce2-4772-a5fc-f130af24824a-0f25c598-9177-4609-8de3-a16619a42a44.jpg",
+      "path": "public/images/promotions/d12acb71-9ce2-4772-a5fc-f130af24824a-0f25c598-9177-4609-8de3-a16619a42a44.jpg",
+      "url": "https://cdn.jsdelivr.net/gh/XitoDev/starkies@f0b148cb0a1c17d5a40ff4edef947a557df8331f/public/images/promotions/d12acb71-9ce2-4772-a5fc-f130af24824a-0f25c598-9177-4609-8de3-a16619a42a44.jpg",
+      "commitSha": "f0b148cb0a1c17d5a40ff4edef947a557df8331f",
+      "contentType": "image/jpeg",
+      "size": 389543
     }
   }
 }
