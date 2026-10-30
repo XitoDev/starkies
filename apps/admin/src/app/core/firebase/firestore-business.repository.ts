@@ -160,7 +160,7 @@ export class FirestoreBusinessRepository {
     const allArrayKeys = metadata.arrayKeys ?? [];
     const allSettingKeys = metadata.settingKeys ?? [];
     const arrayKeys = requestedCollectionKeys
-      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key) || key === 'publicCatalog' || key === 'catalogDrafts')
+      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key) || key === 'publicCatalog' || key === 'catalogDrafts' || key === 'promotions')
       : allArrayKeys;
     const settingKeys = requestedCollectionKeys
       ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))

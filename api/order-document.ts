@@ -34,6 +34,8 @@ export interface StoredOrder {
   cookieName?: unknown;
   notes?: unknown;
   total?: unknown;
+  discount?: unknown;
+  promotion?: unknown;
   lines?: unknown;
   boxes?: unknown;
   deliveryFee?: unknown;
@@ -223,18 +225,24 @@ export function buildOrderPdf(order: StoredOrder, orderId: string): Buffer {
   }
 
   const deliveryFee = Number(order.shippingFee ?? order.deliveryFee ?? 0);
+  const discount = Math.max(0, Number(order.discount ?? 0));
   const boxSubtotal = boxes.length
     ? boxes.reduce((sum, box) => sum + Number(box.price ?? 0), 0)
-    : Number(order.total ?? 0) - deliveryFee;
+    : Math.max(0, Number(order.total ?? 0) + discount - deliveryFee);
+  const promotion = typeof order.promotion === 'object' && order.promotion !== null
+    ? order.promotion as Record<string, unknown> : {};
+  const promotionCode = typeof promotion['code'] === 'string' ? promotion['code'].trim() : '';
   const summaryTop = Math.max(y - 3, 105);
   rule(300, summaryTop + 21, 553);
   drawText('Valor de las cajas', 365, summaryTop + 7, 9, 'F1', muted);
   drawText(money(boxSubtotal), 492, summaryTop + 7, 9, 'F2', dark);
-  drawText('Entrega / retiro', 365, summaryTop - 10, 9, 'F1', muted);
-  drawText(deliveryFee > 0 ? money(deliveryFee) : 'No tiene costo', 465, summaryTop - 10, 9, 'F2', dark);
-  rect(300, summaryTop - 43, 253, 25, pale);
-  drawText('Total estimado', 312, summaryTop - 35, 10, 'F2', purple);
-  drawText(money(order.total), 492, summaryTop - 35, 11, 'F2', purple);
+  drawText(promotionCode ? 'Descuento · ' + promotionCode : 'Descuento', 365, summaryTop - 8, 9, 'F1', muted);
+  drawText(discount > 0 ? '-' + money(discount) : money(0), 492, summaryTop - 8, 9, 'F2', discount > 0 ? '0.31 0.48 0.36' : dark);
+  drawText('Entrega / retiro', 365, summaryTop - 23, 9, 'F1', muted);
+  drawText(deliveryFee > 0 ? money(deliveryFee) : 'No tiene costo', 465, summaryTop - 23, 9, 'F2', dark);
+  rect(300, summaryTop - 56, 253, 25, pale);
+  drawText('Total estimado', 312, summaryTop - 48, 10, 'F2', purple);
+  drawText(money(order.total), 492, summaryTop - 48, 11, 'F2', purple);
 
   const isPickup = String(order.deliveryMethod ?? '').toLowerCase().includes('retiro') || String(order.zone ?? '').toLowerCase().includes('retiro') || String(order.deliveryAddress ?? order.address ?? '').toLowerCase().includes('retiro en tienda');
   rect(42, 76, 511, 48, pale);

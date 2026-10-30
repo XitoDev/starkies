@@ -804,6 +804,32 @@ export class DataService implements OnDestroy {
     this.rawState.set(nextState);
   }
 
+  async savePromotion(promotion: RawRecord): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const promotionId = this.asString(promotion['id']);
+    if (!promotionId) throw new Error('La promoción no tiene un identificador válido.');
+    const promotions = this.asArray(state['promotions']);
+    const index = promotions.findIndex(item => this.asString(item['id']) === promotionId);
+    const existing = index >= 0 ? promotions[index] : {};
+    const savedRecord: RawRecord = { ...existing, ...promotion, id: promotionId };
+    const nextPromotions = [...promotions];
+    if (index >= 0) nextPromotions[index] = savedRecord;
+    else nextPromotions.push(savedRecord);
+    const nextState = { ...state, promotions: nextPromotions };
+    await this.applyOptimisticState(state, nextState, () =>
+      this.repository.upsertCollectionRecord('promotions', promotionId, savedRecord));
+  }
+
+  async deletePromotion(promotionId: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const nextPromotions = this.asArray(state['promotions']).filter(item => this.asString(item['id']) !== promotionId);
+    const nextState = { ...state, promotions: nextPromotions };
+    await this.applyOptimisticState(state, nextState, () =>
+      this.repository.deleteCollectionRecord('promotions', promotionId));
+  }
+
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados. Actualiza la pantalla e inténtalo de nuevo.');
