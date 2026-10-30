@@ -1,87 +1,45 @@
-# Imágenes de StarKies: archivos identificados por su código real
+# Imágenes de StarKies
 
-Las fotos de recetas se sirven desde el repositorio público mediante jsDelivr. Los archivos se nombran con el ID que aparece en el respaldo original en `/api/recipe-image?id=...`, usando el prefijo `recipe-` y conservando la extensión original.
+## Productos
 
-Los archivos fueron renombrados en Git sin volver a codificar ni recomprimir las imágenes: se conservaron los mismos blobs binarios.
+Cada producto tiene **una sola imagen canónica** dentro de `public/images/products/`. La misma URL se guarda en `recipes.image` y se publica en `publicCatalog.image`; `catalogDrafts` conserva únicamente metadatos de presentación y no almacena imágenes.
 
-| Receta según el mapeo actual | Archivo | Estado de la asociación |
-|---|---|---|
-| Brownie Classic | `recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg` | Verificada visualmente |
-| Avena Classic | `recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg` | Verificada visualmente |
-| Sunny Carrot | `recipe-85e499f3-37c9-4701-bf89-5176007ce546.png` | Pendiente de confirmar foto |
-| Chips Stars | `recipe-02885ca5-c58c-48a7-b116-cd614290c697.png` | Pendiente de confirmar foto |
-| Velvet Kiss | `recipe-f126ae46-9eee-4ac2-8cff-d2f954d708e9.png` | Pendiente de confirmar foto |
-| Cinna Moon | `recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png` | Pendiente de confirmar foto |
-| Nuti Dream | `recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png` | Pendiente de confirmar foto |
-| Lemon Glow | `recipe-0794f338-588b-460d-b002-ee4e614826c9.png` | Pendiente de confirmar foto |
-| Brownie Bliss | `recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png` | Pendiente de confirmar foto |
-| Canela Classic | `recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg` | Pendiente de confirmar foto |
+Los archivos actuales se identifican con el ID del producto. Cuando existe un sufijo UUID, forma parte del nombre canónico y debe conservarse. Las imágenes de Recetas y Catálogo no se duplican ni usan prefijos `recipe-` o `catalog-`.
 
-## Galería
+| ID de producto | Archivo canónico |
+|---|---|
+| `02885ca5-c58c-48a7-b116-cd614290c697` | `products/02885ca5-c58c-48a7-b116-cd614290c697.png` |
+| `0794f338-588b-460d-b002-ee4e614826c9` | `products/0794f338-588b-460d-b002-ee4e614826c9.png` |
+| `0a783c0b-8993-41a0-b986-b03b57674ca9` | `products/0a783c0b-8993-41a0-b986-b03b57674ca9-ade40aeb-b2ff-4c3e-8ec6-fe9364df1485.png` |
+| `1b601e8d-17da-4f66-909d-5324bce3acfe` | `products/1b601e8d-17da-4f66-909d-5324bce3acfe-c28bc795-6020-411e-9b87-5f179c0c7019.png` |
+| `202edec5-9b83-4e9b-a466-c32bd1a05d44` | `products/202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg` |
+| `5954e0af-d58c-40ce-a79d-cbcff10c7b78` | `products/5954e0af-d58c-40ce-a79d-cbcff10c7b78.png` |
+| `5cbf3e5f-edb0-490b-b544-8741ba6cffe7` | `products/5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png` |
+| `6539b2bd-5e58-4485-8ff9-b625d1aa6147` | `products/6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg` |
+| `85e499f3-37c9-4701-bf89-5176007ce546` | `products/85e499f3-37c9-4701-bf89-5176007ce546.png` |
+| `93492b6c-f402-4ca3-9ccd-9dfbd957c40a` | `products/93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png` |
+| `99e32e0c-61fb-41b1-8018-fa18ef655750` | `products/99e32e0c-61fb-41b1-8018-fa18ef655750.png` |
+| `e9005152-d579-444f-905f-a06a5ad3d74b` | `products/e9005152-d579-444f-905f-a06a5ad3d74b.jpg` |
+| `f126ae46-9eee-4ac2-8cff-d2f954d708e9` | `products/f126ae46-9eee-4ac2-8cff-d2f954d708e9.png` |
 
-### Brownie Classic — Verificada visualmente
+El mapeo operativo está en `image-map.json`. Las referencias heredadas `/api/recipe-image?id=...` y los nombres `recipe-*`/`catalog-*` se pueden resolver cuando su UUID coincide con una clave `product:<id>` del mapa. El migrador aplica esta equivalencia aunque el ID de la imagen antigua sea distinto al ID del documento de Recetas. Si no existe una correspondencia verificable, el producto queda sin resolver y la migración no escribe ningún cambio.
 
-![Brownie Classic](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg)
+## Banners de promociones
 
-`recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg`
+Los banners viven en `public/images/promotions/`. No se guardan en la carpeta de productos ni se incluyen en el mapeo de imágenes de producto.
 
-### Avena Classic — Verificada visualmente
+## Migración de Firebase
 
-![Avena Classic](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg)
+La migración de referencias antiguas se realiza con:
 
-`recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg`
+```bash
+npm run migrate:product-images
+```
 
-### Sunny Carrot — Pendiente de confirmar foto
+El comando anterior solo muestra un resumen (*dry run*). Para aplicar los cambios en Firebase:
 
-![Sunny Carrot](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-85e499f3-37c9-4701-bf89-5176007ce546.png)
+```bash
+npm run migrate:product-images -- --apply
+```
 
-`recipe-85e499f3-37c9-4701-bf89-5176007ce546.png`
-
-### Chips Stars — Pendiente de confirmar foto
-
-![Chips Stars](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-02885ca5-c58c-48a7-b116-cd614290c697.png)
-
-`recipe-02885ca5-c58c-48a7-b116-cd614290c697.png`
-
-### Velvet Kiss — Pendiente de confirmar foto
-
-![Velvet Kiss](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-f126ae46-9eee-4ac2-8cff-d2f954d708e9.png)
-
-`recipe-f126ae46-9eee-4ac2-8cff-d2f954d708e9.png`
-
-### Cinna Moon — Pendiente de confirmar foto
-
-![Cinna Moon](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png)
-
-`recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png`
-
-### Nuti Dream — Pendiente de confirmar foto
-
-![Nuti Dream](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png)
-
-`recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png`
-
-### Lemon Glow — Pendiente de confirmar foto
-
-![Lemon Glow](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-0794f338-588b-460d-b002-ee4e614826c9.png)
-
-`recipe-0794f338-588b-460d-b002-ee4e614826c9.png`
-
-### Brownie Bliss — Pendiente de confirmar foto
-
-![Brownie Bliss](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png)
-
-`recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png`
-
-### Canela Classic — Pendiente de confirmar foto
-
-![Canela Classic](https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg)
-
-`recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg`
-
-
-## Importante sobre el mapeo
-
-Las asociaciones de **Brownie Classic** y **Avena Classic** se comprobaron visualmente. Las otras ocho se conservaron según el mapeo provisional por orden de los archivos descargados; antes de considerar esa relación definitiva, hay que revisar esta galería contra las recetas en la Preview y ajustar solo las asociaciones que no coincidan.
-
-El administrador mantiene ese mapeo en `apps/admin/src/app/pages/recetas/recetas.ts`. Si una foto corresponde a otra receta, no hace falta volver a importar Firebase: basta con corregir el ID asociado al nombre del archivo.
+Configura `FIREBASE_SERVICE_ACCOUNT_JSON` con la cuenta de servicio del proyecto `starkies`. La prioridad es: mapa `product:<id>` (archivo actual de `products/`), imagen del borrador de catálogo, imagen de catálogo heredada en Recetas, imagen publicada en `publicCatalog` y, solo si no existe ninguna imagen de catálogo, `recipes.image`. El *dry run* muestra conflictos, las referencias antiguas recuperadas mediante el mapa y las referencias sin resolver. Con `--apply`, el script sincroniza `recipes.image` y `publicCatalog.image`, elimina `recipes.catalogImage`, elimina `catalogDrafts.image` y cualquier `catalogImage` residual de esas colecciones. Si hay referencias que no puede resolver, las deja intactas y aplica únicamente los cambios de productos con imagen canónica verificada. Nunca consulta el servidor antiguo, no sustituye imágenes sin correspondencia y no borra archivos ni documentos.

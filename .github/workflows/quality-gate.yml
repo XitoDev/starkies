@@ -92,6 +92,9 @@ jobs:
       - name: Install dependencies from committed lockfile
         run: npm ci
 
+      - name: Test legacy product image migration resolver
+        run: npm run test:migrate:product-images
+
       - name: Build catalog with static prerendering
         run: npx ng build catalog --configuration production
 

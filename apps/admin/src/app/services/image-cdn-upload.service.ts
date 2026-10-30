@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
 
-export type CdnImageKind = 'recipe' | 'catalog';
+export type CdnImageKind = 'product' | 'promotion';
 interface CdnUploadResponse { imageUrl?: string; message?: string; }
 
 @Injectable({ providedIn: 'root' })

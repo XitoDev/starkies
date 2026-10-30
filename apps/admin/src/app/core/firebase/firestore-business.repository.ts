@@ -160,7 +160,7 @@ export class FirestoreBusinessRepository {
     const allArrayKeys = metadata.arrayKeys ?? [];
     const allSettingKeys = metadata.settingKeys ?? [];
     const arrayKeys = requestedCollectionKeys
-      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key) || key === 'publicCatalog' || key === 'catalogDrafts')
+      ? requestedCollectionKeys.filter(key => allArrayKeys.includes(key) || key === 'publicCatalog' || key === 'catalogDrafts' || key === 'promotions')
       : allArrayKeys;
     const settingKeys = requestedCollectionKeys
       ? requestedCollectionKeys.filter(key => allSettingKeys.includes(key))
@@ -482,8 +482,8 @@ export class FirestoreBusinessRepository {
   }
 
   /**
-   * Persists internal recipe data separately from private catalog drafts and the
-   * public-safe projection. All three changes are committed atomically.
+   * Persists internal recipe data separately from metadata-only catalog drafts
+   * and the public-safe projection. recipes.image is the only product image source.
    */
   async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>, updateCatalogDraft = false): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
@@ -495,19 +495,18 @@ export class FirestoreBusinessRepository {
     const sortIndex = existing.exists() ? Number(existing.data()['sortIndex'] ?? Date.now()) : Date.now();
     const previousDraft = existingDraft.data() ?? {};
 
-    const catalogImage = updateCatalogDraft
-      ? (String(safeValue['image'] ?? '').trim() || String(safeValue['catalogImage'] ?? '').trim() || String(previousDraft['image'] ?? '').trim())
-      : (String(previousDraft['image'] ?? '').trim() || String(safeValue['catalogImage'] ?? '').trim() || String(safeValue['image'] ?? '').trim());
-    const recipeData: Record<string, unknown> = { ...safeValue, image: catalogImage };
-    for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
+    const canonicalImage = typeof safeValue['image'] === 'string'
+      ? String(safeValue['image']).trim()
+      : String(existing.data()?.['image'] ?? '').trim();
+    const recipeData: Record<string, unknown> = { ...safeValue, image: canonicalImage };
+    for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete recipeData[key];
     }
+    // Strip the retired alias on any pre-migration record touched by this save.
+    delete recipeData['catalogImage'];
     const draft = {
       id: recordId,
       description: String(updateCatalogDraft ? (safeValue['catalogDescription'] ?? safeValue['description'] ?? '') : (previousDraft['description'] ?? safeValue['catalogDescription'] ?? safeValue['description'] ?? '')),
-      // Keep the existing catalog photo; fall back to the legacy recipe photo only
-      // when no catalog photo exists, then use the same path on the recipe and public product.
-      image: catalogImage,
       label: String(updateCatalogDraft ? (safeValue['catalogLabel'] ?? '') : (previousDraft['label'] ?? safeValue['catalogLabel'] ?? '')),
       labelColor: String(updateCatalogDraft ? (safeValue['catalogLabelColor'] ?? 'Morado') : (previousDraft['labelColor'] ?? safeValue['catalogLabelColor'] ?? 'Morado')),
       visible: updateCatalogDraft ? safeValue['catalogVisible'] !== false : (previousDraft['visible'] !== false),
@@ -517,7 +516,7 @@ export class FirestoreBusinessRepository {
     const normalizedCategory = category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
     const grams = Number(safeValue['baseGramsPerCookie'] ?? 0);
     const isNy = normalizedCategory.includes('ny') || normalizedCategory.includes('new york') || grams >= 50;
-    const image = String(draft.image || safeValue['image'] || '');
+    const image = canonicalImage;
     const publicProduct: Record<string, unknown> = {
       id: recordId,
       name: String(safeValue['name'] ?? ''),

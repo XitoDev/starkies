@@ -37,6 +37,20 @@
 
           } @else {
             <section class="summary cart-step" aria-label="Resumen del pedido">
+              <section class="promotion-code-panel" aria-label="Código de descuento">
+                <label for="promotion-code">¿Tienes un código de descuento?</label>
+                <div class="promotion-code-controls">
+                  <input id="promotion-code" type="text" maxlength="40" autocomplete="off" placeholder="Escribe tu código" [(ngModel)]="catalog.promotionCodeInput" name="promotionCodeInput">
+                  <button matButton="outlined" type="button" (click)="catalog.applyPromotionCode()">Aplicar</button>
+                </div>
+                @if (catalog.promotionFeedback()) { <p class="promotion-feedback" role="status">{{ catalog.promotionFeedback() }}</p> }
+                @if (catalog.appliedPromotion(); as promotion) {
+                  <div class="applied-promotion">
+                    <span><strong>{{ promotion.title }}</strong><small>{{ promotion.code }}</small></span>
+                    <button matButton="text" type="button" (click)="catalog.clearPromotionCode()">Quitar</button>
+                  </div>
+                }
+              </section>
               @if (catalog.cartItemCount() === 0) {
                 <p class="empty-cart-message" id="cart-hint">Agrega tus galletas favoritas aquí</p>
               } @else {
@@ -76,6 +90,12 @@
                     <p class="muted">Completa la caja y guárdala antes de revisar el pedido.</p>
                   </section>
                 }
+              }
+              @if (catalog.appliedPromotion() && catalog.promotionDiscount() > 0) {
+                <div class="promotion-discount-row">
+                  <span>Descuento · {{ catalog.appliedPromotionCode() }}</span>
+                  <strong>-{{ catalog.promotionDiscount() | currency:'USD' }}</strong>
+                </div>
               }
             </section>
           }

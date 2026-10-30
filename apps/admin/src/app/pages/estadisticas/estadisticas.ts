@@ -8,6 +8,7 @@ type StatsPeriod = '7' | '30' | '90' | 'all';
 type RawRecord = Record<string, unknown>;
 interface RankedProduct { id: string; name: string; quantity: number; }
 interface RankedBox { id: string; label: string; quantity: number; }
+interface RankedPromotion { id: string; code: string; name: string; orders: number; discount: number; }
 interface WeekdayCount { key: string; label: string; count: number; }
 const WEEKDAYS: Omit<WeekdayCount, 'count'>[] = [
   { key: 'mon', label: 'Lun' }, { key: 'tue', label: 'Mar' }, { key: 'wed', label: 'Mié' },
@@ -90,6 +91,29 @@ export class Estadisticas {
     .reduce((sum, order) => sum + Math.max(0, Number(order.total) || 0), 0));
   readonly pendingCount = computed(() => this.validOrders()
     .filter(order => order.status === 'PENDING' || order.status === 'PREPARING' || order.status === 'READY').length);
+  readonly promotionOrders = computed(() => this.validOrders().filter(order => {
+    const raw = this.rawOrdersById().get(order.id);
+    return asQuantity(raw?.['discount']) > 0;
+  }));
+  readonly promotionOrderCount = computed(() => this.promotionOrders().length);
+  readonly promotionDiscountTotal = computed(() => this.promotionOrders().reduce((sum, order) => {
+    return sum + asQuantity(this.rawOrdersById().get(order.id)?.['discount']);
+  }, 0));
+  readonly promotionRanking = computed<RankedPromotion[]>(() => {
+    const totals = new Map<string, RankedPromotion>();
+    for (const order of this.promotionOrders()) {
+      const raw = this.rawOrdersById().get(order.id);
+      const promotion = asRecord(raw?.['promotion']);
+      const code = asText(promotion['code'] ?? raw?.['promotionCode']) || 'Sin código';
+      const id = asText(promotion['id']) || code.toLocaleUpperCase('es');
+      const name = asText(promotion['name'] ?? promotion['title']) || code;
+      const discount = asQuantity(raw?.['discount']);
+      const current = totals.get(id);
+      if (current) { current.orders++; current.discount += discount; }
+      else totals.set(id, { id, code, name, orders: 1, discount });
+    }
+    return [...totals.values()].sort((a, b) => b.orders - a.orders || b.discount - a.discount);
+  });
 
   readonly weekdayCounts = computed<WeekdayCount[]>(() => {
     const counts = new Array<number>(7).fill(0);

@@ -24,6 +24,7 @@ describe('Sidebar', () => {
   it('adds Estadísticas to the sidebar and moves Configuración out of the navigation', () => {
     expect(component).toBeTruthy();
     expect(fixture.nativeElement.querySelector('a[href="/estadisticas"]')?.textContent).toContain('Estadísticas');
+    expect(fixture.nativeElement.querySelector('a[href="/catalogo/promociones"]')?.textContent).toContain('Promociones');
     expect(fixture.nativeElement.querySelector('.settings-trigger')).toBeNull();
     expect(fixture.nativeElement.querySelector('.sidebar-profile')).toBeNull();
     expect(fixture.nativeElement.querySelector('.business-mark')).toBeNull();

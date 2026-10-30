@@ -33,6 +33,13 @@ service cloud.firestore {
     match /orderPhoneLookup/{document=**} {
       allow read, write: if isApprovedAdmin();
     }
+    match /promotions/{document=**} {
+      allow read, write: if isApprovedAdmin();
+    }
+    // Per-customer promotion redemptions contain hashed customer identifiers and stay server-only.
+    match /promotionRedemptions/{document=**} {
+      allow read, write: if false;
+    }
 
     // All other root collections are restricted to explicitly approved admins.
     match /{collectionName}/{document=**} {
@@ -41,6 +48,8 @@ service cloud.firestore {
         && collectionName != 'publicOrderRateLimits'
         && collectionName != 'customerPhoneLookup'
         && collectionName != 'orderPhoneLookup'
+        && collectionName != 'promotions'
+        && collectionName != 'promotionRedemptions'
         && isApprovedAdmin();
     }
 

@@ -10,12 +10,13 @@ import { Component, computed, effect, inject, signal, PLATFORM_ID, PendingTasks 
 import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
-import { BoxPresentation, DeliveryZone, PackedBox, Product } from './catalog.models';
+import { BoxPresentation, DeliveryZone, PackedBox, Product, PublicPromotion } from './catalog.models';
 import { BOX_PRESENTATIONS } from './catalog.data';
+import { calculatePromotionDiscount } from './promotion-engine';
 import { CatalogUiService } from '../../catalog-ui.service';
-interface OrderConfirmation { id: string; total: number; documentUrl: string; whatsappUrl: string; }
-interface CachedPublicCatalog { products: Product[]; zones: DeliveryZone[]; fetchedAt: number; }
-interface CartDraft { selectedPresentationId: string; currentBoxItems: Record<string, number>; completedBoxes: PackedBox[]; editingBoxIndex: number | null; }
+interface OrderConfirmation { id: string; total: number; discount: number; documentUrl: string; whatsappUrl: string; }
+interface CachedPublicCatalog { products: Product[]; zones: DeliveryZone[]; promotions: PublicPromotion[]; fetchedAt: number; }
+interface CartDraft { selectedPresentationId: string; currentBoxItems: Record<string, number>; completedBoxes: PackedBox[]; editingBoxIndex: number | null; promotionCode: string; }
 const CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
 const CART_DRAFT_KEY = 'starkies.catalog.cart.v1';
 let publicCatalogCache: CachedPublicCatalog | null = null;
@@ -25,6 +26,10 @@ export class Catalog {
   private readonly document = inject(DOCUMENT);
   readonly presentations = BOX_PRESENTATIONS;
   readonly products = signal<Product[]>([]);
+  readonly promotions = signal<PublicPromotion[]>([]);
+  readonly appliedPromotionCode = signal('');
+  readonly promotionFeedback = signal('');
+  promotionCodeInput = '';
   zones: DeliveryZone[] = [];
   readonly catalogLoading = signal(true);
   readonly catalogLoadError = signal('');
@@ -78,6 +83,20 @@ export class Catalog {
     return this.currentClasicasCount() === presentation.reqClasicas && this.currentNYCount() === presentation.reqNY;
   });
   readonly boxesTotalSum = computed(() => this.completedBoxes().reduce((total, box) => total + box.presentation.price, 0));
+  readonly visiblePromotions = computed(() => this.promotions().filter(promotion => promotion.showInCatalog && Boolean(promotion.bannerImage)));
+  readonly appliedPromotion = computed(() => {
+    const code = this.appliedPromotionCode().trim().toLocaleUpperCase('es');
+    return code ? this.promotions().find(promotion => promotion.code.toLocaleUpperCase('es') === code) ?? null : null;
+  });
+  readonly promotionDiscount = computed(() => {
+    const promotion = this.appliedPromotion();
+    if (!promotion) return 0;
+    return calculatePromotionDiscount(promotion, this.completedBoxes().map(box => ({
+      presentationId: box.presentation.id,
+      price: box.presentation.price,
+      items: box.items,
+    }))).discountAmount;
+  });
   readonly cartItemCount = computed(() => this.completedBoxes().reduce(
     (total, box) => total + Object.values(box.items).reduce((boxTotal, quantity) => boxTotal + quantity, 0),
     this.totalBoxCurrent(),
@@ -93,9 +112,9 @@ export class Catalog {
     }
   });
   readonly shippingFee = computed(() => this.selectedDeliveryZone()?.fee ?? 0);
-  readonly grandTotal = computed(() => this.boxesTotalSum()
+  readonly grandTotal = computed(() => Math.max(0, this.boxesTotalSum()
     + (this.totalBoxCurrent() > 0 && this.editingBoxIndex() === null ? this.selectedPresentation().price : 0)
-    + this.shippingFee());
+    + this.shippingFee() - this.promotionDiscount()));
   readonly hasUnavailableBox = computed(() => this.completedBoxes().some(box => this.boxHasUnavailableItems(box)));
   private readonly pendingTasks = inject(PendingTasks);
 
@@ -206,7 +225,13 @@ export class Catalog {
         return typeof item['id'] === 'string' && typeof item['name'] === 'string' && typeof item['fee'] === 'number';
       });
       if (!zones.length) throw new Error('No pudimos cargar las tarifas de entrega. Inténtalo de nuevo.');
-      const cache: CachedPublicCatalog = { products, zones, fetchedAt: Date.now() };
+      const promotions = (Array.isArray(record['promotions']) ? record['promotions'] : []).filter((value): value is PublicPromotion => {
+        const item = this.asRecord(value);
+        const mechanic = this.asRecord(item['mechanic']);
+        return typeof item['id'] === 'string' && typeof item['title'] === 'string'
+          && typeof item['code'] === 'string' && typeof mechanic['type'] === 'string';
+      }).map(value => ({ ...value, showInCatalog: value.showInCatalog !== false }));
+      const cache: CachedPublicCatalog = { products, zones, promotions, fetchedAt: Date.now() };
       if (isPlatformBrowser(this.platformId)) publicCatalogCache = cache;
       this.applyPublicCatalog(cache);
     } catch (error) {
@@ -222,6 +247,7 @@ export class Catalog {
   }
   private applyPublicCatalog(cache: CachedPublicCatalog): void {
     this.products.set(cache.products);
+    this.promotions.set(cache.promotions ?? []);
     this.updateProductStructuredData(cache.products);
     this.zones = cache.zones;
     if (this.fulfillmentMode() === 'pickup') this.setFulfillmentMode('pickup');
@@ -248,6 +274,10 @@ export class Catalog {
       }
       const editingIndex = draft['editingBoxIndex'];
       this.editingBoxIndex.set(Number.isInteger(editingIndex) && Number(editingIndex) >= 0 ? Number(editingIndex) : null);
+      if (typeof draft['promotionCode'] === 'string') {
+        this.appliedPromotionCode.set(draft['promotionCode'].toLocaleUpperCase('es'));
+        this.promotionCodeInput = draft['promotionCode'].toLocaleUpperCase('es');
+      }
     } catch {
       try { window.sessionStorage.removeItem(CART_DRAFT_KEY); } catch { /* Storage may be unavailable. */ }
     }
@@ -260,6 +290,7 @@ export class Catalog {
         currentBoxItems: this.currentBoxItems(),
         completedBoxes: this.completedBoxes(),
         editingBoxIndex: this.editingBoxIndex(),
+        promotionCode: this.appliedPromotionCode(),
       };
       window.sessionStorage.setItem(CART_DRAFT_KEY, JSON.stringify(draft));
     } catch { /* Storage may be unavailable or full; the in-memory cart remains usable. */ }
@@ -387,6 +418,78 @@ export class Catalog {
   boxHasUnavailableItems(box: PackedBox): boolean {
     return Object.keys(box.items).some(id => !this.products().some(product => product.id === id && product.stock));
   }
+  applyPromotionCode(): void {
+    const code = this.promotionCodeInput.trim().toLocaleUpperCase('es').replace(/\s+/g, '');
+    if (!code) {
+      this.appliedPromotionCode.set('');
+      this.promotionFeedback.set('Escribe un código promocional.');
+      this.persistCartDraft();
+      return;
+    }
+    const promotion = this.promotions().find(item => item.code.toLocaleUpperCase('es') === code);
+    if (!promotion) {
+      this.appliedPromotionCode.set('');
+      this.promotionFeedback.set('Este código no existe o ya no está vigente.');
+      this.persistCartDraft();
+      return;
+    }
+    this.appliedPromotionCode.set(promotion.code);
+    this.promotionCodeInput = promotion.code;
+    this.promotionFeedback.set('Código reconocido. El descuento se calcula al cumplir las condiciones de la promoción.');
+    this.persistCartDraft();
+  }
+  clearPromotionCode(): void {
+    this.appliedPromotionCode.set('');
+    this.promotionCodeInput = '';
+    this.promotionFeedback.set('');
+    this.persistCartDraft();
+  }
+  activatePromotion(promotion: PublicPromotion): void {
+    if (this.editingBoxIndex() !== null) {
+      this.promotionFeedback.set('Guarda o cancela la edición de tu caja antes de aprovechar esta promoción.');
+      return;
+    }
+    const mechanic = promotion.mechanic;
+    const productIds = mechanic.productIds ?? [];
+    if (productIds.length !== 1) {
+      this.promotionCodeInput = promotion.code;
+      this.appliedPromotionCode.set(promotion.code);
+      this.promotionFeedback.set('Código aplicado. Arma las cajas con los productos participantes para completar la promoción.');
+      this.persistCartDraft();
+      this.openOrderSheet();
+      return;
+    }
+    const presentation = this.presentations.find(item => item.id === mechanic.presentationId) ?? this.presentations[0];
+    const product = this.products().find(item => item.id === productIds[0] && item.stock);
+    if (!product || !presentation) {
+      this.promotionFeedback.set('No encontramos disponible el producto de esta promoción. Inténtalo más tarde.');
+      return;
+    }
+    const unitsForProduct = product.isNy ? presentation.reqNY : presentation.reqClasicas;
+    const unitsForOtherCategory = product.isNy ? presentation.reqClasicas : presentation.reqNY;
+    if (unitsForProduct < 1 || unitsForOtherCategory > 0) {
+      this.promotionFeedback.set('Esta promoción no permite preparar automáticamente esa presentación. Puedes armarla desde el catálogo.');
+      return;
+    }
+    const boxesToAdd = mechanic.type === 'buy_x_get_y_discount'
+      ? Math.max(2, Math.floor(Number(mechanic.buyQuantity ?? 1)) + Math.floor(Number(mechanic.rewardQuantity ?? 1)))
+      : 1;
+    const currentCompleteBox = this.isBoxComplete() && this.totalBoxCurrent() > 0 ? 1 : 0;
+    if (this.completedBoxes().length + currentCompleteBox + boxesToAdd > 10) {
+      this.promotionFeedback.set('El pedido ya tiene el máximo de cajas permitido para aprovechar esta promoción.');
+      return;
+    }
+    const preparedBoxes: PackedBox[] = Array.from({ length: boxesToAdd }, () => ({
+      presentation,
+      items: { [product.id]: unitsForProduct },
+    }));
+    this.completedBoxes.update(previous => [...previous, ...preparedBoxes]);
+    this.promotionCodeInput = promotion.code;
+    this.appliedPromotionCode.set(promotion.code);
+    this.promotionFeedback.set('Preparamos ' + boxesToAdd + ' cajas para esta promoción. Revisa tu pedido y el descuento aplicado.');
+    this.persistCartDraft();
+    this.openOrderSheet();
+  }
   async lookupCustomerByPhone(): Promise<void> {
     const phone = this.orderForm.phone.trim();
     if (phone.replace(/\\D/g, '').length < 7) { this.customerLookupMessage.set(''); return; }
@@ -468,6 +571,7 @@ export class Catalog {
       name: this.orderForm.name.trim(), phone: this.orderForm.phone.trim(), zoneId: this.orderForm.zone.id,
       address: this.orderForm.address.trim(), deliveryDate: this.orderForm.date, cookieName: this.wantsCookieName() ? this.orderForm.cookieName.trim() : '',
       notes: this.orderForm.notes.trim(), website: this.orderForm.website,
+      promotionCode: this.appliedPromotionCode(),
       boxes: this.completedBoxes().map(box => ({ presentationId: box.presentation.id, items: { ...box.items } })),
     };
     try {
@@ -483,9 +587,13 @@ export class Catalog {
         + (pdfUrl ? 'Pedido:\n' + pdfUrl + '\n\n' : '')
         + 'Enviaré mi ubicación exacta por WhatsApp para la entrega.';
       const whatsappUrl = 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
-      this.orderSuccess.set({ id: orderId, total: this.grandTotal(), documentUrl: pdfUrl, whatsappUrl });
+      const total = typeof record['total'] === 'number' ? record['total'] : this.grandTotal();
+      const discount = typeof record['discount'] === 'number' ? record['discount'] : this.promotionDiscount();
+      this.orderSuccess.set({ id: orderId, total, discount, documentUrl: pdfUrl, whatsappUrl });
       if (whatsappPopup) whatsappPopup.location.href = whatsappUrl;
-      this.orderSheetRef?.close(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm(); this.editingBoxIndex.set(null); this.persistCartDraft();
+      this.orderSheetRef?.close(); this.completedBoxes.set([]); this.currentBoxItems.set({}); this.orderForm = this.emptyOrderForm(); this.editingBoxIndex.set(null);
+      this.appliedPromotionCode.set(''); this.promotionCodeInput = ''; this.promotionFeedback.set('');
+      this.persistCartDraft();
     } catch (error) {
       if (whatsappPopup) whatsappPopup.close();
       this.orderError.set(error instanceof Error ? error.message : 'No pudimos registrar tu pedido en este momento. Puedes terminarlo por WhatsApp.');
@@ -497,8 +605,15 @@ export class Catalog {
     message += '👤 *Cliente:* ' + form.name + '\n📞 *Teléfono:* ' + form.phone + '\n📍 *Sector:* ' + (form.zone?.name || 'Por definir') + '\n🏡 *Dirección:* ' + (form.address || 'Retiro en tienda') + '\n📅 *Fecha solicitada:* ' + form.date + '\n🏷️ *Nombre en la caja:* ' + (form.cookieName || form.name) + '\n';
     if (form.notes.trim()) message += '📝 *Notas:* ' + form.notes.trim() + '\n';
     message += '\n📦 *DETALLE DE CAJAS:*\n';
-    this.completedBoxes().forEach((box, index) => { message += '\n*Caja ' + (index + 1) + ' (' + box.presentation.name + '):*\n'; for (const [id, quantity] of Object.entries(box.items)) message += '  • ' + quantity + 'x ' + this.getProductName(id) + '\n'; });
-    message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2) + '\n🛵 *Envío:* $' + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
+    this.completedBoxes().forEach((box, index) => {
+      message += '\n*Caja ' + (index + 1) + ' (' + box.presentation.name + '):*\n';
+      for (const [id, quantity] of Object.entries(box.items)) message += '  • ' + quantity + 'x ' + this.getProductName(id) + '\n';
+    });
+    message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2) + '\n';
+    if (this.promotionDiscount() > 0) {
+      message += '🏷️ *Descuento' + (this.appliedPromotionCode() ? ' (' + this.appliedPromotionCode() + ')' : '') + ':* -$' + this.promotionDiscount().toFixed(2) + '\n';
+    }
+    message += '🛵 *Envío:* $' + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
     return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
   }
   private emptyOrderForm() {

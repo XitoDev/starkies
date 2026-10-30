@@ -1,6 +1,9 @@
 import type { Firestore } from 'firebase-admin/firestore';
 // Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
 import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES, rankCatalogProducts } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
+import { isPromotionActive } from '../apps/catalog/src/app/pages/catalog/promotion-engine.js';
+import type { PromotionMechanic, PromotionMechanicType, PublicPromotion } from '../apps/catalog/src/app/pages/catalog/catalog.models.js';
+import { resolveLegacyRecipeImage } from '../libs/shared/src/lib/recipe-image-map.js';
 
 export interface PublicProduct {
   id: string;
@@ -18,36 +21,14 @@ export interface PublicCatalog {
   products: PublicProduct[];
   zones: PublicDeliveryZone[];
   presentations: typeof BOX_PRESENTATIONS;
+  promotions: PublicPromotion[];
 }
 
-const LEGACY_RECIPE_IMAGE_FILES: Readonly<Record<string, string>> = {
-  '6539b2bd-5e58-4485-8ff9-b625d1aa6147': 'recipe-6539b2bd-5e58-4485-8ff9-b625d1aa6147.jpg',
-  '202edec5-9b83-4e9b-a466-c32bd1a05d44': 'recipe-202edec5-9b83-4e9b-a466-c32bd1a05d44.jpg',
-  '85e499f3-37c9-4701-bf89-5176007ce546': 'recipe-85e499f3-37c9-4701-bf89-5176007ce546.png',
-  '02885ca5-c58c-48a7-b116-cd614290c697': 'recipe-02885ca5-c58c-48a7-b116-cd614290c697.png',
-  'f126ae46-9eee-4ac2-8cff-d2f9543d708e9': 'recipe-f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png',
-  '5cbf3e5f-edb0-490b-b544-8741ba6cffe7': 'recipe-5cbf3e5f-edb0-490b-b544-8741ba6cffe7.png',
-  '99e32e0c-61fb-41b1-8018-fa18ef655750': 'recipe-99e32e0c-61fb-41b1-8018-fa18ef655750.png',
-  '0794f338-588b-460d-b002-ee4e614826c9': 'recipe-0794f338-588b-460d-b002-ee4e614826c9.png',
-  '5954e0af-d58c-40ce-a79d-cbcff10c7b78': 'recipe-5954e0af-d58c-40ce-a79d-cbcff10c7b78.png',
-  'e9005152-d579-444f-905f-a06a5ad3d74b': 'recipe-e9005152-d579-444f-905f-a06a5ad3d74b.jpg',
-};
-const LEGACY_RECIPE_IMAGE_CDN_BASE =
-  'https://cdn.jsdelivr.net/gh/XitoDev/starkies@eed4ced5756232d2957340e18b86d18877e833ae/public/images/';
-function resolveLegacyRecipeImage(imagePath: string, fallbackId: string): string | undefined {
-  if (!imagePath) return undefined;
-  if (!imagePath.startsWith('/api/recipe-image')) return imagePath;
-  let imageId = fallbackId;
-  try { imageId = new URL(imagePath, 'https://starkies.lat').searchParams.get('id') || imageId; } catch { /* use fallback */ }
-  const fileName = LEGACY_RECIPE_IMAGE_FILES[imageId];
-  return fileName ? LEGACY_RECIPE_IMAGE_CDN_BASE + encodeURIComponent(fileName) : undefined;
-}
-
-function publicImage(value: string, recipeId: string): string | undefined {
+function publicImage(value: string, productId: string): string | undefined {
   if (!value) return undefined;
-  if (value.startsWith('/api/recipe-image')) return resolveLegacyRecipeImage(value, recipeId);
-  return value;
+  return resolveLegacyRecipeImage(value, productId);
 }
+
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -66,13 +47,14 @@ function numberValue(value: unknown, fallback = 0): number {
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   // The public endpoint reads only the explicitly published projection. Recipe
   // documents are private business data and must never be serialized to clients.
-  const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot] = await Promise.all([
+  const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot, promotionsSnapshot] = await Promise.all([
     // Do not use Firestore orderBy here: documents without sortIndex are omitted
     // by that query, which made the public catalog look empty after older writes.
     db.collection('publicCatalog').get(),
     db.doc('publicCatalog/catalog-settings').get(),
     db.doc('system/stateMeta').get(),
     db.collection('productSalesStats').get(),
+    db.collection('promotions').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
@@ -120,10 +102,49 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const fee = numberValue(zone['fee'], Number.NaN);
     return id && name && Number.isFinite(fee) && fee >= 0 ? [{ id, name, fee }] : [];
   });
+  const promotions: PublicPromotion[] = promotionsSnapshot.docs.flatMap(document => {
+    const item = asRecord(document.data());
+    if (!isPromotionActive(item)) return [];
+    const mechanic = asRecord(item['mechanic']);
+    const type = stringValue(mechanic['type']);
+    if (!['buy_x_get_y_discount', 'percentage', 'fixed_amount', 'minimum_subtotal'].includes(type)) return [];
+    const code = stringValue(item['code']).toLocaleUpperCase('es');
+    const title = stringValue(item['title']);
+    const discountValue = numberValue(mechanic['discountValue'], Number.NaN);
+    if (!code || !title || !Number.isFinite(discountValue) || discountValue <= 0) return [];
+    const productIds = Array.isArray(mechanic['productIds'])
+      ? mechanic['productIds'].filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+      : [];
+    const discountType = stringValue(mechanic['discountType']) === 'fixed' ? 'fixed' : 'percentage';
+    const publicMechanic: PromotionMechanic = {
+      type: type as PromotionMechanicType,
+      productIds,
+      requireAllProducts: mechanic['requireAllProducts'] === true,
+      ...(stringValue(mechanic['presentationId']) ? { presentationId: stringValue(mechanic['presentationId']) } : {}),
+      buyQuantity: Math.max(1, Math.floor(numberValue(mechanic['buyQuantity'], 1))),
+      rewardQuantity: Math.max(1, Math.floor(numberValue(mechanic['rewardQuantity'], 1))),
+      discountType,
+      discountValue,
+      minimumSubtotal: Math.max(0, numberValue(mechanic['minimumSubtotal'])),
+      maxApplications: Math.max(0, Math.floor(numberValue(mechanic['maxApplications']))),
+    };
+    const bannerImage = stringValue(item['bannerImage']);
+    return [{
+      id: document.id,
+      title,
+      description: stringValue(item['description']),
+      code,
+      ...(bannerImage ? { bannerImage } : {}),
+      showInCatalog: item['showInCatalog'] !== false,
+      mechanic: publicMechanic,
+    }];
+  });
+
   return {
     products: rankedProducts,
     zones: zones.length ? zones : DEFAULT_DELIVERY_ZONES,
     presentations: BOX_PRESENTATIONS,
+    promotions,
   };
 }
 

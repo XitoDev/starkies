@@ -338,12 +338,11 @@ export class DataService implements OnDestroy {
     const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const existingDraft = draftIndex >= 0 ? rawDrafts[draftIndex] : {};
-    // The catalog image is the canonical image for both the public product and its recipe.
-    // Keep an existing catalog image first; only adopt the recipe image for older records
-    // that have no catalog image yet, so previously uploaded catalog photos are never lost.
-    const canonicalImage = updateCatalogFields
-      ? (this.asString(recipe.image) || this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']))
-      : (this.asString(existingDraft['image']) || this.asString(existing['catalogImage']) || this.asString(existing['image']) || this.asString(recipe.image));
+    // recipes.image is the only product image source. Preserve it when an edit
+    // does not include an image field; an explicit empty string clears the image.
+    const canonicalImage = typeof recipe.image === 'string'
+      ? recipe.image.trim()
+      : this.asString(existing['image']);
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
@@ -354,24 +353,23 @@ export class DataService implements OnDestroy {
       })),
       items: flattenedItems,
     };
-    delete savedRecord['catalogImage'];
     const internalRecord: RawRecord = { ...savedRecord };
+    delete internalRecord['catalogImage'];
     for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete internalRecord[key];
     }
+    const { image: _legacyDraftImage, ...draftMetadata } = existingDraft;
     const draftRecord: RawRecord = {
-      ...existingDraft,
+      ...draftMetadata,
       id: recipe.id,
       description: this.asString(existingDraft['description'] ?? savedRecord['catalogDescription'] ?? savedRecord['description']),
-      image: canonicalImage,
       label: this.asString(existingDraft['label'] ?? savedRecord['catalogLabel']),
       labelColor: this.asString(existingDraft['labelColor'] ?? savedRecord['catalogLabelColor'], 'Morado'),
       visible: (existingDraft['visible'] ?? savedRecord['catalogVisible']) !== false,
     };
     const nextDrafts = [...rawDrafts];
     // The Firestore transaction always writes catalogDrafts, even when only
-    // recipe fields change. Mirror that image reconciliation in optimistic
-    // state so the editor never reverts to an empty, stale draft image.
+    // recipe fields change. This metadata-only document does not store image URLs.
     if (draftIndex >= 0) nextDrafts[draftIndex] = draftRecord;
     else nextDrafts.push(draftRecord);
     const nextRecipes = [...rawRecipes];
@@ -415,15 +413,16 @@ export class DataService implements OnDestroy {
 
     const drafts = this.asArray(state['catalogDrafts']);
     const currentDraft = drafts.find(item => this.asString(item['id']) === recipeId) ?? {};
+    const existingRecipe = rawRecipes[recipeIndex];
     const updatedRecipe: RawRecord = {
-      ...rawRecipes[recipeIndex],
+      ...existingRecipe,
       catalogVisible: visible,
       catalogDescription: this.asString(currentDraft['description']),
-      catalogImage: this.asString(currentDraft['image']),
       catalogLabel: this.asString(currentDraft['label']),
       catalogLabelColor: this.asString(currentDraft['labelColor'], 'Morado'),
     };
-    const updatedDraft = { ...currentDraft, id: recipeId, visible };
+    const { image: _legacyDraftImage, ...draftMetadata } = currentDraft;
+    const updatedDraft = { ...draftMetadata, id: recipeId, visible };
     const nextDrafts = [...drafts];
     const draftIndex = nextDrafts.findIndex(item => this.asString(item['id']) === recipeId);
     if (draftIndex >= 0) nextDrafts[draftIndex] = updatedDraft;
@@ -751,6 +750,19 @@ export class DataService implements OnDestroy {
     const paymentMethod = isPaid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '';
     const subtotal = productLines.reduce((sum, line) => sum + Number(line['qty'] ?? line['quantity'] ?? 0) * Number(line['price'] ?? line['unitPrice'] ?? 0), 0);
     const updatedLines = [...productLines];
+    const lineSignature = (lines: RawRecord[]) => lines.map(line => [
+      this.asString(line['id'] ?? line['recipeId']),
+      this.asNumber(line['qty'] ?? line['quantity']),
+      Math.round(this.asNumber(line['price'] ?? line['unitPrice']) * 100),
+    ].join(':')).sort().join('|');
+    const itemsUnchanged = lineSignature(productLines) === lineSignature(currentProductLines);
+    const currentDiscount = this.asNumber(current['discount']);
+    const preservePromotion = itemsUnchanged && currentDiscount > 0;
+    const clearPromotion = !itemsUnchanged && currentDiscount > 0;
+    const previousShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0);
+    const updatedTotal = preservePromotion
+      ? Math.max(0, Math.round((this.asNumber(current['total']) - previousShippingFee + shippingFee) * 100) / 100)
+      : Math.round((subtotal + shippingFee) * 100) / 100;
     const updated: RawRecord = {
       ...current,
       id: orderId,
@@ -763,7 +775,11 @@ export class DataService implements OnDestroy {
       notes,
       status,
       shippingFee,
-      total: Math.round((subtotal + shippingFee) * 100) / 100,
+      total: updatedTotal,
+      discount: preservePromotion ? currentDiscount : clearPromotion ? 0 : currentDiscount,
+      promotion: clearPromotion ? null : current['promotion'] ?? null,
+      promotionCode: clearPromotion ? '' : current['promotionCode'] ?? '',
+      ...(clearPromotion ? { boxes: [] } : {}),
       isPaid,
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
       paymentMethod,
@@ -802,6 +818,38 @@ export class DataService implements OnDestroy {
     await this.repository.upsertBusinessSetting(key, value);
     const nextState = { ...state, [key]: value };
     this.rawState.set(nextState);
+  }
+
+  /** Generic optimistic persistence for small root-collection records. */
+  async upsertCollectionRecord(collectionKey: string, recordId: string, value: RawRecord): Promise<void> {
+    const state = this.rawState();
+    const normalizedId = recordId.trim();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    if (!collectionKey.trim() || !normalizedId) throw new Error('El registro necesita una colección y un identificador válidos.');
+    const records = this.asArray(state[collectionKey]);
+    const index = records.findIndex(item => this.asString(item['id']) === normalizedId);
+    const existing = index >= 0 ? records[index] : {};
+    const savedRecord: RawRecord = { ...existing, ...value, id: normalizedId };
+    const nextRecords = [...records];
+    if (index >= 0) nextRecords[index] = savedRecord;
+    else nextRecords.push(savedRecord);
+    await this.applyOptimisticState(state, { ...state, [collectionKey]: nextRecords }, () =>
+      this.repository.upsertCollectionRecord(collectionKey, normalizedId, savedRecord));
+  }
+
+  /** Generic optimistic deletion for small root-collection records. */
+  async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
+    const state = this.rawState();
+    const normalizedId = recordId.trim();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    if (!collectionKey.trim() || !normalizedId) throw new Error('El registro necesita una colección y un identificador válidos.');
+    const records = this.asArray(state[collectionKey]);
+    if (!records.some(item => this.asString(item['id']) === normalizedId)) {
+      throw new Error('No se encontró el registro que intentas eliminar.');
+    }
+    const nextRecords = records.filter(item => this.asString(item['id']) !== normalizedId);
+    await this.applyOptimisticState(state, { ...state, [collectionKey]: nextRecords }, () =>
+      this.repository.deleteCollectionRecord(collectionKey, normalizedId));
   }
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -944,13 +992,15 @@ export class DataService implements OnDestroy {
           ingredients: section.ingredients,
         }));
 
+      const productImage = this.asOptionalString(item['image']);
+
       return {
         id: this.asString(item['id']),
         name: this.asString(item['name'], 'Receta sin nombre'),
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(draft['image']) || this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
+        image: productImage,
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',

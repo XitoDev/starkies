@@ -7,6 +7,7 @@ describe('DataService catalog visibility', () => {
   const repository = {
     loadState: vi.fn().mockResolvedValue(null),
     upsertCollectionRecord: vi.fn().mockResolvedValue(undefined),
+    deleteCollectionRecord: vi.fn().mockResolvedValue(undefined),
     upsertRecipeAndCatalogProjection: vi.fn().mockResolvedValue(undefined),
   };
   let service: DataService;
@@ -14,6 +15,7 @@ describe('DataService catalog visibility', () => {
   beforeEach(() => {
     repository.loadState.mockReset().mockResolvedValue(null);
     repository.upsertCollectionRecord.mockReset().mockResolvedValue(undefined);
+    repository.deleteCollectionRecord.mockReset().mockResolvedValue(undefined);
     repository.upsertRecipeAndCatalogProjection.mockReset().mockResolvedValue(undefined);
     TestBed.configureTestingModule({
       providers: [
@@ -39,6 +41,18 @@ describe('DataService catalog visibility', () => {
         items: [],
       }],
     });
+  });
+
+  it('persists and removes collection records through the generic data API', async () => {
+    service.rawState.set({ ingredients: [], orders: [], recipes: [], promotions: [{ id: 'promo-1', name: 'Antes' }] });
+
+    await service.upsertCollectionRecord('promotions', 'promo-1', { name: 'Actualizada' });
+    expect(repository.upsertCollectionRecord).toHaveBeenCalledWith('promotions', 'promo-1', { id: 'promo-1', name: 'Actualizada' });
+    expect(service.rawState()?.['promotions']).toEqual([{ id: 'promo-1', name: 'Actualizada' }]);
+
+    await service.deleteCollectionRecord('promotions', 'promo-1');
+    expect(repository.deleteCollectionRecord).toHaveBeenCalledWith('promotions', 'promo-1');
+    expect(service.rawState()?.['promotions']).toEqual([]);
   });
 
   it('persists recipe ingredient IDs and quantities in both canonical sections and legacy items', async () => {
@@ -209,7 +223,8 @@ describe('DataService catalog visibility', () => {
     ]);
   });
 
-  it('uses the existing catalog photo as the single recipe image and removes catalogImage', async () => {
+  it('uses recipes.image as the only product image and keeps catalog drafts metadata-only', async () => {
+    const canonicalImage = 'https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/products/brownie-classic.webp';
     service.rawState.set({
       ingredients: [],
       orders: [],
@@ -219,14 +234,13 @@ describe('DataService catalog visibility', () => {
         category: 'Clásicas',
         yield: 12,
         price: 1,
-        image: 'legacy/brownie-recipe.webp',
-        catalogImage: 'catalog/brownie-classic.webp',
+        image: canonicalImage,
         sections: [],
         items: [],
       }],
       catalogDrafts: [{
         id: 'brownie-classic',
-        image: '',
+        image: 'https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/products/stale-duplicate.webp',
         description: 'Brownie clásico',
         visible: true,
       }],
@@ -234,16 +248,14 @@ describe('DataService catalog visibility', () => {
 
     await service.saveRecipe({
       id: 'brownie-classic', name: 'Brownie Classic', category: 'Clásicas', yield: 12, price: 1,
-      image: 'legacy/brownie-recipe.webp', sections: [],
+      image: canonicalImage, sections: [],
     } as never);
 
     const saved = repository.upsertRecipeAndCatalogProjection.mock.calls.at(-1)?.[1] as Record<string, unknown>;
-    expect(saved['image']).toBe('catalog/brownie-classic.webp');
-    expect(saved).not.toHaveProperty('catalogImage');
-    expect((service.rawState()?.['recipes'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic')?.['image']).toBe('catalog/brownie-classic.webp');
-    expect(service.rawState()?.['catalogDrafts']).toEqual([
-      expect.objectContaining({ id: 'brownie-classic', image: 'catalog/brownie-classic.webp' }),
-    ]);
+    expect(saved['image']).toBe(canonicalImage);
+    expect((service.rawState()?.['recipes'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic')?.['image']).toBe(canonicalImage);
+    const savedDraft = (service.rawState()?.['catalogDrafts'] as Record<string, unknown>[]).find(item => item['id'] === 'brownie-classic');
+    expect(savedDraft).not.toHaveProperty('image');
   });
 
   it('hides a recipe through the catalog projection without copying catalog fields into recipes', async () => {

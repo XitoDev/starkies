@@ -1,7 +1,8 @@
 import { createHash, createHmac, randomBytes } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore, type DocumentSnapshot } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { readPublicCatalog } from './catalog-data.js';
+import { calculatePromotionDiscount, isPromotionActive, type PromotionCartBox } from '../apps/catalog/src/app/pages/catalog/promotion-engine.js';
 
 type HeaderValue = string | string[] | undefined;
 interface ApiRequest {
@@ -22,6 +23,7 @@ interface ValidatedOrder {
   deliveryDate: string;
   cookieName: string;
   notes: string;
+  promotionCode: string;
   boxes: { presentationId: string; items: Record<string, number> }[];
 }
 class HttpError extends Error {
@@ -75,7 +77,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const db = getDatabase();
     const catalog = await readPublicCatalog(db);
     const payload = parsePayload(req.body, catalog);
-    const order = validateAndBuildOrder(payload, catalog);
+    let promotionRef: DocumentReference | null = null;
+    let promotionRecord: Record<string, unknown> | null = null;
+    if (payload.promotionCode) {
+      const promotionQuery = await db.collection('promotions').where('code', '==', payload.promotionCode).limit(1).get();
+      const promotionDocument = promotionQuery.docs[0];
+      if (!promotionDocument) throw new HttpError(400, 'El código promocional no existe o ya no está vigente.');
+      promotionRef = promotionDocument.ref;
+      promotionRecord = { ...promotionDocument.data(), id: promotionDocument.id };
+      if (!isPromotionActive(promotionRecord)) throw new HttpError(400, 'Esta promoción ya no está vigente o alcanzó su límite de usos.');
+    }
+    const order = validateAndBuildOrder(payload, catalog, promotionRecord);
     const now = Date.now();
     const createdAt = new Date(now).toISOString();
     const orderId = 'SK-' + todayInEcuador().replaceAll('-', '') + '-' + randomBytes(3).toString('hex').toUpperCase();
@@ -91,6 +103,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const phoneLookupHash = createHash('sha256').update(normalizedPhone).digest('hex');
     const phoneLookupRef = db.collection('customerPhoneLookup').doc(phoneLookupHash);
     const orderPhoneLookupRef = db.collection('orderPhoneLookup').doc(phoneLookupHash);
+    const redemptionRef = promotionRef
+      ? db.collection('promotionRedemptions').doc(promotionRef.id + '_' + phoneLookupHash)
+      : null;
     const phoneLookupSnapshot = await phoneLookupRef.get();
     const indexedCustomerId = String(phoneLookupSnapshot.data()?.['customerId'] ?? '');
     const customerRef = indexedCustomerId
@@ -128,6 +143,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       notes: order.notes,
       status: 'PENDING',
       total: order.total,
+      discount: order.discount,
+      promotion: order.promotion,
+      promotionCode: order.promotionCode,
       lines: order.lines,
       boxes: order.boxes.map(box => {
         const presentation = catalog.presentations.find(item => item.id === box.presentationId)!;
@@ -146,17 +164,45 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     };
 
     await db.runTransaction(async transaction => {
-      const [metadataSnapshot, existingOrder, rateSnapshot] = await Promise.all([
+      const transactionReads = [
         transaction.get(metadataRef),
         transaction.get(orderRef),
         transaction.get(rateLimitRef),
-      ]);
+      ];
+      if (promotionRef) transactionReads.push(transaction.get(promotionRef));
+      if (redemptionRef) transactionReads.push(transaction.get(redemptionRef));
+      const snapshots = await Promise.all(transactionReads);
+      const metadataSnapshot = snapshots[0]!;
+      const existingOrder = snapshots[1]!;
+      const rateSnapshot = snapshots[2]!;
+      const promotionSnapshot = promotionRef ? snapshots[3] : undefined;
+      const redemptionSnapshot = redemptionRef ? snapshots[4] : undefined;
 
       if (!metadataSnapshot.exists || metadataSnapshot.data()?.['status'] !== 'complete') {
         throw new HttpError(503, 'Los pedidos en línea se están configurando. Por ahora, puedes terminar tu pedido por WhatsApp.');
       }
       if (existingOrder.exists) {
         throw new HttpError(409, 'No pudimos confirmar un código de pedido único. Inténtalo nuevamente.');
+      }
+      if (promotionRef) {
+        if (!promotionSnapshot?.exists) throw new HttpError(409, 'La promoción cambió. Actualiza el catálogo e inténtalo nuevamente.');
+        const currentPromotion: Record<string, unknown> = { ...(promotionSnapshot.data() ?? {}), id: promotionRef.id };
+        if (String(currentPromotion['code'] ?? '').toLocaleUpperCase('es') !== payload.promotionCode) {
+          throw new HttpError(409, 'El código promocional cambió. Actualiza tu pedido antes de confirmar.');
+        }
+        if (!isPromotionActive(currentPromotion)) throw new HttpError(400, 'Esta promoción ya no está vigente o alcanzó su límite de usos.');
+        const currentCalculation = calculatePromotionDiscount(currentPromotion, toPromotionBoxes(payload.boxes, catalog));
+        if (currentCalculation.discountAmount <= 0 || Math.abs(currentCalculation.discountAmount - order.discount) > 0.01) {
+          throw new HttpError(409, 'Las condiciones de la promoción cambiaron. Actualiza tu pedido antes de confirmar.');
+        }
+        const maxUses = Math.max(0, Math.floor(Number(currentPromotion['maxUses'] ?? 0)));
+        if (maxUses > 0 && Number(currentPromotion['usageCount'] ?? 0) >= maxUses) {
+          throw new HttpError(400, 'Esta promoción alcanzó su límite de usos.');
+        }
+        const customerLimit = Math.max(0, Math.floor(Number(currentPromotion['maxUsesPerCustomer'] ?? 0)));
+        if (customerLimit > 0 && Number(redemptionSnapshot?.data()?.['usageCount'] ?? 0) >= customerLimit) {
+          throw new HttpError(400, 'Ya alcanzaste el límite de usos de esta promoción.');
+        }
       }
 
       const previous = rateSnapshot.data() ?? {};
@@ -195,6 +241,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       transaction.set(phoneLookupRef, { customerId, normalizedPhone, updatedAt: createdAt });
       transaction.set(orderPhoneLookupRef, { orderId, normalizedPhone, createdAt });
       transaction.set(orderRef, { ...orderRecord, searchTokens: searchTokensFor(orderRecord), sortIndex: now });
+      if (promotionRef) {
+        transaction.set(promotionRef, { usageCount: FieldValue.increment(1), updatedAt: createdAt }, { merge: true });
+        if (redemptionRef) transaction.set(redemptionRef, {
+          promotionId: promotionRef.id,
+          customerHash: phoneLookupHash,
+          usageCount: FieldValue.increment(1),
+          lastOrderId: orderId,
+          updatedAt: createdAt,
+        }, { merge: true });
+      }
       demandEntries.forEach(([productId, quantity], index) => {
         const snapshot = demandSnapshots[index];
         transaction.set(db.collection('productionDemand').doc(productId), {
@@ -212,11 +268,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           ...(!matchedCustomer ? { customers: Number(recordCounts['customers'] ?? 0) + 1 } : {}),
         },
         revision: FieldValue.increment(1),
-        changedKeys: ['orders', 'customer:' + customerId, 'stats:demand'],
+        changedKeys: ['orders', 'customer:' + customerId, 'stats:demand', ...(promotionRef ? ['promotions'] : [])],
       }, { merge: true });
     });
 
-    res.status(201).json({ ok: true, orderId, total: order.total, documentShortCode, documentExpiresAt });
+    res.status(201).json({ ok: true, orderId, total: order.total, discount: order.discount, documentShortCode, documentExpiresAt });
   } catch (error) {
     if (error instanceof HttpError) {
       res.status(error.statusCode).json({ message: error.message });
@@ -311,6 +367,7 @@ function parsePayload(body: unknown, catalog: Awaited<ReturnType<typeof readPubl
 
   const cookieName = optionalString(candidate['cookieName'], 80);
   const notes = optionalString(candidate['notes'], 500);
+  const promotionCode = optionalString(candidate['promotionCode'], 40).toLocaleUpperCase('es').replace(/\s+/g, '');
   if (!Array.isArray(candidate['boxes']) || candidate['boxes'].length < 1 || candidate['boxes'].length > 10) {
     throw new HttpError(400, 'El pedido debe incluir entre 1 y 10 cajas.');
   }
@@ -347,10 +404,10 @@ function parsePayload(body: unknown, catalog: Awaited<ReturnType<typeof readPubl
     return { presentationId, items };
   });
 
-  return { name, phone, zoneId, address, deliveryDate, cookieName, notes, boxes };
+  return { name, phone, zoneId, address, deliveryDate, cookieName, notes, promotionCode, boxes };
 }
 
-function validateAndBuildOrder(payload: ValidatedOrder, catalog: Awaited<ReturnType<typeof readPublicCatalog>>) {
+function validateAndBuildOrder(payload: ValidatedOrder, catalog: Awaited<ReturnType<typeof readPublicCatalog>>, promotion: Record<string, unknown> | null) {
   const zone = catalog.zones.find(item => item.id === payload.zoneId)!;
   const lineItems = new Map<string, { id: string; name: string; qty: number; price: number }>();
   let boxTotalCents = 0;
@@ -375,13 +432,37 @@ function validateAndBuildOrder(payload: ValidatedOrder, catalog: Awaited<ReturnT
   if (zone.fee > 0) {
     lines.push({ id: 'shipping', name: 'Envío — ' + zone.name, qty: 1, price: zone.fee });
   }
-  const totalCents = boxTotalCents + Math.round(zone.fee * 100);
+  const promotionCalculation = promotion
+    ? calculatePromotionDiscount(promotion, toPromotionBoxes(payload.boxes, catalog))
+    : { discountAmount: 0, eligibleBoxIndexes: [], discountedBoxIndexes: [] };
+  const discountCents = Math.max(0, Math.min(boxTotalCents, Math.round(promotionCalculation.discountAmount * 100)));
+  if (promotion && discountCents <= 0) throw new HttpError(400, 'Tu pedido no cumple las condiciones de esta promoción.');
+  const totalCents = Math.max(0, boxTotalCents + Math.round(zone.fee * 100) - discountCents);
+  const promotionSnapshot = promotion ? {
+    id: String(promotion['id'] ?? ''),
+    name: String(promotion['name'] ?? promotion['title'] ?? 'Promoción'),
+    title: String(promotion['title'] ?? promotion['name'] ?? 'Promoción'),
+    code: String(promotion['code'] ?? payload.promotionCode),
+    discount: discountCents / 100,
+  } : null;
   return {
     ...payload,
     zoneName: zone.name,
+    discount: discountCents / 100,
+    promotion: promotionSnapshot,
     total: totalCents / 100,
     lines,
   };
+}
+
+function toPromotionBoxes(
+  boxes: ValidatedOrder['boxes'],
+  catalog: Awaited<ReturnType<typeof readPublicCatalog>>,
+): PromotionCartBox[] {
+  return boxes.map(box => {
+    const presentation = catalog.presentations.find(item => item.id === box.presentationId);
+    return { presentationId: box.presentationId, price: presentation?.price ?? 0, items: box.items };
+  });
 }
 
 function stringField(record: Record<string, unknown>, key: string, min: number, max: number): string {
