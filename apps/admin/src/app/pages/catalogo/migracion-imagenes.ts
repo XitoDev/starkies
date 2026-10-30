@@ -52,6 +52,13 @@ function asRecord(value: unknown): Record<string, unknown> {
         </section>
       }
 
+      @if (connectionStatus(); as result) {
+        <section class="result-card" role="status">
+          <mat-icon>{{ result.success ? 'check_circle' : 'error' }}</mat-icon>
+          <div><strong>{{ result.success ? 'Conexión verificada' : 'No se pudo verificar la conexión' }}</strong><p>{{ result.message }}</p></div>
+        </section>
+      }
+
       @if (failures().length) {
         <section class="failures">
           <h2>Imágenes que requieren revisión</h2>
@@ -62,6 +69,10 @@ function asRecord(value: unknown): Record<string, unknown> {
       }
 
       <footer>
+        <button matButton="outlined" type="button" [disabled]="loading() || running() || connectionChecking()" (click)="checkConnection()">
+          <mat-icon>cloud_done</mat-icon>
+          {{ connectionChecking() ? 'Verificando conexión…' : 'Probar conexión con R2' }}
+        </button>
         <p>La migración no elimina fotografías del repositorio Git. Primero verifica que todas las imágenes se vean correctamente en el catálogo; la limpieza del historial se realizará en una fase separada.</p>
         <button matButton="elevated" type="button" [disabled]="loading() || running() || productCount() + promotionCount() === 0" (click)="start()">
           <mat-icon>cloud_upload</mat-icon>
@@ -89,6 +100,8 @@ export class ImageMigration {
   readonly skipped = signal(0);
   readonly currentTask = signal('');
   readonly failures = signal<MigrationFailure[]>([]);
+  readonly connectionChecking = signal(false);
+  readonly connectionStatus = signal<{ success: boolean; message: string } | null>(null);
   readonly recipes = computed(() => this.data.recipes());
   readonly publicCatalog = computed(() => {
     const value = this.data.rawState()?.['publicCatalog'];
@@ -133,6 +146,20 @@ export class ImageMigration {
       this.failures.set([{ label: 'Carga inicial', message: error instanceof Error ? error.message : 'No se pudieron leer los registros.' }]);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async checkConnection(): Promise<void> {
+    if (this.connectionChecking() || this.running()) return;
+    this.connectionChecking.set(true);
+    this.connectionStatus.set(null);
+    try {
+      await this.imageUpload.checkConnection();
+      this.connectionStatus.set({ success: true, message: 'R2 aceptó la escritura y eliminación de un objeto temporal. Las credenciales y los permisos S3 funcionan.' });
+    } catch (error) {
+      this.connectionStatus.set({ success: false, message: error instanceof Error ? error.message : 'No se pudo comprobar la conexión con Cloudflare R2.' });
+    } finally {
+      this.connectionChecking.set(false);
     }
   }
 

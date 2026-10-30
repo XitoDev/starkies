@@ -4,6 +4,7 @@ import { FirebaseClientService } from '../core/firebase/firebase-client.service'
 export type CdnImageKind = 'product' | 'promotion';
 interface CdnUploadResponse { imageUrl?: string; message?: string; sha256?: string; reused?: boolean; }
 interface ImageReferenceResponse { message?: string; cleanupPending?: boolean; }
+interface R2ConnectionCheckResponse { success?: boolean; message?: string; }
 
 const MAX_INPUT_BYTES = 12 * 1024 * 1024;
 const MAX_WEBP_BYTES = 3 * 1024 * 1024;
@@ -47,6 +48,17 @@ export class ImageCdnUploadService {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  async checkConnection(): Promise<void> {
+    const idToken = await this.requireIdToken();
+    const response = await fetch('/api/image-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+      body: JSON.stringify({ action: 'connection-check' }),
+    });
+    const result = await response.json().catch(() => ({})) as R2ConnectionCheckResponse;
+    if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo verificar la conexión con Cloudflare R2.');
   }
 
   async syncReference(kind: CdnImageKind, recordId: string, oldImageUrl: string, newImageUrl: string): Promise<void> {

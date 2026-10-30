@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -7,6 +8,7 @@ import {
   imagePublicUrl,
   isWebpBuffer,
   putR2Object,
+  deleteR2Object,
   sha256Hex,
 } from '../scripts/lib/r2-storage.mjs';
 
@@ -32,6 +34,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     await authenticateAdmin(req, auth, db);
 
     const body = asRecord(req.body);
+    if (body['action'] === 'connection-check') {
+      await verifyR2Connection();
+      res.status(200).json({ success: true, write: true, delete: true, message: 'Conexión con Cloudflare R2 verificada. Escritura y eliminación correctas.' });
+      return;
+    }
     const kind = body['kind'] as UploadKind;
     const recordId = stringValue(body['recordId']);
     const contentType = stringValue(body['contentType']);
@@ -94,6 +101,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const status = error instanceof HttpError ? error.statusCode : 500;
     if (status === 500) console.error('R2 image upload failed:', error);
     res.status(status).json({ message: error instanceof Error ? error.message : 'No se pudo publicar la imagen en Cloudflare R2.' });
+  }
+}
+
+async function verifyR2Connection(): Promise<void> {
+  const key = 'healthchecks/' + randomUUID() + '.txt';
+  const payload = Buffer.from('StarKies R2 connection check');
+  await putR2Object(key, payload, 'text/plain');
+  try {
+    await deleteR2Object(key);
+  } catch (error) {
+    console.error('R2 connection check uploaded its probe but could not remove it:', error);
+    throw new Error('R2 aceptó la escritura, pero falló la eliminación de la prueba: ' + (error instanceof Error ? error.message : 'error desconocido'));
   }
 }
 
