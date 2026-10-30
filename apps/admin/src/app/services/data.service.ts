@@ -992,7 +992,7 @@ export class DataService implements OnDestroy {
         category: this.asString(item['category'], 'Sin categoría'),
         yield: this.asNumber(item['yield']),
         price: this.asNumber(item['price']),
-        image: this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
+        image: this.asOptionalString(draft['image']) || this.asOptionalString(item['image']) || this.asOptionalString(item['catalogImage']),
         catalogVisible: (draft['visible'] ?? item['catalogVisible']) !== false,
         catalogLabel: this.asOptionalString(draft['label'] ?? item['catalogLabel']),
         catalogLabelColor: this.asOptionalString(draft['labelColor'] ?? item['catalogLabelColor']) ?? 'Morado',
