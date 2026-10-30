@@ -201,7 +201,7 @@ function getAdminApp() {
     credential: cert({
       projectId: account.project_id,
       clientEmail: account.client_email,
-      privateKey: account.private_key.replace(/\\\\n/g, '\\n'),
+      privateKey: account.private_key.replace(/\\n/g, '\n'),
     }),
   }, name);
 }
