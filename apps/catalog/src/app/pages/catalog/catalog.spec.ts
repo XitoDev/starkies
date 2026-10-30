@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { Catalog } from './catalog';
 import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
-import { DeliveryZone, Product } from './catalog.models';
+import { DeliveryZone, Product, PublicPromotion } from './catalog.models';
 
 const TEST_PRODUCTS: Product[] = [
   { id: '1', name: 'Brownie Classic', category: 'Galletas clásicas', description: 'Cacao', price: .6, isNy: false, stock: true },
@@ -42,6 +42,24 @@ describe('Catalog', () => {
     await fixture.whenStable();
   });
 
+  const TEST_PROMOTION: PublicPromotion = {
+    id: 'promo-1',
+    title: 'Segunda caja a mitad de precio',
+    description: 'Lleva una caja Brownie Classic y disfruta la segunda con 50 % de descuento.',
+    code: 'BROWNIE50',
+    bannerImage: 'https://cdn.example.com/promotions/brownie50.jpg',
+    showInCatalog: true,
+    mechanic: {
+      type: 'buy_x_get_y_discount',
+      productIds: ['1'],
+      presentationId: 'clasicas',
+      buyQuantity: 1,
+      rewardQuantity: 1,
+      discountType: 'percentage',
+      discountValue: 50,
+    },
+  };
+
   it('creates the public catalog and delivery options', () => {
     expect(component).toBeTruthy();
     expect(component.products().length).toBe(13);
@@ -49,6 +67,37 @@ describe('Catalog', () => {
     expect(component.zones).toEqual(TEST_ZONES);
     expect(component.fulfillmentMode()).toBe('pickup');
     expect(component.orderForm.zone?.name).toBe('Retiro en tienda');
+  });
+
+  it('renders promotions in the desktop sidebar and as compact mobile cards without text over the banner', () => {
+    component.promotions.set([TEST_PROMOTION]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.promotions-sidebar')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.mobile-promotion-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.promotion-banner-overlay')).toBeNull();
+    expect((fixture.nativeElement.querySelector('.promotion-banner img') as HTMLImageElement).src).toBe(TEST_PROMOTION.bannerImage);
+  });
+
+  it('opens the complete banner in the mobile detail sheet and activates the promotion from its action', () => {
+    component.promotions.set([TEST_PROMOTION]);
+    const openOrderSheet = vi.spyOn(component, 'openOrderSheet').mockImplementation(() => {});
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.mobile-promotion-card') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const dialog = document.body.querySelector('.promotion-details-dialog');
+    expect(dialog).toBeTruthy();
+    expect((dialog?.querySelector('.promotion-details-image') as HTMLImageElement).src).toBe(TEST_PROMOTION.bannerImage);
+
+    (dialog?.querySelector('.promotion-details-activate') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(component.appliedPromotionCode()).toBe('BROWNIE50');
+    expect(component.completedBoxes()).toHaveLength(2);
+    expect(openOrderSheet).toHaveBeenCalledOnce();
+    component.closePromotionDetails();
   });
 
   it('publishes a crawlable item list linking to each published cookie and sets the menu canonical', () => {
