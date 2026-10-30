@@ -1,6 +1,6 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
 import { Recipe } from 'shared';
 import { DataService } from '../../services/data.service';
@@ -66,6 +66,16 @@ describe('Catalogo', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('shows the promotions action in the catalog header and navigates to promotions', async () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const promotionsButton = fixture.nativeElement.querySelector('.heading-actions button') as HTMLButtonElement;
+
+    expect(promotionsButton.textContent).toContain('Promociones');
+    promotionsButton.click();
+    expect(navigateSpy).toHaveBeenCalledWith(['/catalogo/promociones']);
   });
 
   it('renders a table with catalog images and keeps hidden products manageable', () => {
