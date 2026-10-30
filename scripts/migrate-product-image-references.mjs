@@ -7,6 +7,10 @@ const APPLY = process.argv.includes('--apply');
 const IMAGE_MAP_URL = new URL('../public/images/image-map.json', import.meta.url);
 const LEGACY_CATALOG_IMAGE_FIELD = 'catalogImage';
 
+function hasOwn(record, key) {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
+
 async function loadProductImages(mapEntries) {
   const images = new Map();
   for (const [key, rawValue] of Object.entries(mapEntries)) {
