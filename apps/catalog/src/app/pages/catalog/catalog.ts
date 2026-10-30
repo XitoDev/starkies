@@ -458,6 +458,7 @@ export class Catalog {
       maxHeight: '88dvh',
       position: { bottom: '0px' },
       autoFocus: false,
+      ariaLabel: 'Detalle de promoción',
       restoreFocus: true,
     });
     this.promotionDialogRef = dialogRef;
