@@ -597,58 +597,15 @@ export class Catalog {
     message += '👤 *Cliente:* ' + form.name + '\n📞 *Teléfono:* ' + form.phone + '\n📍 *Sector:* ' + (form.zone?.name || 'Por definir') + '\n🏡 *Dirección:* ' + (form.address || 'Retiro en tienda') + '\n📅 *Fecha solicitada:* ' + form.date + '\n🏷️ *Nombre en la caja:* ' + (form.cookieName || form.name) + '\n';
     if (form.notes.trim()) message += '📝 *Notas:* ' + form.notes.trim() + '\n';
     message += '\n📦 *DETALLE DE CAJAS:*\n';
-    this.completedBoxes().forEach((box, index) => { message += '\n*Caja ' + (index + 1) + ' (' + box.presentation.name + '):*\n'; for (const [id, quantity] of Object.entries(box.items)) message += '  • ' + quantity + 'x ' + this.getProductName(id) + '\n'; });
-    message += '\n💰 *Total cajas:* 
-    return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
-  }
-  private emptyOrderForm() {
-    this.wantsCookieName.set(false);
-    this.customerLookupMessage.set('');
-    this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('pickup');
-    return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
-  }
-  private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-}
- + this.boxesTotalSum().toFixed(2) + '\n';
-    if (this.promotionDiscount() > 0) message += '🏷️ *Descuento' + (this.appliedPromotionCode() ? ' (' + this.appliedPromotionCode() + ')' : '') + ':* -
-    return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
-  }
-  private emptyOrderForm() {
-    this.wantsCookieName.set(false);
-    this.customerLookupMessage.set('');
-    this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('pickup');
-    return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
-  }
-  private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-}
- + this.promotionDiscount().toFixed(2) + '\n';
-    message += '🛵 *Envío:* 
-    return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
-  }
-  private emptyOrderForm() {
-    this.wantsCookieName.set(false);
-    this.customerLookupMessage.set('');
-    this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('pickup');
-    return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
-  }
-  private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-}
- + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* 
-    return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
-  }
-  private emptyOrderForm() {
-    this.wantsCookieName.set(false);
-    this.customerLookupMessage.set('');
-    this.selectedDeliveryZone.set(null);
-    this.fulfillmentMode.set('pickup');
-    return { name: '', phone: '', zone: null as DeliveryZone | null, address: '', date: this.today(), cookieName: '', notes: '', website: '' };
-  }
-  private asRecord(value: unknown): Record<string, unknown> { return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-}
- + this.grandTotal().toFixed(2);
+    this.completedBoxes().forEach((box, index) => {
+      message += '\n*Caja ' + (index + 1) + ' (' + box.presentation.name + '):*\n';
+      for (const [id, quantity] of Object.entries(box.items)) message += '  • ' + quantity + 'x ' + this.getProductName(id) + '\n';
+    });
+    message += '\n💰 *Total cajas:* $' + this.boxesTotalSum().toFixed(2) + '\n';
+    if (this.promotionDiscount() > 0) {
+      message += '🏷️ *Descuento' + (this.appliedPromotionCode() ? ' (' + this.appliedPromotionCode() + ')' : '') + ':* -$' + this.promotionDiscount().toFixed(2) + '\n';
+    }
+    message += '🛵 *Envío:* $' + this.shippingFee().toFixed(2) + '\n💵 *Total estimado:* $' + this.grandTotal().toFixed(2);
     return 'https://wa.me/593985313438?text=' + encodeURIComponent(message);
   }
   private emptyOrderForm() {
