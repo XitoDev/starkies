@@ -7,6 +7,28 @@ const APPLY = process.argv.includes('--apply');
 const IMAGE_MAP_URL = new URL('../public/images/image-map.json', import.meta.url);
 const LEGACY_CATALOG_IMAGE_FIELD = 'catalogImage';
 
+async function loadProductImages(mapEntries) {
+  const images = new Map();
+  for (const [key, rawValue] of Object.entries(mapEntries)) {
+    if (!key.startsWith('product:')) continue;
+    const entry = asRecord(rawValue);
+    const path = text(entry.path);
+    const url = text(entry.url);
+    if (!/^public\\/images\\/products\\/[^/]+$/.test(path) || !isProductUrl(url)) {
+      throw new Error('La entrada ' + key + ' no apunta a un archivo válido de products/.');
+    }
+    try {
+      await access(new URL('../' + path, import.meta.url));
+    } catch {
+      throw new Error('La imagen canónica no existe en el repositorio: ' + path + ' (' + key + ').');
+    }
+    images.set(key.slice('product:'.length), url);
+  }
+  if (!images.size) throw new Error('No se encontraron imágenes canónicas product:* en public/images/image-map.json.');
+  return images;
+}
+
+
 function asRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
 }
@@ -134,10 +156,13 @@ async function main() {
   };
   console.log(JSON.stringify(summary, null, 2));
   if (!APPLY) return;
-  if (unresolved.length) {
-    throw new Error('Migración cancelada sin escribir cambios: hay referencias de catálogo sin una imagen canónica resoluble. Corrige image-map.json y vuelve a ejecutar el dry run.');
+  if (!changes.length) {
+    if (unresolved.length) console.warn('No se modificaron los ' + unresolved.length + ' productos sin imagen canónica verificable.');
+    return;
   }
-  if (!changes.length) return;
+  if (unresolved.length) {
+    console.warn('Se aplicará únicamente la migración segura de los productos resueltos. Los ' + unresolved.length + ' productos sin imagen canónica verificable permanecerán intactos en Firebase.');
+  }
 
   const writer = db.bulkWriter();
   for (const change of changes) writer.update(change.ref, change.patch);
@@ -148,7 +173,7 @@ async function main() {
     updatedAt: FieldValue.serverTimestamp(),
     changedKeys,
   }, { merge: true });
-  console.log('Migración aplicada. recipes.image y publicCatalog.image quedan sincronizados; catalogDrafts queda sin campo image. No se borraron archivos ni documentos.');
+  console.log('Migración parcial segura aplicada. Solo se actualizaron productos con una imagen canónica verificada; los productos sin resolver permanecen intactos. No se borraron archivos ni documentos.');
 }
 
 main().catch(error => {
