@@ -65,8 +65,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
   }
 
   try {
-    const host = headerValue(req.headers['host'] ?? req.headers['x-forwarded-host']) || 'starkies.lat';
-    const url = new URL(req.url ?? '/', 'https://' + host);
+    const url = requestUrl;
     const token = url.searchParams.get('token') ?? '';
     const verified = verifyToken(token, getSigningKey());
     if (!verified) {
