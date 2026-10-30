@@ -751,6 +751,18 @@ export class DataService implements OnDestroy {
     const paymentMethod = isPaid ? (changes.paymentMethod ?? current['paymentMethod'] ?? current['paymentType'] ?? '') : '';
     const subtotal = productLines.reduce((sum, line) => sum + Number(line['qty'] ?? line['quantity'] ?? 0) * Number(line['price'] ?? line['unitPrice'] ?? 0), 0);
     const updatedLines = [...productLines];
+    const lineSignature = (lines: RawRecord[]) => lines.map(line => [
+      this.asString(line['id'] ?? line['recipeId']),
+      this.asNumber(line['qty'] ?? line['quantity']),
+      Math.round(this.asNumber(line['price'] ?? line['unitPrice']) * 100),
+    ].join(':')).sort().join('|');
+    const itemsUnchanged = lineSignature(productLines) === lineSignature(currentProductLines);
+    const currentDiscount = this.asNumber(current['discount']);
+    const preservePromotion = itemsUnchanged && currentDiscount > 0;
+    const previousShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0);
+    const updatedTotal = preservePromotion
+      ? Math.max(0, Math.round((this.asNumber(current['total']) - previousShippingFee + shippingFee) * 100) / 100)
+      : Math.round((subtotal + shippingFee) * 100) / 100;
     const updated: RawRecord = {
       ...current,
       id: orderId,
@@ -763,7 +775,11 @@ export class DataService implements OnDestroy {
       notes,
       status,
       shippingFee,
-      total: Math.round((subtotal + shippingFee) * 100) / 100,
+      total: updatedTotal,
+      discount: preservePromotion ? currentDiscount : 0,
+      promotion: preservePromotion ? current['promotion'] ?? null : null,
+      promotionCode: preservePromotion ? current['promotionCode'] ?? '' : '',
+      ...(preservePromotion ? {} : { boxes: [] }),
       isPaid,
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
       paymentMethod,
