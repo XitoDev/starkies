@@ -378,7 +378,7 @@ export class PedidoRuta implements OnDestroy {
       const user = this.firebase.auth.currentUser;
       if (!user) throw new Error('Tu sesión ha caducado. Inicia sesión nuevamente.');
       const idToken = await user.getIdToken();
-      const response = await fetch('/api/admin-order-document?orderId=' + encodeURIComponent(orderId), { method: 'GET', headers: { Authorization: 'Bearer ' + idToken }, cache: 'no-store' });
+      const response = await fetch('/api/order-document?mode=admin&orderId=' + encodeURIComponent(orderId), { method: 'GET', headers: { Authorization: 'Bearer ' + idToken }, cache: 'no-store' });
       if (!response.ok) {
         const result: unknown = await response.json().catch(() => null);
         const message = typeof result === 'object' && result !== null && 'message' in result && typeof result.message === 'string' ? result.message : 'No se pudo descargar el PDF del pedido.';

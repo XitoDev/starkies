@@ -71,6 +71,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Enforce Vercel Hobby function limit
+        run: |
+          API_FUNCTION_COUNT="$(find api -maxdepth 1 -type f -name '*.ts' | wc -l | tr -d ' ')"
+          echo "Detected $API_FUNCTION_COUNT Vercel API functions."
+          if [ "$API_FUNCTION_COUNT" -gt 12 ]; then
+            echo "::error::Vercel Hobby supports at most 12 Serverless Functions; found $API_FUNCTION_COUNT."
+            exit 1
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -98,11 +107,11 @@ jobs:
             grep -qi 'rel="canonical"' "$HTML_FILE"
             echo "Verified canonical metadata and box-selection heading in $HTML_FILE"
             npx ng test catalog --watch=false
-            npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts api/catalog-data.ts api/orders.ts api/order-document.ts api/order-short.ts api/admin-order-document.ts api/customer-lookup.ts
+            npx tsc --ignoreConfig --noEmit --strict --target ES2022 --moduleResolution bundler --module ES2022 --esModuleInterop --skipLibCheck --types node api/catalog.ts server/catalog-data.ts api/orders.ts api/order-document.ts api/order-short.ts api/customer-lookup.ts
             rm -rf /tmp/starkies-catalog-esm
-            npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm api/catalog-data.ts api/orders.ts
+            npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm server/catalog-data.ts api/orders.ts
             ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
-            node --input-type=module -e "await import('/tmp/starkies-catalog-esm/api/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
+            node --input-type=module -e "await import('/tmp/starkies-catalog-esm/server/catalog-data.js'); const m = await import('/tmp/starkies-catalog-esm/api/orders.js'); if (typeof m.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog and order API dependencies successfully.');"
           fi
 
       - name: Pull Vercel settings

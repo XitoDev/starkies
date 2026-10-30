@@ -1,9 +1,9 @@
-import { readPublicCatalog } from './catalog-data.js';
+import { readPublicCatalog } from '../server/catalog-data.js';
 import {
   escapeXml,
   getPublicCatalogDatabase,
   productDetailPath,
-} from './public-seo.js';
+} from '../server/public-seo.js';
 
 interface ApiRequest { method?: string; }
 interface ApiResponse {
