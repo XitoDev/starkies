@@ -11,7 +11,7 @@ export const LEGACY_PRODUCT_IMAGE_FILES: Readonly<Record<string, string>> = {
   '93492b6c-f402-4ca3-9ccd-9dfbd957c40a': '93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png',
   '99e32e0c-61fb-41b1-8018-fa18ef655750': '99e32e0c-61fb-41b1-8018-fa18ef655750.png',
   'e9005152-d579-444f-905f-a06a5ad3d74b': 'e9005152-d579-444f-905f-a06a5ad3d74b.jpg',
-  'f126ae46-9eee-4ac2-8cff-d2f9543d708e9': 'f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png',
+  'f126ae46-9eee-4ac2-8cff-d2f954d708e9': 'f126ae46-9eee-4ac2-8cff-d2f954d708e9.png',
 };
 export const LEGACY_PRODUCT_IMAGE_CDN_BASE =
   'https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/';

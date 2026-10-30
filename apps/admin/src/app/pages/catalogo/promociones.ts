@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '../../services/data.service';
+import { PromotionsService } from '../../services/promotions.service';
 import { ImageCdnUploadService } from '../../services/image-cdn-upload.service';
 
 type PromotionType = 'buy_x_get_y_discount' | 'percentage' | 'fixed_amount' | 'minimum_subtotal';
@@ -71,7 +72,7 @@ function normalize(value: string): string {
               </div>
               <div class="card-actions">
                 <button matButton="outlined" type="button" (click)="editPromotion(promotion)">Editar</button>
-                <button matButton="text" type="button" class="delete-action" (click)="deletePromotion(promotion)">Eliminar</button>
+                <button matButton="text" type="button" class="delete-action" (click)="confirmDeletePromotion(promotion)">Eliminar</button>
               </div>
             </article>
           }
@@ -160,6 +161,7 @@ function normalize(value: string): string {
 })
 export class Promociones {
   readonly data = inject(DataService);
+  private readonly promotionsService = inject(PromotionsService);
   private readonly imageUpload = inject(ImageCdnUploadService);
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -339,7 +341,7 @@ export class Promociones {
         createdAt: asText(existing?.['createdAt']) || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await this.data.savePromotion(record);
+      await this.promotionsService.savePromotion(record);
       this.form.id = String(record['id']);
       this.editing.set(false);
       this.notice.set('Promoción guardada correctamente.');
@@ -348,12 +350,12 @@ export class Promociones {
     } finally { this.saving.set(false); }
   }
 
-  async deletePromotion(promotion: PromotionRecord): Promise<void> {
+  async confirmDeletePromotion(promotion: PromotionRecord): Promise<void> {
     if (!window.confirm('¿Eliminar la promoción "' + promotion.name + '"? Los pedidos ya registrados conservarán su descuento.')) return;
     this.error.set('');
     this.notice.set('');
     try {
-      await this.data.deletePromotion(promotion.id);
+      await this.promotionsService.deletePromotion(promotion.id);
       this.notice.set('Promoción eliminada. Los pedidos históricos mantienen su información.');
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudo eliminar la promoción.');

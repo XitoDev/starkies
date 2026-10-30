@@ -482,8 +482,8 @@ export class FirestoreBusinessRepository {
   }
 
   /**
-   * Persists internal recipe data separately from private catalog drafts and the
-   * public-safe projection. All three changes are committed atomically.
+   * Persists internal recipe data separately from metadata-only catalog drafts
+   * and the public-safe projection. recipes.image is the only product image source.
    */
   async upsertRecipeAndCatalogProjection(recordId: string, value: Record<string, unknown>, updateCatalogDraft = false): Promise<void> {
     if (!this.firebase.isConfigured) throw new Error(this.firebase.configurationMessage);
@@ -497,11 +497,13 @@ export class FirestoreBusinessRepository {
 
     const canonicalImage = typeof safeValue['image'] === 'string'
       ? String(safeValue['image']).trim()
-      : (String(safeValue['catalogImage'] ?? '').trim() || String(previousDraft['image'] ?? '').trim());
+      : String(existing.data()?.['image'] ?? '').trim();
     const recipeData: Record<string, unknown> = { ...safeValue, image: canonicalImage };
-    for (const key of ['description', 'catalogDescription', 'catalogImage', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
+    for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete recipeData[key];
     }
+    // Strip the retired alias on any pre-migration record touched by this save.
+    delete recipeData['catalogImage'];
     const draft = {
       id: recordId,
       description: String(updateCatalogDraft ? (safeValue['catalogDescription'] ?? safeValue['description'] ?? '') : (previousDraft['description'] ?? safeValue['catalogDescription'] ?? safeValue['description'] ?? '')),

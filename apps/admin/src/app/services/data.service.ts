@@ -338,14 +338,11 @@ export class DataService implements OnDestroy {
     const rawDrafts = this.asArray(state['catalogDrafts']);
     const draftIndex = rawDrafts.findIndex(item => this.asString(item['id']) === recipe.id);
     const existingDraft = draftIndex >= 0 ? rawDrafts[draftIndex] : {};
-    // Prefer an uploaded/current products/ URL. Until migration runs, preserve an
-    // existing catalog photo over an older recipe-only URL; new writes still store one image.
-    const canonicalImage = this.resolveProductImage(
-      recipe.image,
-      existing['image'],
-      existing['catalogImage'],
-      existingDraft['image'],
-    );
+    // recipes.image is the only product image source. Preserve it when an edit
+    // does not include an image field; an explicit empty string clears the image.
+    const canonicalImage = typeof recipe.image === 'string'
+      ? recipe.image.trim()
+      : this.asString(existing['image']);
     const savedRecord: RawRecord = {
       ...existing,
       ...recipe,
@@ -356,8 +353,8 @@ export class DataService implements OnDestroy {
       })),
       items: flattenedItems,
     };
-    delete savedRecord['catalogImage'];
     const internalRecord: RawRecord = { ...savedRecord };
+    delete internalRecord['catalogImage'];
     for (const key of ['description', 'catalogDescription', 'catalogLabel', 'catalogLabelColor', 'catalogVisible']) {
       delete internalRecord[key];
     }
@@ -419,13 +416,11 @@ export class DataService implements OnDestroy {
     const existingRecipe = rawRecipes[recipeIndex];
     const updatedRecipe: RawRecord = {
       ...existingRecipe,
-      image: this.resolveProductImage(existingRecipe['image'], existingRecipe['image'], existingRecipe['catalogImage'], currentDraft['image']),
       catalogVisible: visible,
       catalogDescription: this.asString(currentDraft['description']),
       catalogLabel: this.asString(currentDraft['label']),
       catalogLabelColor: this.asString(currentDraft['labelColor'], 'Morado'),
     };
-    delete updatedRecipe['catalogImage'];
     const { image: _legacyDraftImage, ...draftMetadata } = currentDraft;
     const updatedDraft = { ...draftMetadata, id: recipeId, visible };
     const nextDrafts = [...drafts];
@@ -825,30 +820,36 @@ export class DataService implements OnDestroy {
     this.rawState.set(nextState);
   }
 
-  async savePromotion(promotion: RawRecord): Promise<void> {
+  /** Generic optimistic persistence for small root-collection records. */
+  async upsertCollectionRecord(collectionKey: string, recordId: string, value: RawRecord): Promise<void> {
     const state = this.rawState();
+    const normalizedId = recordId.trim();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
-    const promotionId = this.asString(promotion['id']);
-    if (!promotionId) throw new Error('La promoción no tiene un identificador válido.');
-    const promotions = this.asArray(state['promotions']);
-    const index = promotions.findIndex(item => this.asString(item['id']) === promotionId);
-    const existing = index >= 0 ? promotions[index] : {};
-    const savedRecord: RawRecord = { ...existing, ...promotion, id: promotionId };
-    const nextPromotions = [...promotions];
-    if (index >= 0) nextPromotions[index] = savedRecord;
-    else nextPromotions.push(savedRecord);
-    const nextState = { ...state, promotions: nextPromotions };
-    await this.applyOptimisticState(state, nextState, () =>
-      this.repository.upsertCollectionRecord('promotions', promotionId, savedRecord));
+    if (!collectionKey.trim() || !normalizedId) throw new Error('El registro necesita una colección y un identificador válidos.');
+    const records = this.asArray(state[collectionKey]);
+    const index = records.findIndex(item => this.asString(item['id']) === normalizedId);
+    const existing = index >= 0 ? records[index] : {};
+    const savedRecord: RawRecord = { ...existing, ...value, id: normalizedId };
+    const nextRecords = [...records];
+    if (index >= 0) nextRecords[index] = savedRecord;
+    else nextRecords.push(savedRecord);
+    await this.applyOptimisticState(state, { ...state, [collectionKey]: nextRecords }, () =>
+      this.repository.upsertCollectionRecord(collectionKey, normalizedId, savedRecord));
   }
 
-  async deletePromotion(promotionId: string): Promise<void> {
+  /** Generic optimistic deletion for small root-collection records. */
+  async deleteCollectionRecord(collectionKey: string, recordId: string): Promise<void> {
     const state = this.rawState();
+    const normalizedId = recordId.trim();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
-    const nextPromotions = this.asArray(state['promotions']).filter(item => this.asString(item['id']) !== promotionId);
-    const nextState = { ...state, promotions: nextPromotions };
-    await this.applyOptimisticState(state, nextState, () =>
-      this.repository.deleteCollectionRecord('promotions', promotionId));
+    if (!collectionKey.trim() || !normalizedId) throw new Error('El registro necesita una colección y un identificador válidos.');
+    const records = this.asArray(state[collectionKey]);
+    if (!records.some(item => this.asString(item['id']) === normalizedId)) {
+      throw new Error('No se encontró el registro que intentas eliminar.');
+    }
+    const nextRecords = records.filter(item => this.asString(item['id']) !== normalizedId);
+    await this.applyOptimisticState(state, { ...state, [collectionKey]: nextRecords }, () =>
+      this.repository.deleteCollectionRecord(collectionKey, normalizedId));
   }
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -991,9 +992,7 @@ export class DataService implements OnDestroy {
           ingredients: section.ingredients,
         }));
 
-      const recipeImage = this.asOptionalString(item['image']);
-      const catalogImage = this.asOptionalString(draft['image']) || this.asOptionalString(item['catalogImage']);
-      const productImage = this.isCanonicalProductImage(recipeImage) ? recipeImage : catalogImage || recipeImage;
+      const productImage = this.asOptionalString(item['image']);
 
       return {
         id: this.asString(item['id']),
@@ -1137,18 +1136,6 @@ export class DataService implements OnDestroy {
 
   private asString(value: unknown, fallback = ''): string {
     return typeof value === 'string' ? value : value == null ? fallback : String(value);
-  }
-
-  private isCanonicalProductImage(value: unknown): boolean {
-    const image = this.asString(value);
-    return image.includes('/public/images/products/') || image.includes('/images/products/');
-  }
-
-  private resolveProductImage(requested: unknown, existing: unknown, catalogImage: unknown, draftImage: unknown): string {
-    const requestedImage = this.asString(requested).trim();
-    if (typeof requested === 'string' && !requestedImage) return '';
-    if (this.isCanonicalProductImage(requestedImage)) return requestedImage;
-    return this.asString(draftImage) || this.asString(catalogImage) || this.asString(existing) || requestedImage;
   }
 
   private normalizePhone(value: string): string { return value.replace(/\D/g, '').replace(/^593/, '0'); }

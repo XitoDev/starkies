@@ -20,7 +20,7 @@ Los archivos actuales se identifican con el ID del producto. Cuando existe un su
 | `93492b6c-f402-4ca3-9ccd-9dfbd957c40a` | `products/93492b6c-f402-4ca3-9ccd-9dfbd957c40a-55f6444e-79a8-4dcb-b5a0-78dfd3cf18be.png` |
 | `99e32e0c-61fb-41b1-8018-fa18ef655750` | `products/99e32e0c-61fb-41b1-8018-fa18ef655750.png` |
 | `e9005152-d579-444f-905f-a06a5ad3d74b` | `products/e9005152-d579-444f-905f-a06a5ad3d74b.jpg` |
-| `f126ae46-9eee-4ac2-8cff-d2f9543d708e9` | `products/f126ae46-9eee-4ac2-8cff-d2f9543d708e9.png` |
+| `f126ae46-9eee-4ac2-8cff-d2f954d708e9` | `products/f126ae46-9eee-4ac2-8cff-d2f954d708e9.png` |
 
 El mapeo operativo está en `image-map.json`. Las referencias heredadas `/api/recipe-image?id=...` se resuelven temporalmente mediante `libs/shared/src/lib/recipe-image-map.ts`, apuntando a estos mismos archivos.
 
@@ -42,4 +42,4 @@ El comando anterior solo muestra un resumen (*dry run*). Para aplicar los cambio
 npm run migrate:product-images -- --apply
 ```
 
-Configura `FIREBASE_SERVICE_ACCOUNT_JSON` con la cuenta de servicio del proyecto `starkies`. El script sincroniza `recipes.image` y `publicCatalog.image`, elimina las referencias duplicadas heredadas (`recipes.catalogImage` y `catalogDrafts.image`) cuando encuentra una imagen canónica y no elimina archivos ni documentos.
+Configura `FIREBASE_SERVICE_ACCOUNT_JSON` con la cuenta de servicio del proyecto `starkies`. La prioridad es: mapa `product:<id>` (archivo actual de `products/`), imagen del borrador de catálogo, imagen de catálogo heredada en Recetas, imagen publicada en `publicCatalog` y, solo si no existe ninguna imagen de catálogo, `recipes.image`. El *dry run* muestra conflictos y referencias sin resolver. Con `--apply`, el script sincroniza `recipes.image` y `publicCatalog.image`, elimina `recipes.catalogImage`, elimina `catalogDrafts.image` y cualquier `catalogImage` residual de esas colecciones. Si hay referencias de catálogo que no puede resolver, cancela toda la escritura; no borra archivos ni documentos.
