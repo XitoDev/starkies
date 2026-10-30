@@ -133,7 +133,7 @@ function getFirebaseAdmin() {
 }
 
 async function authenticateAdmin(req: ApiRequest, auth: ReturnType<typeof getAuth>, db: ReturnType<typeof getFirestore>) {
-  const token = first(req.headers['authorization'])?.replace(/^Bearer\\s+/i, '');
+  const token = first(req.headers['authorization'])?.replace(/^Bearer\s+/i, '');
   if (!token) throw new HttpError(401, 'Inicia sesión para administrar imágenes.');
   const decoded = await auth.verifyIdToken(token);
   const adminDoc = await db.doc('adminUsers/' + decoded.uid).get();
