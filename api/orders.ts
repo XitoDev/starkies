@@ -187,7 +187,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
       if (promotionRef) {
         if (!promotionSnapshot?.exists) throw new HttpError(409, 'La promoción cambió. Actualiza el catálogo e inténtalo nuevamente.');
-        const currentPromotion = { ...(promotionSnapshot.data() ?? {}), id: promotionRef.id };
+        const currentPromotion: Record<string, unknown> = { ...(promotionSnapshot.data() ?? {}), id: promotionRef.id };
         if (!isPromotionActive(currentPromotion)) throw new HttpError(400, 'Esta promoción ya no está vigente o alcanzó su límite de usos.');
         const currentCalculation = calculatePromotionDiscount(currentPromotion, toPromotionBoxes(payload.boxes, catalog));
         if (currentCalculation.discountAmount <= 0 || Math.abs(currentCalculation.discountAmount - order.discount) > 0.01) {

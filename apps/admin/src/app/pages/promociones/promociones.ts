@@ -1,5 +1,4 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +19,7 @@ interface PromotionRecord extends Record<string, unknown> {
   bannerImage: string;
   showInCatalog: boolean;
   usageCount: number;
+  createdAt?: string;
   mechanic: Record<string, unknown>;
 }
 interface PromotionForm {
@@ -44,7 +44,7 @@ function normalize(value: string): string {
 
 @Component({
   selector: 'app-promociones',
-  imports: [CurrencyPipe, FormsModule, MatButtonModule, MatIconModule],
+  imports: [FormsModule, MatButtonModule, MatIconModule],
   template: `
     <main class="promotions-page">
       <header class="page-heading">
@@ -171,8 +171,8 @@ export class Promociones {
     const raw = this.data.rawState()?.['promotions'];
     return (Array.isArray(raw) ? raw : [])
       .filter((value): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value))
-      .map(value => ({ ...value, id: asText(value['id']), name: asText(value['name']), title: asText(value['title']), description: asText(value['description']), code: asText(value['code']), status: (asText(value['status']).toUpperCase() || 'DRAFT') as PromotionStatus, startsAt: asText(value['startsAt']), endsAt: asText(value['endsAt']), bannerImage: asText(value['bannerImage']), showInCatalog: value['showInCatalog'] !== false, usageCount: asNumber(value['usageCount']), mechanic: asRecord(value['mechanic']) }))
-      .sort((a,b) => asText(b['createdAt']).localeCompare(asText(a['createdAt'])));
+      .map((value): PromotionRecord => ({ ...value, id: asText(value['id']), name: asText(value['name']), title: asText(value['title']), description: asText(value['description']), code: asText(value['code']), status: (asText(value['status']).toUpperCase() || 'DRAFT') as PromotionStatus, startsAt: asText(value['startsAt']), endsAt: asText(value['endsAt']), bannerImage: asText(value['bannerImage']), showInCatalog: value['showInCatalog'] !== false, usageCount: asNumber(value['usageCount']), createdAt: asText(value['createdAt']), mechanic: asRecord(value['mechanic']) }))
+      .sort((a,b) => asText(b.createdAt).localeCompare(asText(a.createdAt)));
   });
   form: PromotionForm = this.emptyForm();
 
