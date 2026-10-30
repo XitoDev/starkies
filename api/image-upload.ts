@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { fetchLegacyImage } from '../scripts/lib/legacy-image-source.mjs';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -17,8 +18,6 @@ interface ApiRequest { method?: string; headers: Record<string, HeaderValue>; bo
 interface ApiResponse { status(code: number): ApiResponse; setHeader(name: string, value: string): void; json(body: unknown): void; }
 type UploadKind = 'product' | 'promotion';
 const MAX_WEBP_BYTES = 3 * 1024 * 1024;
-const MAX_LEGACY_IMAGE_BYTES = 12 * 1024 * 1024;
-const LEGACY_IMAGE_ORIGIN = 'https://starkies-admin.milkyflame1.chatgpt.site';
 const ALLOWED_ORIGINS = new Set(['https://starkies.vercel.app', 'https://admin.starkies.lat']);
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
@@ -109,69 +108,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (status === 500) console.error('Image upload endpoint failed:', error);
     res.status(status).json({ message: error instanceof Error ? error.message : 'No se pudo publicar la imagen en Cloudflare R2.' });
   }
-}
-
-async function fetchLegacyImage(sourceUrl: string): Promise<{ bytes: Buffer; contentType: string }> {
-  let url: URL;
-  try {
-    url = new URL(sourceUrl);
-  } catch {
-    throw new HttpError(400, 'La dirección de la imagen heredada no es válida.');
-  }
-
-  if (url.origin !== LEGACY_IMAGE_ORIGIN || url.pathname !== '/api/recipe-image' || !url.searchParams.get('id')) {
-    throw new HttpError(403, 'Solo se permite recuperar imágenes del catálogo heredado de StarKies.');
-  }
-
-  const response = await fetch(url, {
-    method: 'GET',
-    redirect: 'manual',
-    signal: AbortSignal.timeout(20000),
-    headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg' },
-  });
-
-  if (response.status >= 300 && response.status < 400) {
-    throw new HttpError(502, 'El servidor heredado redirigió la imagen. No se siguió la redirección por seguridad.');
-  }
-  if (!response.ok) {
-    throw new HttpError(502, 'El servidor heredado respondió HTTP ' + response.status + ' al recuperar la imagen.');
-  }
-
-  const declaredLength = Number(response.headers.get('content-length') ?? 0);
-  if (declaredLength > MAX_LEGACY_IMAGE_BYTES) {
-    throw new HttpError(413, 'La imagen heredada supera el límite de 12 MB.');
-  }
-
-  const reader = response.body?.getReader();
-  if (!reader) throw new HttpError(502, 'El servidor heredado devolvió una respuesta vacía.');
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      totalBytes += value.byteLength;
-      if (totalBytes > MAX_LEGACY_IMAGE_BYTES) {
-        await reader.cancel();
-        throw new HttpError(413, 'La imagen heredada supera el límite de 12 MB.');
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  const bytes = Buffer.concat(chunks.map(chunk => Buffer.from(chunk)));
-  const contentType = detectImageContentType(bytes);
-  if (!contentType) throw new HttpError(415, 'El servidor heredado no devolvió una imagen JPG, PNG o WebP válida.');
-  return { bytes, contentType };
-}
-
-function detectImageContentType(bytes: Buffer): string | null {
-  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
-  if (bytes.length >= 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
-  if (bytes.length >= 12 && bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
-  return null;
 }
 
 async function verifyR2Connection(): Promise<void> {
