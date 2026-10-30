@@ -24,7 +24,12 @@ const app = getApps().find(candidate => candidate.name === appName) ?? initializ
   }),
 }, appName);
 const db = getFirestore(app);
-const config = getR2Config();
+const r2AuditEnv = {
+  ...process.env,
+  R2_ACCESS_KEY_ID: process.env['R2_AUDIT_ACCESS_KEY_ID'] || process.env['R2_ACCESS_KEY_ID'],
+  R2_SECRET_ACCESS_KEY: process.env['R2_AUDIT_SECRET_ACCESS_KEY'] || process.env['R2_SECRET_ACCESS_KEY'],
+};
+const config = getR2Config(r2AuditEnv);
 
 const [recipesSnapshot, publicSnapshot, promotionsSnapshot, draftsSnapshot, assetsSnapshot] = await Promise.all([
   db.collection('recipes').get(),
@@ -102,7 +107,7 @@ for (const [hash, references] of expected) {
   const key = imageObjectKey(hash);
   if (text(asset['key']) !== key) fail('La clave R2 de imageAssets/' + hash + ' no es la esperada.');
   try {
-    const response = await r2Request('HEAD', key, {}, process.env);
+    const response = await r2Request('HEAD', key, {}, r2AuditEnv);
     if (!response.ok) fail('El objeto R2 no existe o no es accesible: ' + key);
   } catch (error) {
     fail('No se pudo comprobar el objeto R2 ' + key + ': ' + (error instanceof Error ? error.message : String(error)));
@@ -123,7 +128,7 @@ const report = {
   status: failures.length ? 'blocked' : 'verified',
   scanned: {
     recipes: recipesSnapshot.size,
-    publicCatalog: publicSnapshot.size - (publicProducts.has('catalog-settings') ? 1 : 0),
+    publicCatalog: publicSnapshot.size - (publicSnapshot.docs.some(document => document.id === 'catalog-settings') ? 1 : 0),
     promotions: promotionsSnapshot.size,
     catalogDrafts: draftsSnapshot.size,
     indexedAssets: assetsSnapshot.size,
