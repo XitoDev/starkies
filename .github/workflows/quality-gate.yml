@@ -157,6 +157,8 @@ jobs:
         run: |
           rm -rf /tmp/starkies-catalog-esm
           npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm server/catalog-data.ts api/orders.ts server/public-seo.ts api/cookie-page.ts api/sitemap.ts
+          mkdir -p /tmp/starkies-catalog-esm/scripts/lib
+          cp scripts/lib/legacy-product-image-resolver.mjs /tmp/starkies-catalog-esm/scripts/lib/
           ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
           node --input-type=module -e "await import('/tmp/starkies-catalog-esm/server/catalog-data.js'); const orders = await import('/tmp/starkies-catalog-esm/api/orders.js'); const cookie = await import('/tmp/starkies-catalog-esm/api/cookie-page.js'); const sitemap = await import('/tmp/starkies-catalog-esm/api/sitemap.js'); if (typeof orders.default !== 'function' || typeof cookie.default !== 'function' || typeof sitemap.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog, order, cookie-page and sitemap API dependencies successfully.');"
 
