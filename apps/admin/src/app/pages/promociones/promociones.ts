@@ -107,7 +107,7 @@ function normalize(value: string): string {
                 </select></label>
                 <label>Producto participante<select [(ngModel)]="form.productId" name="productId">
                   <option value="">Todos los productos</option>
-                  @for (recipe of data.recipes(); track recipe.id) { <option [value]="recipe.id">{{ recipe.name }}</option> }
+                  @for (recipe of eligibleProducts(); track recipe.id) { <option [value]="recipe.id">{{ recipe.name }}</option> }
                 </select></label>
                 <label>Presentación<select [(ngModel)]="form.presentationId" name="presentationId">
                   <option value="">Todas las presentaciones</option><option value="clasicas">Solo clásicas · 10</option><option value="ny">Solo NY · 6</option><option value="mixta">Mixta · 8</option>
@@ -167,6 +167,7 @@ export class Promociones {
   readonly editing = signal(false);
   readonly notice = signal('');
   readonly error = signal('');
+  readonly eligibleProducts = computed(() => this.data.recipes().filter(recipe => !recipe.archived && recipe.catalogVisible !== false));
   readonly promotions = computed<PromotionRecord[]>(() => {
     const raw = this.data.rawState()?.['promotions'];
     return (Array.isArray(raw) ? raw : [])
@@ -180,7 +181,7 @@ export class Promociones {
 
   private async load(): Promise<void> {
     try {
-      await Promise.all([this.data.loadCollections(['promotions'], true), this.data.loadCollections(['recipes'], true)]);
+      await this.data.loadCollections(['promotions', 'recipes'], true);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'No se pudieron cargar las promociones.');
     } finally { this.loading.set(false); }
@@ -199,7 +200,7 @@ export class Promociones {
     const form = this.emptyForm();
     form.id = crypto.randomUUID();
     if (useBrownieTemplate) {
-      const brownie = this.data.recipes().find(recipe => normalize(recipe.name).includes('brownie classic'));
+      const brownie = this.eligibleProducts().find(recipe => normalize(recipe.name).includes('brownie classic'));
       form.name = 'Brownie Classic · Segunda caja 50%';
       form.title = '¡La segunda caja a mitad de precio!';
       form.description = 'Lleva una caja de Brownie Classic y disfruta la segunda con 50 % de descuento.';
