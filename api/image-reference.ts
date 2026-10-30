@@ -45,10 +45,27 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const deletionCandidates: { hash: string; key: string }[] = [];
 
     await db.runTransaction(async transaction => {
+      const recordSnapshots = kind === 'product'
+        ? await Promise.all([
+            transaction.get(db.collection('recipes').doc(recordId)),
+            transaction.get(db.collection('publicCatalog').doc(recordId)),
+          ])
+        : [await transaction.get(db.collection('promotions').doc(recordId))];
       const oldSnapshot = oldRef ? await transaction.get(oldRef) : null;
       const newSnapshot = newRef
         ? (oldRef && newAsset?.hash === oldAsset?.hash ? oldSnapshot : await transaction.get(newRef))
         : null;
+
+      const storedImageUrls = kind === 'product'
+        ? recordSnapshots.map(snapshot => stringValue(snapshot.data()?.['image'])).filter(Boolean)
+        : [stringValue(recordSnapshots[0]?.data()?.['bannerImage'])].filter(Boolean);
+      const recordExists = recordSnapshots.some(snapshot => snapshot.exists);
+      if (newImageUrl && (!recordExists || !storedImageUrls.includes(newImageUrl))) {
+        throw new HttpError(409, 'El registro todavía no apunta a la nueva imagen. No se modificaron las referencias.');
+      }
+      if (!newImageUrl && oldImageUrl && storedImageUrls.includes(oldImageUrl)) {
+        throw new HttpError(409, 'El registro todavía utiliza la imagen anterior. No se eliminará.');
+      }
 
       if (newRef && (!newSnapshot || !newSnapshot.exists)) {
         throw new HttpError(409, 'La imagen nueva no existe en el índice de Cloudflare R2. No se eliminará la anterior.');
