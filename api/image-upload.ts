@@ -29,8 +29,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const origin = first(req.headers['origin']);
     if (!origin || !ALLOWED_ORIGINS.has(origin)) throw new HttpError(403, 'Origen no autorizado.');
     const { db, auth } = getFirebaseAdmin();
-    const decoded = await authenticateAdmin(req, auth, db);
-    void decoded;
+    await authenticateAdmin(req, auth, db);
 
     const body = asRecord(req.body);
     const kind = body['kind'] as UploadKind;
