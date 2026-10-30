@@ -157,6 +157,9 @@ export class ImageMigration {
         if (this.imageUpload.isManagedUrl(job.url)) {
           this.currentTask.set(job.label);
           try {
+            if (job.kind === 'product' && job.recipe && !String(job.recipe.image ?? '').trim()) {
+              await this.data.saveRecipe({ ...job.recipe, image: job.url } as Recipe);
+            }
             await this.imageUpload.syncReference(job.kind, job.id, job.url, job.url);
             this.skipped.update(value => value + 1);
           } catch (error) {
