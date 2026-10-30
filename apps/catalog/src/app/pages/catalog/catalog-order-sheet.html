@@ -91,7 +91,7 @@
                   </section>
                 }
               }
-              @if (catalog.appliedPromotion()) {
+              @if (catalog.appliedPromotion() && catalog.promotionDiscount() > 0) {
                 <div class="promotion-discount-row">
                   <span>Descuento · {{ catalog.appliedPromotionCode() }}</span>
                   <strong>-{{ catalog.promotionDiscount() | currency:'USD' }}</strong>
