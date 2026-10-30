@@ -759,6 +759,7 @@ export class DataService implements OnDestroy {
     const itemsUnchanged = lineSignature(productLines) === lineSignature(currentProductLines);
     const currentDiscount = this.asNumber(current['discount']);
     const preservePromotion = itemsUnchanged && currentDiscount > 0;
+    const clearPromotion = !itemsUnchanged && currentDiscount > 0;
     const previousShippingFee = this.asNumber(current['shippingFee'] ?? current['deliveryFee'] ?? current['shipping'] ?? 0);
     const updatedTotal = preservePromotion
       ? Math.max(0, Math.round((this.asNumber(current['total']) - previousShippingFee + shippingFee) * 100) / 100)
@@ -776,10 +777,10 @@ export class DataService implements OnDestroy {
       status,
       shippingFee,
       total: updatedTotal,
-      discount: preservePromotion ? currentDiscount : 0,
-      promotion: preservePromotion ? current['promotion'] ?? null : null,
-      promotionCode: preservePromotion ? current['promotionCode'] ?? '' : '',
-      ...(preservePromotion ? {} : { boxes: [] }),
+      discount: preservePromotion ? currentDiscount : clearPromotion ? 0 : currentDiscount,
+      promotion: clearPromotion ? null : current['promotion'] ?? null,
+      promotionCode: clearPromotion ? '' : current['promotionCode'] ?? '',
+      ...(clearPromotion ? { boxes: [] } : {}),
       isPaid,
       paymentStatus: isPaid ? 'PAID' : 'PENDING',
       paymentMethod,
