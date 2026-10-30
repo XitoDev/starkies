@@ -19,7 +19,6 @@
     <section class="promotions-mobile" aria-labelledby="promotions-mobile-title">
       <div class="promotions-mobile-heading">
         <h2 id="promotions-mobile-title">Promociones</h2>
-        <p>Descubre nuestras ofertas sin interrumpir tu compra.</p>
       </div>
       <div class="mobile-promotion-list">
         @for (promotion of visiblePromotions(); track promotion.id) {
@@ -114,13 +113,12 @@
       <aside class="promotions-sidebar" aria-labelledby="promotions-sidebar-title">
         <div class="promotions-sidebar-heading">
           <h2 id="promotions-sidebar-title">Promociones</h2>
-          <p>Ofertas especiales para aprovechar mientras eliges tus galletas.</p>
         </div>
         <div class="promotion-banner-list">
           @for (promotion of visiblePromotions(); track promotion.id) {
             <button class="promotion-banner" type="button" (click)="activatePromotion(promotion)" [attr.aria-label]="'Aprovechar promoción: ' + promotion.title + '. Código ' + promotion.code">
               <img [src]="promotion.bannerImage" [alt]="promotion.title" loading="lazy">
-              <span class="promotion-banner-action">Quiero aprovecharla <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></span>
+              <span class="promotion-banner-action">¡LA QUIERO! <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></span>
             </button>
           }
         </div>
@@ -139,7 +137,7 @@
       <div class="promotion-details-scroll">
         <img class="promotion-details-image" [src]="promotion.bannerImage" [alt]="promotion.title" fetchpriority="high">
         <div class="promotion-details-footer">
-          <button matButton="elevated" type="button" class="promotion-details-activate" (click)="activatePromotionFromDetails(promotion)">Quiero aprovecharla</button>
+          <button matButton="elevated" type="button" class="promotion-details-activate" (click)="activatePromotionFromDetails(promotion)">¡LA QUIERO!</button>
         </div>
       </div>
     </section>

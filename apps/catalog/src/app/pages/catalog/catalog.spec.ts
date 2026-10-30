@@ -87,6 +87,9 @@ describe('Catalog', () => {
     const promotionHeadings = [...fixture.nativeElement.querySelectorAll('.promotions-mobile-heading h2, .promotions-sidebar-heading h2') as NodeListOf<HTMLElement>]
       .map(heading => heading.textContent?.trim());
     expect(promotionHeadings).toEqual(['Promociones', 'Promociones']);
+    expect(fixture.nativeElement.querySelector('.promotions-mobile-heading p')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.promotions-sidebar-heading p')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.promotion-banner-action')?.textContent).toContain('¡LA QUIERO!');
   });
 
   it('opens the complete banner in the mobile detail sheet and activates the promotion from its action', () => {
@@ -101,6 +104,7 @@ describe('Catalog', () => {
     expect(dialog).toBeTruthy();
     expect(dialog?.querySelector('.promotion-details-header')?.textContent).toContain('Promoción');
     expect(dialog?.querySelector('.promotion-details-header')?.textContent).not.toContain('vigente');
+    expect(dialog?.querySelector('.promotion-details-activate')?.textContent).toContain('¡LA QUIERO!');
     expect((dialog?.querySelector('.promotion-details-image') as HTMLImageElement).src).toBe(TEST_PROMOTION.bannerImage);
 
     (dialog?.querySelector('.promotion-details-activate') as HTMLButtonElement).click();

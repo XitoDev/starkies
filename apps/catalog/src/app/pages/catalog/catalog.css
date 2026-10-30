@@ -18,7 +18,6 @@
 :host .promotions-mobile { display:none; width:100%; max-width:900px; margin:0 auto; padding:20px 5% 8px; }
 :host .promotions-mobile-heading { margin:0 0 12px; }
 :host .promotions-mobile-heading h2 { margin:0; color:#584755; font-size:18px; font-weight:700; }
-:host .promotions-mobile-heading p { margin:4px 0 0; color:#857982; font-size:12px; line-height:1.5; }
 :host .mobile-promotion-list { display:grid; gap:10px; }
 :host .mobile-promotion-card { display:flex; align-items:center; gap:13px; width:100%; min-width:0; padding:10px; border:1px solid var(--line); border-radius:13px; background:#fff; color:var(--ink); text-align:left; cursor:pointer; }
 :host .mobile-promotion-card img { display:block; flex:0 0 76px; width:76px; height:92px; border-radius:8px; background:#fbf8f5; object-fit:contain; }
@@ -33,7 +32,6 @@
 :host .promotions-sidebar { position:sticky; top:88px; align-self:start; justify-self:end; width:100%; max-width:400px; min-width:0; }
 :host .promotions-sidebar-heading { margin:0 0 14px; }
 :host .promotions-sidebar-heading h2 { margin:0; color:#584755; font-size:18px; font-weight:700; }
-:host .promotions-sidebar-heading p { margin:5px 0 0; color:#857982; font-size:12px; line-height:1.5; }
 :host .promotion-banner-list { display:flex; flex-direction:column; gap:16px; }
 :host .promotion-banner { display:block; width:100%; min-width:0; overflow:hidden; padding:0; border:1px solid var(--line); border-radius:14px; background:#fff; color:var(--plum); text-align:left; cursor:pointer; box-shadow:0 4px 18px rgb(38 31 41 / 5%); }
 :host .promotion-banner img { display:block; width:100%; height:auto; object-fit:contain; }
