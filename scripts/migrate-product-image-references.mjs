@@ -14,7 +14,7 @@ async function loadProductImages(mapEntries) {
     const entry = asRecord(rawValue);
     const path = text(entry.path);
     const url = text(entry.url);
-    if (!/^public\\/images\\/products\\/[^/]+$/.test(path) || !isProductUrl(url)) {
+    if (!path.startsWith('public/images/products/') || path.slice('public/images/products/'.length).includes('/') || !isProductUrl(url)) {
       throw new Error('La entrada ' + key + ' no apunta a un archivo válido de products/.');
     }
     try {
