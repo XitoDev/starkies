@@ -7,6 +7,7 @@ import {
   imagePublicUrl,
   isWebpBuffer,
   parseManagedImageUrl,
+  r2Request,
   sha256Hex,
 } from './r2-storage.mjs';
 
@@ -41,19 +42,47 @@ test('builds public URLs and resolves only managed image URLs', () => {
   assert.equal(parseManagedImageUrl('https://images.example.test/images/not-a-hash.webp', config), null);
 });
 
-test('signs an R2 PUT request using the S3-compatible endpoint and immutable cache headers', () => {
+test('signs PUT requests with Cloudflare-documented aws4fetch S3 settings', async () => {
   const config = getR2Config(env);
-  const signed = createR2Authorization({
+  const payload = Buffer.from('RIFF0000WEBP');
+  const signed = await createR2Authorization({
     method: 'PUT',
     key: imageObjectKey('b'.repeat(64)),
-    body: Buffer.from('RIFF0000WEBP'),
+    body: payload,
     contentType: 'image/webp',
     config,
     now: new Date('2026-10-30T12:00:00.000Z'),
   });
+
   assert.match(signed.url, /^https:\/\/account123\.r2\.cloudflarestorage\.com\/starkies\/images\//);
-  assert.match(signed.headers.Authorization, /^AWS4-HMAC-SHA256 Credential=access-key\/20261030\/auto\/s3\/aws4_request/);
-  assert.equal(signed.headers['Content-Type'], 'image/webp');
-  assert.equal(signed.headers['Cache-Control'], 'public, max-age=31536000, immutable');
-  assert.equal(signed.body.toString(), 'RIFF0000WEBP');
+  assert.match(signed.headers.authorization, /^AWS4-HMAC-SHA256 Credential=access-key\/20261030\/auto\/s3\/aws4_request/);
+  assert.match(signed.headers.authorization, /SignedHeaders=.*host/);
+  assert.equal(signed.headers['content-type'], 'image/webp');
+  assert.equal(signed.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.equal(signed.body.toString(), payload.toString());
+});
+
+test('sends signed requests and surfaces R2 errors without retry storms', async () => {
+  const originalFetch = globalThis.fetch;
+  let captured;
+  globalThis.fetch = async (input, init) => {
+    captured = { input: String(input), init };
+    return new Response('ok', { status: 200 });
+  };
+
+  try {
+    const response = await r2Request('PUT', 'healthchecks/probe.txt', {
+      body: Buffer.from('probe'),
+      contentType: 'text/plain',
+      now: new Date('2026-10-30T12:00:00.000Z'),
+    }, env);
+
+    assert.equal(response.status, 200);
+    assert.match(captured.input, /^https:\/\/account123\.r2\.cloudflarestorage\.com\/starkies\/healthchecks\/probe\.txt$/);
+    assert.equal(captured.init.method, 'PUT');
+    assert.equal(captured.init.headers.authorization.startsWith('AWS4-HMAC-SHA256'), true);
+    assert.equal(Buffer.from(captured.init.body).toString(), 'probe');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
