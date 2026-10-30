@@ -108,7 +108,7 @@ export class ImageMigration {
 
   private async refresh(): Promise<void> {
     try {
-      await this.data.loadCollections(['recipes', 'promotions', 'publicCatalog'], true);
+      await this.data.loadCollections(['recipes', 'promotions', 'publicCatalog', 'catalogDrafts'], true);
     } catch (error) {
       this.failures.set([{ label: 'Carga inicial', message: error instanceof Error ? error.message : 'No se pudieron leer los registros.' }]);
     } finally {
