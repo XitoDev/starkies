@@ -4,7 +4,7 @@ import { FirebaseClientService } from '../core/firebase/firebase-client.service'
 export type CdnImageKind = 'product' | 'promotion';
 interface CdnUploadResponse { imageUrl?: string; message?: string; sha256?: string; reused?: boolean; }
 interface ImageReferenceResponse { message?: string; cleanupPending?: boolean; }
-interface R2ConnectionCheckResponse { success?: boolean; message?: string; }
+interface R2ConnectionCheckResponse { success?: boolean; write?: boolean; read?: boolean; delete?: boolean; message?: string; }
 
 const MAX_INPUT_BYTES = 12 * 1024 * 1024;
 const MAX_WEBP_BYTES = 3 * 1024 * 1024;
