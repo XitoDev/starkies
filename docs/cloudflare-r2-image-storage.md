@@ -64,3 +64,10 @@ After the migration page reports zero pending images and zero failures, and the 
 The workflow independently checks every product, public catalog projection, promotion banner and image-index reference; it also issues a signed R2 HEAD request for every referenced object. It stops if any live image is still outside R2, any reference count differs, any R2 object is missing, or any unreferenced indexed object remains.
 
 Only then does it rewrite all fetched branches and tags to remove the old dynamic image paths from Git history and force-push the rewritten refs. This invalidates old commit hashes and existing clones; collaborators must re-clone or carefully reset their local branches afterward. If GitHub branch protection prevents force-pushes, an administrator must temporarily allow the authorized rewrite token to bypass that restriction for this one operation.
+
+
+## S3 request signing
+
+The application uses the Cloudflare-documented `aws4fetch` signer instead of maintaining a custom AWS Signature Version 4 implementation. The signer is configured explicitly with service `s3` and region `auto`. Keep this dependency pinned in the root manifest and lockfile.
+
+The Admin connection check performs a temporary object PUT through the authenticated S3 API, fetches the object through `R2_PUBLIC_BASE_URL` to verify public delivery, compares the returned bytes, and deletes the temporary object. It never touches product or promotion assets or Firestore references. A failed public GET is reported separately from an S3 write/signing failure.

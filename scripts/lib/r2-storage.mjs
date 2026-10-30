@@ -1,6 +1,5 @@
-import { createHash, createHmac } from 'node:crypto';
-
-const EMPTY_SHA256 = createHash('sha256').update('').digest('hex');
+import { createHash } from 'node:crypto';
+import { AwsV4Signer } from 'aws4fetch';
 
 function requiredEnv(name, env = process.env) {
   const value = String(env[name] ?? '').trim();
@@ -54,64 +53,38 @@ export function parseManagedImageUrl(value, config = getR2Config()) {
   return { hash, key: imageObjectKey(hash) };
 }
 
-function hmac(key, value, encoding) {
-  return createHmac('sha256', key).update(value).digest(encoding);
-}
-
-function signingKey(secret, dateStamp) {
-  const dateKey = hmac('AWS4' + secret, dateStamp);
-  const regionKey = hmac(dateKey, 'auto');
-  const serviceKey = hmac(regionKey, 's3');
-  return hmac(serviceKey, 'aws4_request');
-}
-
-export function createR2Authorization({ method, key, body = Buffer.alloc(0), contentType, config, now = new Date() }) {
+export async function createR2Authorization({ method, key, body = Buffer.alloc(0), contentType, config, now = new Date() }) {
   const payload = Buffer.isBuffer(body) ? body : Buffer.from(body);
-  const payloadHash = payload.length ? sha256Hex(payload) : EMPTY_SHA256;
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-  const dateStamp = amzDate.slice(0, 8);
   const host = config.accountId + '.r2.cloudflarestorage.com';
-  const canonicalUri = '/' + encodeURIComponent(config.bucket) + '/' + String(key).split('/').map(encodeURIComponent).join('/');
-  const headers = {
-    host,
-    'x-amz-content-sha256': payloadHash,
-    'x-amz-date': amzDate,
-    ...(contentType ? { 'content-type': contentType } : {}),
-    ...(method === 'PUT' ? { 'cache-control': 'public, max-age=31536000, immutable' } : {}),
-  };
-  const names = Object.keys(headers).sort();
-  const canonicalHeaders = names.map(name => name + ':' + String(headers[name]).trim() + '\n').join('');
-  const signedHeaders = names.join(';');
-  const canonicalRequest = method.toUpperCase() + '\n' + canonicalUri + '\n\n'
-    + canonicalHeaders + signedHeaders + '\n' + payloadHash;
-  const scope = dateStamp + '/auto/s3/aws4_request';
-  const stringToSign = [
-    'AWS4-HMAC-SHA256',
-    amzDate,
-    scope,
-    sha256Hex(canonicalRequest),
-  ].join('\n');
-  const signature = createHmac('sha256', signingKey(config.secretAccessKey, dateStamp))
-    .update(stringToSign).digest('hex');
-  const authorization = 'AWS4-HMAC-SHA256 Credential=' + config.accessKeyId + '/' + scope
-    + ', SignedHeaders=' + signedHeaders + ', Signature=' + signature;
-  const requestHeaders = {
-    'x-amz-content-sha256': payloadHash,
-    'x-amz-date': amzDate,
-    Authorization: authorization,
-    ...(contentType ? { 'Content-Type': contentType } : {}),
-    ...(method === 'PUT' ? { 'Cache-Control': 'public, max-age=31536000, immutable' } : {}),
-  };
+  const url = 'https://' + host + '/' + encodeURIComponent(config.bucket) + '/'
+    + String(key).split('/').map(encodeURIComponent).join('/');
+  const headers = new Headers();
+  if (contentType) headers.set('Content-Type', contentType);
+  if (method.toUpperCase() === 'PUT') headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+  const signer = new AwsV4Signer({
+    url,
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    method: method.toUpperCase(),
+    headers,
+    body: method.toUpperCase() === 'PUT' ? payload : undefined,
+    service: 's3',
+    region: 'auto',
+    datetime: now.toISOString().replace(/[:-]|\.\d{3}/g, ''),
+    allHeaders: true,
+  });
+  const signed = await signer.sign();
   return {
-    url: 'https://' + host + canonicalUri,
-    headers: requestHeaders,
-    body: method === 'PUT' ? payload : undefined,
+    url: signed.url.toString(),
+    headers: Object.fromEntries(signed.headers.entries()),
+    body: signed.body,
   };
 }
 
 export async function r2Request(method, key, options = {}, env = process.env) {
   const config = options.config ?? getR2Config(env);
-  const request = createR2Authorization({
+  const request = await createR2Authorization({
     method,
     key,
     body: options.body ?? Buffer.alloc(0),
@@ -120,11 +93,11 @@ export async function r2Request(method, key, options = {}, env = process.env) {
     now: options.now ?? new Date(),
   });
   const response = await fetch(request.url, {
-    method,
+    method: method.toUpperCase(),
     headers: request.headers,
     ...(request.body ? { body: request.body } : {}),
   });
-  if (!response.ok && !(method === 'DELETE' && response.status === 404)) {
+  if (!response.ok && !(method.toUpperCase() === 'DELETE' && response.status === 404)) {
     const detail = (await response.text().catch(() => '')).slice(0, 500);
     throw new Error('Cloudflare R2 respondió ' + response.status + (detail ? ': ' + detail : '.'));
   }

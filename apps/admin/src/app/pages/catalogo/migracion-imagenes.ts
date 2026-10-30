@@ -155,7 +155,7 @@ export class ImageMigration {
     this.connectionStatus.set(null);
     try {
       await this.imageUpload.checkConnection();
-      this.connectionStatus.set({ success: true, message: 'R2 aceptó la escritura y eliminación de un objeto temporal. Las credenciales y los permisos S3 funcionan.' });
+      this.connectionStatus.set({ success: true, message: 'R2 aceptó la escritura, la lectura pública desde images.starkies.lat y la eliminación del objeto temporal.' });
     } catch (error) {
       this.connectionStatus.set({ success: false, message: error instanceof Error ? error.message : 'No se pudo comprobar la conexión con Cloudflare R2.' });
     } finally {
