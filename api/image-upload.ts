@@ -58,7 +58,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const imageCommit = await githubJson(
       `https://api.github.com/repos/${REPO}/contents/${filePath}`,
       'PUT',
-      { message: `images: add ${kind} image for ${recordId}`, content: bytes.toString('base64'), branch: BRANCH },
+      { message: `feat(${kind === 'recipe' ? 'recipes' : 'catalog'}): add ${kind} image for ${recordId}`, content: bytes.toString('base64'), branch: BRANCH },
     );
     const commitSha = stringValue(asRecord(imageCommit['commit'])['sha']);
     if (!/^[a-f0-9]{40}$/i.test(commitSha)) throw new Error('GitHub no devolvió el commit de la imagen.');
@@ -129,6 +129,6 @@ async function updateImageMap(entry: Record<string, unknown>): Promise<void> {
   images[key] = entry;
   const content = Buffer.from(JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), images }, null, 2) + '\n').toString('base64');
   await githubJson(`https://api.github.com/repos/${REPO}/contents/${path}`, 'PUT', {
-    message: `images: update CDN image map for ${key}`, content, branch: BRANCH, ...(sha ? { sha } : {}),
+    message: `feat(${key.startsWith('recipe:') ? 'recipes' : 'catalog'}): update CDN image map for ${key}`, content, branch: BRANCH, ...(sha ? { sha } : {}),
   });
 }
