@@ -17,6 +17,7 @@ export const routes: Routes = [
   { path: 'produccion', loadComponent: () => import('./pages/produccion/produccion').then(module => module.Produccion), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'catalogo/productos/:productId', loadComponent: () => import('./pages/catalogo/catalogo-producto-editor').then(module => module.CatalogoProductoEditor), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'catalogo/promociones', loadComponent: () => import('./pages/catalogo/promociones').then(module => module.Promociones), canActivate: [adminAuthGuard, businessDataReadyGuard] },
+  { path: 'catalogo/migracion-imagenes', loadComponent: () => import('./pages/catalogo/migracion-imagenes').then(module => module.ImageMigration), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'catalogo', loadComponent: () => import('./pages/catalogo/catalogo').then(module => module.Catalogo), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'pedidos/clientes/nuevo', loadComponent: () => import('./pages/pedidos/cliente-editor').then(module => module.ClienteEditor), canActivate: [adminAuthGuard, businessDataReadyGuard] },
   { path: 'pedidos/clientes/:customerId/editar', redirectTo: '/pedidos/clientes/:customerId', pathMatch: 'full' },

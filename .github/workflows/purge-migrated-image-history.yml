@@ -1,0 +1,81 @@
+name: Purge migrated image history
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type PURGE_MIGRATED_IMAGES only after the R2 migration has been verified
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: purge-migrated-image-history
+  cancel-in-progress: false
+
+jobs:
+  verify-and-purge:
+    name: Verify R2 migration and rewrite Git history
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'PURGE_MIGRATED_IMAGES'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout all history from main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_HISTORY_REWRITE_TOKEN || github.token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify every live Firestore image reference exists in R2
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_AUDIT_ACCESS_KEY_ID: ${{ secrets.R2_AUDIT_ACCESS_KEY_ID }}
+          R2_AUDIT_SECRET_ACCESS_KEY: ${{ secrets.R2_AUDIT_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+        run: node scripts/verify-r2-image-migration.mjs
+
+      - name: Fetch all branch and tag refs before rewriting
+        run: git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' --prune
+
+      - name: Install git-filter-repo
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes git-filter-repo
+
+      - name: Remove dynamic image files from every commit
+        run: |
+          git filter-repo --force \
+            --path-glob 'public/images/products/**' \
+            --path-glob 'public/images/promotions/**' \
+            --path-glob 'public/images/recipe-*' \
+            --path-glob 'public/images/catalog-*' \
+            --path 'public/images/image-map.json' \
+            --invert-paths
+          if git ls-files | grep -E '^public/images/(products/|promotions/|recipe-|catalog-|image-map\.json$)'; then
+            echo "::error::Dynamic image files remain in the rewritten working tree."
+            exit 1
+          fi
+
+      - name: Push rewritten branches and tags
+        env:
+          GH_HISTORY_REWRITE_TOKEN: ${{ secrets.GH_HISTORY_REWRITE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          PUSH_TOKEN="${GH_HISTORY_REWRITE_TOKEN:-$GITHUB_TOKEN}"
+          git remote remove origin || true
+          git remote add origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force --all origin
+          git push --force --tags origin

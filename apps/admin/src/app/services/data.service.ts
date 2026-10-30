@@ -1,13 +1,15 @@
-import { Injectable, OnDestroy, signal } from '@angular/core';
+import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import { DocumentData, QueryDocumentSnapshot, Unsubscribe } from 'firebase/firestore';
 import { Ingredient, Recipe, Order, OrderItem, Customer, CashMovement } from 'shared';
 import { FirestoreBusinessRepository } from '../core/firebase/firestore-business.repository';
 import { FirebaseClientService } from '../core/firebase/firebase-client.service';
+import { ImageCdnUploadService } from './image-cdn-upload.service';
 
 type RawRecord = Record<string, unknown>;
 
 @Injectable({ providedIn: 'root' })
 export class DataService implements OnDestroy {
+  private readonly imageUpload = inject(ImageCdnUploadService);
   readonly ingredients = signal<Ingredient[]>([]);
   readonly recipes = signal<Recipe[]>([]);
   readonly customers = signal<Customer[]>([]);
@@ -328,6 +330,7 @@ export class DataService implements OnDestroy {
     const rawRecipes = this.asArray(state['recipes']);
     const existingIndex = rawRecipes.findIndex(item => this.asString(item['id']) === recipe.id);
     const existing = existingIndex >= 0 ? rawRecipes[existingIndex] : {};
+    const previousImage = this.asString(existing['image']);
     const flattenedItems = recipe.sections.flatMap(section => section.ingredients.map(item => ({
       id: item.ingredientId,
       ingredientId: item.ingredientId,
@@ -378,8 +381,26 @@ export class DataService implements OnDestroy {
     const nextState = { ...state, recipes: nextRecipes, catalogDrafts: nextDrafts };
     await this.applyOptimisticState(state, nextState, () =>
       this.repository.upsertRecipeAndCatalogProjection(recipe.id, savedRecord, updateCatalogFields));
+    await this.syncManagedImageReference('product', recipe.id, previousImage, canonicalImage);
   }
 
+
+  async savePublicCatalogImage(recordId: string, imageUrl: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const records = this.asArray(state['publicCatalog']);
+    const index = records.findIndex(item => this.asString(item['id']) === recordId);
+    if (index < 0) throw new Error('No se encontró la publicación del catálogo para migrar su imagen.');
+    const existing = records[index];
+    const previousImage = this.asString(existing['image']);
+    const updatedRecord = { ...existing, image: imageUrl };
+    const nextRecords = [...records];
+    nextRecords[index] = updatedRecord;
+    const nextState = { ...state, publicCatalog: nextRecords };
+    await this.applyOptimisticState(state, nextState, () =>
+      this.repository.upsertCollectionRecord('publicCatalog', recordId, updatedRecord));
+    await this.syncManagedImageReference('product', recordId, previousImage, imageUrl);
+  }
 
   /**
    * Changes only the catalog visibility flag on the original stored recipe.
@@ -390,13 +411,29 @@ export class DataService implements OnDestroy {
     const state = this.rawState();
     if (!state) throw new Error('No hay datos de StarKies cargados.');
     const rawRecipes = this.asArray(state['recipes']);
-    if (!rawRecipes.some(recipe => this.asString(recipe['id']) === recipeId)) throw new Error('No se encontró el producto.');
+    const deletedRecipe = rawRecipes.find(recipe => this.asString(recipe['id']) === recipeId);
+    if (!deletedRecipe) throw new Error('No se encontró el producto.');
+    const previousImage = this.asString(deletedRecipe['image']);
     const nextState = {
       ...state,
       recipes: rawRecipes.filter(recipe => this.asString(recipe['id']) !== recipeId),
       catalogDrafts: this.asArray(state['catalogDrafts']).filter(draft => this.asString(draft['id']) !== recipeId),
     };
     await this.applyOptimisticState(state, nextState, () => this.repository.deleteCollectionRecord('recipes', recipeId));
+    await this.syncManagedImageReference('product', recipeId, previousImage, '');
+  }
+
+  private async syncManagedImageReference(kind: 'product' | 'promotion', recordId: string, previousImage: string, nextImage: string): Promise<void> {
+    if (!this.imageUpload.isManagedUrl(previousImage) && !this.imageUpload.isManagedUrl(nextImage)) return;
+    try {
+      await this.imageUpload.syncReference(kind, recordId, previousImage, nextImage);
+    } catch (error) {
+      // The business record has already been saved. Keep both files rather than
+      // risk deleting a still-referenced image; the scheduled orphan cleanup can
+      // retry objects whose reference count safely reaches zero.
+      console.error('Image reference synchronization deferred for ' + kind + ':' + recordId, error);
+      this.error.set('El registro se guardó, pero quedó pendiente sincronizar las referencias de su imagen. No se eliminó ningún archivo.');
+    }
   }
 
   async setRecipeCatalogVisibility(recipeId: string, visible: boolean): Promise<void> {

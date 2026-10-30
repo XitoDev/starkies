@@ -19,5 +19,11 @@
       "source": "/p/:code",
       "destination": "/api/order-short?code=:code"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/image-cleanup",
+      "schedule": "0 8 * * *"
+    }
   ]
 }

@@ -301,8 +301,8 @@ export class Recetas {
   async onPhotoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement, file = input.files?.[0];
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 3 * 1024 * 1024) {
-      this.formError.set('Elige una imagen JPG, PNG o WebP de hasta 3 MB.'); input.value = ''; return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 12 * 1024 * 1024) {
+      this.formError.set('Elige una imagen JPG, PNG o WebP de hasta 12 MB. Se convertirá automáticamente a WebP.'); input.value = ''; return;
     }
     this.selectedFile.set(file); this.imagePreview.set(URL.createObjectURL(file)); this.formError.set('');
   }
