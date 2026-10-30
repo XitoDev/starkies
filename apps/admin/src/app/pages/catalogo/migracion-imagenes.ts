@@ -63,9 +63,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 
       <footer>
         <p>La migración no elimina fotografías del repositorio Git. Primero verifica que todas las imágenes se vean correctamente en el catálogo; la limpieza del historial se realizará en una fase separada.</p>
-        <button matButton="elevated" type="button" [disabled]="loading() || running() || remaining() === 0" (click)="start()">
+        <button matButton="elevated" type="button" [disabled]="loading() || running() || productCount() + promotionCount() === 0" (click)="start()">
           <mat-icon>cloud_upload</mat-icon>
-          {{ running() ? 'Migrando…' : 'Migrar todas las imágenes pendientes' }}
+          {{ running() ? 'Procesando…' : 'Verificar y migrar imágenes' }}
         </button>
       </footer>
     </main>
@@ -129,8 +129,7 @@ export class ImageMigration {
       ...recipes.filter(recipe => Boolean(recipe.image?.trim())).map(recipe => ({ kind: 'product' as const, id: recipe.id, label: recipe.name, url: recipe.image ?? '', recipe })),
       ...promotions.filter(item => typeof item['bannerImage'] === 'string' && String(item['bannerImage']).trim()).map(item => ({ kind: 'promotion' as const, id: String(item['id'] ?? ''), label: String(item['name'] ?? item['title'] ?? item['id'] ?? 'Promoción'), url: String(item['bannerImage'] ?? ''), promotion: item })),
     ];
-    const pending = jobs.filter(job => !this.imageUpload.isManagedUrl(job.url));
-    this.total.set(pending.length);
+    this.total.set(jobs.length);
     this.completed.set(0);
     if (!pending.length) { this.finished.set(true); return; }
 
@@ -138,7 +137,15 @@ export class ImageMigration {
     try {
       for (const job of jobs) {
         if (this.imageUpload.isManagedUrl(job.url)) {
-          this.skipped.update(value => value + 1);
+          this.currentTask.set(job.label);
+          try {
+            await this.imageUpload.syncReference(job.kind, job.id, job.url, job.url);
+            this.skipped.update(value => value + 1);
+          } catch (error) {
+            this.failures.update(items => [...items, { label: job.label, message: error instanceof Error ? error.message : 'No se pudo verificar la referencia R2.' }]);
+          } finally {
+            this.completed.update(value => value + 1);
+          }
           continue;
         }
         this.currentTask.set(job.label);
@@ -156,8 +163,10 @@ export class ImageMigration {
           const imageUrl = await this.imageUpload.upload(file, job.kind, job.id);
           if (job.kind === 'product' && job.recipe) {
             await this.data.saveRecipe({ ...job.recipe, image: imageUrl } as Recipe);
+            await this.imageUpload.syncReference('product', job.id, job.url, imageUrl);
           } else if (job.kind === 'promotion' && job.promotion) {
             await this.promotionsService.savePromotion({ ...job.promotion, bannerImage: imageUrl });
+            await this.imageUpload.syncReference('promotion', job.id, job.url, imageUrl);
           }
           this.migrated.update(value => value + 1);
         } catch (error) {
