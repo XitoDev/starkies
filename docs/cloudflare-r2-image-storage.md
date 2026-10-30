@@ -4,7 +4,7 @@ StarKies stores dynamic product photos and promotion banners in Cloudflare R2. T
 
 ## Required Cloudflare setup
 
-1. Create an R2 bucket named `starkies-images` (or choose another name and use it consistently).
+1. Create an R2 bucket named `starkies` (or choose another name and use it consistently).
 2. Create an R2 API token with **Object Read & Write** permission scoped only to that bucket.
 3. Copy the account ID, access key ID and secret access key. The secret is shown only once.
 4. Enable public access for the bucket using a custom domain. Prefer a dedicated hostname such as `images.starkies.lat` managed by Cloudflare. The R2 development URL can be used temporarily for setup, but should not be treated as the production delivery domain.
@@ -17,7 +17,7 @@ Add these variables to the Vercel project(s) that serve the Admin/API, for **Pro
 - `R2_ACCOUNT_ID`: Cloudflare account ID.
 - `R2_ACCESS_KEY_ID`: R2 API token access key ID.
 - `R2_SECRET_ACCESS_KEY`: R2 API token secret access key.
-- `R2_BUCKET_NAME`: `starkies-images` (or the bucket name you created).
+- `R2_BUCKET_NAME`: `starkies` (or the bucket name you created).
 - `R2_PUBLIC_BASE_URL`: public HTTPS base URL, for example `https://images.starkies.lat`.
 - `CRON_SECRET`: a long random secret used only by the scheduled orphan-image cleanup endpoint.
 
