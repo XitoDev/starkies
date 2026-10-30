@@ -26,7 +26,7 @@ test('prefers a mapped legacy image ID over the product fallback', () => {
 
 test('uses the product ID when a legacy filename ID is not mapped', () => {
   assert.equal(
-    resolveLegacyProductImage('/images/recipe-legacy-image-document.png', productId, imageFiles, cdnBaseUrl),
+    resolveLegacyProductImage('/images/recipe-11111111-1111-4111-8111-111111111111.png', productId, imageFiles, cdnBaseUrl),
     cdnBaseUrl + productId + '.png',
   );
 });
