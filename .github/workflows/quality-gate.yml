@@ -30,25 +30,43 @@ jobs:
         with:
           script: |
             let messages = [];
+            let changedFiles = [];
             if (context.eventName === 'pull_request') {
-              const commits = await github.paginate(
-                github.rest.pulls.listCommits,
-                { owner: context.repo.owner, repo: context.repo.repo, pull_number: context.payload.pull_request.number }
-              );
+              const pullRequest = { owner: context.repo.owner, repo: context.repo.repo, pull_number: context.payload.pull_request.number };
+              const [commits, files] = await Promise.all([
+                github.paginate(github.rest.pulls.listCommits, pullRequest),
+                github.paginate(github.rest.pulls.listFiles, pullRequest)
+              ]);
               messages = commits.map(commit => commit.commit.message.split('\n')[0]);
+              changedFiles = files.map(file => file.filename);
             } else {
               messages = (context.payload.commits || []).map(commit => commit.message.split('\n')[0]);
               if (context.payload.head_commit?.message) {
                 messages.push(context.payload.head_commit.message.split('\n')[0]);
               }
+              changedFiles = (context.payload.commits || []).flatMap(commit => [
+                ...(commit.added || []), ...(commit.modified || []), ...(commit.removed || [])
+              ]);
             }
+
             const combined = messages.join('\n');
-            const admin = /\(admin\)/i.test(combined);
-            const catalog = /\(catalog\)/i.test(combined);
+            const paths = [...new Set(changedFiles)];
+            const adminByScope = /\(admin\)/i.test(combined);
+            const catalogByScope = /\(catalog\)/i.test(combined);
+            const adminByPath = paths.some(path => path.startsWith('apps/admin/'));
+            const catalogByPath = paths.some(path =>
+              path.startsWith('apps/catalog/') ||
+              path.startsWith('catalog/') ||
+              path.startsWith('api/') ||
+              path.startsWith('libs/shared/')
+            );
+            const admin = adminByScope || adminByPath;
+            const catalog = catalogByScope || catalogByPath;
             core.setOutput('admin', String(admin));
             core.setOutput('catalog', String(catalog));
             core.info('Detected commit messages:\n' + messages.join('\n'));
-            core.info(`admin scope: ${admin}; catalog scope: ${catalog}`);
+            core.info('Detected changed files:\n' + paths.join('\n'));
+            core.info(`admin scope: ${admin} (scope: ${adminByScope}, paths: ${adminByPath}); catalog scope: ${catalog} (scope: ${catalogByScope}, paths: ${catalogByPath})`);
 
   admin:
     name: Admin build and tests
