@@ -40,6 +40,19 @@
 :host .optional-name-toggle { display:flex; align-items:center; min-height:40px; }
 :host .lookup-message { color:#756974; font-size:11px; line-height:1.45; }
 :host .summary { margin-top:4px; color:var(--ink); }
+:host .promotion-code-panel { display:grid; gap:9px; padding:13px; border:1px solid var(--line); border-radius:10px; background:#fffdfb; }
+:host .promotion-code-panel>label { color:#5b5059; font-size:12px; font-weight:700; }
+:host .promotion-code-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+:host .promotion-code-controls input { min-width:0; min-height:42px; padding:0 11px; border:1px solid #d7cbd2; border-radius:8px; font:inherit; font-size:14px; text-transform:uppercase; }
+:host .promotion-code-controls button { min-height:42px; padding:0 13px; border:1px solid #cbb9c4; border-radius:8px; color:var(--plum); font-size:12px; font-weight:700; }
+:host .promotion-feedback { margin:0; color:#756974; font-size:11px; line-height:1.45; }
+:host .applied-promotion { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:9px; border-top:1px solid var(--line); }
+:host .applied-promotion span { display:grid; gap:3px; min-width:0; }
+:host .applied-promotion strong { color:#604a59; font-size:12px; }
+:host .applied-promotion small { color:#857982; font-size:10px; }
+:host .applied-promotion button { flex:0 0 auto; color:#8b6577; font-size:11px; }
+:host .promotion-discount-row { display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid var(--line); color:#55775f; font-size:13px; }
+:host .promotion-discount-row strong { font-variant-numeric:tabular-nums; }
 :host .empty-cart-message { margin:0; padding:12px 0; color:#857982; font-size:14px; line-height:1.6; }
 :host .summary h3 { margin:0 0 8px; color:#604a59; font:400 22px 'Shrikhand',Georgia,serif; }
 :host .review-intro { margin:0 0 12px; color:#756974; font-size:14px; line-height:1.6; }

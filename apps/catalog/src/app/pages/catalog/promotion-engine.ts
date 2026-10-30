@@ -50,10 +50,10 @@ function discountForAmount(amount: number, mechanic: PromotionMechanic): number 
 
 /** Pure promotion calculation shared by the public cart and the order API. */
 export function calculatePromotionDiscount(
-  promotion: PromotionRecord | { mechanic?: PromotionMechanic },
+  promotion: Record<string, unknown> | { mechanic?: PromotionMechanic },
   boxes: PromotionCartBox[],
 ): PromotionCalculation {
-  const mechanic = promotion.mechanic;
+  const mechanic = (promotion as { mechanic?: PromotionMechanic }).mechanic;
   if (!mechanic || !Array.isArray(boxes) || !boxes.length) {
     return { discountAmount: 0, eligibleBoxIndexes: [], discountedBoxIndexes: [] };
   }

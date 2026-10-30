@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 type HeaderValue = string | string[] | undefined;
 interface ApiRequest { method?: string; headers: Record<string, HeaderValue>; body?: unknown; }
 interface ApiResponse { status(code: number): ApiResponse; setHeader(name: string, value: string): void; json(body: unknown): void; }
-type UploadKind = 'recipe' | 'catalog';
+type UploadKind = 'recipe' | 'catalog' | 'promotion';
 const REPO = 'XitoDev/starkies';
 const BRANCH = 'main';
 const MAX_BYTES = 3 * 1024 * 1024;
@@ -35,7 +35,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const recordId = stringValue(body['recordId']);
     const contentType = stringValue(body['contentType']);
     const base64 = stringValue(body['imageBase64']);
-    if (!['recipe', 'catalog'].includes(kind) || !/^[a-zA-Z0-9_-]{1,100}$/.test(recordId)) {
+    if (!['recipe', 'catalog', 'promotion'].includes(kind) || !/^[a-zA-Z0-9_-]{1,100}$/.test(recordId)) {
       throw new HttpError(400, 'Datos de imagen no válidos.');
     }
     const extension = contentType === 'image/jpeg' ? 'jpg'
@@ -52,7 +52,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       throw new HttpError(503, 'Falta configurar GITHUB_IMAGE_UPLOAD_TOKEN en Vercel para publicar imágenes en el CDN.');
     }
 
-    const fileName = `${kind === 'recipe' ? 'recipe' : 'catalog'}-${recordId}-${randomUUID()}.${extension}`;
+    const prefix = kind === 'recipe' ? 'recipe' : kind === 'catalog' ? 'catalog' : 'promotion';
+    const fileName = `${prefix}-${recordId}-${randomUUID()}.${extension}`;
     const filePath = 'public/images/' + fileName;
     const imageCommit = await githubJson(
       `https://api.github.com/repos/${REPO}/contents/${filePath}`,

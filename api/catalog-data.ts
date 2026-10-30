@@ -1,6 +1,8 @@
 import type { Firestore } from 'firebase-admin/firestore';
 // Keep the explicit .js specifier: Vercel runs this API as native Node ESM.
 import { BOX_PRESENTATIONS, DEFAULT_DELIVERY_ZONES, rankCatalogProducts } from '../apps/catalog/src/app/pages/catalog/catalog.data.js';
+import { isPromotionActive } from '../apps/catalog/src/app/pages/catalog/promotion-engine.js';
+import type { PromotionMechanic, PromotionMechanicType, PublicPromotion } from '../apps/catalog/src/app/pages/catalog/catalog.models.js';
 
 export interface PublicProduct {
   id: string;
@@ -18,6 +20,7 @@ export interface PublicCatalog {
   products: PublicProduct[];
   zones: PublicDeliveryZone[];
   presentations: typeof BOX_PRESENTATIONS;
+  promotions: PublicPromotion[];
 }
 
 const LEGACY_RECIPE_IMAGE_FILES: Readonly<Record<string, string>> = {
@@ -66,13 +69,14 @@ function numberValue(value: unknown, fallback = 0): number {
 export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
   // The public endpoint reads only the explicitly published projection. Recipe
   // documents are private business data and must never be serialized to clients.
-  const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot] = await Promise.all([
+  const [publicSnapshot, settingsSnapshot, metaSnapshot, salesSnapshot, promotionsSnapshot] = await Promise.all([
     // Do not use Firestore orderBy here: documents without sortIndex are omitted
     // by that query, which made the public catalog look empty after older writes.
     db.collection('publicCatalog').get(),
     db.doc('publicCatalog/catalog-settings').get(),
     db.doc('system/stateMeta').get(),
     db.collection('productSalesStats').get(),
+    db.collection('promotions').get(),
   ]);
   if (!metaSnapshot.exists || metaSnapshot.data()?.['status'] !== 'complete') {
     throw new Error('El catálogo del negocio todavía no está disponible.');
@@ -120,10 +124,48 @@ export async function readPublicCatalog(db: Firestore): Promise<PublicCatalog> {
     const fee = numberValue(zone['fee'], Number.NaN);
     return id && name && Number.isFinite(fee) && fee >= 0 ? [{ id, name, fee }] : [];
   });
+  const promotions: PublicPromotion[] = promotionsSnapshot.docs.flatMap(document => {
+    const item = asRecord(document.data());
+    if (!isPromotionActive(item)) return [];
+    const mechanic = asRecord(item['mechanic']);
+    const type = stringValue(mechanic['type']);
+    if (!['buy_x_get_y_discount', 'percentage', 'fixed_amount', 'minimum_subtotal'].includes(type)) return [];
+    const code = stringValue(item['code']).toLocaleUpperCase('es');
+    const title = stringValue(item['title']);
+    const discountValue = numberValue(mechanic['discountValue'], Number.NaN);
+    if (!code || !title || !Number.isFinite(discountValue) || discountValue <= 0) return [];
+    const productIds = Array.isArray(mechanic['productIds'])
+      ? mechanic['productIds'].filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+      : [];
+    const discountType = stringValue(mechanic['discountType']) === 'fixed' ? 'fixed' : 'percentage';
+    const publicMechanic: PromotionMechanic = {
+      type: type as PromotionMechanicType,
+      productIds,
+      ...(stringValue(mechanic['presentationId']) ? { presentationId: stringValue(mechanic['presentationId']) } : {}),
+      buyQuantity: Math.max(1, Math.floor(numberValue(mechanic['buyQuantity'], 1))),
+      rewardQuantity: Math.max(1, Math.floor(numberValue(mechanic['rewardQuantity'], 1))),
+      discountType,
+      discountValue,
+      minimumSubtotal: Math.max(0, numberValue(mechanic['minimumSubtotal'])),
+      maxApplications: Math.max(0, Math.floor(numberValue(mechanic['maxApplications']))),
+    };
+    const bannerImage = stringValue(item['bannerImage']);
+    return [{
+      id: document.id,
+      title,
+      description: stringValue(item['description']),
+      code,
+      ...(bannerImage ? { bannerImage } : {}),
+      showInCatalog: item['showInCatalog'] !== false,
+      mechanic: publicMechanic,
+    }];
+  });
+
   return {
     products: rankedProducts,
     zones: zones.length ? zones : DEFAULT_DELIVERY_ZONES,
     presentations: BOX_PRESENTATIONS,
+    promotions,
   };
 }
 
