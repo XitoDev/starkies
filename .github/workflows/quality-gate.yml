@@ -113,8 +113,10 @@ jobs:
       - name: Test legacy product image migration resolver
         run: npm run test:migrate:product-images
 
-      - name: Test Cloudflare R2 image storage helpers
-        run: node --test scripts/lib/r2-storage.test.mjs
+      - name: Test Cloudflare R2 storage and migration verifier
+        run: |
+          node --test scripts/lib/r2-storage.test.mjs
+          node --check scripts/verify-r2-image-migration.mjs
 
       - name: Build catalog with static prerendering
         run: npx ng build catalog --configuration production
