@@ -13,8 +13,7 @@ const makeRecipe = (overrides: Partial<Recipe> = {}): Recipe => ({
   category: 'Galletas clásicas',
   yield: 12,
   price: 2.5,
-  image: 'recipe-photo.webp',
-  catalogImage: 'catalog-photo.webp',
+  image: 'product-photo.webp',
   catalogVisible: true,
   sections: [],
   ...overrides,
@@ -72,7 +71,7 @@ describe('Catalogo', () => {
   it('renders a table with catalog images and keeps hidden products manageable', () => {
     recipeState.set([
       makeRecipe(),
-      makeRecipe({ id: 'cookie-2', name: 'Red velvet', catalogVisible: false, catalogImage: 'red-velvet-catalog.webp' }),
+      makeRecipe({ id: 'cookie-2', name: 'Red velvet', catalogVisible: false, image: 'red-velvet-product.webp' }),
     ]);
     fixture.detectChanges();
 
@@ -80,8 +79,8 @@ describe('Catalogo', () => {
     expect(table).toBeTruthy();
     expect(Array.from(table.querySelectorAll('thead th')).map(cell => cell.textContent?.trim()))
       .toEqual(['Imagen', 'Nombre', 'Categoría', 'Precio', 'Acciones']);
-    expect(recipeImageServiceMock.getImageUrl).toHaveBeenCalledWith('catalog-photo.webp');
-    expect(recipeImageServiceMock.getImageUrl).toHaveBeenCalledWith('red-velvet-catalog.webp');
+    expect(recipeImageServiceMock.getImageUrl).toHaveBeenCalledWith('product-photo.webp');
+    expect(recipeImageServiceMock.getImageUrl).toHaveBeenCalledWith('red-velvet-product.webp');
     expect(table.querySelectorAll('tbody tr').length).toBe(2);
     expect(table.textContent).toContain('Oculto del catálogo público');
   });
