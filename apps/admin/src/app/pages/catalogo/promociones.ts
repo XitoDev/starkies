@@ -129,7 +129,7 @@ function normalize(value: string): string {
             <section class="editor-section">
               <h3>Banner y publicación</h3>
               @if (form.bannerImage) { <img class="banner-preview" [src]="form.bannerImage" alt="Vista previa del banner promocional"> }
-              <label class="file-picker">Subir banner (JPG, PNG o WebP · máximo 3 MB)<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onBannerSelected($event)"></label>
+              <label class="file-picker">Subir banner (JPG, PNG o WebP · máximo 12 MB; se convierte a WebP)<input type="file" accept="image/jpeg,image/png,image/webp" (change)="onBannerSelected($event)"></label>
               <label class="inline-check"><input type="checkbox" [(ngModel)]="form.showInCatalog" name="showInCatalog"> Mostrar banner en el catálogo público</label>
               <div class="form-grid">
                 <label>Estado<select [(ngModel)]="form.status" name="status"><option value="DRAFT">Borrador</option><option value="ACTIVE">Activa</option><option value="PAUSED">Pausada</option></select></label>
