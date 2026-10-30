@@ -51,7 +51,7 @@
         @for(item of catalogItems();track item.id){
           <tr [class.is-hidden]="item.catalogVisible === false">
             <td class="image-cell">
-              <img [src]="getImageUrl(item.catalogImage || item.image)" [alt]="'Foto de ' + item.name" loading="lazy" (error)="onImageError($event)">
+              <img [src]="getImageUrl(item.image)" [alt]="'Foto de ' + item.name" loading="lazy" (error)="onImageError($event)">
             </td>
             <td class="name-cell">
               <strong>{{item.name}}</strong>
