@@ -29,7 +29,7 @@ export function resolveLegacyRecipeImage(imagePath: string, fallbackId?: string)
     // Keep the original path for legacy filename matching.
   }
 
-  const legacyFileMatch = pathname.match(/(?:^|\\/)(?:recipe|catalog)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[.-]|$)/i);
+  const legacyFileMatch = pathname.match(/(?:^|\/)(?:recipe|catalog)-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[.-]|$)/i);
   const isLegacyApiPath = pathname === '/api/recipe-image';
   if (!isLegacyApiPath && !legacyFileMatch) return imagePath;
 
