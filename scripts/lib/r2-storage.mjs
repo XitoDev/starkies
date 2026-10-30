@@ -12,7 +12,7 @@ export function getR2Config(env = process.env) {
   const accessKeyId = requiredEnv('R2_ACCESS_KEY_ID', env);
   const secretAccessKey = requiredEnv('R2_SECRET_ACCESS_KEY', env);
   const bucket = requiredEnv('R2_BUCKET_NAME', env);
-  const publicBaseUrl = requiredEnv('R2_PUBLIC_BASE_URL', env).replace(/\\/+$/, '');
+  const publicBaseUrl = requiredEnv('R2_PUBLIC_BASE_URL', env).replace(/\/+$/, '');
   const publicUrl = new URL(publicBaseUrl);
   if (publicUrl.protocol !== 'https:') throw new Error('R2_PUBLIC_BASE_URL debe utilizar HTTPS.');
   return { accountId, accessKeyId, secretAccessKey, bucket, publicBaseUrl, publicUrl };
@@ -35,7 +35,7 @@ export function imageObjectKey(hash) {
 }
 
 export function imagePublicUrl(publicBaseUrl, key) {
-  const base = String(publicBaseUrl).replace(/\\/+$/, '');
+  const base = String(publicBaseUrl).replace(/\/+$/, '');
   return base + '/' + String(key).split('/').map(encodeURIComponent).join('/');
 }
 
@@ -44,10 +44,10 @@ export function parseManagedImageUrl(value, config = getR2Config()) {
   let candidate;
   try { candidate = new URL(value); } catch { return null; }
   if (candidate.origin !== config.publicUrl.origin) return null;
-  const basePath = config.publicUrl.pathname.replace(/\\/+$/, '');
+  const basePath = config.publicUrl.pathname.replace(/\/+$/, '');
   if (basePath && candidate.pathname !== basePath && !candidate.pathname.startsWith(basePath + '/')) return null;
-  const relativePath = candidate.pathname.slice(basePath.length).replace(/^\\/+/, '');
-  const match = /^images\\/([a-f0-9]{64})\\.webp$/i.exec(relativePath);
+  const relativePath = candidate.pathname.slice(basePath.length).replace(/^\/+/, '');
+  const match = /^images\/([a-f0-9]{64})\\.webp$/i.exec(relativePath);
   if (!match) return null;
   const hash = match[1].toLowerCase();
   return { hash, key: imageObjectKey(hash) };
