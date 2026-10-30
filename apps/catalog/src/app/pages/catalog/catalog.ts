@@ -450,9 +450,17 @@ export class Catalog {
       return;
     }
     const mechanic = promotion.mechanic;
+    const productIds = mechanic.productIds ?? [];
+    if (productIds.length !== 1) {
+      this.promotionCodeInput = promotion.code;
+      this.appliedPromotionCode.set(promotion.code);
+      this.promotionFeedback.set('Código aplicado. Arma las cajas con los productos participantes para completar la promoción.');
+      this.persistCartDraft();
+      this.openOrderSheet();
+      return;
+    }
     const presentation = this.presentations.find(item => item.id === mechanic.presentationId) ?? this.presentations[0];
-    const productId = mechanic.productIds?.[0] ?? '';
-    const product = this.products().find(item => item.id === productId && item.stock);
+    const product = this.products().find(item => item.id === productIds[0] && item.stock);
     if (!product || !presentation) {
       this.promotionFeedback.set('No encontramos disponible el producto de esta promoción. Inténtalo más tarde.');
       return;
