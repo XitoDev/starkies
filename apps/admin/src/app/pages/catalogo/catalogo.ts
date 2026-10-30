@@ -107,6 +107,10 @@ export class Catalogo {
     catch(error){this.error.set(error instanceof Error?error.message:'No se pudieron guardar las tarifas.');}
     finally{this.saving.set(false);}
   }
+  openPromotions(): void {
+    void this.router.navigate(['/catalogo/promociones']);
+  }
+
   openProduct(item: Recipe): void {
     void this.router.navigate(['/catalogo/productos', item.id]);
   }

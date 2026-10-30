@@ -5,6 +5,10 @@
       <p class="page-subtitle">Administra los productos y su publicación en el catálogo público.</p>
     </div>
     <div class="heading-actions">
+      <button matButton="outlined" class="btn-outline" type="button" (click)="openPromotions()">
+        <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">local_offer</mat-icon>
+        Promociones
+      </button>
       <button matButton="outlined" class="btn-outline" type="button" (click)="settingsOpen.set(true)">
         <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">settings</mat-icon>
         Tarifas de entrega
