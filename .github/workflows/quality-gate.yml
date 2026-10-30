@@ -118,7 +118,7 @@ jobs:
 
       - name: Verify prerendered catalog HTML for search engines
         run: |
-          CATALOG_HTML="$(find dist/catalog -type f -name index.html -exec grep -li 'Elige el tipo de caja' {} + | head -n 1)"
+          CATALOG_HTML="$(find dist/catalog -type f -name index.html -exec grep -li 'Elige tu caja' {} + | head -n 1)"
           if [ -z "$CATALOG_HTML" ]; then
             echo "::error::No prerendered catalog page containing the expected box-selection heading was found."
             find dist/catalog -type f -name index.html -print

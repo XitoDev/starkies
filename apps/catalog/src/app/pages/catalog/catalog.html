@@ -38,7 +38,7 @@
 
   <div class="menu-layout" [class.has-promotions]="visiblePromotions().length > 0">
     <section class="menu-main" aria-labelledby="box-section-title">
-      <h1 class="box-section-title" id="box-section-title">Elige el tipo de caja</h1>
+      <h1 class="box-section-title" id="box-section-title">Elige tu caja</h1>
       <div class="box-choices" id="box-choices" role="group" aria-label="Presentaciones disponibles">
         @for (p of presentations; track p.id) {
           <button matButton="text" type="button" class="box-choice" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">

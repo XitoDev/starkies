@@ -79,7 +79,11 @@ describe('Catalog', () => {
     expect((fixture.nativeElement.querySelector('.promotion-banner img') as HTMLImageElement).src).toBe(TEST_PROMOTION.bannerImage);
     expect(fixture.nativeElement.querySelector('.menu-top')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(1);
-    expect(fixture.nativeElement.querySelector('.menu-main h1')?.textContent?.trim()).toBe('Elige el tipo de caja');
+    expect(fixture.nativeElement.querySelector('.menu-main h1')?.textContent?.trim()).toBe('Elige tu caja');
+    const mobilePromotions = fixture.nativeElement.querySelector('.promotions-mobile');
+    const menuLayout = fixture.nativeElement.querySelector('.menu-layout');
+    expect(mobilePromotions.compareDocumentPosition(menuLayout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.menu-main .promotions-mobile')).toBeNull();
     const promotionHeadings = [...fixture.nativeElement.querySelectorAll('.promotions-mobile-heading h2, .promotions-sidebar-heading h2') as NodeListOf<HTMLElement>]
       .map(heading => heading.textContent?.trim());
     expect(promotionHeadings).toEqual(['Promociones', 'Promociones']);
