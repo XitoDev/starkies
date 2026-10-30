@@ -45,12 +45,6 @@
 :host .promotion-banner-action mat-icon { width:18px; height:18px; font-size:18px; }
 :host .promotion-banner:focus-visible { outline:3px solid #b89cab; outline-offset:3px; }
 
-:host .promotion-details-dialog { display:flex; flex-direction:column; max-height:88dvh; color:var(--ink); background:var(--cream); }
-:host .promotion-details-header { display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; min-height:54px; padding:5px 12px 5px 18px; border-bottom:1px solid var(--line); color:var(--plum); font-size:13px; font-weight:700; letter-spacing:.2px; }
-:host .promotion-details-scroll { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-:host .promotion-details-image { display:block; width:100%; height:auto; max-height:68dvh; object-fit:contain; object-position:center; background:#fff; }
-:host .promotion-details-footer { position:sticky; bottom:0; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--cream); }
-:host .promotion-details-activate { display:flex; align-items:center; justify-content:center; width:100%; min-height:48px; padding:12px 18px; border-radius:10px; background:var(--plum); color:#fff; font-size:14px; font-weight:700; box-shadow:none; }
 
 :host .menu-main { min-width:0; }
 :host .box-section-title { margin:0 0 14px; color:#584755; font-size:18px; font-weight:700; }

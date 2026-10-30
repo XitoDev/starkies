@@ -42,7 +42,7 @@ export class Catalog {
   private readonly dialog = inject(MatDialog);
   private readonly catalogUi = inject(CatalogUiService);
   private orderSheetRef: MatDialogRef<CatalogOrderSheetComponent> | null = null;
-  private promotionDialogRef: MatDialogRef<unknown> | null = null;
+  private promotionDialogRef: MatDialogRef<{ $implicit: PublicPromotion }> | null = null;
   @ViewChild('promotionDetailsDialog') private promotionDetailsDialog!: TemplateRef<{ $implicit: PublicPromotion }>;
   private lastOpenOrderRequest = this.catalogUi.openOrderRequest();
   readonly orderFormVisible = signal(false);

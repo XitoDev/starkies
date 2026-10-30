@@ -187,6 +187,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
   .cdk-overlay-pane.promotion-details-panel { animation: none !important; }
 }
 
+
+/* Dialog template content is rendered in the CDK overlay, outside the catalog host. */
+.promotion-details-dialog { display:flex; flex-direction:column; max-height:88dvh; color:#261f29; background:#fbf8f5; }
+.promotion-details-header { display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; min-height:54px; padding:5px 12px 5px 18px; border-bottom:1px solid #e9dfe5; color:#604a59; font-size:13px; font-weight:700; letter-spacing:.2px; }
+.promotion-details-scroll { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.promotion-details-image { display:block; width:100%; height:auto; max-height:68dvh; object-fit:contain; object-position:center; background:#fff; }
+.promotion-details-footer { position:sticky; bottom:0; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid #e9dfe5; background:#fbf8f5; }
+.promotion-details-activate { display:flex; align-items:center; justify-content:center; width:100%; min-height:48px; padding:12px 18px; border:0; border-radius:10px; background:#604a59; color:#fff; font-size:14px; font-weight:700; box-shadow:none; cursor:pointer; }
+.promotion-details-activate:hover { background:#806c79; }
+
 /* Keep route transitions opacity-only. A transform on the routed page creates
    a containing block for position: fixed descendants, which breaks viewport-
    anchored UI such as the persistent catalog next-step panel on mobile. */
