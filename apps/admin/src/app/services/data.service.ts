@@ -385,6 +385,23 @@ export class DataService implements OnDestroy {
   }
 
 
+  async savePublicCatalogImage(recordId: string, imageUrl: string): Promise<void> {
+    const state = this.rawState();
+    if (!state) throw new Error('No hay datos de StarKies cargados.');
+    const records = this.asArray(state['publicCatalog']);
+    const index = records.findIndex(item => this.asString(item['id']) === recordId);
+    if (index < 0) throw new Error('No se encontró la publicación del catálogo para migrar su imagen.');
+    const existing = records[index];
+    const previousImage = this.asString(existing['image']);
+    const updatedRecord = { ...existing, image: imageUrl };
+    const nextRecords = [...records];
+    nextRecords[index] = updatedRecord;
+    const nextState = { ...state, publicCatalog: nextRecords };
+    await this.applyOptimisticState(state, nextState, () =>
+      this.repository.upsertCollectionRecord('publicCatalog', recordId, updatedRecord));
+    await this.syncManagedImageReference('product', recordId, previousImage, imageUrl);
+  }
+
   /**
    * Changes only the catalog visibility flag on the original stored recipe.
    * Avoids rebuilding the entire view model, which can contain undefined
