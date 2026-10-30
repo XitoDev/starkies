@@ -36,7 +36,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const body = asRecord(req.body);
     if (body['action'] === 'connection-check') {
       await verifyR2Connection();
-      res.status(200).json({ success: true, write: true, delete: true, message: 'Conexión con Cloudflare R2 verificada. Escritura y eliminación correctas.' });
+      res.status(200).json({ success: true, write: true, read: true, delete: true, message: 'Conexión con Cloudflare R2 verificada: escritura privada, lectura pública mediante images.starkies.lat y eliminación correctas.' });
       return;
     }
     const kind = body['kind'] as UploadKind;
@@ -105,15 +105,46 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 }
 
 async function verifyR2Connection(): Promise<void> {
+  const config = getR2Config();
   const key = 'healthchecks/' + randomUUID() + '.txt';
   const payload = Buffer.from('StarKies R2 connection check');
-  await putR2Object(key, payload, 'text/plain');
+  let uploaded = false;
+  let verificationError: unknown;
+
   try {
-    await deleteR2Object(key);
+    await putR2Object(key, payload, 'text/plain');
+    uploaded = true;
+
+    const publicUrl = imagePublicUrl(config.publicBaseUrl, key);
+    const response = await fetch(publicUrl, { headers: { 'Cache-Control': 'no-cache' } });
+    if (!response.ok) {
+      throw new Error(
+        'R2 aceptó la escritura, pero el dominio público respondió HTTP ' + response.status
+        + '. Revisa que el acceso público del bucket y el dominio images.starkies.lat estén habilitados.'
+      );
+    }
+
+    const downloaded = Buffer.from(await response.arrayBuffer());
+    if (!downloaded.equals(payload)) {
+      throw new Error('R2 permitió leer el objeto, pero el contenido recibido no coincide con el archivo de prueba.');
+    }
   } catch (error) {
-    console.error('R2 connection check uploaded its probe but could not remove it:', error);
-    throw new Error('R2 aceptó la escritura, pero falló la eliminación de la prueba: ' + (error instanceof Error ? error.message : 'error desconocido'));
+    verificationError = error;
   }
+
+  if (uploaded) {
+    try {
+      await deleteR2Object(key);
+    } catch (error) {
+      console.error('R2 connection check could not remove its temporary object:', error);
+      throw new Error(
+        'La prueba creó el objeto temporal, pero no pudo eliminarlo: '
+        + (error instanceof Error ? error.message : 'error desconocido')
+      );
+    }
+  }
+
+  if (verificationError) throw verificationError;
 }
 
 class HttpError extends Error { constructor(readonly statusCode: number, message: string) { super(message); } }
