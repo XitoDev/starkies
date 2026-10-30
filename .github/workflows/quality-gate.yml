@@ -118,14 +118,14 @@ jobs:
 
       - name: Verify prerendered catalog HTML for search engines
         run: |
-          CATALOG_HTML="$(find dist/catalog -type f -name index.html -exec grep -liE 'Elige (tu caja|tus galletas)' {} + | head -n 1)"
+          CATALOG_HTML="$(find dist/catalog -type f -name index.html -exec grep -li 'Elige el tipo de caja' {} + | head -n 1)"
           if [ -z "$CATALOG_HTML" ]; then
-            echo "::error::No prerendered catalog page containing the expected catalog heading was found."
+            echo "::error::No prerendered catalog page containing the expected box-selection heading was found."
             find dist/catalog -type f -name index.html -print
             exit 1
           fi
           grep -qi 'rel="canonical"' "$CATALOG_HTML"
-          echo "Verified canonical metadata and catalog shell in $CATALOG_HTML"
+          echo "Verified canonical metadata and box-selection heading in $CATALOG_HTML"
 
       - name: Test catalog
         run: npx ng test catalog --watch=false

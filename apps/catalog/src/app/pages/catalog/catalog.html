@@ -15,16 +15,10 @@
     </section>
   }
 
-  <section class="menu-top" aria-labelledby="menu-title">
-    <p class="eyebrow">Nuestro catálogo</p>
-    <h1 id="menu-title">Elige tus galletas</h1>
-    <p>Descubre nuestras galletas artesanales en Guayaquil, Ecuador: sabores clásicos, NY Style y opciones de chocolate. Selecciona tus favoritas, consulta los precios y arma tu caja desde el catálogo de StarKies.</p>
-  </section>
-
   @if (visiblePromotions().length) {
     <section class="promotions-mobile" aria-labelledby="promotions-mobile-title">
       <div class="promotions-mobile-heading">
-        <h2 id="promotions-mobile-title">Promociones vigentes</h2>
+        <h2 id="promotions-mobile-title">Promociones</h2>
         <p>Descubre nuestras ofertas sin interrumpir tu compra.</p>
       </div>
       <div class="mobile-promotion-list">
@@ -44,7 +38,7 @@
 
   <div class="menu-layout" [class.has-promotions]="visiblePromotions().length > 0">
     <section class="menu-main" aria-labelledby="box-section-title">
-      <h2 class="box-section-title" id="box-section-title">Elige el tipo de caja</h2>
+      <h1 class="box-section-title" id="box-section-title">Elige el tipo de caja</h1>
       <div class="box-choices" id="box-choices" role="group" aria-label="Presentaciones disponibles">
         @for (p of presentations; track p.id) {
           <button matButton="text" type="button" class="box-choice" [class.active]="p.id === selectedPresentation().id" [attr.aria-pressed]="p.id === selectedPresentation().id" (click)="selectPresentation(p)">
@@ -119,7 +113,7 @@
     @if (visiblePromotions().length) {
       <aside class="promotions-sidebar" aria-labelledby="promotions-sidebar-title">
         <div class="promotions-sidebar-heading">
-          <h2 id="promotions-sidebar-title">Promociones vigentes</h2>
+          <h2 id="promotions-sidebar-title">Promociones</h2>
           <p>Ofertas especiales para aprovechar mientras eliges tus galletas.</p>
         </div>
         <div class="promotion-banner-list">
@@ -137,7 +131,7 @@
   <ng-template #promotionDetailsDialog let-promotion>
     <section class="promotion-details-dialog" aria-label="Detalle de promoción">
       <header class="promotion-details-header">
-        <span>Promoción vigente</span>
+        <span>Promoción</span>
         <button matIconButton type="button" aria-label="Cerrar promoción" (click)="closePromotionDetails()">
           <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon>
         </button>
