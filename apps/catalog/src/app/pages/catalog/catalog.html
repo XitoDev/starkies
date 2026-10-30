@@ -4,6 +4,7 @@
       <div>
         <strong>¡Gracias! Tu pedido fue registrado.</strong>
         <p>Tu código de pedido es <b>{{ confirmation.id }}</b>. Total registrado: {{ confirmation.total | currency:'USD' }}.</p>
+        @if (confirmation.discount > 0) { <p>Descuento aplicado: {{ confirmation.discount | currency:'USD' }}.</p> }
         <p>Confirma los detalles con StarKies por WhatsApp y comparte tu ubicación exacta para coordinar la entrega.</p>
         <div class="success-actions">
           <a matButton="elevated" class="button whatsapp-fallback" [href]="confirmation.whatsappUrl" target="_blank" rel="noopener noreferrer">Abrir WhatsApp para confirmar</a>
@@ -19,6 +20,28 @@
     <h1 id="menu-title">Elige tus galletas</h1>
     <p>Descubre nuestras galletas artesanales en Guayaquil, Ecuador: sabores clásicos, NY Style y opciones de chocolate. Selecciona tus favoritas, consulta los precios y arma tu caja desde el catálogo de StarKies.</p>
   </section>
+
+  @if (visiblePromotions().length) {
+    <section class="promotions-section" aria-labelledby="promotions-title">
+      <div class="promotions-heading">
+        <h2 id="promotions-title">Promociones vigentes</h2>
+        <p>Aprovecha estas ofertas especiales antes de armar tu caja.</p>
+      </div>
+      <div class="promotion-banner-grid">
+        @for (promotion of visiblePromotions(); track promotion.id) {
+          <button class="promotion-banner" type="button" (click)="activatePromotion(promotion)" [attr.aria-label]="'Aprovechar promoción: ' + promotion.title + '. Código ' + promotion.code">
+            <img [src]="promotion.bannerImage" [alt]="promotion.title" loading="lazy">
+            <span class="promotion-banner-overlay">
+              <span class="promotion-code">{{ promotion.code }}</span>
+              <strong>{{ promotion.title }}</strong>
+              @if (promotion.description) { <span>{{ promotion.description }}</span> }
+              <b>Quiero aprovecharla</b>
+            </span>
+          </button>
+        }
+      </div>
+    </section>
+  }
 
   <div class="menu-layout">
     <section class="menu-main" aria-labelledby="box-section-title">

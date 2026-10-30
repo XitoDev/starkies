@@ -19,6 +19,20 @@
 :host .eyebrow { margin:0 0 8px; color:var(--mauve); font-size:12px; font-weight:700; letter-spacing:3px; text-transform:uppercase; }
 :host .menu-top h1 { margin:10px 0; color:#604a59; font:42px/1.15 'Shrikhand',Georgia,serif; font-weight:400; }
 :host .menu-top p:not(.eyebrow) { margin:8px 0 0; color:#665c64; font-size:14px; line-height:1.8; }
+:host .promotions-section { width:100%; max-width:1180px; margin:0 auto; padding:0 5% 8px; }
+:host .promotions-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin:0 0 14px; }
+:host .promotions-heading h2 { margin:0; color:#584755; font-size:18px; font-weight:700; }
+:host .promotions-heading p { margin:0; color:#857982; font-size:12px; line-height:1.5; }
+:host .promotion-banner-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:14px; }
+:host .promotion-banner { position:relative; display:block; width:100%; min-width:0; aspect-ratio:16/5; overflow:hidden; padding:0; border:1px solid var(--line); border-radius:14px; background:#604a59; text-align:left; cursor:pointer; }
+:host .promotion-banner img { display:block; width:100%; height:100%; object-fit:cover; }
+:host .promotion-banner::after { position:absolute; inset:0; content:""; background:linear-gradient(90deg,rgb(35 25 32 / 70%),rgb(35 25 32 / 10%) 85%); pointer-events:none; }
+:host .promotion-banner-overlay { position:absolute; z-index:1; inset:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:7px; padding:clamp(16px,3vw,30px); color:#fff; }
+:host .promotion-code { padding:5px 9px; border:1px solid rgb(255 255 255 / 55%); border-radius:999px; font-size:10px; font-weight:800; letter-spacing:1px; }
+:host .promotion-banner-overlay strong { max-width:80%; font:400 clamp(20px,3vw,30px)/1.15 'Shrikhand',Georgia,serif; }
+:host .promotion-banner-overlay>span:not(.promotion-code) { max-width:75%; font-size:12px; line-height:1.45; }
+:host .promotion-banner-overlay b { margin-top:4px; padding:8px 12px; border-radius:7px; background:#fff; color:#604a59; font-size:11px; }
+:host .promotion-banner:focus-visible { outline:3px solid #b89cab; outline-offset:3px; }
 :host .menu-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:30px; width:100%; max-width:1180px; margin:0 auto; padding:20px 5% 80px; }
 :host .menu-main { min-width:0; }
 :host .box-section-title { margin:0 0 14px; color:#584755; font-size:18px; font-weight:700; }
@@ -76,6 +90,9 @@
 }
 @media (max-width: 560px) {
   :host .menu-top h1 { font-size: 34px; }
+  :host .promotions-heading { align-items:flex-start; flex-direction:column; gap:5px; }
+  :host .promotion-banner { aspect-ratio:16/8; }
+  :host .promotion-banner-overlay>span:not(.promotion-code) { max-width:90%; font-size:11px; }
   :host .box-choices { grid-template-columns: 1fr; gap: 10px; margin-bottom: 24px; }
   :host .box-choice { min-height: 72px; padding: 13px 14px; }
   :host .category-row { align-items: flex-start; flex-direction: column; gap: 12px; }
