@@ -22,20 +22,19 @@
   </section>
 
   @if (visiblePromotions().length) {
-    <section class="promotions-section" aria-labelledby="promotions-title">
-      <div class="promotions-heading">
-        <h2 id="promotions-title">Promociones vigentes</h2>
-        <p>Aprovecha estas ofertas especiales antes de armar tu caja.</p>
+    <section class="promotions-mobile" aria-labelledby="promotions-mobile-title">
+      <div class="promotions-mobile-heading">
+        <h2 id="promotions-mobile-title">Promociones vigentes</h2>
+        <p>Descubre nuestras ofertas sin interrumpir tu compra.</p>
       </div>
-      <div class="promotion-banner-grid">
+      <div class="mobile-promotion-list">
         @for (promotion of visiblePromotions(); track promotion.id) {
-          <button class="promotion-banner" type="button" (click)="activatePromotion(promotion)" [attr.aria-label]="'Aprovechar promoción: ' + promotion.title + '. Código ' + promotion.code">
-            <img [src]="promotion.bannerImage" [alt]="promotion.title" loading="lazy">
-            <span class="promotion-banner-overlay">
-              <span class="promotion-code">{{ promotion.code }}</span>
+          <button class="mobile-promotion-card" type="button" (click)="openPromotionDetails(promotion)" [attr.aria-label]="'Ver promoción: ' + promotion.title">
+            <img [src]="promotion.bannerImage" alt="" loading="lazy">
+            <span class="mobile-promotion-copy">
               <strong>{{ promotion.title }}</strong>
-              @if (promotion.description) { <span>{{ promotion.description }}</span> }
-              <b>Quiero aprovecharla</b>
+              @if (promotion.description) { <span class="mobile-promotion-description">{{ promotion.description }}</span> }
+              <span class="mobile-promotion-link">Ver promoción <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></span>
             </span>
           </button>
         }
@@ -43,7 +42,7 @@
     </section>
   }
 
-  <div class="menu-layout">
+  <div class="menu-layout" [class.has-promotions]="visiblePromotions().length > 0">
     <section class="menu-main" aria-labelledby="box-section-title">
       <h2 class="box-section-title" id="box-section-title">Elige el tipo de caja</h2>
       <div class="box-choices" id="box-choices" role="group" aria-label="Presentaciones disponibles">
@@ -116,7 +115,41 @@
         </div>
       }
     </section>
+
+    @if (visiblePromotions().length) {
+      <aside class="promotions-sidebar" aria-labelledby="promotions-sidebar-title">
+        <div class="promotions-sidebar-heading">
+          <h2 id="promotions-sidebar-title">Promociones vigentes</h2>
+          <p>Ofertas especiales para aprovechar mientras eliges tus galletas.</p>
+        </div>
+        <div class="promotion-banner-list">
+          @for (promotion of visiblePromotions(); track promotion.id) {
+            <button class="promotion-banner" type="button" (click)="activatePromotion(promotion)" [attr.aria-label]="'Aprovechar promoción: ' + promotion.title + '. Código ' + promotion.code">
+              <img [src]="promotion.bannerImage" [alt]="promotion.title" loading="lazy">
+              <span class="promotion-banner-action">Quiero aprovecharla <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">arrow_forward</mat-icon></span>
+            </button>
+          }
+        </div>
+      </aside>
+    }
   </div>
+
+  <ng-template #promotionDetailsDialog let-promotion>
+    <section class="promotion-details-dialog" aria-label="Detalle de promoción">
+      <header class="promotion-details-header">
+        <span>Promoción vigente</span>
+        <button matIconButton type="button" aria-label="Cerrar promoción" (click)="closePromotionDetails()">
+          <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon>
+        </button>
+      </header>
+      <div class="promotion-details-scroll">
+        <img class="promotion-details-image" [src]="promotion.bannerImage" [alt]="promotion.title" fetchpriority="high">
+        <div class="promotion-details-footer">
+          <button matButton="elevated" type="button" class="promotion-details-activate" (click)="activatePromotionFromDetails(promotion)">Quiero aprovecharla</button>
+        </div>
+      </div>
+    </section>
+  </ng-template>
 
   @if (isBoxComplete()) {
     <aside class="complete-box-actions" aria-labelledby="complete-box-title" aria-live="polite">

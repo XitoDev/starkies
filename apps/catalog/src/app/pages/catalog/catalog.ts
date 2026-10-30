@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Component, computed, effect, inject, signal, PLATFORM_ID, PendingTasks } from '@angular/core';
+import { Component, computed, effect, inject, signal, PLATFORM_ID, PendingTasks, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule, NgOptimizedImage, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
@@ -42,6 +42,8 @@ export class Catalog {
   private readonly dialog = inject(MatDialog);
   private readonly catalogUi = inject(CatalogUiService);
   private orderSheetRef: MatDialogRef<CatalogOrderSheetComponent> | null = null;
+  private promotionDialogRef: MatDialogRef<unknown> | null = null;
+  @ViewChild('promotionDetailsDialog') private promotionDetailsDialog!: TemplateRef<{ $implicit: PublicPromotion }>;
   private lastOpenOrderRequest = this.catalogUi.openOrderRequest();
   readonly orderFormVisible = signal(false);
   readonly savingOrder = signal(false);
@@ -443,6 +445,34 @@ export class Catalog {
     this.promotionCodeInput = '';
     this.promotionFeedback.set('');
     this.persistCartDraft();
+  }
+  openPromotionDetails(promotion: PublicPromotion): void {
+    if (!this.promotionDetailsDialog) return;
+    this.closePromotionDetails();
+    const dialogRef = this.dialog.open(this.promotionDetailsDialog, {
+      data: promotion,
+      panelClass: 'promotion-details-panel',
+      backdropClass: 'promotion-details-backdrop',
+      width: 'min(100vw, 560px)',
+      maxWidth: '100vw',
+      maxHeight: '88dvh',
+      position: { bottom: '0px' },
+      autoFocus: false,
+      restoreFocus: true,
+    });
+    this.promotionDialogRef = dialogRef;
+    dialogRef.afterClosed().subscribe(() => {
+      if (this.promotionDialogRef === dialogRef) this.promotionDialogRef = null;
+    });
+  }
+  closePromotionDetails(): void {
+    const dialogRef = this.promotionDialogRef;
+    this.promotionDialogRef = null;
+    dialogRef?.close();
+  }
+  activatePromotionFromDetails(promotion: PublicPromotion): void {
+    this.closePromotionDetails();
+    this.activatePromotion(promotion);
   }
   activatePromotion(promotion: PublicPromotion): void {
     if (this.editingBoxIndex() !== null) {
