@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { vi } from 'vitest';
 import { Catalog } from './catalog';
 import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
@@ -31,7 +32,7 @@ describe('Catalog', () => {
 
   beforeEach(async () => {
     window.sessionStorage.removeItem('starkies.catalog.cart.v1');
-    await TestBed.configureTestingModule({ imports: [Catalog] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Catalog, NoopAnimationsModule] }).compileComponents();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ products: TEST_PRODUCTS, zones: TEST_ZONES, presentations: BOX_PRESENTATIONS }),
@@ -332,7 +333,9 @@ describe('Catalog', () => {
     expect(component.completedBoxes()).toHaveLength(1);
     expect(component.totalBoxCurrent()).toBe(1);
 
-    clearButton.click();
+    const refreshedSheet = document.body.querySelector('app-catalog-order-sheet') as HTMLElement;
+    const refreshedClearButton = refreshedSheet.querySelector('.sheet-clear-cart') as HTMLButtonElement;
+    refreshedClearButton.click();
     await fixture.whenStable();
     confirmation = document.body.querySelector('.clear-cart-confirmation-dialog') as HTMLElement;
     (confirmation.querySelector('.danger-action') as HTMLButtonElement).click();
