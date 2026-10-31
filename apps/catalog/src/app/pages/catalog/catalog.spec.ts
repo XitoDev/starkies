@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { vi } from 'vitest';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { Catalog } from './catalog';
 import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
 import { DeliveryZone, Product, PublicPromotion } from './catalog.models';
@@ -32,7 +33,7 @@ describe('Catalog', () => {
 
   beforeEach(async () => {
     window.sessionStorage.removeItem('starkies.catalog.cart.v1');
-    await TestBed.configureTestingModule({ imports: [Catalog, NoopAnimationsModule] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Catalog] }).compileComponents();
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ products: TEST_PRODUCTS, zones: TEST_ZONES, presentations: BOX_PRESENTATIONS }),
@@ -304,43 +305,29 @@ describe('Catalog', () => {
     component.closeOrderSheet();
   });
 
-  it('confirms before clearing every cart item and the saved cart draft', async () => {
+  it('asks before clearing and only clears after confirmation', async () => {
     component.promotions.set([TEST_PROMOTION]);
     for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
     component.finishBox();
     component.promotionCodeInput = 'BROWNIE50';
     component.applyPromotionCode();
     component.changeQuantity('2', 1);
-
     component.openOrderSheet();
     await fixture.whenStable();
-
     const sheet = document.body.querySelector('app-catalog-order-sheet') as HTMLElement;
     const actions = sheet.querySelector('.sheet-heading-actions') as HTMLElement;
     const clearButton = actions.querySelector('.sheet-clear-cart') as HTMLButtonElement;
     const closeButton = actions.querySelector('.sheet-close') as HTMLButtonElement;
-    expect(clearButton).toBeTruthy();
-    expect(closeButton).toBeTruthy();
     expect(actions.firstElementChild).toBe(clearButton);
     expect(actions.lastElementChild).toBe(closeButton);
-
+    const dialog = TestBed.inject(MatDialog);
+    const openSpy = vi.spyOn(dialog, 'open').mockReturnValue({ afterClosed: () => of(false) } as any);
     clearButton.click();
-    await fixture.whenStable();
-    let confirmation = document.body.querySelector('.clear-cart-confirmation-dialog') as HTMLElement;
-    expect(confirmation).toBeTruthy();
-    (confirmation.querySelector('.cancel-action') as HTMLButtonElement).click();
-    await fixture.whenStable();
+    expect(openSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'alertdialog' }));
     expect(component.completedBoxes()).toHaveLength(1);
     expect(component.totalBoxCurrent()).toBe(1);
-
-    const refreshedSheet = document.body.querySelector('app-catalog-order-sheet') as HTMLElement;
-    const refreshedClearButton = refreshedSheet.querySelector('.sheet-clear-cart') as HTMLButtonElement;
-    refreshedClearButton.click();
-    await fixture.whenStable();
-    confirmation = document.body.querySelector('.clear-cart-confirmation-dialog') as HTMLElement;
-    (confirmation.querySelector('.danger-action') as HTMLButtonElement).click();
-    await fixture.whenStable();
-
+    openSpy.mockReturnValue({ afterClosed: () => of(true) } as any);
+    component.openClearCartConfirmation();
     expect(component.completedBoxes()).toHaveLength(0);
     expect(component.currentBoxItems()).toEqual({});
     expect(component.appliedPromotionCode()).toBe('');
@@ -348,7 +335,6 @@ describe('Catalog', () => {
     expect(window.sessionStorage.getItem('starkies.catalog.cart.v1')).toBeNull();
     component.closeOrderSheet();
   });
-
   it('submits an order and clears the cart only after the API confirms it', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
