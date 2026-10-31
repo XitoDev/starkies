@@ -7,7 +7,6 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "api:dev": "npx vercel dev --listen 3000",
     "api:dev": "npx vercel dev --listen 3000"
   },
   "private": true,
