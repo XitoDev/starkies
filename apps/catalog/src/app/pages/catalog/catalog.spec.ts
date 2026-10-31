@@ -289,6 +289,63 @@ describe('Catalog', () => {
     expect(component.grandTotal()).toBeCloseTo(6, 2);
   });
 
+  it('places the discount code after the cart contents', async () => {
+    component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
+    component.openOrderSheet();
+    await fixture.whenStable();
+
+    const summary = document.body.querySelector('.cart-step') as HTMLElement;
+    const cartBox = summary.querySelector('.cart-box') as HTMLElement;
+    const promotionPanel = summary.querySelector('.promotion-code-panel') as HTMLElement;
+    expect(summary.lastElementChild).toBe(promotionPanel);
+    expect(cartBox.compareDocumentPosition(promotionPanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    component.closeOrderSheet();
+  });
+
+  it('confirms before clearing every cart item and the saved cart draft', async () => {
+    component.promotions.set([TEST_PROMOTION]);
+    for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
+    component.finishBox();
+    component.promotionCodeInput = 'BROWNIE50';
+    component.applyPromotionCode();
+    component.changeQuantity('2', 1);
+
+    component.openOrderSheet();
+    await fixture.whenStable();
+
+    const sheet = document.body.querySelector('app-catalog-order-sheet') as HTMLElement;
+    const actions = sheet.querySelector('.sheet-heading-actions') as HTMLElement;
+    const clearButton = actions.querySelector('.sheet-clear-cart') as HTMLButtonElement;
+    const closeButton = actions.querySelector('.sheet-close') as HTMLButtonElement;
+    expect(clearButton).toBeTruthy();
+    expect(closeButton).toBeTruthy();
+    expect(actions.firstElementChild).toBe(clearButton);
+    expect(actions.lastElementChild).toBe(closeButton);
+
+    clearButton.click();
+    await fixture.whenStable();
+    let confirmation = document.body.querySelector('.clear-cart-confirmation-dialog') as HTMLElement;
+    expect(confirmation).toBeTruthy();
+    (confirmation.querySelector('.cancel-action') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(component.completedBoxes()).toHaveLength(1);
+    expect(component.totalBoxCurrent()).toBe(1);
+
+    clearButton.click();
+    await fixture.whenStable();
+    confirmation = document.body.querySelector('.clear-cart-confirmation-dialog') as HTMLElement;
+    (confirmation.querySelector('.danger-action') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(component.completedBoxes()).toHaveLength(0);
+    expect(component.currentBoxItems()).toEqual({});
+    expect(component.appliedPromotionCode()).toBe('');
+    expect(component.promotionCodeInput).toBe('');
+    expect(window.sessionStorage.getItem('starkies.catalog.cart.v1')).toBeNull();
+    component.closeOrderSheet();
+  });
+
   it('submits an order and clears the cart only after the API confirms it', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
