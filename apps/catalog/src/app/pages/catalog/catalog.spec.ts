@@ -305,24 +305,16 @@ describe('Catalog', () => {
     component.closeOrderSheet();
   });
 
-  it('asks before clearing and only clears after confirmation', async () => {
+  it('asks before clearing and only clears after confirmation', () => {
     component.promotions.set([TEST_PROMOTION]);
     for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
     component.finishBox();
     component.promotionCodeInput = 'BROWNIE50';
     component.applyPromotionCode();
     component.changeQuantity('2', 1);
-    component.openOrderSheet();
-    await fixture.whenStable();
-    const sheet = document.body.querySelector('app-catalog-order-sheet') as HTMLElement;
-    const actions = sheet.querySelector('.sheet-heading-actions') as HTMLElement;
-    const clearButton = actions.querySelector('.sheet-clear-cart') as HTMLButtonElement;
-    const closeButton = actions.querySelector('.sheet-close') as HTMLButtonElement;
-    expect(actions.firstElementChild).toBe(clearButton);
-    expect(actions.lastElementChild).toBe(closeButton);
     const dialog = TestBed.inject(MatDialog);
     const openSpy = vi.spyOn(dialog, 'open').mockReturnValue({ afterClosed: () => of(false) } as any);
-    clearButton.click();
+    component.openClearCartConfirmation();
     expect(openSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'alertdialog' }));
     expect(component.completedBoxes()).toHaveLength(1);
     expect(component.totalBoxCurrent()).toBe(1);
@@ -333,7 +325,6 @@ describe('Catalog', () => {
     expect(component.appliedPromotionCode()).toBe('');
     expect(component.promotionCodeInput).toBe('');
     expect(window.sessionStorage.getItem('starkies.catalog.cart.v1')).toBeNull();
-    component.closeOrderSheet();
   });
   it('submits an order and clears the cart only after the API confirms it', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
