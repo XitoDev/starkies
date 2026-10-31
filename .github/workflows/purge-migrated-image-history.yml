@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: purge-migrated-image-history
@@ -47,6 +48,17 @@ jobs:
           R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
         run: node scripts/verify-r2-image-migration.mjs
 
+      - name: Refuse to rewrite history while pull requests are open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          OPEN_PULL_REQUESTS="$(gh pr list --state open --json number --jq 'length')"
+          if [ "$OPEN_PULL_REQUESTS" -gt 0 ]; then
+            echo "::error::Close or merge all open pull requests before rewriting branch history."
+            gh pr list --state open --json number,title,headRefName,baseRefName
+            exit 1
+          fi
+
       - name: Fetch all branch and tag refs before rewriting
         run: git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' --prune
 
@@ -63,9 +75,14 @@ jobs:
             --path-glob 'public/images/recipe-*' \
             --path-glob 'public/images/catalog-*' \
             --path 'public/images/image-map.json' \
+            --path 'public/images/README.md' \
             --invert-paths
-          if git ls-files | grep -E '^public/images/(products/|promotions/|recipe-|catalog-|image-map\.json$)'; then
-            echo "::error::Dynamic image files remain in the rewritten working tree."
+          if git ls-files | grep -E '^public/images/(products/|promotions/|recipe-|catalog-|image-map\.json$|README\.md$)'; then
+            echo "::error::Dynamic image files or legacy image documentation remain in the rewritten working tree."
+            exit 1
+          fi
+          if git rev-list --objects --all | grep -E ' public/images/(products/|promotions/|recipe-|catalog-|image-map\.json$|README\.md$)'; then
+            echo "::error::Legacy image paths are still reachable from a branch or tag after history rewriting."
             exit 1
           fi
 

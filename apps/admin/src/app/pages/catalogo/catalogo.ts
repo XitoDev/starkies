@@ -111,10 +111,6 @@ export class Catalogo {
     void this.router.navigate(['/catalogo/promociones']);
   }
 
-  openImageMigration(): void {
-    void this.router.navigate(['/catalogo/migracion-imagenes']);
-  }
-
   openProduct(item: Recipe): void {
     void this.router.navigate(['/catalogo/productos', item.id]);
   }

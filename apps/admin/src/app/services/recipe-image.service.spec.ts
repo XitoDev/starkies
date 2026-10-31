@@ -1,23 +1,18 @@
 import { RecipeImageService } from './recipe-image.service';
 
-describe('RecipeImageService legacy image resolution', () => {
+describe('RecipeImageService', () => {
   const service = new RecipeImageService();
-  const productId = '02885ca5-c58c-48a7-b116-cd614290c697';
-  const otherProductId = '0794f338-588b-460d-b002-ee4e614826c9';
-  const cdnBase = 'https://cdn.jsdelivr.net/gh/XitoDev/starkies@85d0471f159ead399e104254ee7af1890e7d502f/public/images/products/';
+  const managedImage = 'https://images.starkies.lat/images/' + 'a'.repeat(64) + '.webp';
 
-  it('uses the recipe product ID when the legacy API image ID is not in the image map', () => {
-    expect(service.getImageUrl('/api/recipe-image?id=legacy-image-document', productId))
-      .toBe(cdnBase + productId + '.png');
+  it('returns the canonical R2 image URL unchanged', () => { expect(service.getImageUrl(managedImage)).toBe(managedImage); });
+  it('keeps supported local static image paths', () => { expect(service.getImageUrl('/images/recipe-placeholder.svg')).toBe('/images/recipe-placeholder.svg'); });
+  it('uses the placeholder when the image is missing', () => {
+    expect(service.getImageUrl(undefined)).toBe('/images/recipe-placeholder.svg');
+    expect(service.getImageUrl('  ')).toBe('/images/recipe-placeholder.svg');
   });
-
-  it('keeps a mapped legacy image ID when it has a canonical asset', () => {
-    expect(service.getImageUrl('/api/recipe-image?id=' + productId, otherProductId))
-      .toBe(cdnBase + productId + '.png');
-  });
-
-  it('uses the product ID when a legacy filename ID is not mapped', () => {
-    expect(service.getImageUrl('/images/recipe-11111111-1111-4111-8111-111111111111.png', productId))
-      .toBe(cdnBase + productId + '.png');
+  it('does not resolve legacy API, repository, or CDN image references', () => {
+    expect(service.getImageUrl('/api/recipe-image?id=legacy-image')).toBe('/images/recipe-placeholder.svg');
+    expect(service.getImageUrl('/images/products/old-cookie.png')).toBe('/images/recipe-placeholder.svg');
+    expect(service.getImageUrl('https://cdn.jsdelivr.net/gh/XitoDev/starkies@main/public/images/products/old.png')).toBe('/images/recipe-placeholder.svg');
   });
 });
