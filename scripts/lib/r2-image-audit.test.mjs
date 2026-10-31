@@ -12,15 +12,16 @@ test('accepts complete canonical recipe and public catalog image records', () =>
   }), []);
 });
 
-test('blocks active recipes without an image but allows archived recipes without a public record', () => {
+test('blocks published recipes without an image but allows hidden or archived recipes without a public record', () => {
   assert.deepEqual(collectImageRecordFailures({
     recipes: [
       { id: 'active-cookie', data: { archived: false } },
+      { id: 'hidden-cookie', data: { archived: false, catalogVisible: false } },
       { id: 'archived-cookie', data: { archived: true } },
     ],
     publicProducts: [],
     drafts: [],
-  }), ['Active recipe active-cookie has no image in recipes.image.']);
+  }), ['Published recipe active-cookie has no image in recipes.image.']);
 });
 
 test('blocks public catalog records without an image', () => {

@@ -14,8 +14,8 @@ export function collectImageRecordFailures({ recipes, publicProducts, drafts }) 
     const recipe = asRecord(data);
     const image = text(recipe['image']);
 
-    if (recipe['archived'] !== true && !image) {
-      failures.push('Active recipe ' + id + ' has no image in recipes.image.');
+    if (recipe['archived'] !== true && recipe['catalogVisible'] !== false && !image) {
+      failures.push('Published recipe ' + id + ' has no image in recipes.image.');
     }
     if (Object.hasOwn(recipe, 'catalogImage')) {
       failures.push('recipes/' + id + ' still contains the obsolete catalogImage field.');
