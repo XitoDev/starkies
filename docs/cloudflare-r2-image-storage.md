@@ -39,7 +39,8 @@ The existing `FIREBASE_SERVICE_ACCOUNT_JSON` variable is still required by the a
 3. Open Admin → Catálogo → Migrar imágenes.
 4. Run the migration and review every reported failure. It reads existing product and promotion image URLs, converts them to WebP in the browser, uploads/reuses the content-addressed object, and updates the corresponding Firestore record.
 5. Check the public catalog and promotion banners. Confirm the migration page reports zero pending images and zero failures.
-6. Only after the previous checks, run the separate Git-history cleanup procedure for old dynamic image files. Do not delete the originals or rewrite Git history before this verification.
+6. If a legacy source returns HTTP 401 or the original file no longer exists, upload that image manually from its Admin editor. The normal upload flow stores it directly in R2 and updates its Firestore reference; no second migration is needed for that image.
+7. Only after every missing image has been restored and the R2 audit passes, run the separate Git-history cleanup procedure for old dynamic image files. Do not delete the originals or rewrite Git history before this verification.
 
 The migration intentionally does not delete old repository images or rewrite Git history. Those are separate destructive steps and must wait until every live reference has been verified against R2.
 

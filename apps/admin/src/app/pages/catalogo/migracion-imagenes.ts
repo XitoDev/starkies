@@ -255,7 +255,7 @@ export class ImageMigration {
 
     if (parsedUrl.origin === 'https://starkies-admin.milkyflame1.chatgpt.site'
       && parsedUrl.pathname === '/api/recipe-image') {
-      return this.imageUpload.fetchLegacyImage(parsedUrl.toString());
+      throw new Error('La imagen original ya no está disponible para descarga automática. Vuelve a subirla desde la edición del producto; se guardará directamente en Cloudflare R2.');
     }
 
     let response: Response;

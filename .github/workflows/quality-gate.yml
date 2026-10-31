@@ -122,11 +122,11 @@ jobs:
       - name: Test legacy product image migration resolver
         run: npm run test:migrate:product-images
 
-      - name: Test secure legacy image source retrieval
-        run: node --test scripts/lib/legacy-image-source.test.mjs
-
       - name: Test public catalog legacy image resolution
         run: node --test scripts/lib/legacy-product-image-resolver.test.mjs
+
+      - name: Test R2 image audit record validation
+        run: node --test scripts/lib/r2-image-audit.test.mjs
 
       - name: Test Cloudflare R2 storage and migration verifier
         run: |
