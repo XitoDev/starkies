@@ -1,6 +1,7 @@
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { CatalogOrderSheetComponent } from './catalog-order-sheet';
+import { ClearCartConfirmationDialogComponent } from './clear-cart-confirmation-dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -297,6 +298,13 @@ export class Catalog {
       window.sessionStorage.setItem(CART_DRAFT_KEY, JSON.stringify(draft));
     } catch { /* Storage may be unavailable or full; the in-memory cart remains usable. */ }
   }
+
+  private clearCartDraft(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      window.sessionStorage.removeItem(CART_DRAFT_KEY);
+    } catch { /* Storage may be unavailable; the in-memory cart remains cleared. */ }
+  }
   getPresentationTitle(presentation: BoxPresentation): string {
     switch (presentation.id) {
       case 'clasicas': return 'Caja de 10 clásicas';
@@ -416,6 +424,39 @@ export class Catalog {
   removeBox(index: number): void {
     this.completedBoxes.update(previous => previous.filter((_, current) => current !== index));
     this.persistCartDraft();
+  }
+
+  openClearCartConfirmation(): void {
+    if (!this.cartItemCount() || this.savingOrder()) return;
+    const dialogRef = this.dialog.open(ClearCartConfirmationDialogComponent, {
+      role: 'alertdialog',
+      ariaLabel: 'Confirmar vaciado del carrito',
+      ariaDescribedBy: 'clear-cart-confirmation-description',
+      panelClass: 'clear-cart-confirmation-panel',
+      width: '420px',
+      maxWidth: 'calc(100vw - 32px)',
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+    });
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed === true) this.clearCart();
+    });
+  }
+
+  clearCart(): void {
+    if (this.savingOrder()) return;
+    this.completedBoxes.set([]);
+    this.currentBoxItems.set({});
+    this.selectedPresentation.set(this.presentations[0]);
+    this.editingBoxIndex.set(null);
+    this.categoryFilter.set('Todas');
+    this.boxSelectionError.set('');
+    this.appliedPromotionCode.set('');
+    this.promotionCodeInput = '';
+    this.promotionFeedback.set('');
+    this.orderError.set('');
+    this.orderSuccess.set(null);
+    this.clearCartDraft();
   }
   boxHasUnavailableItems(box: PackedBox): boolean {
     return Object.keys(box.items).some(id => !this.products().some(product => product.id === id && product.stock));
