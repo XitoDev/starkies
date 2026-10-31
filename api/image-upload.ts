@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { fetchLegacyImage } from '../scripts/lib/legacy-image-source.mjs';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -37,6 +38,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (body['action'] === 'connection-check') {
       await verifyR2Connection();
       res.status(200).json({ success: true, write: true, read: true, delete: true, message: 'Conexión con Cloudflare R2 verificada: escritura privada, lectura pública mediante images.starkies.lat y eliminación correctas.' });
+      return;
+    }
+    if (body['action'] === 'fetch-legacy-source') {
+      const image = await fetchLegacyImage(stringValue(body['sourceUrl']));
+      res.status(200).json({ contentType: image.contentType, imageBase64: image.bytes.toString('base64') });
       return;
     }
     const kind = body['kind'] as UploadKind;

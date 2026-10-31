@@ -1,7 +1,6 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getR2Config, imageObjectKey, parseManagedImageUrl, r2Request } from './lib/r2-storage.mjs';
-import { collectImageRecordFailures } from './lib/r2-image-audit.mjs';
 
 function asRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
@@ -46,14 +45,6 @@ const publicProducts = new Map(publicSnapshot.docs
 const recipes = new Map(recipesSnapshot.docs.map(document => [document.id, asRecord(document.data())]));
 const expected = new Map();
 
-for (const message of collectImageRecordFailures({
-  recipes: recipesSnapshot.docs.map(document => ({ id: document.id, data: document.data() })),
-  publicProducts: [...publicProducts.entries()].map(([id, data]) => ({ id, data })),
-  drafts: draftsSnapshot.docs.map(document => ({ id: document.id, data: document.data() })),
-})) {
-  fail(message);
-}
-
 function addReference(url, reference, label) {
   const parsed = parseManagedImageUrl(url, config);
   if (!parsed) {
@@ -69,6 +60,9 @@ for (const [id, recipe] of recipes) {
   const publicProduct = publicProducts.get(id);
   const recipeImage = text(recipe['image']);
   const publicImage = text(publicProduct?.['image']);
+  if (publicProduct && recipeImage !== publicImage) {
+    fail('La imagen de recipes/' + id + ' no coincide con publicCatalog/' + id + '.');
+  }
   const canonicalImage = recipeImage || publicImage;
   if (canonicalImage) addReference(canonicalImage, 'product:' + id, 'Producto ' + (text(recipe['name']) || id));
 }
@@ -83,6 +77,13 @@ for (const document of promotionsSnapshot.docs) {
   const promotion = asRecord(document.data());
   const image = text(promotion['bannerImage']);
   if (image) addReference(image, 'promotion:' + document.id, 'Banner de promoción ' + (text(promotion['name']) || document.id));
+}
+
+for (const document of draftsSnapshot.docs) {
+  const draft = asRecord(document.data());
+  for (const field of ['image', 'catalogImage']) {
+    if (text(draft[field])) fail('catalogDrafts/' + document.id + ' todavía conserva el campo de imagen ' + field + '.');
+  }
 }
 
 const assets = new Map(assetsSnapshot.docs.map(document => [document.id, asRecord(document.data())]));
