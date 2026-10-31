@@ -307,11 +307,11 @@ describe('Catalog', () => {
 
   it('asks before clearing and only clears after confirmation', () => {
     component.promotions.set([TEST_PROMOTION]);
-    for (let index = 0; index < 10; index++) component.changeQuantity('1', 1);
-    component.finishBox();
+    component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
+    component.appliedPromotionCode.set('BROWNIE50');
     component.promotionCodeInput = 'BROWNIE50';
-    component.applyPromotionCode();
     component.changeQuantity('2', 1);
+    expect(component.cartItemCount()).toBe(11);
     const dialog = TestBed.inject(MatDialog);
     const openSpy = vi.spyOn(dialog, 'open').mockReturnValue({ afterClosed: () => of(false) } as any);
     component.openClearCartConfirmation();
