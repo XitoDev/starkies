@@ -5,7 +5,6 @@ export type CdnImageKind = 'product' | 'promotion';
 interface CdnUploadResponse { imageUrl?: string; message?: string; sha256?: string; reused?: boolean; }
 interface ImageReferenceResponse { message?: string; cleanupPending?: boolean; }
 interface R2ConnectionCheckResponse { success?: boolean; write?: boolean; read?: boolean; delete?: boolean; message?: string; }
-interface LegacyImageResponse { contentType?: string; imageBase64?: string; message?: string; }
 
 const MAX_INPUT_BYTES = 12 * 1024 * 1024;
 const MAX_WEBP_BYTES = 3 * 1024 * 1024;
@@ -51,25 +50,6 @@ export class ImageCdnUploadService {
     }
   }
 
-
-  async fetchLegacyImage(sourceUrl: string): Promise<Blob> {
-    const idToken = await this.requireIdToken();
-    const response = await fetch('/api/image-upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
-      body: JSON.stringify({ action: 'fetch-legacy-source', sourceUrl }),
-      signal: AbortSignal.timeout(25000),
-    });
-    const result = await response.json().catch(() => ({})) as LegacyImageResponse;
-    if (!response.ok) throw new Error(result.message || 'No se pudo recuperar la imagen del catálogo anterior.');
-    if (!result.imageBase64 || !['image/jpeg', 'image/png', 'image/webp'].includes(result.contentType ?? '')) {
-      throw new Error('El servidor anterior no devolvió una imagen JPG, PNG o WebP válida.');
-    }
-    const binary = atob(result.imageBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
-    return new Blob([bytes], { type: result.contentType });
-  }
 
   async checkConnection(): Promise<void> {
     const idToken = await this.requireIdToken();

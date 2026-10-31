@@ -110,6 +110,17 @@ jobs:
       - name: Install dependencies from committed lockfile
         run: npm ci
 
+      - name: Verify live Firebase and R2 image references before cleanup
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_AUDIT_ACCESS_KEY_ID: ${{ secrets.R2_AUDIT_ACCESS_KEY_ID }}
+          R2_AUDIT_SECRET_ACCESS_KEY: ${{ secrets.R2_AUDIT_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+        run: node scripts/verify-r2-image-migration.mjs
+
       - name: Enforce Vercel Hobby function limit
         run: |
           API_FUNCTION_COUNT="$(find api -maxdepth 1 -type f -name '*.ts' | wc -l | tr -d ' ')"
@@ -119,14 +130,8 @@ jobs:
             exit 1
           fi
 
-      - name: Test legacy product image migration resolver
-        run: npm run test:migrate:product-images
-
-      - name: Test secure legacy image source retrieval
-        run: node --test scripts/lib/legacy-image-source.test.mjs
-
-      - name: Test public catalog legacy image resolution
-        run: node --test scripts/lib/legacy-product-image-resolver.test.mjs
+      - name: Test R2 image audit record validation
+        run: node --test scripts/lib/r2-image-audit.test.mjs
 
       - name: Test Cloudflare R2 storage and migration verifier
         run: |
@@ -157,8 +162,6 @@ jobs:
         run: |
           rm -rf /tmp/starkies-catalog-esm
           npx tsc --ignoreConfig --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --esModuleInterop --skipLibCheck --types node --rootDir . --outDir /tmp/starkies-catalog-esm server/catalog-data.ts api/orders.ts server/public-seo.ts api/cookie-page.ts api/sitemap.ts
-          mkdir -p /tmp/starkies-catalog-esm/scripts/lib
-          cp scripts/lib/legacy-product-image-resolver.mjs /tmp/starkies-catalog-esm/scripts/lib/
           ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/starkies-catalog-esm/node_modules
           node --input-type=module -e "await import('/tmp/starkies-catalog-esm/server/catalog-data.js'); const orders = await import('/tmp/starkies-catalog-esm/api/orders.js'); const cookie = await import('/tmp/starkies-catalog-esm/api/cookie-page.js'); const sitemap = await import('/tmp/starkies-catalog-esm/api/sitemap.js'); if (typeof orders.default !== 'function' || typeof cookie.default !== 'function' || typeof sitemap.default !== 'function') process.exit(1); console.log('Native Node ESM resolved catalog, order, cookie-page and sitemap API dependencies successfully.');"
 
@@ -189,5 +192,23 @@ jobs:
                 core.info(`Source branch already deleted: ${branch}`);
               } else {
                 throw error;
+              }
+            }
+
+            if (context.payload.pull_request.number === 136) {
+              const temporaryBranch = 'chore/r2-remove-legacy-image-proxy';
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${temporaryBranch}`
+                });
+                core.info(`Deleted temporary cleanup branch: ${temporaryBranch}`);
+              } catch (error) {
+                if (error.status === 404) {
+                  core.info(`Temporary cleanup branch already deleted: ${temporaryBranch}`);
+                } else {
+                  throw error;
+                }
               }
             }
