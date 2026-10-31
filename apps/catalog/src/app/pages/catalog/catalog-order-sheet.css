@@ -9,6 +9,10 @@
 :host .sheet-heading { position:relative; z-index:2; display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; gap:14px; padding:24px 24px 18px; border-bottom:1px solid var(--line); background:#fff; }
 :host .honeypot { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; opacity:0!important; pointer-events:none!important; }
 :host .sheet-heading h2 { margin:0; color:#604a59; font:400 30px/1.2 'Shrikhand',Georgia,serif; }
+:host .sheet-heading-actions { display:flex; flex:0 0 auto; align-items:center; gap:8px; }
+:host .sheet-clear-cart { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:0 11px; border:1px solid #e6cdd1; border-radius:20px; background:#fff; color:#a44855; font-size:12px; font-weight:700; white-space:nowrap; }
+:host .sheet-clear-cart mat-icon { width:18px; height:18px; font-size:18px; }
+:host .sheet-clear-cart:disabled { opacity:.5; }
 :host .sheet-close { display:grid; flex:0 0 40px; width:40px; height:40px; place-items:center; padding:0; border:1px solid var(--line); border-radius:50%; background:#fff; color:var(--plum); }
 :host .sheet-close mat-icon { width:22px; height:22px; font-size:22px; }
 
@@ -85,6 +89,9 @@
 :host .empty { padding:20px 0; color:#857982; font-size:14px; }
 @media(max-width:560px) {
   :host .sheet-heading { padding:18px 18px 14px; }
+  :host .sheet-heading h2 { font-size:26px; }
+  :host .sheet-clear-cart { width:40px; padding:0; }
+  :host .sheet-clear-cart span { display:none; }
   :host .sheet-body { padding:18px; }
   :host .sheet-footer { padding:15px 18px max(18px,env(safe-area-inset-bottom)); }
   :host .fulfillment-options { gap:10px; }

@@ -2,7 +2,15 @@
     <div class="sheet-panel">
       <div class="sheet-heading">
         <h2 id="order-sheet-title">Mi pedido</h2>
-        <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="catalog.savingOrder()" (click)="catalog.closeOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
+        <div class="sheet-heading-actions">
+          @if (!catalog.orderFormVisible() && catalog.cartItemCount() > 0) {
+            <button matButton="outlined" type="button" class="sheet-clear-cart" aria-label="Vaciar carrito" title="Vaciar carrito" [disabled]="catalog.savingOrder()" (click)="catalog.openClearCartConfirmation()">
+              <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">delete_sweep</mat-icon>
+              <span>Vaciar carrito</span>
+            </button>
+          }
+          <button matIconButton type="button" class="sheet-close" aria-label="Cerrar formulario" [disabled]="catalog.savingOrder()" (click)="catalog.closeOrderSheet()"><mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon></button>
+        </div>
       </div>
       <form (ngSubmit)="catalog.submitOrder()">
         <div class="sheet-body">
@@ -37,20 +45,6 @@
 
           } @else {
             <section class="summary cart-step" aria-label="Resumen del pedido">
-              <section class="promotion-code-panel" aria-label="Código de descuento">
-                <label for="promotion-code">¿Tienes un código de descuento?</label>
-                <div class="promotion-code-controls">
-                  <input id="promotion-code" type="text" maxlength="40" autocomplete="off" placeholder="Escribe tu código" [(ngModel)]="catalog.promotionCodeInput" name="promotionCodeInput">
-                  <button matButton="outlined" type="button" (click)="catalog.applyPromotionCode()">Aplicar</button>
-                </div>
-                @if (catalog.promotionFeedback()) { <p class="promotion-feedback" role="status">{{ catalog.promotionFeedback() }}</p> }
-                @if (catalog.appliedPromotion(); as promotion) {
-                  <div class="applied-promotion">
-                    <span><strong>{{ promotion.title }}</strong><small>{{ promotion.code }}</small></span>
-                    <button matButton="text" type="button" (click)="catalog.clearPromotionCode()">Quitar</button>
-                  </div>
-                }
-              </section>
               @if (catalog.cartItemCount() === 0) {
                 <p class="empty-cart-message" id="cart-hint">Agrega tus galletas favoritas aquí</p>
               } @else {
@@ -97,6 +91,20 @@
                   <strong>-{{ catalog.promotionDiscount() | currency:'USD' }}</strong>
                 </div>
               }
+              <section class="promotion-code-panel" aria-label="Código de descuento">
+                <label for="promotion-code">¿Tienes un código de descuento?</label>
+                <div class="promotion-code-controls">
+                  <input id="promotion-code" type="text" maxlength="40" autocomplete="off" placeholder="Escribe tu código" [(ngModel)]="catalog.promotionCodeInput" name="promotionCodeInput">
+                  <button matButton="outlined" type="button" (click)="catalog.applyPromotionCode()">Aplicar</button>
+                </div>
+                @if (catalog.promotionFeedback()) { <p class="promotion-feedback" role="status">{{ catalog.promotionFeedback() }}</p> }
+                @if (catalog.appliedPromotion(); as promotion) {
+                  <div class="applied-promotion">
+                    <span><strong>{{ promotion.title }}</strong><small>{{ promotion.code }}</small></span>
+                    <button matButton="text" type="button" (click)="catalog.clearPromotionCode()">Quitar</button>
+                  </div>
+                }
+              </section>
             </section>
           }
         </div>

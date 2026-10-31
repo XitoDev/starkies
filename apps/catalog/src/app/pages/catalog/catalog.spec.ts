@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { Catalog } from './catalog';
 import { BOX_PRESENTATIONS, rankCatalogProducts } from './catalog.data';
 import { DeliveryZone, Product, PublicPromotion } from './catalog.models';
@@ -289,6 +291,41 @@ describe('Catalog', () => {
     expect(component.grandTotal()).toBeCloseTo(6, 2);
   });
 
+  it('places the discount code after the cart contents', async () => {
+    component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
+    component.openOrderSheet();
+    await fixture.whenStable();
+
+    const summary = document.body.querySelector('.cart-step') as HTMLElement;
+    const cartBox = summary.querySelector('.cart-box') as HTMLElement;
+    const promotionPanel = summary.querySelector('.promotion-code-panel') as HTMLElement;
+    expect(summary.lastElementChild).toBe(promotionPanel);
+    expect(cartBox.compareDocumentPosition(promotionPanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    component.closeOrderSheet();
+  });
+
+  it('asks before clearing and only clears after confirmation', () => {
+    component.promotions.set([TEST_PROMOTION]);
+    component.completedBoxes.set([{ presentation: BOX_PRESENTATIONS[0], items: { '1': 10 } }]);
+    component.appliedPromotionCode.set('BROWNIE50');
+    component.promotionCodeInput = 'BROWNIE50';
+    component.changeQuantity('2', 1);
+    expect(component.cartItemCount()).toBe(11);
+    const dialog = TestBed.inject(MatDialog);
+    const openSpy = vi.spyOn(dialog, 'open').mockReturnValue({ afterClosed: () => of(false) } as any);
+    component.openClearCartConfirmation();
+    expect(openSpy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'alertdialog' }));
+    expect(component.completedBoxes()).toHaveLength(1);
+    expect(component.totalBoxCurrent()).toBe(1);
+    openSpy.mockReturnValue({ afterClosed: () => of(true) } as any);
+    component.openClearCartConfirmation();
+    expect(component.completedBoxes()).toHaveLength(0);
+    expect(component.currentBoxItems()).toEqual({});
+    expect(component.appliedPromotionCode()).toBe('');
+    expect(component.promotionCodeInput).toBe('');
+    expect(window.sessionStorage.getItem('starkies.catalog.cart.v1')).toBeNull();
+  });
   it('submits an order and clears the cart only after the API confirms it', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
